@@ -649,7 +649,10 @@ footer a:hover { color: var(--accent); }
     <li><a href="#faq">FAQ</a></li>
     <li><a href="dashboard.html">Live Demo</a></li>
   </ul>
-  <a href="#early-access" class="nav-cta">Get Early Access</a>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <a href="/login.html" style="font-family:var(--mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Sign In</a>
+    <a href="/signup.html" class="nav-cta">Get Early Access</a>
+  </div>
 </nav>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
@@ -671,7 +674,7 @@ footer a:hover { color: var(--accent); }
       <h1 class="hero-headline">Built for branches.<br>Not <span class="hl-red">battleships.</span></h1>
       <p class="hero-sub">The legacy LOS opens a single loan file in <strong>60 seconds</strong>. We open in <strong>2</strong>. They cost ~$3,000/mo per branch, lock files when two people open them, and require a $100k admin to keep the lights on. We rebuilt the whole thing on a real-time database, with Claude Vision reading every PDF, and bill only when you close.</p>
       <div class="hero-actions">
-        <a href="#early-access" class="btn-primary">Get Early Access</a>
+        <a href="/signup.html" class="btn-primary">Get Early Access</a>
         <a href="dashboard.html" class="btn-secondary">See the live dashboard →</a>
       </div>
       <p class="hero-note"><span>✓</span> Built in public · <span>✓</span> Solo-built by a Navy vet · <span>✓</span> No "Encompass Admin" required</p>
@@ -973,7 +976,7 @@ footer a:hover { color: var(--accent); }
               <li>Cancel any time, no minimums</li>
             </ul>
           </div>
-          <a href="#early-access" class="pricing-cta">Get Early Access →</a>
+          <a href="/signup.html" class="pricing-cta">Get Early Access →</a>
           <p class="pricing-note">Beta opens Q2 2026 · Founding 25 branches lock this rate forever</p>
         </div>
       </div>
@@ -1087,13 +1090,13 @@ footer a:hover { color: var(--accent); }
 <section id="early-access" class="final-cta reveal">
   <h2>Get on the early-access list.</h2>
   <p>Q2 2026 beta is capped at 25 branches. Founding rate locks for the life of your account. No spam — just monthly build notes from a builder you'll actually talk to.</p>
-  <form class="email-capture" onsubmit="event.preventDefault(); this.querySelector('button').textContent='✓ Subscribed'; this.querySelector('button').disabled=true;">
-    <input type="email" class="email-input" placeholder="lo@yourbranch.com" required>
-    <button type="submit" class="email-btn">Get Access →</button>
-  </form>
-  <p class="final-note"><span>✓</span> Free to join · <span>✓</span> Unsubscribe any time · <span>✓</span> No sales calls</p>
+  <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
+    <a href="/signup.html" class="btn-primary">Request Early Access →</a>
+    <a href="/login.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;border-bottom:1px solid rgba(200,223,240,0.3);padding-bottom:3px;display:inline-flex;align-items:center;">Already on the list? Sign in →</a>
+  </div>
+  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> Founding 25 branches lock the rate · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
   <div style="margin-top:2rem;">
-    <a href="dashboard.html" class="btn-primary">See the Live Dashboard Demo →</a>
+    <a href="/dashboard.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted);text-decoration:none;">Or see the live dashboard demo →</a>
   </div>
 </section>
 

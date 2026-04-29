@@ -583,6 +583,8 @@ footer a:hover { color: var(--accent); }
   .detail-amount, .detail-amount-sub { text-align: left; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
 </head>
 <body>
 
@@ -621,12 +623,12 @@ footer a:hover { color: var(--accent); }
     <li><a href="#">Audit Log</a></li>
   </ul>
   <div class="nav-right">
-    <span class="nav-branch"><strong>● ACTIVE</strong> &nbsp;Lubbock Branch</span>
+    <span class="nav-branch"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">Demo Branch</span></span>
     <span>
-      <span class="nav-user-name">Corbin Matisse</span>
-      <span class="nav-user-role">LO</span>
+      <span class="nav-user-name" id="nav-user-name">Demo User</span>
+      <span class="nav-user-role" id="nav-user-role">PREVIEW</span>
     </span>
-    <a href="index.html" class="nav-signout">Sign Out</a>
+    <button class="nav-signout" id="nav-signout-btn" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
 
@@ -1396,6 +1398,37 @@ footer a:hover { color: var(--accent); }
 </footer>
 
 <script>
+  // ─── Auth: pull user info from session, wire Sign Out ──────────────
+  // Dashboard is publicly viewable as a demo, but if there's an active
+  // session we personalize the top-right with the signed-in user's name.
+  (async function initSession() {
+    if (typeof ofGetSession !== 'function') return;
+    try {
+      const session = await ofGetSession();
+      if (!session) return;
+      const user = session.user;
+      const meta = user.user_metadata || {};
+      const fullName = (meta.first_name && meta.last_name)
+        ? `${meta.first_name} ${meta.last_name}`
+        : (user.email ? user.email.split('@')[0] : 'Signed in');
+      const branchName = meta.branch_name || 'Your Branch';
+      const role = (meta.role || 'preview').toUpperCase().replace('_', ' ');
+      document.getElementById('nav-user-name').textContent = fullName;
+      document.getElementById('nav-user-role').textContent = role;
+      document.getElementById('nav-branch-name').textContent = branchName;
+    } catch (err) {
+      console.warn('[OF Dashboard] session init error:', err);
+    }
+  })();
+
+  function handleSignOut() {
+    if (typeof ofSignOut === 'function') {
+      ofSignOut();
+    } else {
+      window.location.href = '/';
+    }
+  }
+
   // ─── Simulate live activity feed ────────────────────────────────────
   // Every 12 seconds, add a new activity row at the top to give the
   // feed a "live" feel during demos.
