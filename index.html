@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OriginFlow LOS — Built for branches, not battleships</title>
-<meta name="description" content="The web-native loan origination system for independent mortgage branches. Opens in 2 seconds, runs on any browser, bills only when you close. AI document extraction, real-time collaboration, transparent pricing. Built solo by a Navy vet because Encompass shouldn't cost $3,000/mo to feel like Windows 95.">
-<meta name="keywords" content="loan origination system, Encompass alternative, mortgage software, independent mortgage branch, AI mortgage automation, LOS for small lenders">
+<title>OriginFlow LOS · Built for closers. Not clickers.</title>
+<meta name="description" content="The web native LOS for loan officers who got into mortgages for the closings, not for files that take a minute to open. AI reads every PDF. Live collaboration. No $100k Encompass admin required. Pay only when you close.">
+<meta name="keywords" content="loan origination system, LOS for loan officers, Encompass alternative, AI mortgage software, mortgage software for LOs, independent mortgage branch, Texas loan officer software">
 <meta name="author" content="Davis Rackler · OriginFlow LOS">
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="OriginFlow LOS — Built for branches, not battleships">
-<meta property="og:description" content="The legacy LOS takes 60 seconds to open a file. We take 2. AI-first, web-native, no per-click fees, no $100k admin required.">
+<meta property="og:title" content="OriginFlow LOS · Built for closers. Not clickers.">
+<meta property="og:description" content="You got into mortgages for the closings, not the file uploads. I rebuilt the LOS on a live database with Claude Vision reading every paystub, W2, and bank statement. So your day goes back to talking to borrowers.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,14 +86,25 @@ nav {
   transition: color 0.2s;
 }
 .nav-links a:hover { color: var(--accent); }
+.nav-auth { display: flex; align-items: center; gap: 0.5rem; }
+.nav-login {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text); text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  transition: border-color 0.2s, color 0.2s;
+}
+.nav-login:hover { color: var(--accent); border-color: var(--accent); }
 .nav-cta {
   font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
-  text-transform: uppercase; background: transparent;
-  border: 1px solid var(--accent); color: var(--accent);
+  text-transform: uppercase; background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent);
   padding: 0.5rem 1.25rem; cursor: pointer; text-decoration: none;
-  transition: background 0.2s, color 0.2s;
+  font-weight: 700;
+  transition: opacity 0.2s;
 }
-.nav-cta:hover { background: var(--accent); color: var(--navy); }
+.nav-cta:hover { opacity: 0.85; }
 
 /* ─── URGENCY BAR ──────────────────────────────────────────────────── */
 .urgency-bar {
@@ -408,7 +419,7 @@ nav {
   list-style: none; padding-left: 1.25rem; position: relative; margin-bottom: 0.4rem;
 }
 .pricing-context li::before {
-  content: '—'; position: absolute; left: 0; color: var(--border);
+  content: '·'; position: absolute; left: 0; color: var(--border);
 }
 .pricing-card {
   background: var(--surface); border: 1px solid var(--accent);
@@ -563,24 +574,6 @@ nav {
 }
 .final-cta .final-note span { color: var(--accent2); }
 
-/* ─── EMAIL CAPTURE ────────────────────────────────────────────────── */
-.email-capture { display: flex; max-width: 460px; margin: 1.5rem auto 0; gap: 0; }
-.email-input {
-  flex: 1; background: var(--surface); border: 1px solid var(--border);
-  border-right: none; color: var(--white); font-family: var(--mono);
-  font-size: 0.82rem; padding: 0.85rem 1rem; outline: none;
-  transition: border-color 0.2s;
-}
-.email-input::placeholder { color: var(--muted); }
-.email-input:focus { border-color: var(--accent); }
-.email-btn {
-  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em;
-  text-transform: uppercase; background: var(--accent); color: var(--navy);
-  border: none; padding: 0.85rem 1.5rem; cursor: pointer;
-  font-weight: 700; transition: opacity 0.2s; white-space: nowrap;
-}
-.email-btn:hover { opacity: 0.85; }
-
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
   border-top: 1px solid var(--border); padding: 2rem 3rem;
@@ -613,16 +606,18 @@ footer a:hover { color: var(--accent); }
   .battle-col { padding: 1.5rem; }
   .origin-stats { grid-template-columns: 1fr 1fr; }
   .final-cta { padding: 3rem 1.5rem; }
+  .nav-login { padding: 0.45rem 0.75rem; font-size: 0.65rem; }
+  .nav-cta { padding: 0.45rem 0.9rem; font-size: 0.65rem; }
 }
 </style>
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- NAV                                                                  -->
+<!-- NAV · Log In and Sign Up always visible at the top                   -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <nav>
-  <a href="#" class="nav-logo">
+  <a href="/" class="nav-logo">
     <div class="sonar-icon">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
@@ -649,9 +644,9 @@ footer a:hover { color: var(--accent); }
     <li><a href="#faq">FAQ</a></li>
     <li><a href="dashboard.html">Live Demo</a></li>
   </ul>
-  <div style="display:flex;align-items:center;gap:1rem;">
-    <a href="/login.html" style="font-family:var(--mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Sign In</a>
-    <a href="/signup.html" class="nav-cta">Get Early Access</a>
+  <div class="nav-auth">
+    <a href="/login.html" class="nav-login">Log In</a>
+    <a href="/signup.html" class="nav-cta">Sign Up</a>
   </div>
 </nav>
 
@@ -659,7 +654,7 @@ footer a:hover { color: var(--accent); }
 <!-- URGENCY BAR                                                          -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <div class="urgency-bar">
-  <span><span class="ub-pulse"></span>Building in public · <strong>private beta opening Q2 2026</strong> · Lubbock-area branches first</span>
+  <span><span class="ub-pulse"></span>Building in public · <strong>private beta opening Q2 2026</strong> · Texas independent loan officers first</span>
   <span class="ub-divider">·</span>
   <a href="dashboard.html">See the live dashboard demo →</a>
 </div>
@@ -670,20 +665,20 @@ footer a:hover { color: var(--accent); }
 <section>
   <div class="hero">
     <div>
-      <div class="hero-eyebrow">Web-native loan origination · Independent branches</div>
-      <h1 class="hero-headline">Built for branches.<br>Not <span class="hl-red">battleships.</span></h1>
-      <p class="hero-sub">The legacy LOS opens a single loan file in <strong>60 seconds</strong>. We open in <strong>2</strong>. They cost ~$3,000/mo per branch, lock files when two people open them, and require a $100k admin to keep the lights on. We rebuilt the whole thing on a real-time database, with Claude Vision reading every PDF, and bill only when you close.</p>
+      <div class="hero-eyebrow">For loan officers · Not LOS admins</div>
+      <h1 class="hero-headline">Built for closers.<br>Not <span class="hl-red">clickers.</span></h1>
+      <p class="hero-sub">You got into mortgages for the closings. The keys, the calls, the referrals from the last family you took care of. You did not sign up to wait <strong>a full minute for a file to open</strong>, share an Excel tracker with two processors, or pay a $100k Encompass admin to keep the lights on. I rebuilt the LOS from scratch on a <strong>live database with Claude Vision reading every paystub, W2, and bank statement.</strong> So your day goes back to talking to borrowers, not staring at a spinning wheel.</p>
       <div class="hero-actions">
-        <a href="/signup.html" class="btn-primary">Get Early Access</a>
+        <a href="/signup.html" class="btn-primary">Sign Up</a>
         <a href="dashboard.html" class="btn-secondary">See the live dashboard →</a>
       </div>
-      <p class="hero-note"><span>✓</span> Built in public · <span>✓</span> Solo-built by a Navy vet · <span>✓</span> No "Encompass Admin" required</p>
+      <p class="hero-note"><span>✓</span> Built for working LOs · <span>✓</span> Solo built by a Navy vet · <span>✓</span> No "Encompass Admin" required</p>
     </div>
 
     <div class="hero-terminal">
       <div class="terminal-bar">
         <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
-        <span class="terminal-title">PIPELINE.OF — LIVE</span>
+        <span class="terminal-title">PIPELINE.OF · LIVE</span>
       </div>
       <div class="terminal-body">
         <div class="t-dim">══════════════════════════════════════════════════</div>
@@ -708,13 +703,13 @@ footer a:hover { color: var(--accent); }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- BATTLE MAP — 10 we keep, 20 we kill                                  -->
+<!-- BATTLE MAP                                                           -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="battle-map" class="battle-map">
   <div class="section reveal">
     <div class="section-label">The Battle Map</div>
-    <h2 class="section-heading">10 things Encompass got right.<br>20 things we rebuilt from zero.</h2>
-    <p class="section-sub">Encompass has been the heavyweight champ since the late 90s and there's a reason — they nailed compliance, audit trails, and ecosystem. We're not pretending those things don't matter. We're matching them. The other 20 things are where the speedboat wins.</p>
+    <h2 class="section-heading">10 things Encompass got right.<br>20 things stealing your day.</h2>
+    <p class="section-sub">Encompass has been the heavyweight champ since the late 90s for a reason. They nailed compliance, audit trails, and the vendor ecosystem. Match those or you're not a real LOS. The other 20 things on the right are where Encompass shows its age, and where a speedboat beats a battleship.</p>
 
     <div class="battle-grid">
 
@@ -723,21 +718,21 @@ footer a:hover { color: var(--accent); }
         <div class="battle-col-head">
           <div class="battle-col-num green">10</div>
           <div>
-            <div class="battle-col-title">What we keep · table stakes</div>
-            <div class="battle-col-sub">Match these or you're not a real LOS</div>
+            <div class="battle-col-title">What I keep · table stakes</div>
+            <div class="battle-col-sub">Match these or it's not a real LOS</div>
           </div>
         </div>
         <ul class="battle-list">
-          <li><span class="bullet green-bull">✓</span><span><strong>Compliance fortress.</strong> TRID, ECOA, HMDA guardrails baked into every field. RLS at the database layer, not the app layer.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Audit trails.</strong> Field-level diffs on every change, with actor, role, and timestamp. Compliance officers will love it.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Milestone tracking.</strong> Pipeline view of every file by stage. Time-in-stage analytics so you can prove you close faster.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Vendor ecosystem.</strong> Direct integrations with credit bureaus, AUS, appraisal, title, flood. No "Encompass-style" per-click tax on top.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Secondary marketing tools.</strong> Rate locks, lock extensions, investor delivery — the basics that pay the rent.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Workflow customization.</strong> Conditional rules on conditions, status transitions, doc requirements — without an in-house programmer.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>eClosing.</strong> Digital signatures, paperless closings, eNote/eVault integration through Snapdocs and Notarize.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Scalability.</strong> Postgres + Supabase scales linearly from 1 LO to 50 LOs without a server-room upgrade.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Data granularity.</strong> Every 1003 field, every income source, every liability, every condition — queryable via SQL, not buried in a black-box reporting engine.</span></li>
-          <li><span class="bullet green-bull">✓</span><span><strong>Reliability.</strong> Boring infrastructure on top of Postgres and Cloudflare — the same stack running on other production fintech.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Compliance fortress.</strong> TRID, ECOA, HMDA guardrails baked into every field. Row level security at the database layer, not the app layer.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Audit trails.</strong> Field level diffs on every change, with actor, role, and timestamp. Compliance officers will love it.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Milestone tracking.</strong> Pipeline view of every file by stage. Time in stage analytics so you can prove you close faster.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Vendor ecosystem.</strong> Direct integrations with credit bureaus, AUS, appraisal, title, flood. No "Encompass style" per click tax on top.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Secondary marketing tools.</strong> Rate locks, lock extensions, investor delivery. The basics that pay the rent.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Workflow customization.</strong> Conditional rules on conditions, status transitions, doc requirements, without an in house programmer.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>eClosing.</strong> Digital signatures, paperless closings, eNote and eVault integration through Snapdocs and Notarize.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Scalability.</strong> Postgres and Supabase scales linearly from 1 LO to 50 LOs without a server room upgrade.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Data granularity.</strong> Every 1003 field, every income source, every liability, every condition, queryable via SQL. Not buried in a black box reporting engine.</span></li>
+          <li><span class="bullet green-bull">✓</span><span><strong>Reliability.</strong> Boring infrastructure on Postgres and Cloudflare. The same stack running on other production fintech.</span></li>
         </ul>
       </div>
 
@@ -746,31 +741,31 @@ footer a:hover { color: var(--accent); }
         <div class="battle-col-head">
           <div class="battle-col-num red">20</div>
           <div>
-            <div class="battle-col-title">What we kill · the speedboat wins</div>
+            <div class="battle-col-title">What I kill · the speedboat wins</div>
             <div class="battle-col-sub">Where Encompass shows its age</div>
           </div>
         </div>
         <ul class="battle-list">
-          <li><span class="bullet red-bull">✗</span><span><strong>Windows 95 UI →</strong> dense, gray, 30-year-old design.<span class="b-fix">→ Web-native dark UI. iPad-ready. 2026 typography.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>60-second file loads →</strong> spinning wheel of death.<span class="b-fix">→ &lt;2-second load. Postgres-direct, no middleware.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>File locking →</strong> only one user saves at a time.<span class="b-fix">→ Realtime CRDT-style merge. LO + processor edit live.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Fake AI →</strong> bolted-on OCR that doesn't reason.<span class="b-fix">→ Native Claude Vision. Reads, calculates, flags.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Manual stare-and-compare →</strong> typing PDF numbers into boxes.<span class="b-fix">→ Auto-extract + side-by-side review pane.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>$100k Encompass admin required →</strong> dedicated headcount.<span class="b-fix">→ Self-serve config. Zero admin needed.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Opaque pricing →</strong> 3-month sales cycle, signed contracts.<span class="b-fix">→ Listed on the site. Pay-per-closed-loan or flat.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Months-long learning curve →</strong> certification programs.<span class="b-fix">→ 15-minute onboarding. New LO closes in week one.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Broken on mobile →</strong> nightmare on iPad/phone.<span class="b-fix">→ Mobile-first. Field-ready on any device.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>4 clicks to clear a condition →</strong> bloated workflows.<span class="b-fix">→ AI auto-clears. Zero clicks when doc matches.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Fragile SDK →</strong> third-party integrations break monthly.<span class="b-fix">→ Modern REST + webhooks. Versioned, documented.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>"Encompass is down" →</strong> end-of-month outages.<span class="b-fix">→ Postgres + edge functions. 99.95% uptime SLA.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Bad search →</strong> finding a file in the pipeline is slow.<span class="b-fix">→ Full-text indexed. Find any borrower in &lt;100ms.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Clunky doc viewer →</strong> hard to split/merge PDFs.<span class="b-fix">→ Native viewer with split, merge, rotate, redact.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>No collaboration →</strong> emails and sticky notes.<span class="b-fix">→ Slack-style chat per loan file. @mentions push.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Windows 95 UI →</strong> dense, gray, ancient design.<span class="b-fix">→ Modern dark UI built for the browser. Works on iPad. 2026 typography.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>60 second file loads →</strong> spinning wheel of death.<span class="b-fix">→ Loads in under 2 seconds. Direct Postgres, no middleware.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>File locking →</strong> only one user can save at a time.<span class="b-fix">→ Live merge. LO and processor edit at the same time.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Fake AI →</strong> bolted on OCR that can't reason.<span class="b-fix">→ Native Claude Vision. Reads, calculates, flags.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Manual stare and compare →</strong> typing PDF numbers into boxes.<span class="b-fix">→ Auto extract plus side by side review pane.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>$100k Encompass admin required →</strong> dedicated headcount.<span class="b-fix">→ Self serve config. Zero admin needed.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Opaque pricing →</strong> 3 month sales cycle, signed contracts.<span class="b-fix">→ Listed on the site. Pay per closed loan or flat.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Months long learning curve →</strong> certification programs.<span class="b-fix">→ 15 minute onboarding. New LO closes in week one.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Broken on mobile →</strong> nightmare on iPad and phone.<span class="b-fix">→ Mobile first. Field ready on any device.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>4 clicks to clear a condition →</strong> bloated workflows.<span class="b-fix">→ AI auto clears. Zero clicks when doc matches.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Fragile SDK →</strong> third party integrations break monthly.<span class="b-fix">→ Modern REST and webhooks. Versioned, documented.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>"Encompass is down" →</strong> end of month outages.<span class="b-fix">→ Postgres and edge functions. 99.95% uptime SLA.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Bad search →</strong> finding a file in the pipeline is slow.<span class="b-fix">→ Full text indexed. Find any borrower in under 100ms.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Clunky doc viewer →</strong> hard to split or merge PDFs.<span class="b-fix">→ Native viewer with split, merge, rotate, redact.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>No collaboration →</strong> emails and sticky notes.<span class="b-fix">→ Slack style chat per loan file. @mentions push.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>Fake automation →</strong> task reminders, not actions.<span class="b-fix">→ Real triggers. AI clears conditions itself.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>RAM-hungry desktop client →</strong> needs a power PC.<span class="b-fix">→ Browser-only. Works on a Chromebook.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Hidden per-click fees →</strong> $0.50 every credit pull.<span class="b-fix">→ All-inclusive. Or pay-per-closed-loan only.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Notes as treasure hunt →</strong> finding a 3-week-old log.<span class="b-fix">→ Threaded chat. Searchable. Pinnable. Dated.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>No version control →</strong> three bank statements, which is current?<span class="b-fix">→ Document versioning. Source-of-truth tagged.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>RAM hungry desktop client →</strong> needs a power PC.<span class="b-fix">→ Browser only. Works on a Chromebook.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Hidden per click fees →</strong> $0.50 every credit pull.<span class="b-fix">→ All inclusive. Or pay per closed loan only.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Notes as treasure hunt →</strong> finding a 3 week old log.<span class="b-fix">→ Threaded chat. Searchable. Pinnable. Dated.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>No version control →</strong> three bank statements, which is current?<span class="b-fix">→ Document versioning. Source of truth tagged.</span></span></li>
         </ul>
       </div>
 
@@ -783,9 +778,9 @@ footer a:hover { color: var(--accent); }
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="compare">
   <div class="section reveal">
-    <div class="section-label">Side-by-side</div>
+    <div class="section-label">Side by side</div>
     <h2 class="section-heading">Encompass vs OriginFlow LOS.</h2>
-    <p class="section-sub">The numbers that matter to a 5-LO branch in Lubbock — not to Wells Fargo.</p>
+    <p class="section-sub">The numbers that matter to a working loan officer. Not to a CFO at Wells Fargo.</p>
 
     <div class="compare-wrap">
       <table class="compare-table">
@@ -798,24 +793,24 @@ footer a:hover { color: var(--accent); }
           </tr>
         </thead>
         <tbody>
-          <tr><td class="feature">File open time</td><td class="muted">~60 seconds</td><td class="muted">5-15 seconds</td><td class="col-of"><strong>&lt; 2 seconds</strong></td></tr>
-          <tr><td class="feature">Monthly cost (5-LO branch)</td><td class="muted">~$3,000/mo + per-click fees</td><td class="muted">$1,200-2,400/mo</td><td class="col-of"><strong>$99/seat or $99/closed loan</strong></td></tr>
-          <tr><td class="feature">Onboarding to first close</td><td class="muted">3-4 months</td><td class="muted">2-4 weeks</td><td class="col-of"><strong>15 minutes</strong></td></tr>
+          <tr><td class="feature">File open time</td><td class="muted">~60 seconds</td><td class="muted">5 to 15 seconds</td><td class="col-of"><strong>Under 2 seconds</strong></td></tr>
+          <tr><td class="feature">Monthly cost (5 LO branch)</td><td class="muted">~$3,000/mo plus per click fees</td><td class="muted">$1,200 to $2,400/mo</td><td class="col-of"><strong>$99/seat or $99/closed loan</strong></td></tr>
+          <tr><td class="feature">Onboarding to first close</td><td class="muted">3 to 4 months</td><td class="muted">2 to 4 weeks</td><td class="col-of"><strong>15 minutes</strong></td></tr>
           <tr><td class="feature">Dedicated admin required</td><td class="muted">Yes ($100k/yr salary)</td><td class="muted">Sometimes</td><td class="col-of"><strong>No</strong></td></tr>
-          <tr><td class="feature">Two users edit same file</td><td class="muted"><span class="compare-x">✗</span> file lock</td><td class="muted"><span class="compare-x">✗</span></td><td class="col-of"><span class="compare-check">✓</span> realtime merge</td></tr>
-          <tr><td class="feature">AI document extraction</td><td class="muted">Bolt-on OCR only</td><td class="muted">Partial</td><td class="col-of"><span class="compare-check">✓</span> Claude Vision native</td></tr>
-          <tr><td class="feature">Auto-clear conditions</td><td class="muted"><span class="compare-x">✗</span> manual</td><td class="muted"><span class="compare-x">✗</span></td><td class="col-of"><span class="compare-check">✓</span> AI matches doc → condition</td></tr>
-          <tr><td class="feature">Internal chat per loan</td><td class="muted"><span class="compare-x">✗</span> external email</td><td class="muted">Limited</td><td class="col-of"><span class="compare-check">✓</span> Slack-style threads</td></tr>
-          <tr><td class="feature">Mobile / iPad</td><td class="muted">Painful</td><td class="muted">Adequate</td><td class="col-of"><span class="compare-check">✓</span> Mobile-first</td></tr>
-          <tr><td class="feature">Document version control</td><td class="muted"><span class="compare-x">✗</span></td><td class="muted">Partial</td><td class="col-of"><span class="compare-check">✓</span> Source-of-truth tagging</td></tr>
-          <tr><td class="feature">Compliance audit log</td><td><span class="compare-check">✓</span></td><td><span class="compare-check">✓</span></td><td class="col-of"><span class="compare-check">✓</span> field-level diffs</td></tr>
-          <tr><td class="feature">Pricing transparency</td><td class="muted">3-month sales cycle</td><td class="muted">Quote on request</td><td class="col-of"><strong>Listed publicly</strong></td></tr>
-          <tr><td class="feature">Cancel anytime</td><td class="muted">Annual contracts</td><td class="muted">Annual contracts</td><td class="col-of"><span class="compare-check">✓</span> Month-to-month</td></tr>
+          <tr><td class="feature">Two users edit same file</td><td class="muted"><span class="compare-x">✗</span> file lock</td><td class="muted"><span class="compare-x">✗</span></td><td class="col-of"><span class="compare-check">✓</span> live merge</td></tr>
+          <tr><td class="feature">AI document extraction</td><td class="muted">Bolt on OCR only</td><td class="muted">Partial</td><td class="col-of"><span class="compare-check">✓</span> Claude Vision native</td></tr>
+          <tr><td class="feature">Auto clear conditions</td><td class="muted"><span class="compare-x">✗</span> manual</td><td class="muted"><span class="compare-x">✗</span></td><td class="col-of"><span class="compare-check">✓</span> AI matches doc to condition</td></tr>
+          <tr><td class="feature">Internal chat per loan</td><td class="muted"><span class="compare-x">✗</span> external email</td><td class="muted">Limited</td><td class="col-of"><span class="compare-check">✓</span> Slack style threads</td></tr>
+          <tr><td class="feature">Mobile and iPad</td><td class="muted">Painful</td><td class="muted">Adequate</td><td class="col-of"><span class="compare-check">✓</span> Mobile first</td></tr>
+          <tr><td class="feature">Document version control</td><td class="muted"><span class="compare-x">✗</span></td><td class="muted">Partial</td><td class="col-of"><span class="compare-check">✓</span> Source of truth tagging</td></tr>
+          <tr><td class="feature">Compliance audit log</td><td><span class="compare-check">✓</span></td><td><span class="compare-check">✓</span></td><td class="col-of"><span class="compare-check">✓</span> field level diffs</td></tr>
+          <tr><td class="feature">Pricing transparency</td><td class="muted">3 month sales cycle</td><td class="muted">Quote on request</td><td class="col-of"><strong>Listed publicly</strong></td></tr>
+          <tr><td class="feature">Cancel anytime</td><td class="muted">Annual contracts</td><td class="muted">Annual contracts</td><td class="col-of"><span class="compare-check">✓</span> Month to month</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-top:1rem;line-height:1.7;">Encompass figures from publicly reported industry benchmarks and reviews. Comparison reflects positioning as of the OriginFlow LOS v0.1 spec. Independent verification welcome — that's why this site exists.</p>
+    <p style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-top:1rem;line-height:1.7;">Encompass figures from publicly reported industry benchmarks and reviews. Comparison reflects positioning as of the OriginFlow LOS v0.1 spec. Independent verification welcome. That's why this site exists.</p>
   </div>
 </section>
 
@@ -825,47 +820,47 @@ footer a:hover { color: var(--accent); }
 <section id="features" style="background:var(--deep);border-top:1px solid var(--border);">
   <div class="section reveal">
     <div class="section-label">What's actually inside</div>
-    <h2 class="section-heading">Three pillars. One platform.<br>No bolted-on AI.</h2>
-    <p class="section-sub">Every line of code written for OriginFlow. No legacy from a 1998 desktop app. No "AI module" that's actually a regex.</p>
+    <h2 class="section-heading">Three pillars. One platform.<br>No bolted on AI.</h2>
+    <p class="section-sub">Every line of code written for OriginFlow. No legacy from a 1998 desktop app. No "AI module" that's actually a regex. Built so the time you save shows up where it matters: on the phone with a borrower.</p>
 
     <div class="buckets-grid">
 
       <div class="bucket">
         <div class="bucket-eyebrow">Pillar 01 · Document Intelligence</div>
         <h3 class="bucket-title">Claude Vision reads every PDF.</h3>
-        <p class="bucket-desc">Drag a W-2, paystub, or bank statement onto the file. Claude Vision extracts every number, calculates AGI and monthly gross, flags large unidentified deposits, and writes the result back to the loan record.</p>
+        <p class="bucket-desc">Drag a W2, paystub, or bank statement onto the file. Claude Vision extracts every number, calculates AGI and monthly gross, flags large unidentified deposits, and writes the result back to the loan record. The processor stops typing. You stop waiting on the processor.</p>
         <ul class="bucket-list">
-          <li>Auto-extract W-2 box-by-box · AGI computed</li>
-          <li>Paystub gross/net + YTD with confidence score</li>
+          <li>Auto extract W2 box by box · AGI computed</li>
+          <li>Paystub gross and net plus YTD with confidence score</li>
           <li>Bank statement scan · large deposit flagging</li>
-          <li>Stare-and-compare with field-level review</li>
-          <li>Auto-clear conditions when doc type matches</li>
+          <li>Stare and compare with field level review</li>
+          <li>Auto clear conditions when doc type matches</li>
         </ul>
       </div>
 
       <div class="bucket">
-        <div class="bucket-eyebrow">Pillar 02 · Real-Time Collaboration</div>
+        <div class="bucket-eyebrow">Pillar 02 · Live Collaboration</div>
         <h3 class="bucket-title">No file locks. No shared spreadsheet.</h3>
-        <p class="bucket-desc">Supabase Realtime broadcasts every change to every connected user. Update a DTI ratio and the LO sees the card pulse cyan within 200ms. Internal chat per loan replaces the external email loop.</p>
+        <p class="bucket-desc">Supabase Realtime broadcasts every change to every connected user. Your processor updates a DTI ratio on her screen and your card pulses cyan within 200ms, even if you're on the phone with the borrower at the same time. Internal chat per loan replaces the external email loop.</p>
         <ul class="bucket-list">
           <li>Live pipeline · pulse on update</li>
-          <li>Slack-style chat thread per loan file</li>
-          <li>@mentions notify processor / underwriter</li>
-          <li>Branch-scoped — RLS enforces isolation</li>
-          <li>Works simultaneously across iPad + desktop</li>
+          <li>Slack style chat thread per loan file</li>
+          <li>@mentions notify processor and underwriter</li>
+          <li>Branch scoped, RLS enforces isolation</li>
+          <li>Works on iPad and desktop simultaneously</li>
         </ul>
       </div>
 
       <div class="bucket">
         <div class="bucket-eyebrow">Pillar 03 · Compliance &amp; Audit</div>
         <h3 class="bucket-title">Every change. Every actor. Every timestamp.</h3>
-        <p class="bucket-desc">Field-level diffs auto-write to an audit log on every insert/update/delete. TRID, ECOA, HMDA recordkeeping requirements satisfied without app code remembering. Status transitions captured separately for time-in-stage analytics.</p>
+        <p class="bucket-desc">Field level diffs auto write to an audit log on every insert, update, and delete. TRID, ECOA, and HMDA recordkeeping requirements satisfied without app code remembering. Status transitions captured separately for time in stage analytics. So when a borrower asks "where's my file?" you have a real answer in two seconds.</p>
         <ul class="bucket-list">
-          <li>Database triggers — non-bypassable</li>
-          <li>TRID 3-day timer on Loan Estimate send</li>
-          <li>ECOA adverse-action reasons captured</li>
+          <li>Database triggers, non bypassable</li>
+          <li>TRID 3 day timer on Loan Estimate send</li>
+          <li>ECOA adverse action reasons captured</li>
           <li>HMDA fields prefilled where derivable</li>
-          <li>25-month retention default · configurable</li>
+          <li>25 month retention default · configurable</li>
         </ul>
       </div>
 
@@ -882,14 +877,14 @@ footer a:hover { color: var(--accent); }
       <div class="ai-text">
         <div class="section-label">Spotlight · The PDF Drop Zone</div>
         <h2 class="section-heading" style="font-size:2.2rem;">Drop a PDF. Watch the file build itself.</h2>
-        <p>This is the feature that closed every demo so far. The processor drags a stack of borrower docs onto the loan file. Claude Vision reads each one, classifies the doc type, extracts the structured data, and writes it back to the loan record — <strong>and the matching condition auto-clears</strong>. Zero clicks. Zero stare-and-compare.</p>
-        <p>The audit log captures the AI confidence score and the model version, so a compliance officer can replay the extraction six months later and verify the math. Low-confidence extractions get routed to a manual review queue instead of silently failing.</p>
+        <p>This is the feature that closed every demo so far. The processor (or you, on an iPad with a borrower at the kitchen table) drags a stack of borrower docs onto the loan file. Claude Vision reads each one, classifies the doc type, extracts the structured data, and writes it back to the loan record. <strong>The matching condition auto clears.</strong> Zero clicks. Zero stare and compare. The borrower watches their file build itself in real time.</p>
+        <p>The audit log captures the AI confidence score and the model version, so a compliance officer can replay the extraction six months later and verify the math. Low confidence extractions get routed to a manual review queue instead of silently failing. You stay safe. You also stay fast.</p>
         <ul class="ai-feature-list">
-          <li><span class="ck">✓</span><span><strong>Income calc.</strong> AGI from W-2 box 1 + monthly gross from paystub gross divided by pay-period count.</span></li>
-          <li><span class="ck">✓</span><span><strong>Asset verification.</strong> Bank statement scan for any deposit greater than 50% of monthly income, auto-flagged.</span></li>
-          <li><span class="ck">✓</span><span><strong>Data integrity.</strong> Side-by-side PDF vs entered values. Discrepancies highlight in amber before submit.</span></li>
-          <li><span class="ck">✓</span><span><strong>Condition clearing.</strong> Doc type W-2 → "Most recent W-2" condition auto-flips to submitted.</span></li>
-          <li><span class="ck">✓</span><span><strong>OCR robustness.</strong> Rotated, faxed, multi-page financial docs handled by Claude Vision natively.</span></li>
+          <li><span class="ck">✓</span><span><strong>Income calc.</strong> AGI from W2 box 1, plus monthly gross from paystub gross divided by pay period count.</span></li>
+          <li><span class="ck">✓</span><span><strong>Asset verification.</strong> Bank statement scan for any deposit over 50% of monthly income, auto flagged.</span></li>
+          <li><span class="ck">✓</span><span><strong>Data integrity.</strong> Side by side PDF vs entered values. Discrepancies highlight in amber before submit.</span></li>
+          <li><span class="ck">✓</span><span><strong>Condition clearing.</strong> Doc type W2 flips the "Most recent W2" condition to submitted automatically.</span></li>
+          <li><span class="ck">✓</span><span><strong>OCR robustness.</strong> Rotated, faxed, multi page financial docs handled by Claude Vision natively.</span></li>
         </ul>
       </div>
 
@@ -906,7 +901,7 @@ footer a:hover { color: var(--accent); }
           <div class="ai-mock-row"><span class="ai-mock-label">YTD gross</span><span class="ai-mock-val">$28,846.14</span></div>
           <div class="ai-mock-row"><span class="ai-mock-label">Computed monthly</span><span class="ai-mock-val">$10,416.66</span></div>
           <div class="ai-mock-row"><span class="ai-mock-label">→ wrote to income_sources</span><span class="ai-mock-val">✓ <span class="ai-mock-status s-extracted">SAVED</span></span></div>
-          <div class="ai-mock-row"><span class="ai-mock-label">→ condition match</span><span class="ai-mock-val">"30-day paystub" <span class="ai-mock-status s-cleared">CLEARED</span></span></div>
+          <div class="ai-mock-row"><span class="ai-mock-label">→ condition match</span><span class="ai-mock-val">"30 day paystub" <span class="ai-mock-status s-cleared">CLEARED</span></span></div>
           <div class="ai-mock-row"><span class="ai-mock-label">→ DTI recompute</span><span class="ai-mock-val">38.4% <span class="ai-mock-status s-cleared">UPDATED</span></span></div>
           <div class="ai-mock-row"><span class="ai-mock-label">total elapsed</span><span class="ai-mock-val">2.4 seconds</span></div>
         </div>
@@ -922,23 +917,23 @@ footer a:hover { color: var(--accent); }
   <div class="section reveal">
     <div class="section-label">Pricing</div>
     <h2 class="section-heading">Two paths. No sales call. Cancel any time.</h2>
-    <p class="section-sub">Encompass requires a 3-month enterprise sales cycle. We list our prices on the website like grown-ups.</p>
+    <p class="section-sub">Encompass requires a 3 month enterprise sales cycle. I list my prices on the website like a grown up.</p>
 
     <div class="pricing-wrapper">
       <ul class="pricing-context">
         <strong>What's included on every plan</strong>
         <li>Full pipeline · unlimited active loans</li>
         <li>Claude Vision document extraction · all doc types</li>
-        <li>Real-time collaboration · branch-scoped RLS</li>
-        <li>Audit log · TRID/ECOA/HMDA-grade recordkeeping</li>
+        <li>Live collaboration · branch scoped RLS</li>
+        <li>Audit log · TRID, ECOA, HMDA grade recordkeeping</li>
         <li>Internal chat · @mentions · pinning</li>
-        <li>Mobile-ready on iPad / iPhone / any browser</li>
+        <li>Works on iPad, iPhone, any browser</li>
         <li>Direct integrations · credit, AUS, appraisal, title</li>
         <li>Email support · SLA on response time</li>
       </ul>
 
       <div class="pricing-card">
-        <span class="pricing-badge">Founding-branch rate</span>
+        <span class="pricing-badge">Founding LO rate</span>
         <div class="pricing-body">
           <div class="pricing-toggle">
             <div class="pricing-tab active" id="tab-flat" onclick="togglePrice('flat')">Per Seat</div>
@@ -950,13 +945,13 @@ footer a:hover { color: var(--accent); }
               <span class="price-amount">99</span>
               <span class="price-period">/seat/month</span>
             </div>
-            <p class="pricing-tagline">All-in. No per-click fees. No "Encompass admin" required.</p>
+            <p class="pricing-tagline">All in. No per click fees. No "Encompass admin" required.</p>
             <ul class="pricing-features">
               <li>Unlimited loans, docs, conditions</li>
               <li>All AI extraction included</li>
-              <li>Real-time collab + chat</li>
-              <li>Audit log + compliance reports</li>
-              <li>Email + Slack support</li>
+              <li>Live collab plus chat</li>
+              <li>Audit log plus compliance reports</li>
+              <li>Email and Slack support</li>
               <li>Cancel any time, prorated refund</li>
             </ul>
           </div>
@@ -966,25 +961,25 @@ footer a:hover { color: var(--accent); }
               <span class="price-amount">99</span>
               <span class="price-period">/closed loan · $0 base</span>
             </div>
-            <p class="pricing-tagline">Pay only when you close. Bad month? You owe nothing.</p>
+            <p class="pricing-tagline">Pay only when you close. Slow month? You owe nothing.</p>
             <ul class="pricing-features">
-              <li>$0 monthly base — billed at funding</li>
+              <li>$0 monthly base, billed at funding</li>
               <li>Unlimited seats, loans, docs</li>
               <li>All AI extraction included</li>
-              <li>Real-time collab + chat</li>
-              <li>Audit log + compliance reports</li>
+              <li>Live collab plus chat</li>
+              <li>Audit log plus compliance reports</li>
               <li>Cancel any time, no minimums</li>
             </ul>
           </div>
-          <a href="/signup.html" class="pricing-cta">Get Early Access →</a>
-          <p class="pricing-note">Beta opens Q2 2026 · Founding 25 branches lock this rate forever</p>
+          <a href="/signup.html" class="pricing-cta">Sign Up →</a>
+          <p class="pricing-note">Beta opens Q2 2026 · Founding 25 LOs lock this rate forever</p>
         </div>
       </div>
 
       <div class="pricing-right">
         <strong>Straight talk on the success model</strong>
-        Per-closed-loan pricing aligns the software with the branch. If we don't help you close, we don't get paid. Encompass charges whether you funded one loan that month or fifty. We think the speedboat should price like the speedboat.<br><br>
-        For high-volume branches (40+ closes/month) the per-seat plan usually wins. For seasonal, refi-cyclic, or new-LO branches building a pipeline, success pricing makes the most sense. Switch between them any time — we'll do the math for you in the dashboard.
+        Per closed loan pricing aligns the software with the LO. If I don't help you close, I don't get paid. Encompass charges whether you funded one loan that month or fifty. The speedboat should price like the speedboat.<br><br>
+        For high volume LOs (8 plus closes/month) the per seat plan usually wins. For seasonal, refi cyclic, or new LO pipelines being built up, success pricing makes the most sense. Switch between them any time. I'll do the math for you in the dashboard.
       </div>
     </div>
   </div>
@@ -998,12 +993,12 @@ footer a:hover { color: var(--accent); }
     <div class="origin-grid">
       <div class="origin-text">
         <div class="section-label">Who built this</div>
-        <h2 class="section-heading">A submarine, a spreadsheet, and a frustrated LO named Corbin.</h2>
+        <h2 class="section-heading">A submarine, a spreadsheet, and a frustrated loan officer.</h2>
         <p>I spent three years in the Navy, most of it on the USS Montana during dry dock in Newport News, Virginia. What you learn in that environment is that everything runs on procedure, verification, and trusting your instruments when your instincts are screaming something else.</p>
-        <p>I got medically separated and enrolled at Texas Tech for a BBA in IT Systems. While I was there I built <strong>Submarine Catalyst</strong>, a biotech PDUFA scanner — same submarine aesthetic, same obsession with making the machine do the boring work. It taught me how to ship.</p>
-        <p>OriginFlow started when my friend <strong>Corbin Matisse</strong>, a loan officer in Lubbock, kept complaining about Encompass. The 60-second file loads. The shared Excel tracker. The $100k Encompass admin his branch couldn't afford. Every problem he described was a thing I could fix with a real-time database and an AI model that can read a paystub.</p>
-        <p>So I started building. The schema went up first. Then Claude Vision wired into the document pipeline. Then the dashboard. Corbin is the first beta tester and the reason every feature exists. If it doesn't fix something he's complained about, it didn't make the cut.</p>
-        <p>By graduation in <strong>December 2026</strong>, I want OriginFlow LOS to be the leanest, fastest, cheapest alternative for independent mortgage branches in the Texas Panhandle and South Plains. Then we expand. The aircraft carrier doesn't need to sink. We just need to be the better boat for the branches it was never designed for.</p>
+        <p>I got medically separated and enrolled at Texas Tech for a BBA in IT Systems. While I was there I built <strong>Submarine Catalyst</strong>, a biotech PDUFA scanner. Same submarine aesthetic, same obsession with making the machine do the boring work. It taught me how to ship.</p>
+        <p>OriginFlow started because <strong>a loan officer friend in Texas</strong> wouldn't stop complaining about Encompass. The 60 second file loads. The shared Excel pipeline tracker. The $100k Encompass admin his branch couldn't afford. Every problem he described was a thing I could fix with a live database and an AI model that can read a paystub.</p>
+        <p>So I started building. The schema went up first. Then Claude Vision wired into the document pipeline. Then the dashboard. He's the first beta tester and the reason every feature exists. If it doesn't fix something a working LO has actually complained about, it doesn't make the cut.</p>
+        <p>By graduation in <strong>December 2026</strong>, I want OriginFlow LOS to be the leanest, fastest, cheapest alternative for independent loan officers across Texas. Then I expand. The aircraft carrier doesn't need to sink. I just need to be the better boat for the LOs it was never designed for.</p>
       </div>
       <div class="origin-stats">
         <div class="stat-cell"><span class="stat-val">23</span><span class="stat-label">Founder Age</span></div>
@@ -1027,10 +1022,10 @@ footer a:hover { color: var(--accent); }
     <div class="faq-list" style="margin-top:2.5rem;">
       <div class="faq-item open">
         <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Is OriginFlow LOS production-ready today?</span>
+          <span>Is OriginFlow LOS production ready today?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">No — and I'm not going to pretend it is. The schema is built, the dashboard works, the document pipeline is being wired up. Beta opens Q2 2026 to a small group of Lubbock-area independent branches. Public launch targets December 2026 to coincide with my graduation from Texas Tech. If you're an LO/processor/underwriter and you want to influence what gets built, the early-access list is the place.</div>
+        <div class="faq-a">No, and I'm not going to pretend it is. The schema is built, the dashboard works, the document pipeline is being wired up. Beta opens Q2 2026 to a small group of Texas independent loan officers. Public launch targets December 2026 to coincide with my graduation from Texas Tech. If you're an LO, processor, or underwriter and you want to influence what gets built, the early access list is the place.</div>
       </div>
 
       <div class="faq-item">
@@ -1038,7 +1033,7 @@ footer a:hover { color: var(--accent); }
           <span>How does the AI document extraction actually work?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">A processor drags a PDF onto the loan file. The doc gets stored in Supabase Storage and an extraction record is created. A serverless function picks it up, sends it to Claude Vision with a prompt scoped to the doc type (W-2, paystub, bank statement, etc.), and parses the response into structured fields. The result lands back on the document record as JSONB, and a trigger fires to auto-clear any matching condition. The AI's confidence score is recorded. Anything under a configurable threshold goes to manual review.</div>
+        <div class="faq-a">A processor (or you, on an iPad with a borrower in front of you) drags a PDF onto the loan file. The doc gets stored in Supabase Storage and an extraction record is created. A serverless function picks it up, sends it to Claude Vision with a prompt scoped to the doc type (W2, paystub, bank statement, etc.), and parses the response into structured fields. The result lands back on the document record as JSONB, and a trigger fires to auto clear any matching condition. The AI's confidence score is recorded. Anything under a configurable threshold goes to manual review.</div>
       </div>
 
       <div class="faq-item">
@@ -1046,7 +1041,7 @@ footer a:hover { color: var(--accent); }
           <span>How do you handle compliance and PII?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">Row-level security at the Postgres layer scopes every query to the user's branch — even a leaked anon key cannot see another branch's data. Field-level audit logging via database triggers covers every insert/update/delete on compliance-relevant tables (loans, borrowers, conditions, documents). SSN is never stored in plaintext — only a salted hash and last four. Full PII goes through Supabase Vault for envelope encryption when needed for credit pulls. The retention default matches TRID/ECOA recordkeeping windows (25-36 months). Configurable.</div>
+        <div class="faq-a">Row level security at the Postgres layer scopes every query to the user's branch. Even a leaked anon key cannot see another branch's data. Field level audit logging via database triggers covers every insert, update, and delete on compliance relevant tables (loans, borrowers, conditions, documents). SSN is never stored in plaintext, only a salted hash and last four. Full PII goes through Supabase Vault for envelope encryption when needed for credit pulls. The retention default matches TRID and ECOA recordkeeping windows (25 to 36 months). Configurable.</div>
       </div>
 
       <div class="faq-item">
@@ -1054,7 +1049,7 @@ footer a:hover { color: var(--accent); }
           <span>Will it integrate with my existing credit, AUS, and title vendors?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">Goal is yes for the major ones — that's table stakes. Initial direct integrations target Equifax/Experian/TransUnion via a credit reseller, DU/LP for AUS, Snapdocs for eClose, and the major flood/title APIs. We're building this as a thin REST + webhooks layer so adding a new integration is days, not months. If your shop relies on a niche vendor, tell me — early-access branches get to influence the integration roadmap.</div>
+        <div class="faq-a">Goal is yes for the major ones. That's table stakes. Initial direct integrations target Equifax, Experian, and TransUnion via a credit reseller, DU and LP for AUS, Snapdocs for eClose, and the major flood and title APIs. I'm building this as a thin REST and webhooks layer so adding a new integration is days, not months. If your shop relies on a niche vendor, tell me. Early access LOs get to influence the integration roadmap.</div>
       </div>
 
       <div class="faq-item">
@@ -1062,15 +1057,15 @@ footer a:hover { color: var(--accent); }
           <span>What happens to my data if I cancel?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">You get a full SQL export of every loan, document, condition, audit log, and chat message in your branch. Documents come as a zip from Storage. The export is a permanent right, not a courtesy — written into the terms. You're never trapped here.</div>
+        <div class="faq-a">You get a full SQL export of every loan, document, condition, audit log, and chat message in your branch. Documents come as a zip from Storage. The export is a permanent right, not a courtesy, written into the terms. You're never trapped here.</div>
       </div>
 
       <div class="faq-item">
         <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Why should I trust a 23-year-old with my LOS?</span>
+          <span>Why should I trust a 23 year old with my LOS?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">Fair question. The answer: you don't have to until the demo earns it. The whole product is being built in public — schema, code, dashboard, track record of features that work and features that don't. If you've used Submarine Catalyst (my biotech tool) you've already seen the same operator build something with eight active risk layers and a published track record including the misses. Same builder. Same standards. Different industry.</div>
+        <div class="faq-a">Fair question. The answer: you don't have to until the demo earns it. The whole product is being built in public. Schema, code, dashboard, track record of features that work and features that don't. If you've used Submarine Catalyst (my biotech tool) you've already seen the same operator build something with eight active risk layers and a published track record including the misses. Same builder. Same standards. Different industry.</div>
       </div>
 
       <div class="faq-item">
@@ -1078,23 +1073,23 @@ footer a:hover { color: var(--accent); }
           <span>Who is this NOT for?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">Big banks. Top-50 IMBs. Anyone closing 1,000+ loans a month — Encompass actually fits you better, that's not a joke. OriginFlow is built for independent branches with 3-25 LOs who don't have an in-house engineering team and who currently feel like the LOS is the slowest part of their day. If you can quote your monthly closes from memory, you're the customer.</div>
+        <div class="faq-a">Big banks. Top 50 IMBs. Anyone closing 1,000 plus loans a month. Encompass actually fits you better, that's not a joke. OriginFlow is built for independent loan officers and small branches with 3 to 25 LOs who don't have an in house engineering team, and who currently feel like the LOS is the slowest part of their day. If you can quote your monthly closes from memory, you're the customer.</div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- FINAL CTA + EMAIL CAPTURE                                            -->
+<!-- FINAL CTA                                                            -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="early-access" class="final-cta reveal">
-  <h2>Get on the early-access list.</h2>
-  <p>Q2 2026 beta is capped at 25 branches. Founding rate locks for the life of your account. No spam — just monthly build notes from a builder you'll actually talk to.</p>
+  <h2>Stop losing hours to your LOS.</h2>
+  <p>Q2 2026 beta is capped at 25 founding loan officers. Founding rate locks for the life of your account. No spam. Just monthly build notes from a builder you'll actually talk to.</p>
   <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
-    <a href="/signup.html" class="btn-primary">Request Early Access →</a>
-    <a href="/login.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;border-bottom:1px solid rgba(200,223,240,0.3);padding-bottom:3px;display:inline-flex;align-items:center;">Already on the list? Sign in →</a>
+    <a href="/signup.html" class="btn-primary">Sign Up →</a>
+    <a href="/login.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;border-bottom:1px solid rgba(200,223,240,0.3);padding-bottom:3px;display:inline-flex;align-items:center;">Already have an account? Log In →</a>
   </div>
-  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> Founding 25 branches lock the rate · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
+  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> Founding 25 LOs lock the rate · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
   <div style="margin-top:2rem;">
     <a href="/dashboard.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted);text-decoration:none;">Or see the live dashboard demo →</a>
   </div>
@@ -1106,7 +1101,7 @@ footer a:hover { color: var(--accent); }
 <footer>
   <a href="/" class="nav-wordmark" style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-decoration:none;letter-spacing:0.1em;">ORIGINFLOW LOS</a>
   <div class="footer-disclaimer">
-    OriginFlow LOS is a software platform for independent mortgage branches. Not a registered investment adviser, broker-dealer, or financial planner. All compliance with federal and state mortgage regulations remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
   </div>
   <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;">
     <a href="dashboard.html">Demo</a>
@@ -1119,7 +1114,6 @@ footer a:hover { color: var(--accent); }
 </footer>
 
 <script>
-  // ─── Pricing toggle ─────────────────────────────────────────────────
   function togglePrice(mode) {
     document.getElementById('tab-flat').classList.toggle('active', mode === 'flat');
     document.getElementById('tab-success').classList.toggle('active', mode === 'success');
@@ -1127,7 +1121,6 @@ footer a:hover { color: var(--accent); }
     document.getElementById('price-success').style.display = mode === 'success' ? 'block' : 'none';
   }
 
-  // ─── Reveal-on-scroll ───────────────────────────────────────────────
   const els = document.querySelectorAll('.reveal');
   const io = new IntersectionObserver(entries => {
     entries.forEach(e => {
