@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Log · OriginFlow LOS — Live Demo</title>
+<meta name="description" content="Immutable audit trail for OriginFlow LOS — every login, upload, edit, AI action, and stage move. SOC 2 Type II ready.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--navy); color: var(--text);
+  font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  min-height: 100vh;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, .demo-banner, .audit-grid, footer, .metric-strip, .page-head, .filter-bar { position: relative; z-index: 1; }
+
+/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
+.demo-banner {
+  background: rgba(245,166,35,0.08);
+  border-bottom: 1px solid rgba(245,166,35,0.25);
+  padding: 0.55rem 2rem;
+  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--amber); flex-wrap: wrap;
+}
+.demo-banner strong { color: var(--white); font-weight: 700; }
+.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92); backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.sonar-icon { width: 26px; height: 26px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.55rem; line-height: 1.1; }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-value.white { color: var(--white); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.25rem;
+}
+.metric-trend { font-family: var(--mono); font-size: 0.6rem; color: var(--accent2); margin-top: 0.2rem; }
+.metric-trend.down { color: var(--red); }
+
+/* ─── PAGE HEAD ────────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.5rem 2rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--navy);
+}
+.crumb {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 0.45rem;
+}
+.crumb a { color: var(--muted); text-decoration: none; }
+.crumb a:hover { color: var(--accent); }
+.crumb span { color: var(--accent); }
+.page-title-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
+.page-title { font-family: var(--serif); font-size: 1.75rem; color: var(--white); }
+.page-meta { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); letter-spacing: 0.06em; }
+.page-meta .pulse-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent2); margin-right: 0.4rem;
+  animation: dot 1.4s ease infinite; vertical-align: middle;
+}
+@keyframes dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.page-desc { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; max-width: 750px; }
+.page-desc strong { color: var(--accent2); font-weight: 500; }
+
+/* ─── FILTER BAR ───────────────────────────────────────────────────── */
+.filter-bar {
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 2rem;
+  display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center;
+}
+.filter-bar input, .filter-bar select {
+  font-family: var(--mono); font-size: 0.68rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.45rem 0.75rem;
+  outline: none; transition: border-color 0.15s;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
+.filter-bar input.search { width: 280px; }
+.filter-bar .spacer { flex: 1; }
+.filter-bar .btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  text-transform: uppercase; background: transparent;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.4);
+  padding: 0.45rem 0.85rem; cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-bar .btn:hover { background: rgba(0,212,255,0.08); }
+.filter-bar .btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent);
+  font-weight: 700;
+}
+.filter-bar .btn.primary:hover { background: #33ddff; }
+
+/* ─── MAIN GRID ────────────────────────────────────────────────────── */
+.audit-grid {
+  display: grid; grid-template-columns: 1fr 320px;
+  gap: 1px; background: var(--border);
+  min-height: calc(100vh - 360px);
+}
+
+/* ─── EVENT STREAM ─────────────────────────────────────────────────── */
+.event-stream { background: var(--navy); padding: 1.25rem 1.5rem 2rem; }
+.bucket {
+  display: grid; grid-template-columns: 110px 1fr;
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.bucket-time {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+  position: sticky; top: 110px;
+  align-self: start;
+}
+.bucket-time strong {
+  display: block; color: var(--accent); font-size: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+.bucket-events { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.event {
+  display: grid;
+  grid-template-columns: 78px 1fr auto;
+  gap: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  align-items: start;
+  transition: border-color 0.2s, background 0.2s;
+}
+.event:hover { border-color: rgba(0,212,255,0.3); }
+.event.fresh {
+  animation: evtSlide 0.5s cubic-bezier(0.16,1,0.3,1);
+  border-left-color: var(--accent);
+  background: rgba(0,212,255,0.04);
+}
+@keyframes evtSlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.event.cyan  { border-left-color: var(--accent); }
+.event.green { border-left-color: var(--accent2); }
+.event.amber { border-left-color: var(--amber); }
+.event.red   { border-left-color: var(--red); background: rgba(255,68,68,0.04); }
+
+.event-time {
+  font-family: var(--mono); font-size: 0.66rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  padding-top: 0.1rem;
+}
+.event-time strong { display: block; color: var(--white); font-size: 0.72rem; margin-bottom: 0.1rem; }
+
+.event-body { color: var(--text); line-height: 1.5; }
+.event-actor {
+  font-family: var(--sans); color: var(--white); font-weight: 500;
+}
+.event-role-badge {
+  font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.1em;
+  padding: 0.08rem 0.35rem; border: 1px solid;
+  margin-left: 0.35rem; text-transform: uppercase;
+  vertical-align: middle;
+}
+.event-role-badge.lo  { color: var(--accent);  border-color: rgba(0,212,255,0.4);  background: rgba(0,212,255,0.06); }
+.event-role-badge.proc{ color: var(--accent2); border-color: rgba(0,255,157,0.4);  background: rgba(0,255,157,0.06); }
+.event-role-badge.uw  { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.event-role-badge.own { color: var(--white);   border-color: var(--border); background: var(--deep); }
+.event-role-badge.ai  { color: var(--accent2); border-color: rgba(0,255,157,0.4);  background: rgba(0,255,157,0.06); }
+.event-role-badge.sys { color: var(--muted);   border-color: var(--border); }
+.event-role-badge.red { color: var(--red);     border-color: rgba(255,68,68,0.4);  background: rgba(255,68,68,0.06); }
+
+.event-action { color: var(--text); }
+.event-loan {
+  font-family: var(--mono); color: var(--accent); font-size: 0.78rem;
+  font-weight: 700;
+}
+.event-target {
+  font-family: var(--mono); font-size: 0.74rem; color: var(--white);
+  background: var(--deep); padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+}
+.event-diff {
+  display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap;
+  margin-top: 0.4rem; font-family: var(--mono); font-size: 0.7rem;
+}
+.diff-old {
+  color: var(--red); text-decoration: line-through;
+  background: rgba(255,68,68,0.06); padding: 0.1rem 0.4rem;
+  border: 1px solid rgba(255,68,68,0.25);
+}
+.diff-arrow { color: var(--muted); }
+.diff-new {
+  color: var(--accent2);
+  background: rgba(0,255,157,0.06); padding: 0.1rem 0.4rem;
+  border: 1px solid rgba(0,255,157,0.3);
+}
+.event-extra {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+  margin-top: 0.3rem; letter-spacing: 0.04em;
+}
+
+.event-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  padding: 0.15rem 0.45rem; border: 1px solid;
+  text-transform: uppercase; align-self: start;
+  white-space: nowrap;
+}
+.event-tag.LOGIN  { color: var(--accent);  border-color: rgba(0,212,255,0.4);  background: rgba(0,212,255,0.06); }
+.event-tag.UPLOAD { color: var(--text);    border-color: var(--border); background: var(--deep); }
+.event-tag.AI     { color: var(--accent2); border-color: rgba(0,255,157,0.4);  background: rgba(0,255,157,0.06); }
+.event-tag.EDIT   { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.event-tag.CLEAR  { color: var(--accent2); border-color: rgba(0,255,157,0.4);  background: rgba(0,255,157,0.06); }
+.event-tag.MOVE   { color: var(--accent);  border-color: rgba(0,212,255,0.4);  background: rgba(0,212,255,0.06); }
+.event-tag.API    { color: var(--muted);   border-color: var(--border); background: var(--deep); }
+.event-tag.EXPORT { color: var(--white);   border-color: var(--border); background: var(--surface); }
+.event-tag.CRITICAL,
+.event-tag.SECURITY,
+.event-tag.FAIL   { color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.08); }
+.event-tag.PERM   { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+
+/* ─── RIGHT SIDEBAR ────────────────────────────────────────────────── */
+.right-rail {
+  background: var(--deep);
+  display: flex; flex-direction: column;
+}
+.rail-block {
+  border-bottom: 1px solid var(--border);
+  padding: 1.1rem 1.25rem;
+}
+.rail-head {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 0.85rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.rail-head .pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent2); animation: dot 1.4s ease infinite;
+}
+
+/* breakdown rows */
+.bd-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.75rem; align-items: center;
+  padding: 0.4rem 0; font-size: 0.78rem;
+}
+.bd-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  padding: 0.1rem 0.45rem; border: 1px solid; min-width: 4.4rem; text-align: center;
+}
+.bd-tag.LOGIN { color: var(--accent); border-color: rgba(0,212,255,0.4); }
+.bd-tag.AI    { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.bd-tag.UPLOAD{ color: var(--text); border-color: var(--border); }
+.bd-tag.EDIT  { color: var(--amber); border-color: rgba(245,166,35,0.4); }
+.bd-tag.CLEAR { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.bd-tag.MOVE  { color: var(--accent); border-color: rgba(0,212,255,0.4); }
+.bd-tag.PERM  { color: var(--amber); border-color: rgba(245,166,35,0.4); }
+.bd-tag.FAIL  { color: var(--red); border-color: rgba(255,68,68,0.5); }
+.bd-bar {
+  height: 4px; background: var(--surface); border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.bd-bar > span {
+  position: absolute; inset: 0 auto 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.bd-row.amberfill .bd-bar > span { background: var(--amber); }
+.bd-row.redfill   .bd-bar > span { background: var(--red); }
+.bd-count { font-family: var(--mono); font-size: 0.74rem; color: var(--white); min-width: 1.6rem; text-align: right; }
+
+/* top actors */
+.actor-row {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 0.6rem; align-items: center;
+  padding: 0.5rem 0; font-size: 0.78rem;
+  border-bottom: 1px dashed var(--border);
+}
+.actor-row:last-child { border-bottom: none; }
+.actor-init {
+  font-family: var(--mono); font-size: 0.58rem; font-weight: 700;
+  width: 1.6rem; height: 1.6rem; display: inline-flex;
+  align-items: center; justify-content: center;
+  background: var(--accent); color: var(--navy);
+}
+.actor-init.proc { background: var(--accent2); }
+.actor-init.uw   { background: var(--amber); }
+.actor-init.ai   { background: var(--accent2); color: var(--navy); }
+.actor-init.own  { background: var(--white);  color: var(--navy); }
+.actor-name { color: var(--white); font-size: 0.76rem; }
+.actor-name small { color: var(--muted); font-size: 0.6rem; display: block; margin-top: 0.1rem; }
+.actor-count { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); }
+.actor-bar {
+  width: 50px; height: 3px;
+  background: var(--surface); position: relative; overflow: hidden;
+}
+.actor-bar > span {
+  position: absolute; inset: 0 auto 0 0;
+  background: var(--accent);
+}
+.actor-bar.green > span { background: var(--accent2); }
+
+/* critical events */
+.crit-row {
+  background: rgba(255,68,68,0.06);
+  border: 1px solid rgba(255,68,68,0.25);
+  border-left: 3px solid var(--red);
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+.crit-row .crit-time {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--red);
+  letter-spacing: 0.06em; margin-bottom: 0.25rem;
+}
+.crit-row .crit-body { color: var(--text); }
+.crit-row .crit-body strong { color: var(--white); }
+
+/* retention notice */
+.retention {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: var(--text); line-height: 1.6;
+}
+.retention strong { color: var(--accent2); }
+.retention .ret-row {
+  display: flex; justify-content: space-between;
+  padding: 0.3rem 0; border-bottom: 1px dashed var(--border);
+}
+.retention .ret-row:last-child { border-bottom: none; }
+.retention .ret-label { color: var(--muted); letter-spacing: 0.04em; }
+
+/* hash badge */
+.hash-strip {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  background: var(--navy); border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem; margin-top: 0.6rem;
+  letter-spacing: 0.04em; word-break: break-all;
+}
+.hash-strip strong { color: var(--accent); }
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .metric-strip { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .audit-grid { grid-template-columns: 1fr; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .filter-bar input.search { width: 100%; }
+  .bucket { grid-template-columns: 1fr; gap: 0.5rem; }
+  .bucket-time { position: static; }
+  .event { grid-template-columns: 1fr; }
+  .event-tag { justify-self: start; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- DEMO BANNER                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="demo-banner">
+  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
+  <a href="index.html">← Back to landing page</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="dashboard.html">Pipeline</a></li>
+    <li><a href="documents.html">Documents</a></li>
+    <li><a href="conditions.html">Conditions</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li><a href="audit.html" class="active">Audit Log</a></li>
+  </ul>
+  <div class="nav-right">
+    <span class="nav-branch"><strong>● ACTIVE</strong> &nbsp;Submarine Catalyst</span>
+    <span>
+      <span class="nav-user-name">Davis Rackler</span>
+      <span class="nav-user-role">OWNER</span>
+    </span>
+    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- METRIC STRIP                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="metric-strip">
+  <div class="metric-cell">
+    <div class="metric-label">Events · Today</div>
+    <div class="metric-value white">847</div>
+    <div class="metric-sub">across 14 active files</div>
+    <div class="metric-trend">▲ 112 vs yesterday</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Unique Actors · 24h</div>
+    <div class="metric-value cyan">6</div>
+    <div class="metric-sub">4 humans · 1 AI · 1 system</div>
+    <div class="metric-trend">all expected</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">AI Events · Today</div>
+    <div class="metric-value green">312</div>
+    <div class="metric-sub">extracts, clears, recomputes</div>
+    <div class="metric-trend">37% of activity</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Critical Events · 7d</div>
+    <div class="metric-value red">2</div>
+    <div class="metric-sub">failed login + perm change</div>
+    <div class="metric-trend down">▲ 1 vs prior week</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Last Login · You</div>
+    <div class="metric-value white">07:42</div>
+    <div class="metric-sub">today · 73.183.42.118 · Lubbock</div>
+    <div class="metric-trend">no anomalies</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">System Uptime · 90d</div>
+    <div class="metric-value green">99.998%</div>
+    <div class="metric-sub">2 brief degraded windows</div>
+    <div class="metric-trend">SOC 2 Type II ✓</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEAD                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page-head">
+  <div class="crumb"><a href="dashboard.html">Dashboard</a> &nbsp;›&nbsp; <span>Audit Log</span></div>
+  <div class="page-title-row">
+    <div>
+      <h1 class="page-title">Audit Log</h1>
+      <p class="page-desc">
+        Every action on every loan — <strong>immutable, hash-chained, append-only</strong>. Logins, uploads, AI extractions,
+        condition clears, stage moves, field edits with full before/after diff, permission changes, and API calls. Built for
+        SOC 2 Type II, state regulator audits, and post-incident forensics. <strong>7-year retention</strong>.
+      </p>
+    </div>
+    <div class="page-meta">
+      <span class="pulse-dot"></span>Live · 14:38:22 CDT · 0.2s sync
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FILTER BAR                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="filter-bar">
+  <input type="text" class="search" placeholder="Search actor, action, target, IP, file...">
+  <select>
+    <option>All actors</option>
+    <option>Corbin Matisse · LO</option>
+    <option>Sarah Hayes · Processor</option>
+    <option>Diana Mendez · Underwriter</option>
+    <option>Davis Rackler · Owner</option>
+    <option>AI · Claude Vision</option>
+    <option>System</option>
+  </select>
+  <select>
+    <option>All actions</option>
+    <option>Login / logout</option>
+    <option>Document upload</option>
+    <option>AI extraction</option>
+    <option>Field edit</option>
+    <option>Condition clear</option>
+    <option>Stage move</option>
+    <option>Permission change</option>
+    <option>API call</option>
+    <option>Data export</option>
+    <option>Failed / security</option>
+  </select>
+  <select>
+    <option>All loans</option>
+    <option>OF-1043 · Rodriguez</option>
+    <option>OF-1042 · Chen</option>
+    <option>OF-1041 · Anderson</option>
+    <option>OF-1045 · Thompson</option>
+    <option>OF-1038 · Foster</option>
+    <option>OF-1044 · Williams</option>
+    <option>OF-1037 · Singh</option>
+  </select>
+  <select>
+    <option>Last 24 hours</option>
+    <option>Last 7 days</option>
+    <option>Last 30 days</option>
+    <option>This quarter</option>
+    <option>Year-to-date</option>
+    <option>Custom range...</option>
+  </select>
+  <span class="spacer"></span>
+  <button class="btn">Apply</button>
+  <button class="btn primary">↓ Export CSV</button>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN: EVENT STREAM + RIGHT RAIL                                      -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="audit-grid">
+
+  <!-- ─── EVENT STREAM ────────────────────────────────────────────── -->
+  <section class="event-stream" id="event-stream">
+
+    <!-- ───────── BUCKET: TODAY · 14:00 ───────── -->
+    <div class="bucket">
+      <div class="bucket-time"><strong>14:00–14:38</strong>Today · CDT</div>
+      <div class="bucket-events" id="live-bucket">
+
+        <div class="event green fresh" id="latest-event">
+          <div class="event-time"><strong>14:38:14</strong>just now</div>
+          <div class="event-body">
+            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
+            auto-cleared condition <span class="event-target">30-day paystub</span> on
+            <span class="event-loan">OF-1043</span>
+            <div class="event-extra">trigger: paystub_2026_Q1.pdf · conf 98.2% · ms 1,847 · model claude-vision-2026-04</div>
+          </div>
+          <span class="event-tag CLEAR">CLEAR · AI</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>14:38:02</strong>12s ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            uploaded <span class="event-target">paystub_2026_Q1.pdf</span> to
+            <span class="event-loan">OF-1043</span>
+            <div class="event-extra">2.4 MB · sha256:7a9f...e2b1 · 73.183.40.04 (Lubbock, TX) · firefox/123 macOS</div>
+          </div>
+          <span class="event-tag UPLOAD">UPLOAD</span>
+        </div>
+
+        <div class="event amber">
+          <div class="event-time"><strong>14:36:12</strong>2m ago</div>
+          <div class="event-body">
+            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
+            flagged unidentified deposit on <span class="event-loan">OF-1043</span>
+            and auto-created condition <span class="event-target">LOX · $3,200 deposit on 02/14</span>
+            <div class="event-extra">source: chase_statement_feb2026.pdf · category PTD · auto-assigned to Corbin Matisse</div>
+          </div>
+          <span class="event-tag AI">AI · FLAG</span>
+        </div>
+
+        <div class="event green">
+          <div class="event-time"><strong>14:33:44</strong>5m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
+            moved <span class="event-loan">OF-1042</span> · Chen, S+M
+            <div class="event-diff">
+              <span class="diff-old">Conditional</span>
+              <span class="diff-arrow">→</span>
+              <span class="diff-new">Clear-to-Close</span>
+            </div>
+            <div class="event-extra">all 12 conditions cleared · CD eligible · rate lock 4d remaining</div>
+          </div>
+          <span class="event-tag MOVE">STAGE MOVE</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>14:31:08</strong>7m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
+            cleared condition <span class="event-target">Title commitment</span>
+            on <span class="event-loan">OF-1042</span>
+            <div class="event-extra">manual clear · note: "received clean commitment from First American · no exceptions"</div>
+          </div>
+          <span class="event-tag CLEAR">CLEAR</span>
+        </div>
+
+        <div class="event amber">
+          <div class="event-time"><strong>14:26:51</strong>12m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            edited field <span class="event-target">property_value</span> on
+            <span class="event-loan">OF-1045</span>
+            <div class="event-diff">
+              <span class="diff-old">$510,000</span>
+              <span class="diff-arrow">→</span>
+              <span class="diff-new">$516,667</span>
+            </div>
+            <div class="event-extra">trigger: appraisal_OF-1045.pdf received · LTV recomputed 90.0% → 90.0% (rounded)</div>
+          </div>
+          <span class="event-tag EDIT">EDIT</span>
+        </div>
+
+        <div class="event green">
+          <div class="event-time"><strong>14:23:17</strong>15m ago</div>
+          <div class="event-body">
+            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
+            extracted <span class="event-target">appraisal_OF-1045.pdf</span> on
+            <span class="event-loan">OF-1045</span> · 17 fields written
+            <div class="event-extra">value $516,667 · gross_living_area 2,184 sqft · year_built 2008 · conf 96.4% · ms 4,212</div>
+          </div>
+          <span class="event-tag AI">AI · EXTRACT</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>14:21:02</strong>17m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            uploaded <span class="event-target">appraisal_OF-1045.pdf</span> to
+            <span class="event-loan">OF-1045</span>
+            <div class="event-extra">8.7 MB · sha256:c14e...92ab · 73.183.40.04 · routed to AI extraction queue</div>
+          </div>
+          <span class="event-tag UPLOAD">UPLOAD</span>
+        </div>
+
+        <div class="event green">
+          <div class="event-time"><strong>14:18:33</strong>20m ago</div>
+          <div class="event-body">
+            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
+            auto-cleared condition <span class="event-target">Bank statement · 60 days</span> on
+            <span class="event-loan">OF-1043</span>
+            <div class="event-extra">trigger: chase_statement_feb2026.pdf · conf 94.1%</div>
+          </div>
+          <span class="event-tag CLEAR">CLEAR · AI</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>14:11:48</strong>26m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
+            created lead <span class="event-loan">OF-1052</span> · Patel, R. +1
+            <div class="event-extra">source: web inquiry · loan_purpose refinance · property_state TX · auto-assigned to self</div>
+          </div>
+          <span class="event-tag EDIT">CREATE</span>
+        </div>
+
+        <div class="event green">
+          <div class="event-time"><strong>14:08:21</strong>30m ago</div>
+          <div class="event-body">
+            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
+            extracted <span class="event-target">w2_2025_anderson.pdf</span> on
+            <span class="event-loan">OF-1041</span> · AGI $87,400 written to <code>income_sources</code>
+            <div class="event-extra">conf 99.1% · DTI recomputed 41.3% → 39.8% · ms 1,114</div>
+          </div>
+          <span class="event-tag AI">AI · EXTRACT</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>14:02:55</strong>35m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
+            opened loan <span class="event-loan">OF-1043</span> · Rodriguez, James
+            <div class="event-extra">73.183.40.18 (Lubbock, TX) · chrome/124 macOS · session 4h 22m</div>
+          </div>
+          <span class="event-tag API">VIEW</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ───────── BUCKET: TODAY · 13:00 ───────── -->
+    <div class="bucket">
+      <div class="bucket-time"><strong>13:00–13:59</strong>Today · CDT</div>
+      <div class="bucket-events">
+
+        <div class="event">
+          <div class="event-time"><strong>13:48:11</strong>50m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
+            issued conditional approval on <span class="event-loan">OF-1038</span> · Foster, D.
+            <div class="event-extra">3 PTC conditions added · approval_letter generated · auto-emailed to borrower + LO</div>
+          </div>
+          <span class="event-tag MOVE">UW · APPROVE</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>13:44:02</strong>54m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            mentioned <strong>@Diana</strong> in chat on <span class="event-loan">OF-1045</span>
+            <div class="event-extra">"DTI back at 44.8% after rate change — can you take another look?" · notification delivered 1.2s</div>
+          </div>
+          <span class="event-tag UPLOAD">CHAT</span>
+        </div>
+
+        <div class="event green">
+          <div class="event-time"><strong>13:38:14</strong>1h ago</div>
+          <div class="event-body">
+            <span class="event-actor">System</span><span class="event-role-badge sys">SYS</span>
+            recomputed DTI on <span class="event-loan">OF-1044</span>
+            <div class="event-diff">
+              <span class="diff-old">38.7%</span>
+              <span class="diff-arrow">→</span>
+              <span class="diff-new">35.6%</span>
+            </div>
+            <div class="event-extra">trigger: tax_return_2024_williams.pdf processed · schedule-c income added</div>
+          </div>
+          <span class="event-tag EDIT">RECOMPUTE</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>13:22:37</strong>1h 16m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
+            exported pipeline report · <span class="event-target">pipeline_2026_apr.csv</span>
+            <div class="event-extra">14 rows · 47 columns · scope: branch=Submarine Catalyst · 73.183.42.118</div>
+          </div>
+          <span class="event-tag EXPORT">EXPORT</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>13:14:08</strong>1h 24m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
+            sent Loan Estimate on <span class="event-loan">OF-1048</span> · Williams, Tasha
+            <div class="event-extra">3-day TRID clock started · LE.pdf signed and emailed to tasha.williams@…example.com</div>
+          </div>
+          <span class="event-tag UPLOAD">SEND · TRID</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>13:02:55</strong>1h 35m ago</div>
+          <div class="event-body">
+            <span class="event-actor">API · LoanDepot Wholesale</span><span class="event-role-badge sys">API</span>
+            pulled pricing for <span class="event-loan">OF-1046</span> · 7 scenarios returned
+            <div class="event-extra">key: ld_***892 · response 312ms · best 6.625% · 30yr conv · 740+ FICO · 85 LTV</div>
+          </div>
+          <span class="event-tag API">API</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ───────── BUCKET: TODAY · 12:00 ───────── -->
+    <div class="bucket">
+      <div class="bucket-time"><strong>12:00–12:59</strong>Today · CDT</div>
+      <div class="bucket-events">
+
+        <div class="event amber">
+          <div class="event-time"><strong>12:47:21</strong>1h 51m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            edited field <span class="event-target">borrower_phone</span> on
+            <span class="event-loan">OF-1041</span>
+            <div class="event-diff">
+              <span class="diff-old">(806) 555-0142</span>
+              <span class="diff-arrow">→</span>
+              <span class="diff-new">(806) 555-0188</span>
+            </div>
+            <div class="event-extra">note: "borrower called — old number disconnected"</div>
+          </div>
+          <span class="event-tag EDIT">EDIT · PII</span>
+        </div>
+
+        <div class="event green">
+          <div class="event-time"><strong>12:33:01</strong>2h 5m ago</div>
+          <div class="event-body">
+            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
+            batch-processed 4 docs on <span class="event-loan">OF-1037</span> · Singh, A. +1 · all auto-cleared
+            <div class="event-extra">paystub × 2 · w2 × 1 · bank stmt × 1 · avg conf 96.7% · total ms 7,841</div>
+          </div>
+          <span class="event-tag AI">AI · BATCH</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>12:18:42</strong>2h 19m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
+            ran report <span class="event-target">LO leaderboard · MTD</span>
+            <div class="event-extra">scope: branch=Submarine Catalyst · cached 8.4s · 73.183.42.118</div>
+          </div>
+          <span class="event-tag API">REPORT</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ───────── BUCKET: EARLIER TODAY ───────── -->
+    <div class="bucket">
+      <div class="bucket-time"><strong>07:00–11:59</strong>Earlier today</div>
+      <div class="bucket-events">
+
+        <div class="event amber">
+          <div class="event-time"><strong>11:42:18</strong>2h 56m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
+            updated permission on <span class="event-target">user · sarah.hayes@submarinecatalyst.com</span>
+            <div class="event-diff">
+              <span class="diff-old">processor</span>
+              <span class="diff-arrow">→</span>
+              <span class="diff-new">processor + reports_view</span>
+            </div>
+            <div class="event-extra">added scope: read:reports · approver: davis.rackler · 2-step auth confirmed</div>
+          </div>
+          <span class="event-tag PERM">PERMISSION</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>10:15:33</strong>4h 23m ago</div>
+          <div class="event-body">
+            <span class="event-actor">API · Optimal Blue</span><span class="event-role-badge sys">API</span>
+            posted rate sheet update · 247 products · applied to all active locks
+            <div class="event-extra">webhook · key ob_***441 · ms 1,204 · 0 conflicts</div>
+          </div>
+          <span class="event-tag API">API · WEBHOOK</span>
+        </div>
+
+        <div class="event cyan">
+          <div class="event-time"><strong>09:01:17</strong>5h 37m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
+            signed in · 2-step verified
+            <div class="event-extra">73.183.41.220 (Lubbock, TX) · safari/17 macOS · device trust ✓ · session id 8c4f...d9</div>
+          </div>
+          <span class="event-tag LOGIN">LOGIN</span>
+        </div>
+
+        <div class="event cyan">
+          <div class="event-time"><strong>08:14:42</strong>6h 23m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            signed in · 2-step verified
+            <div class="event-extra">73.183.40.04 (Lubbock, TX) · firefox/123 macOS · device trust ✓ · session id 1a2b...77</div>
+          </div>
+          <span class="event-tag LOGIN">LOGIN</span>
+        </div>
+
+        <div class="event cyan">
+          <div class="event-time"><strong>07:42:11</strong>6h 56m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
+            signed in · 2-step verified
+            <div class="event-extra">73.183.42.118 (Lubbock, TX) · chrome/124 macOS · device trust ✓ · this device</div>
+          </div>
+          <span class="event-tag LOGIN">LOGIN</span>
+        </div>
+
+        <div class="event cyan">
+          <div class="event-time"><strong>07:38:54</strong>6h 59m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
+            signed in · 2-step verified
+            <div class="event-extra">73.183.40.18 (Lubbock, TX) · chrome/124 macOS · device trust ✓</div>
+          </div>
+          <span class="event-tag LOGIN">LOGIN</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ───────── BUCKET: YESTERDAY ───────── -->
+    <div class="bucket">
+      <div class="bucket-time"><strong>Yesterday</strong>Apr 28 · summarized</div>
+      <div class="bucket-events">
+
+        <div class="event red">
+          <div class="event-time"><strong>23:14:02</strong>15h 24m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Unknown</span><span class="event-role-badge red">FAIL</span>
+            failed login attempt for <span class="event-target">corbin.matisse@submarinecatalyst.com</span>
+            <div class="event-extra">
+              IP 185.220.101.42 (TOR exit node, NL) · 3 attempts blocked · account auto-locked 5 min · admin notified
+            </div>
+          </div>
+          <span class="event-tag FAIL">SECURITY</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>17:22:11</strong>21h 16m ago</div>
+          <div class="event-body">
+            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
+            signed out · session duration 9h 7m
+            <div class="event-extra">manual logout · 73.183.40.04</div>
+          </div>
+          <span class="event-tag LOGIN">LOGOUT</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>16:48:33</strong>21h 50m ago</div>
+          <div class="event-body">
+            <span class="event-actor">System</span><span class="event-role-badge sys">SYS</span>
+            nightly snapshot · 14 active loans · 312 docs · 4.2 GB
+            <div class="event-extra">backup_id sn_2026-04-28_2148 · region us-central · sha256:fe21...c0a8 · ms 18,442</div>
+          </div>
+          <span class="event-tag API">SNAPSHOT</span>
+        </div>
+
+        <div class="event">
+          <div class="event-time"><strong>14:08:55</strong>1d ago</div>
+          <div class="event-body">
+            <span class="event-actor">summary</span><span class="event-role-badge sys">+228 EVENTS</span>
+            228 additional events from yesterday · 89 AI · 71 uploads · 38 edits · 24 clears · 6 stage moves
+            <div class="event-extra">expand to view all 228 · or use the filter bar to narrow by actor / action / loan</div>
+          </div>
+          <span class="event-tag API">COLLAPSED</span>
+        </div>
+
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── RIGHT RAIL ──────────────────────────────────────────────── -->
+  <aside class="right-rail">
+
+    <!-- LIVE -->
+    <div class="rail-block">
+      <div class="rail-head">Live · Last 60s <span class="pulse"></span></div>
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--text);line-height:1.7;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">events/min</span><strong style="color:var(--accent2);">14.2</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">ai events/min</span><strong style="color:var(--accent2);">5.8</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">avg latency</span><strong style="color:var(--white);">42ms</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">queue depth</span><strong style="color:var(--white);">0</strong></div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="rail-block">
+      <div class="rail-head">Event Type · Today</div>
+
+      <div class="bd-row">
+        <span class="bd-tag AI">AI</span>
+        <div class="bd-bar"><span style="width:88%"></span></div>
+        <span class="bd-count">312</span>
+      </div>
+      <div class="bd-row">
+        <span class="bd-tag UPLOAD">UPLOAD</span>
+        <div class="bd-bar"><span style="width:54%"></span></div>
+        <span class="bd-count">189</span>
+      </div>
+      <div class="bd-row amberfill">
+        <span class="bd-tag EDIT">EDIT</span>
+        <div class="bd-bar"><span style="width:38%"></span></div>
+        <span class="bd-count">134</span>
+      </div>
+      <div class="bd-row">
+        <span class="bd-tag CLEAR">CLEAR</span>
+        <div class="bd-bar"><span style="width:22%"></span></div>
+        <span class="bd-count">78</span>
+      </div>
+      <div class="bd-row">
+        <span class="bd-tag MOVE">MOVE</span>
+        <div class="bd-bar"><span style="width:18%"></span></div>
+        <span class="bd-count">62</span>
+      </div>
+      <div class="bd-row">
+        <span class="bd-tag LOGIN">LOGIN</span>
+        <div class="bd-bar"><span style="width:8%"></span></div>
+        <span class="bd-count">28</span>
+      </div>
+      <div class="bd-row amberfill">
+        <span class="bd-tag PERM">PERM</span>
+        <div class="bd-bar"><span style="width:3%"></span></div>
+        <span class="bd-count">4</span>
+      </div>
+      <div class="bd-row redfill">
+        <span class="bd-tag FAIL">FAIL</span>
+        <div class="bd-bar"><span style="width:1%"></span></div>
+        <span class="bd-count">2</span>
+      </div>
+    </div>
+
+    <!-- TOP ACTORS -->
+    <div class="rail-block">
+      <div class="rail-head">Top Actors · Today</div>
+
+      <div class="actor-row">
+        <span class="actor-init ai">AI</span>
+        <div class="actor-name">Claude Vision<small>extracts, clears, recomputes</small></div>
+        <span class="actor-count">312</span>
+        <span class="actor-bar green"><span style="width:100%"></span></span>
+      </div>
+      <div class="actor-row">
+        <span class="actor-init proc">SH</span>
+        <div class="actor-name">Sarah Hayes<small>PROCESSOR</small></div>
+        <span class="actor-count">194</span>
+        <span class="actor-bar green"><span style="width:62%"></span></span>
+      </div>
+      <div class="actor-row">
+        <span class="actor-init">CM</span>
+        <div class="actor-name">Corbin Matisse<small>LO</small></div>
+        <span class="actor-count">156</span>
+        <span class="actor-bar"><span style="width:50%"></span></span>
+      </div>
+      <div class="actor-row">
+        <span class="actor-init uw">DM</span>
+        <div class="actor-name">Diana Mendez<small>UNDERWRITER</small></div>
+        <span class="actor-count">98</span>
+        <span class="actor-bar"><span style="width:31%"></span></span>
+      </div>
+      <div class="actor-row">
+        <span class="actor-init own">DR</span>
+        <div class="actor-name">Davis Rackler<small>OWNER · you</small></div>
+        <span class="actor-count">42</span>
+        <span class="actor-bar"><span style="width:13%"></span></span>
+      </div>
+      <div class="actor-row">
+        <span class="actor-init" style="background:var(--muted);">SY</span>
+        <div class="actor-name">System<small>cron · webhooks · APIs</small></div>
+        <span class="actor-count">45</span>
+        <span class="actor-bar"><span style="width:14%"></span></span>
+      </div>
+    </div>
+
+    <!-- CRITICAL EVENTS -->
+    <div class="rail-block">
+      <div class="rail-head" style="color:var(--red);">Critical Events · 7d</div>
+
+      <div class="crit-row">
+        <div class="crit-time">YESTERDAY · 23:14</div>
+        <div class="crit-body">
+          <strong>Failed login attempt</strong> on corbin.matisse from TOR exit node (NL) · 3 attempts · auto-locked · admin notified
+        </div>
+      </div>
+      <div class="crit-row">
+        <div class="crit-time">TODAY · 11:42</div>
+        <div class="crit-body">
+          <strong>Permission elevated</strong> · sarah.hayes granted reports_view by davis.rackler · 2-step confirmed
+        </div>
+      </div>
+      <p style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:0.5rem;letter-spacing:0.04em;">
+        ↳ All critical events alert <strong style="color:var(--white);">davis@submarinecatalyst.com</strong> in real time.
+      </p>
+    </div>
+
+    <!-- RETENTION + INTEGRITY -->
+    <div class="rail-block">
+      <div class="rail-head">Retention &amp; Integrity</div>
+      <div class="retention">
+        <div class="ret-row"><span class="ret-label">Retention</span><strong>7 years</strong></div>
+        <div class="ret-row"><span class="ret-label">Storage</span>append-only · WORM</div>
+        <div class="ret-row"><span class="ret-label">Hashing</span>SHA-256 chain</div>
+        <div class="ret-row"><span class="ret-label">Compliance</span><strong>SOC 2 Type II</strong></div>
+        <div class="ret-row"><span class="ret-label">Encryption</span>AES-256 at rest</div>
+        <div class="ret-row"><span class="ret-label">Last verify</span>14:35 · ✓ intact</div>
+      </div>
+      <div class="hash-strip">
+        <strong>head:</strong> a9c4f17b2e88...d31f4a · 847 events · chain intact ✓
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<footer>
+  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="dashboard.html">← Pipeline</a>
+    <a href="index.html">Landing</a>
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+<script>
+  // ─── Live event simulation ─────────────────────────────────────────
+  // Prepend a new audit row to the top bucket every ~13s to give
+  // viewers a live feeling. Shifts the previous "fresh" row down.
+
+  const liveBucket = document.getElementById('live-bucket');
+
+  const fakeEvents = [
+    { tag: 'AI', tagClass: 'AI', stripe: 'green',
+      actor: 'AI · Claude Vision', role: 'AI', roleClass: 'ai',
+      action: 'auto-extracted W-2 from <span class="event-target">w2_2025_brooks.pdf</span> on <span class="event-loan">OF-1047</span>',
+      extra: 'AGI $124,800 · conf 99.4% · DTI recomputed 38.1% → 37.4% · ms 1,028' },
+
+    { tag: 'UPLOAD', tagClass: 'UPLOAD', stripe: '',
+      actor: 'Sarah Hayes', role: 'PROC', roleClass: 'proc',
+      action: 'uploaded <span class="event-target">title_commitment_OF-1042.pdf</span> to <span class="event-loan">OF-1042</span>',
+      extra: '1.8 MB · sha256:b22e...44f0 · 73.183.40.04 · routed to AI extraction queue' },
+
+    { tag: 'CLEAR · AI', tagClass: 'CLEAR', stripe: 'green',
+      actor: 'AI · Claude Vision', role: 'AI', roleClass: 'ai',
+      action: 'auto-cleared condition <span class="event-target">Tax return · 2024</span> on <span class="event-loan">OF-1041</span>',
+      extra: 'trigger: tax_return_2024_anderson.pdf · conf 97.2% · ms 982' },
+
+    { tag: 'EDIT', tagClass: 'EDIT', stripe: 'amber',
+      actor: 'Corbin Matisse', role: 'LO', roleClass: 'lo',
+      action: 'edited field <span class="event-target">interest_rate</span> on <span class="event-loan">OF-1048</span>',
+      extra: 'before: 6.875% · after: 6.750% · trigger: rate sheet refresh · LE re-disclosure required',
+      diff: { old: '6.875%', new: '6.750%' } },
+
+    { tag: 'MOVE', tagClass: 'MOVE', stripe: 'green',
+      actor: 'Sarah Hayes', role: 'PROC', roleClass: 'proc',
+      action: 'moved <span class="event-loan">OF-1046</span> · Henderson, M. +1',
+      extra: 'all submission requirements met · auto-assigned to Diana Mendez',
+      diff: { old: 'Submitted', new: 'Processing' } },
+
+    { tag: 'API', tagClass: 'API', stripe: '',
+      actor: 'API · CoreLogic Flood', role: 'API', roleClass: 'sys',
+      action: 'returned flood determination for <span class="event-loan">OF-1045</span>',
+      extra: 'zone X · LOMA not required · key cl_***117 · ms 88' },
+
+    { tag: 'AI · FLAG', tagClass: 'AI', stripe: 'amber',
+      actor: 'AI · Claude Vision', role: 'AI', roleClass: 'ai',
+      action: 'flagged <span class="event-target">handwriting mismatch</span> on signature page · <span class="event-loan">OF-1044</span>',
+      extra: 'page 14 of borrower_authorization.pdf · sent to Sarah for human review' },
+
+    { tag: 'CHAT', tagClass: 'UPLOAD', stripe: '',
+      actor: 'Diana Mendez', role: 'UW', roleClass: 'uw',
+      action: 'replied in chat thread on <span class="event-loan">OF-1045</span>',
+      extra: '"propose buy-down to 6.875% — gets DTI back under 43%" · 2 mentions' },
+  ];
+
+  let liveIdx = 0;
+
+  function buildEventNode(e) {
+    const div = document.createElement('div');
+    div.className = `event fresh ${e.stripe}`;
+    let diffHtml = '';
+    if (e.diff) {
+      diffHtml = `
+        <div class="event-diff">
+          <span class="diff-old">${e.diff.old}</span>
+          <span class="diff-arrow">→</span>
+          <span class="diff-new">${e.diff.new}</span>
+        </div>`;
+    }
+    div.innerHTML = `
+      <div class="event-time"><strong>just now</strong>live</div>
+      <div class="event-body">
+        <span class="event-actor">${e.actor}</span><span class="event-role-badge ${e.roleClass}">${e.role}</span>
+        ${e.action}
+        ${diffHtml}
+        <div class="event-extra">${e.extra}</div>
+      </div>
+      <span class="event-tag ${e.tagClass}">${e.tag}</span>
+    `;
+    return div;
+  }
+
+  setInterval(() => {
+    const e = fakeEvents[liveIdx % fakeEvents.length];
+    liveIdx++;
+    const node = buildEventNode(e);
+    liveBucket.insertBefore(node, liveBucket.firstChild);
+
+    // Demote previously-fresh rows
+    const rows = liveBucket.querySelectorAll('.event');
+    rows.forEach((r, i) => {
+      if (i === 0) return;
+      r.classList.remove('fresh');
+      const t = r.querySelector('.event-time strong');
+      const sub = r.querySelector('.event-time');
+      if (t && t.textContent === 'just now') {
+        t.textContent = '14:38:' + String(38 - i * 2).padStart(2, '0');
+        if (sub.lastChild) sub.lastChild.textContent = (i * 13) + 's ago';
+      }
+    });
+
+    // Keep the live bucket from getting absurdly long
+    while (liveBucket.children.length > 16) {
+      liveBucket.removeChild(liveBucket.lastChild);
+    }
+  }, 13000);
+</script>
+
+</body>
+</html>

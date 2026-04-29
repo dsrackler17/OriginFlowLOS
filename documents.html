@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documents · OriginFlow LOS — Live Demo</title>
+<meta name="description" content="AI document extraction pipeline for OriginFlow LOS. Real-time Claude Vision processing across the entire branch pipeline.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, .demo-banner, .doc-layout, footer, .metric-strip { position: relative; z-index: 1; }
+
+/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
+.demo-banner {
+  background: rgba(245,166,35,0.08);
+  border-bottom: 1px solid rgba(245,166,35,0.25);
+  padding: 0.55rem 2rem;
+  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--amber); flex-wrap: wrap;
+}
+.demo-banner strong { color: var(--white); font-weight: 700; }
+.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.sonar-icon { width: 26px; height: 26px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+}
+.metric-value {
+  font-family: var(--serif); font-size: 1.55rem; line-height: 1.1;
+}
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-value.white { color: var(--white); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.25rem;
+}
+.metric-trend {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--accent2);
+  margin-top: 0.2rem;
+}
+.metric-trend.down { color: var(--red); }
+
+/* ─── PAGE HEADER ──────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.75rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  flex-wrap: wrap; gap: 1.5rem;
+  background: var(--deep); position: relative; z-index: 1;
+}
+.page-head-left h1 {
+  font-family: var(--serif); font-size: 2rem; font-weight: 400;
+  color: var(--white); line-height: 1.1; margin-bottom: 0.4rem;
+}
+.page-head-left .crumb {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
+}
+.page-head-left .crumb span { color: var(--accent); }
+.page-head-left p {
+  font-size: 0.85rem; color: var(--text); max-width: 56ch; line-height: 1.55;
+}
+.page-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 0.55rem 1rem;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent);
+  font-weight: 700;
+}
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+
+/* ─── FILTER BAR ───────────────────────────────────────────────────── */
+.filter-bar {
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 2rem;
+  display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center;
+  position: relative; z-index: 1;
+}
+.filter-bar input, .filter-bar select {
+  font-family: var(--mono); font-size: 0.7rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.5rem 0.8rem;
+  outline: none; transition: border-color 0.15s; min-width: 0;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
+.filter-bar input[type="text"] { flex: 1; min-width: 240px; }
+.filter-tag {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border); background: rgba(0,212,255,0.04);
+  cursor: pointer; transition: all 0.15s;
+}
+.filter-tag.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.08); }
+.filter-tag:hover { color: var(--white); border-color: var(--muted); }
+
+/* ─── DOC LAYOUT ───────────────────────────────────────────────────── */
+.doc-layout {
+  display: grid; grid-template-columns: 1fr 320px;
+  gap: 1px; background: var(--border);
+  min-height: calc(100vh - 480px);
+}
+
+/* ─── DOC GRID ─────────────────────────────────────────────────────── */
+.doc-section {
+  background: var(--navy);
+  padding: 1.5rem 2rem;
+}
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem; padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.section-head + .section-head { margin-top: 2rem; }
+.section-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.section-title .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent2); animation: dot 1.4s ease infinite;
+}
+.section-title .dot.amber { background: var(--amber); }
+.section-title .dot.red   { background: var(--red); }
+@keyframes dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.section-head .meta {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: var(--muted); letter-spacing: 0.06em;
+}
+
+.doc-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.75rem;
+}
+
+.doc-card {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0; transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer; display: flex; flex-direction: column;
+}
+.doc-card:hover { border-color: rgba(0,212,255,0.4); }
+.doc-card.fresh {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(0,212,255,0.25);
+  animation: cardFlash 2s ease both;
+}
+@keyframes cardFlash {
+  0%   { box-shadow: 0 0 0 0 rgba(0,212,255,0.5); }
+  60%  { box-shadow: 0 0 0 8px rgba(0,212,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
+}
+.doc-card-head {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  background: var(--deep);
+}
+.doc-icon {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  color: var(--accent); padding: 0.15rem 0.45rem;
+  border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.06);
+  flex-shrink: 0;
+}
+.doc-icon.amber { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.doc-icon.green { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.doc-icon.red   { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.doc-loan {
+  font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.06em; text-decoration: none;
+}
+.doc-card-body { padding: 0.85rem; flex: 1; }
+.doc-name {
+  font-family: var(--mono); font-size: 0.78rem; color: var(--white);
+  word-break: break-all; line-height: 1.35; margin-bottom: 0.3rem;
+}
+.doc-borrower {
+  font-family: var(--sans); font-size: 0.78rem; color: var(--text);
+  margin-bottom: 0.5rem;
+}
+.doc-fields {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.doc-fields b { color: var(--text); font-weight: 400; }
+.doc-fields b.flag { color: var(--amber); }
+.doc-card-foot {
+  padding: 0.55rem 0.85rem;
+  border-top: 1px solid var(--border);
+  background: rgba(7,21,43,0.6);
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.doc-card-foot .conf {
+  color: var(--accent2); padding: 0.1rem 0.45rem;
+  border: 1px solid rgba(0,255,157,0.3); background: rgba(0,255,157,0.06);
+}
+.doc-card-foot .conf.low { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.doc-card-foot .conf.fail { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+
+.doc-card .progress {
+  height: 2px; background: var(--border); position: relative;
+}
+.doc-card .progress::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  width: var(--p, 0%);
+}
+
+/* ─── UPLOAD DROPZONE ──────────────────────────────────────────────── */
+.upload-band {
+  background: var(--deep); border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem; display: flex; gap: 1rem; align-items: center;
+  position: relative; z-index: 1;
+}
+.upload-band .dz {
+  flex: 1; border: 2px dashed var(--border);
+  padding: 0.85rem 1.25rem; text-align: center;
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em;
+  color: var(--muted); cursor: pointer; transition: all 0.2s;
+}
+.upload-band .dz:hover {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(0,212,255,0.04);
+}
+.upload-band .dz strong { color: var(--white); margin-right: 0.5rem; }
+.upload-stats {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em;
+  color: var(--muted); display: flex; gap: 1.25rem; flex-shrink: 0;
+}
+.upload-stats b { color: var(--accent); font-weight: 700; }
+.upload-stats span b.green { color: var(--accent2); }
+
+/* ─── ACTIVITY SIDEBAR ─────────────────────────────────────────────── */
+.activity-sidebar {
+  background: var(--deep);
+  display: flex; flex-direction: column;
+}
+.activity-head {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.activity-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+}
+.activity-pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent2); animation: dot 1.4s ease infinite;
+}
+.activity-body {
+  flex: 1; overflow-y: auto; padding: 0.6rem 0.75rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.act-row {
+  display: grid; grid-template-columns: 5rem 1fr;
+  gap: 0.5rem; padding: 0.5rem 0.55rem;
+  border-left: 2px solid var(--border);
+  background: rgba(11,31,58,0.4);
+  font-size: 0.72rem;
+  animation: actSlide 0.4s ease both;
+}
+@keyframes actSlide { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
+.act-row.fresh { border-left-color: var(--accent); background: rgba(0,212,255,0.05); }
+.act-row.green { border-left-color: var(--accent2); }
+.act-row.amber { border-left-color: var(--amber); }
+.act-row.red   { border-left-color: var(--red); }
+.act-time {
+  font-family: var(--mono); font-size: 0.56rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.act-body { color: var(--text); line-height: 1.5; }
+.act-actor { color: var(--white); font-weight: 500; }
+.act-loan { font-family: var(--mono); color: var(--accent); font-size: 0.7rem; }
+
+/* ─── DOC TYPE BREAKDOWN ───────────────────────────────────────────── */
+.type-breakdown {
+  padding: 1.25rem; border-top: 1px solid var(--border);
+}
+.type-row {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 0.5rem; padding: 0.5rem 0;
+  font-family: var(--mono); font-size: 0.7rem;
+  border-bottom: 1px dashed var(--border);
+}
+.type-row:last-child { border-bottom: none; }
+.type-row .label { color: var(--text); }
+.type-row .count { color: var(--accent); font-weight: 700; }
+.type-row .bar {
+  grid-column: 1 / -1; height: 3px; background: var(--border);
+  position: relative; margin-top: 0.3rem;
+}
+.type-row .bar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  background: var(--accent); width: var(--p, 0%);
+}
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .metric-strip { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .doc-layout { grid-template-columns: 1fr; }
+  .activity-sidebar { max-height: 350px; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .upload-band { flex-direction: column; align-items: stretch; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- DEMO BANNER + NAV                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="demo-banner">
+  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
+  <a href="index.html">← Back to landing page</a>
+</div>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="dashboard.html">Pipeline</a></li>
+    <li><a href="documents.html" class="active">Documents</a></li>
+    <li><a href="conditions.html">Conditions</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li><a href="audit.html">Audit Log</a></li>
+  </ul>
+  <div class="nav-right">
+    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; Submarine Catalyst</span>
+    <span>
+      <span class="nav-user-name">Davis Rackler</span>
+      <span class="nav-user-role">OWNER</span>
+    </span>
+    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- METRIC STRIP                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="metric-strip">
+  <div class="metric-cell">
+    <div class="metric-label">Docs This Month</div>
+    <div class="metric-value cyan">847</div>
+    <div class="metric-sub">across 14 active files</div>
+    <div class="metric-trend">▲ 124 vs March</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">AI Auto-Extracted</div>
+    <div class="metric-value green">782</div>
+    <div class="metric-sub">92.3% of total</div>
+    <div class="metric-trend">▲ 4.1 pts vs March</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Avg Confidence</div>
+    <div class="metric-value white">96.4%</div>
+    <div class="metric-sub">across all extractions</div>
+    <div class="metric-trend">stable</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Needs Review</div>
+    <div class="metric-value amber">11</div>
+    <div class="metric-sub">low confidence or flagged</div>
+    <div class="metric-trend down">▲ 3 since yesterday</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Manual Entry</div>
+    <div class="metric-value white">54</div>
+    <div class="metric-sub">processor-keyed</div>
+    <div class="metric-trend">▼ 22 vs last month</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Time Saved · April</div>
+    <div class="metric-value green">142h</div>
+    <div class="metric-sub">at $35/hr ≈ $4,970</div>
+    <div class="metric-trend">▲ 28h vs March</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEAD + UPLOAD BAND                                              -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page-head">
+  <div class="page-head-left">
+    <div class="crumb">DASHBOARD <span>›</span> DOCUMENTS</div>
+    <h1>Document Pipeline</h1>
+    <p>Every PDF, image, and bank statement uploaded to any loan in your branch — auto-extracted by Claude Vision the moment it hits the file. Outliers and low-confidence items surface here for review.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="#">⤓ Export CSV</a>
+    <a class="btn" href="#">⚙ AI Settings</a>
+    <a class="btn primary" href="#">+ Bulk Upload</a>
+  </div>
+</section>
+
+<div class="upload-band">
+  <div class="dz" onclick="alert('Demo only — drag/drop wired to Claude Vision in production')">
+    <strong>📥 DROP FILES HERE</strong> or click to browse · routes to the right loan automatically by borrower SSN/name match
+  </div>
+  <div class="upload-stats">
+    <span><b>847</b> processed today</span>
+    <span><b class="green" style="color:var(--accent2)">12.4s</b> avg time-to-extract</span>
+    <span><b>$0.04</b> avg cost/doc</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FILTER BAR                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="filter-bar">
+  <input type="text" placeholder="Search filename, borrower, loan, employer...">
+  <select>
+    <option>All loans (14)</option>
+    <option>OF-1043 · Rodriguez</option>
+    <option>OF-1042 · Chen</option>
+    <option>OF-1041 · Anderson</option>
+    <option>OF-1045 · Thompson</option>
+  </select>
+  <select>
+    <option>All doc types</option>
+    <option>Paystub</option>
+    <option>Bank statement</option>
+    <option>W-2</option>
+    <option>Tax return</option>
+    <option>Driver's license</option>
+    <option>Appraisal</option>
+    <option>Title commitment</option>
+  </select>
+  <select>
+    <option>All time</option>
+    <option>Today</option>
+    <option>Last 7 days</option>
+    <option>Last 30 days</option>
+  </select>
+  <span class="filter-tag active">All <b style="color:var(--white);margin-left:0.3rem;">847</b></span>
+  <span class="filter-tag">AI Auto ✓</span>
+  <span class="filter-tag" style="color:var(--amber);">⚠ Needs Review</span>
+  <span class="filter-tag" style="color:var(--red);">✕ Failed</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN: DOC SECTIONS + ACTIVITY                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="doc-layout">
+
+  <main class="doc-section">
+
+    <!-- NEEDS REVIEW -->
+    <div class="section-head">
+      <div class="section-title"><span class="dot amber"></span>Needs Review · 11</div>
+      <div class="meta">low confidence · borrower LOX needed · or processor flagged</div>
+    </div>
+
+    <div class="doc-grid">
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon amber">⚠ DEPOSIT FLAG</span>
+          <a href="dashboard.html#detail-section" class="doc-loan">OF-1043</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">chase_statement_feb2026.pdf</div>
+          <div class="doc-borrower">Rodriguez, James</div>
+          <div class="doc-fields">
+            <span>Type</span><b>BANK STATEMENT</b>
+            <span>Account</span><b>····2841</b>
+            <span>Period</span><b>Feb 1–28, 2026</b>
+            <span>Balance</span><b>$24,118</b>
+            <span>Flag</span><b class="flag">$3,200 unidentified deposit</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:94%"></div>
+        <div class="doc-card-foot">
+          <span>extracted 23m ago · auto-cleared 1 condition</span>
+          <span class="conf low">94% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon amber">⚠ LOW CONF</span>
+          <a href="#" class="doc-loan">OF-1045</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">handwritten_VOR_landlord.jpg</div>
+          <div class="doc-borrower">Thompson, K.</div>
+          <div class="doc-fields">
+            <span>Type</span><b>VOR · Manual</b>
+            <span>Landlord</span><b>R. Olivarez</b>
+            <span>Months</span><b class="flag">illegible — see image</b>
+            <span>Late pmts</span><b class="flag">field empty</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:67%"></div>
+        <div class="doc-card-foot">
+          <span>processor must verify · 1h ago</span>
+          <span class="conf low">67% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon red">✕ FAILED</span>
+          <a href="#" class="doc-loan">OF-1041</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">scan_2026-04-28-blurry.pdf</div>
+          <div class="doc-borrower">Anderson, P.</div>
+          <div class="doc-fields">
+            <span>Type</span><b class="flag">UNKNOWN</b>
+            <span>Pages</span><b>3</b>
+            <span>Reason</span><b class="flag">image quality too low for OCR</b>
+            <span>Action</span><b>request rescan from borrower</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:14%"></div>
+        <div class="doc-card-foot">
+          <span>2 retries · 4h ago</span>
+          <span class="conf fail">FAIL</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon amber">⚠ MISMATCH</span>
+          <a href="#" class="doc-loan">OF-1048</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">w2_2025_williams.pdf</div>
+          <div class="doc-borrower">Williams, Tasha</div>
+          <div class="doc-fields">
+            <span>Type</span><b>W-2 · 2025</b>
+            <span>Employer</span><b>Texas Tech Univ Health</b>
+            <span>Box 1 wages</span><b>$54,820</b>
+            <span>SSN match</span><b class="flag">last 4 ≠ application</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:88%"></div>
+        <div class="doc-card-foot">
+          <span>LO must reconcile · 2h ago</span>
+          <span class="conf low">88% conf</span>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- RECENTLY EXTRACTED -->
+    <div class="section-head">
+      <div class="section-title"><span class="dot"></span>Recently Auto-Extracted · last 24h</div>
+      <div class="meta">cleared without human touch — sorted newest first</div>
+    </div>
+
+    <div class="doc-grid">
+
+      <article class="doc-card fresh">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="dashboard.html#detail-section" class="doc-loan">OF-1043</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">paystub_2026_Q1.pdf</div>
+          <div class="doc-borrower">Rodriguez, James</div>
+          <div class="doc-fields">
+            <span>Type</span><b>PAYSTUB</b>
+            <span>Employer</span><b>South Plains Health</b>
+            <span>Period</span><b>2026-03-15</b>
+            <span>Gross</span><b>$4,807.69</b>
+            <span>YTD</span><b>$28,846.14</b>
+            <span>Monthly</span><b>$10,416.66</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:98%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "30-day paystub" · 12s ago</span>
+          <span class="conf">98% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1041</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">w2_2025_anderson.pdf</div>
+          <div class="doc-borrower">Anderson, P.</div>
+          <div class="doc-fields">
+            <span>Type</span><b>W-2 · 2025</b>
+            <span>Employer</span><b>Lubbock ISD</b>
+            <span>Box 1 wages</span><b>$87,400</b>
+            <span>Box 2 fed tax</span><b>$11,892</b>
+            <span>Box 12a</span><b>D · $4,200</b>
+            <span>State wages</span><b>$87,400</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:99%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "Most recent W-2" · 1h ago</span>
+          <span class="conf">99% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1042</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">title_commitment_chen.pdf</div>
+          <div class="doc-borrower">Chen, S+M</div>
+          <div class="doc-fields">
+            <span>Type</span><b>TITLE COMMIT</b>
+            <span>Title co.</span><b>Stewart Title Lubbock</b>
+            <span>File #</span><b>STL-26-04417</b>
+            <span>Effective</span><b>2026-04-22</b>
+            <span>Coverage</span><b>$425,000</b>
+            <span>Exceptions</span><b>4 standard</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:96%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "Title commitment" · 5m ago</span>
+          <span class="conf">96% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1044</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">tax_return_2024_williams.pdf</div>
+          <div class="doc-borrower">Williams, T.</div>
+          <div class="doc-fields">
+            <span>Type</span><b>1040 · 2024</b>
+            <span>AGI</span><b>$94,217</b>
+            <span>Filing</span><b>Single</b>
+            <span>Sched C</span><b>none</b>
+            <span>Refund</span><b>$3,210</b>
+            <span>Sig date</span><b>2025-03-08</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:97%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "Most recent tax return" · 2h ago</span>
+          <span class="conf">97% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1040</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">drivers_license_kim.jpg</div>
+          <div class="doc-borrower">Kim, J.</div>
+          <div class="doc-fields">
+            <span>Type</span><b>DL · TX</b>
+            <span>License #</span><b>1814····</b>
+            <span>DOB</span><b>1987-09-04</b>
+            <span>Expires</span><b>2028-09-04</b>
+            <span>Address match</span><b>✓</b>
+            <span>Photo match</span><b>✓ via NDS</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:99%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "ID verification" · 4h ago</span>
+          <span class="conf">99% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1038</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">homeowners_quote_foster.pdf</div>
+          <div class="doc-borrower">Foster, D.</div>
+          <div class="doc-fields">
+            <span>Type</span><b>HOI BINDER</b>
+            <span>Carrier</span><b>State Farm</b>
+            <span>Annual prem</span><b>$2,142</b>
+            <span>Dwelling</span><b>$485,000</b>
+            <span>Deductible</span><b>$2,500</b>
+            <span>Effective</span><b>2026-05-01</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:95%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "Homeowner's binder" · 6h ago</span>
+          <span class="conf">95% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1037</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">appraisal_singh_amarillo.pdf</div>
+          <div class="doc-borrower">Singh, A.</div>
+          <div class="doc-fields">
+            <span>Type</span><b>APPRAISAL · 1004</b>
+            <span>Appraiser</span><b>R. Vega · TX-1182947</b>
+            <span>Effective date</span><b>2026-04-19</b>
+            <span>Appraised value</span><b>$531,250</b>
+            <span>Comps used</span><b>3</b>
+            <span>Adjustments</span><b>within tolerance</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:98%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "Appraisal report" · 8h ago</span>
+          <span class="conf">98% conf</span>
+        </div>
+      </article>
+
+      <article class="doc-card">
+        <div class="doc-card-head">
+          <span class="doc-icon green">✓ AUTO</span>
+          <a href="#" class="doc-loan">OF-1042</a>
+        </div>
+        <div class="doc-card-body">
+          <div class="doc-name">wells_fargo_mar2026.pdf</div>
+          <div class="doc-borrower">Chen, S+M</div>
+          <div class="doc-fields">
+            <span>Type</span><b>BANK STATEMENT</b>
+            <span>Account</span><b>····7102</b>
+            <span>Period</span><b>Mar 2026</b>
+            <span>Ending bal</span><b>$87,420</b>
+            <span>Avg daily</span><b>$82,108</b>
+            <span>Large deposits</span><b>0 flagged</b>
+          </div>
+        </div>
+        <div class="progress" style="--p:97%"></div>
+        <div class="doc-card-foot">
+          <span>cleared "60-day bank statement" · 12h ago</span>
+          <span class="conf">97% conf</span>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- HISTORY -->
+    <div class="section-head" style="margin-top:2rem;">
+      <div class="section-title">All Documents · 847 this month</div>
+      <div class="meta"><a href="#" style="color:var(--accent);text-decoration:none;">View full archive →</a></div>
+    </div>
+
+    <p style="font-family:var(--mono); font-size:0.7rem; color:var(--muted); padding:1rem 0;">
+      Showing 11 of 847 documents matching current filters · click any card to open the loan file ·
+      use the upload band above to push more docs into the pipeline.
+    </p>
+
+  </main>
+
+  <!-- ─── ACTIVITY SIDEBAR ──────────────────────────────────────── -->
+  <aside class="activity-sidebar">
+    <div class="activity-head">
+      <span class="activity-label">Live · Extraction</span>
+      <span class="activity-pulse"></span>
+    </div>
+    <div class="activity-body" id="activity-body">
+      <div class="act-row fresh green">
+        <div class="act-time">just now</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> extracted PAYSTUB on <span class="act-loan">OF-1043</span> · 98% conf
+        </div>
+      </div>
+      <div class="act-row fresh">
+        <div class="act-time">12s ago</div>
+        <div class="act-body">
+          <span class="act-actor">Sarah Hayes</span> uploaded <em>paystub_2026_Q1.pdf</em>
+        </div>
+      </div>
+      <div class="act-row amber">
+        <div class="act-time">2m ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> flagged $3,200 unidentified deposit on <span class="act-loan">OF-1043</span>
+        </div>
+      </div>
+      <div class="act-row green">
+        <div class="act-time">5m ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> auto-cleared TITLE COMMIT on <span class="act-loan">OF-1042</span>
+        </div>
+      </div>
+      <div class="act-row red">
+        <div class="act-time">14m ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> failed to OCR <em>scan_2026-04-28-blurry.pdf</em> on <span class="act-loan">OF-1041</span>
+        </div>
+      </div>
+      <div class="act-row green">
+        <div class="act-time">23m ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> auto-cleared "60-day bank statement" on <span class="act-loan">OF-1043</span>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-time">31m ago</div>
+        <div class="act-body">
+          <span class="act-actor">Sarah Hayes</span> overrode AI extraction on <span class="act-loan">OF-1045</span> · VOR landlord
+        </div>
+      </div>
+      <div class="act-row amber">
+        <div class="act-time">1h ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> SSN mismatch on <em>w2_2025_williams.pdf</em> · <span class="act-loan">OF-1048</span>
+        </div>
+      </div>
+      <div class="act-row green">
+        <div class="act-time">1h ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> extracted W-2 from <span class="act-loan">OF-1041</span> · AGI $87,400
+        </div>
+      </div>
+      <div class="act-row green">
+        <div class="act-time">2h ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> auto-cleared 1040 on <span class="act-loan">OF-1044</span>
+        </div>
+      </div>
+      <div class="act-row">
+        <div class="act-time">3h ago</div>
+        <div class="act-body">
+          <span class="act-actor">Corbin Matisse</span> bulk-uploaded 6 docs to <span class="act-loan">OF-1046</span>
+        </div>
+      </div>
+      <div class="act-row green">
+        <div class="act-time">4h ago</div>
+        <div class="act-body">
+          <span class="act-actor">AI · Claude Vision</span> auto-cleared DL on <span class="act-loan">OF-1040</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TYPE BREAKDOWN -->
+    <div class="type-breakdown">
+      <div class="section-title" style="margin-bottom:0.6rem;">By Document Type</div>
+      <div class="type-row">
+        <span class="label">Paystubs</span><span class="count">187</span>
+        <div class="bar" style="--p:88%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">Bank statements</span><span class="count">164</span>
+        <div class="bar" style="--p:78%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">W-2s</span><span class="count">98</span>
+        <div class="bar" style="--p:46%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">Tax returns</span><span class="count">76</span>
+        <div class="bar" style="--p:36%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">ID / DL</span><span class="count">71</span>
+        <div class="bar" style="--p:34%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">Title docs</span><span class="count">62</span>
+        <div class="bar" style="--p:29%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">Appraisals</span><span class="count">54</span>
+        <div class="bar" style="--p:26%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">HOI binders</span><span class="count">48</span>
+        <div class="bar" style="--p:23%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">VORs / LOXs</span><span class="count">41</span>
+        <div class="bar" style="--p:19%"></div>
+      </div>
+      <div class="type-row">
+        <span class="label">Other</span><span class="count">46</span>
+        <div class="bar" style="--p:22%"></div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<footer>
+  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="index.html">← Landing page</a>
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+<script>
+  // ─── Live activity feed simulation ─────────────────────────────────
+  const fakeActivities = [
+    { type: 'green', actor: 'AI · Claude Vision', body: 'extracted BANK STMT from <span class="act-loan">OF-1047</span> · 96% conf' },
+    { type: '',      actor: 'Corbin Matisse',     body: 'uploaded <em>verbal_VOE_henderson.pdf</em> to <span class="act-loan">OF-1046</span>' },
+    { type: 'amber', actor: 'AI · Claude Vision', body: 'flagged conflicting employer name on <span class="act-loan">OF-1048</span>' },
+    { type: 'green', actor: 'AI · Claude Vision', body: 'auto-cleared "Homeowner\'s binder" on <span class="act-loan">OF-1037</span>' },
+    { type: '',      actor: 'Sarah Hayes',        body: 'reviewed and approved AI extraction on <span class="act-loan">OF-1045</span>' },
+    { type: 'green', actor: 'AI · Claude Vision', body: 'extracted DL · 99% conf · <span class="act-loan">OF-1052</span>' },
+  ];
+  let idx = 0;
+  const body = document.getElementById('activity-body');
+  setInterval(() => {
+    const a = fakeActivities[idx % fakeActivities.length];
+    idx++;
+    const row = document.createElement('div');
+    row.className = `act-row fresh ${a.type}`;
+    row.innerHTML = `<div class="act-time">just now</div>
+      <div class="act-body"><span class="act-actor">${a.actor}</span> ${a.body}</div>`;
+    body.insertBefore(row, body.firstChild);
+    const rows = body.querySelectorAll('.act-row');
+    rows.forEach((r, i) => {
+      if (i > 0) {
+        r.classList.remove('fresh');
+        const time = r.querySelector('.act-time');
+        if (time && time.textContent === 'just now') time.textContent = '12s ago';
+      }
+    });
+    while (body.children.length > 16) body.removeChild(body.lastChild);
+  }, 11000);
+</script>
+
+</body>
+</html>

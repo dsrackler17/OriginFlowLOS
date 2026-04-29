@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports · OriginFlow LOS — Live Demo</title>
+<meta name="description" content="Branch performance reports for OriginFlow LOS. Pipeline volume, AI performance, days-to-close.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--navy); color: var(--text);
+  font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  min-height: 100vh;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, .demo-banner, .reports-grid, footer, .metric-strip, .page-head, .filter-bar { position: relative; z-index: 1; }
+
+/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
+.demo-banner {
+  background: rgba(245,166,35,0.08);
+  border-bottom: 1px solid rgba(245,166,35,0.25);
+  padding: 0.55rem 2rem;
+  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--amber); flex-wrap: wrap;
+}
+.demo-banner strong { color: var(--white); font-weight: 700; }
+.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92); backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.sonar-icon { width: 26px; height: 26px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.55rem; line-height: 1.1; }
+.metric-value.cyan { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.white { color: var(--white); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.25rem;
+}
+.metric-trend {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--accent2); margin-top: 0.2rem;
+}
+.metric-trend.down { color: var(--red); }
+
+/* ─── PAGE HEAD ────────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.75rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  flex-wrap: wrap; gap: 1.5rem;
+  background: var(--deep);
+}
+.page-head-left .crumb {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
+}
+.page-head-left .crumb span { color: var(--accent); }
+.page-head-left h1 {
+  font-family: var(--serif); font-size: 2rem; font-weight: 400;
+  color: var(--white); line-height: 1.1; margin-bottom: 0.4rem;
+}
+.page-head-left p {
+  font-size: 0.85rem; color: var(--text); max-width: 56ch; line-height: 1.55;
+}
+.page-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 0.55rem 1rem;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700;
+}
+
+/* ─── FILTER BAR ───────────────────────────────────────────────────── */
+.filter-bar {
+  background: var(--deep); border-bottom: 1px solid var(--border);
+  padding: 0.85rem 2rem;
+  display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center;
+}
+.filter-bar select {
+  font-family: var(--mono); font-size: 0.7rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.5rem 0.8rem; outline: none;
+}
+.range-tab {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  color: var(--muted); padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border); background: rgba(0,212,255,0.04);
+  cursor: pointer; transition: all 0.15s; text-transform: uppercase;
+}
+.range-tab.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.1); }
+.range-tab:hover { color: var(--white); }
+
+/* ─── REPORTS GRID ─────────────────────────────────────────────────── */
+.reports-grid {
+  padding: 1.5rem 2rem;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+}
+.reports-grid > .full { grid-column: 1 / -1; }
+
+/* ─── CHART CARDS ──────────────────────────────────────────────────── */
+.chart-card {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+}
+.chart-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.5rem;
+  background: var(--surface);
+}
+.chart-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text);
+}
+.chart-title small {
+  display: block; font-family: var(--sans); font-size: 0.7rem;
+  color: var(--muted); margin-top: 0.15rem;
+  letter-spacing: 0.02em; text-transform: none;
+}
+.chart-meta {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.chart-meta b.up   { color: var(--accent2); }
+.chart-meta b.down { color: var(--red); }
+.chart-body { padding: 1.25rem; flex: 1; }
+.chart-body svg { display: block; width: 100%; height: auto; }
+
+.chart-legend {
+  padding: 0.5rem 1.25rem 1rem;
+  display: flex; gap: 1rem; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.chart-legend span {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.chart-legend i {
+  width: 10px; height: 10px; display: inline-block;
+}
+.chart-legend i.cyan  { background: var(--accent); }
+.chart-legend i.green { background: var(--accent2); }
+.chart-legend i.amber { background: var(--amber); }
+.chart-legend i.muted { background: var(--muted); }
+
+/* ─── LEADERBOARD ──────────────────────────────────────────────────── */
+.lb-row {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-rank {
+  font-family: var(--serif); font-size: 1.1rem; color: var(--accent);
+  width: 1.4rem; text-align: center;
+}
+.lb-rank.gold   { color: var(--accent2); }
+.lb-rank.silver { color: var(--white); }
+.lb-rank.bronze { color: var(--amber); }
+.lb-name { color: var(--text); font-size: 0.84rem; font-weight: 500; }
+.lb-name small {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  margin-left: 0.4rem; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.lb-bar {
+  width: 100%; height: 6px; background: var(--border);
+  position: relative; grid-column: 1 / -1; margin-top: 0.3rem;
+}
+.lb-bar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  background: var(--accent); width: var(--p, 0%);
+}
+.lb-vol {
+  font-family: var(--mono); font-size: 0.78rem; color: var(--white); font-weight: 700;
+}
+.lb-meta {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+/* ─── FUNNEL ───────────────────────────────────────────────────────── */
+.funnel {
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.funnel-row {
+  display: grid; grid-template-columns: 100px 1fr auto;
+  gap: 0.85rem; align-items: center;
+  font-family: var(--mono); font-size: 0.7rem;
+}
+.funnel-stage {
+  color: var(--muted); letter-spacing: 0.1em;
+  text-transform: uppercase; font-size: 0.62rem;
+}
+.funnel-bar {
+  height: 28px; background: var(--surface);
+  border: 1px solid var(--border); position: relative;
+}
+.funnel-bar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  width: var(--p, 0%);
+  background: linear-gradient(90deg, rgba(0,212,255,0.6), var(--accent));
+  border-right: 1px solid var(--accent);
+}
+.funnel-bar.warm::after { background: linear-gradient(90deg, rgba(245,166,35,0.5), var(--amber)); border-right-color: var(--amber); }
+.funnel-bar.cool::after { background: linear-gradient(90deg, rgba(0,255,157,0.5), var(--accent2)); border-right-color: var(--accent2); }
+.funnel-count { color: var(--white); font-weight: 700; }
+.funnel-count small {
+  display: block; color: var(--muted); font-size: 0.55rem;
+  margin-top: 0.1rem; letter-spacing: 0.04em; font-weight: 400;
+  text-align: right;
+}
+
+/* ─── EXCEPTIONS ───────────────────────────────────────────────────── */
+.exc-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.exc-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+.exc-row.warn  { border-left: 3px solid var(--amber); }
+.exc-row.crit  { border-left: 3px solid var(--red); }
+.exc-row.info  { border-left: 3px solid var(--accent); }
+.exc-loan {
+  font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.06em;
+}
+.exc-msg { color: var(--text); line-height: 1.4; }
+.exc-msg small {
+  display: block; font-family: var(--mono); font-size: 0.58rem;
+  color: var(--muted); margin-top: 0.15rem; letter-spacing: 0.04em;
+}
+.exc-when {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.06em; flex-shrink: 0;
+}
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 1280px) {
+  .metric-strip { grid-template-columns: repeat(3, 1fr); }
+  .reports-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
+  <a href="index.html">← Back to landing page</a>
+</div>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="dashboard.html">Pipeline</a></li>
+    <li><a href="documents.html">Documents</a></li>
+    <li><a href="conditions.html">Conditions</a></li>
+    <li><a href="reports.html" class="active">Reports</a></li>
+    <li><a href="audit.html">Audit Log</a></li>
+  </ul>
+  <div class="nav-right">
+    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; Submarine Catalyst</span>
+    <span>
+      <span class="nav-user-name">Davis Rackler</span>
+      <span class="nav-user-role">OWNER</span>
+    </span>
+    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- METRIC STRIP                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="metric-strip">
+  <div class="metric-cell">
+    <div class="metric-label">YTD Funded Volume</div>
+    <div class="metric-value cyan">$28.4M</div>
+    <div class="metric-sub">94 funded loans · $302K avg</div>
+    <div class="metric-trend">▲ 31% YoY</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Avg Days · App→Fund</div>
+    <div class="metric-value green">21.4</div>
+    <div class="metric-sub">vs Encompass benchmark 47</div>
+    <div class="metric-trend">▼ 4.2 days vs Q1</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Pull-Through Rate</div>
+    <div class="metric-value white">87.2%</div>
+    <div class="metric-sub">app → fund · industry 75%</div>
+    <div class="metric-trend">▲ 2.1 pts vs Q1</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">AI Auto-Clear Rate</div>
+    <div class="metric-value green">68%</div>
+    <div class="metric-sub">conditions cleared by AI</div>
+    <div class="metric-trend">▲ 4 pts vs March</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Cost per Loan</div>
+    <div class="metric-value white">$1,847</div>
+    <div class="metric-sub">all-in fulfillment cost</div>
+    <div class="metric-trend">▼ $312 vs Encompass</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Locks Expiring · 7d</div>
+    <div class="metric-value amber">4</div>
+    <div class="metric-sub">$1.34M at risk</div>
+    <div class="metric-trend down">2 need extension</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEAD                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page-head">
+  <div class="page-head-left">
+    <div class="crumb">DASHBOARD <span>›</span> REPORTS</div>
+    <h1>Branch Reports</h1>
+    <p>Pipeline volume, AI performance, time-to-close, and team productivity for Submarine Catalyst. Drill any chart into a CSV export.</p>
+  </div>
+  <div class="page-actions">
+    <select>
+      <option>Submarine Catalyst (your branch)</option>
+      <option>All branches (owner view)</option>
+    </select>
+    <a class="btn" href="#">⤓ Export PDF</a>
+    <a class="btn primary" href="#">+ Schedule Email</a>
+  </div>
+</section>
+
+<div class="filter-bar">
+  <select>
+    <option>Loan type · all</option>
+    <option>Purchase</option>
+    <option>Refinance</option>
+  </select>
+  <select>
+    <option>Loan officer · all (3)</option>
+    <option>Corbin Matisse</option>
+    <option>Davis Rackler</option>
+  </select>
+  <select>
+    <option>Investor · all</option>
+    <option>FNMA</option>
+    <option>FHLMC</option>
+    <option>Ginnie</option>
+  </select>
+  <span class="range-tab">7D</span>
+  <span class="range-tab active">30D</span>
+  <span class="range-tab">QTD</span>
+  <span class="range-tab">YTD</span>
+  <span class="range-tab">12M</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- REPORTS GRID                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="reports-grid">
+
+  <!-- ─── FUNDED VOLUME · 12 MONTH ─────────────────────────────── -->
+  <div class="chart-card full">
+    <div class="chart-head">
+      <div class="chart-title">Funded Volume · Trailing 12 Months
+        <small>Locked + funded loans by month, in millions</small>
+      </div>
+      <div class="chart-meta"><b class="up">▲ 31%</b> YoY · <b class="up">▲ $620K</b> vs March 2026</div>
+    </div>
+    <div class="chart-body">
+      <svg viewBox="0 0 1000 280" preserveAspectRatio="none">
+        <!-- Grid lines -->
+        <g stroke="#1a3a5c" stroke-width="0.75" stroke-dasharray="2,4">
+          <line x1="50" y1="40"  x2="980" y2="40"/>
+          <line x1="50" y1="100" x2="980" y2="100"/>
+          <line x1="50" y1="160" x2="980" y2="160"/>
+          <line x1="50" y1="220" x2="980" y2="220"/>
+        </g>
+        <!-- Y-axis labels -->
+        <g font-family="Space Mono" font-size="9" fill="#5a7a99">
+          <text x="42" y="44"  text-anchor="end">$4M</text>
+          <text x="42" y="104" text-anchor="end">$3M</text>
+          <text x="42" y="164" text-anchor="end">$2M</text>
+          <text x="42" y="224" text-anchor="end">$1M</text>
+          <text x="42" y="244" text-anchor="end">$0</text>
+        </g>
+        <!-- Bars -->
+        <!-- 12 months, x positions: 70 to 940, step ~73 -->
+        <g>
+          <!-- May 2025 -->
+          <rect x="70"  y="180" width="48" height="60"  fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="70"  y="200" width="48" height="40"  fill="#00d4ff" opacity="0.4"/>
+          <!-- Jun -->
+          <rect x="143" y="172" width="48" height="68"  fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="143" y="190" width="48" height="50"  fill="#00d4ff" opacity="0.45"/>
+          <!-- Jul -->
+          <rect x="216" y="158" width="48" height="82"  fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="216" y="178" width="48" height="62"  fill="#00d4ff" opacity="0.5"/>
+          <!-- Aug -->
+          <rect x="289" y="148" width="48" height="92"  fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="289" y="166" width="48" height="74"  fill="#00d4ff" opacity="0.55"/>
+          <!-- Sep -->
+          <rect x="362" y="155" width="48" height="85"  fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="362" y="172" width="48" height="68"  fill="#00d4ff" opacity="0.6"/>
+          <!-- Oct -->
+          <rect x="435" y="135" width="48" height="105" fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="435" y="152" width="48" height="88"  fill="#00d4ff" opacity="0.65"/>
+          <!-- Nov -->
+          <rect x="508" y="118" width="48" height="122" fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="508" y="138" width="48" height="102" fill="#00d4ff" opacity="0.7"/>
+          <!-- Dec -->
+          <rect x="581" y="105" width="48" height="135" fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="581" y="125" width="48" height="115" fill="#00d4ff" opacity="0.75"/>
+          <!-- Jan 2026 -->
+          <rect x="654" y="95"  width="48" height="145" fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="654" y="115" width="48" height="125" fill="#00d4ff" opacity="0.8"/>
+          <!-- Feb -->
+          <rect x="727" y="82"  width="48" height="158" fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="727" y="105" width="48" height="135" fill="#00d4ff" opacity="0.85"/>
+          <!-- Mar -->
+          <rect x="800" y="70"  width="48" height="170" fill="#0f2647" stroke="#1a3a5c"/>
+          <rect x="800" y="92"  width="48" height="148" fill="#00d4ff" opacity="0.9"/>
+          <!-- Apr (current) -->
+          <rect x="873" y="55"  width="48" height="185" fill="#0f2647" stroke="#00d4ff"/>
+          <rect x="873" y="78"  width="48" height="162" fill="#00d4ff"/>
+          <text x="897" y="48" text-anchor="middle" font-family="Space Mono" font-size="10" fill="#00ff9d">$3.42M</text>
+        </g>
+        <!-- Trend line -->
+        <polyline
+          fill="none" stroke="#00ff9d" stroke-width="1.5" stroke-dasharray="3,3"
+          points="94,210 167,202 240,190 313,180 386,184 459,170 532,160 605,148 678,138 751,125 824,115 897,98"
+        />
+        <!-- X-axis labels -->
+        <g font-family="Space Mono" font-size="9" fill="#5a7a99" text-anchor="middle" letter-spacing="0.05em">
+          <text x="94"  y="262">MAY</text>
+          <text x="167" y="262">JUN</text>
+          <text x="240" y="262">JUL</text>
+          <text x="313" y="262">AUG</text>
+          <text x="386" y="262">SEP</text>
+          <text x="459" y="262">OCT</text>
+          <text x="532" y="262">NOV</text>
+          <text x="605" y="262">DEC</text>
+          <text x="678" y="262">JAN</text>
+          <text x="751" y="262">FEB</text>
+          <text x="824" y="262">MAR</text>
+          <text x="897" y="262" fill="#00d4ff">APR</text>
+        </g>
+      </svg>
+    </div>
+    <div class="chart-legend">
+      <span><i class="cyan"></i>Funded volume</span>
+      <span><i class="muted"></i>Locked but not funded</span>
+      <span><i style="background:transparent;border-top:1px dashed var(--accent2);"></i>Trend</span>
+    </div>
+  </div>
+
+  <!-- ─── PIPELINE FUNNEL ──────────────────────────────────────── -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">Pipeline Funnel · 30D
+        <small>Conversion rate stage-to-stage, last 30 days</small>
+      </div>
+      <div class="chart-meta">App → Fund <b class="up">87.2%</b></div>
+    </div>
+    <div class="chart-body">
+      <div class="funnel">
+        <div class="funnel-row">
+          <span class="funnel-stage">Lead</span>
+          <div class="funnel-bar" style="--p:100%"></div>
+          <span class="funnel-count">38<small>baseline</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Application</span>
+          <div class="funnel-bar" style="--p:84%"></div>
+          <span class="funnel-count">32<small>84.2%</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Submitted</span>
+          <div class="funnel-bar" style="--p:79%"></div>
+          <span class="funnel-count">30<small>78.9%</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Processing</span>
+          <div class="funnel-bar" style="--p:76%"></div>
+          <span class="funnel-count">29<small>76.3%</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Underwriting</span>
+          <div class="funnel-bar warm" style="--p:71%"></div>
+          <span class="funnel-count">27<small>71.1%</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Conditional</span>
+          <div class="funnel-bar warm" style="--p:71%"></div>
+          <span class="funnel-count">27<small>71.1%</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Clear-to-Close</span>
+          <div class="funnel-bar cool" style="--p:68%"></div>
+          <span class="funnel-count">26<small>68.4%</small></span>
+        </div>
+        <div class="funnel-row">
+          <span class="funnel-stage">Funded</span>
+          <div class="funnel-bar cool" style="--p:66%"></div>
+          <span class="funnel-count">25<small>65.8%</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── DAYS TO CLOSE ────────────────────────────────────────── -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">Days · App → Clear-to-Close
+        <small>Rolling 30-day average vs industry benchmark</small>
+      </div>
+      <div class="chart-meta">OF: <b class="up">18.2d</b> · Encompass: <b class="down">47d</b></div>
+    </div>
+    <div class="chart-body">
+      <svg viewBox="0 0 480 240" preserveAspectRatio="none">
+        <!-- Grid -->
+        <g stroke="#1a3a5c" stroke-width="0.75" stroke-dasharray="2,4">
+          <line x1="40" y1="40"  x2="470" y2="40"/>
+          <line x1="40" y1="90"  x2="470" y2="90"/>
+          <line x1="40" y1="140" x2="470" y2="140"/>
+          <line x1="40" y1="190" x2="470" y2="190"/>
+        </g>
+        <g font-family="Space Mono" font-size="9" fill="#5a7a99">
+          <text x="34" y="44"  text-anchor="end">60</text>
+          <text x="34" y="94"  text-anchor="end">45</text>
+          <text x="34" y="144" text-anchor="end">30</text>
+          <text x="34" y="194" text-anchor="end">15</text>
+          <text x="34" y="214" text-anchor="end">0</text>
+        </g>
+        <!-- Encompass benchmark area (red flat line ~47d) -->
+        <line x1="40" y1="84" x2="470" y2="84" stroke="#ff4444" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+        <text x="465" y="78" text-anchor="end" font-family="Space Mono" font-size="9" fill="#ff4444">ENCOMPASS · 47d</text>
+        <!-- OriginFlow line (descending) -->
+        <polyline
+          fill="none" stroke="#00ff9d" stroke-width="2"
+          points="55,160 115,158 175,150 235,142 295,135 355,128 415,122 460,118"
+        />
+        <!-- Fill under -->
+        <polygon fill="#00ff9d" opacity="0.08"
+          points="55,160 115,158 175,150 235,142 295,135 355,128 415,122 460,118 460,210 55,210"
+        />
+        <!-- Points -->
+        <g fill="#00ff9d">
+          <circle cx="55"  cy="160" r="3"/>
+          <circle cx="115" cy="158" r="3"/>
+          <circle cx="175" cy="150" r="3"/>
+          <circle cx="235" cy="142" r="3"/>
+          <circle cx="295" cy="135" r="3"/>
+          <circle cx="355" cy="128" r="3"/>
+          <circle cx="415" cy="122" r="3"/>
+          <circle cx="460" cy="118" r="4" stroke="#040d1a" stroke-width="1.5"/>
+        </g>
+        <text x="460" y="108" text-anchor="end" font-family="Space Mono" font-size="9" fill="#00ff9d" font-weight="700">18.2d</text>
+        <!-- X labels -->
+        <g font-family="Space Mono" font-size="8" fill="#5a7a99" text-anchor="middle" letter-spacing="0.05em">
+          <text x="55"  y="225">W1</text>
+          <text x="115" y="225">W2</text>
+          <text x="175" y="225">W3</text>
+          <text x="235" y="225">W4</text>
+          <text x="295" y="225">W5</text>
+          <text x="355" y="225">W6</text>
+          <text x="415" y="225">W7</text>
+          <text x="460" y="225">W8</text>
+        </g>
+      </svg>
+    </div>
+    <div class="chart-legend">
+      <span><i class="green"></i>OriginFlow LOS · weekly avg</span>
+      <span><i style="background:transparent;border-top:1px dashed var(--red);"></i>Encompass benchmark</span>
+    </div>
+  </div>
+
+  <!-- ─── AI AUTO-CLEAR RATE ───────────────────────────────────── -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">AI Auto-Clear Rate · 12W
+        <small>% of conditions cleared by AI vs manual processor work</small>
+      </div>
+      <div class="chart-meta">Current: <b class="up">68%</b></div>
+    </div>
+    <div class="chart-body">
+      <svg viewBox="0 0 480 240" preserveAspectRatio="none">
+        <g stroke="#1a3a5c" stroke-width="0.75" stroke-dasharray="2,4">
+          <line x1="40" y1="40"  x2="470" y2="40"/>
+          <line x1="40" y1="90"  x2="470" y2="90"/>
+          <line x1="40" y1="140" x2="470" y2="140"/>
+          <line x1="40" y1="190" x2="470" y2="190"/>
+        </g>
+        <g font-family="Space Mono" font-size="9" fill="#5a7a99">
+          <text x="34" y="44" text-anchor="end">100%</text>
+          <text x="34" y="94" text-anchor="end">75%</text>
+          <text x="34" y="144" text-anchor="end">50%</text>
+          <text x="34" y="194" text-anchor="end">25%</text>
+        </g>
+        <!-- Stacked area: AI cleared (cyan) bottom, manual (muted) on top  -->
+        <!-- Define 12 weeks -->
+        <polygon fill="#00d4ff" opacity="0.85"
+          points="55,160 90,154 125,148 160,140 195,132 230,124 265,118 300,114 335,108 370,102 405,98 460,92
+                  460,210 55,210"
+        />
+        <polygon fill="#5a7a99" opacity="0.35"
+          points="55,80 90,82 125,84 160,82 195,80 230,78 265,76 300,75 335,73 370,72 405,70 460,68
+                  460,92 405,98 370,102 335,108 300,114 265,118 230,124 195,132 160,140 125,148 90,154 55,160"
+        />
+        <!-- AI line -->
+        <polyline fill="none" stroke="#00d4ff" stroke-width="2"
+          points="55,160 90,154 125,148 160,140 195,132 230,124 265,118 300,114 335,108 370,102 405,98 460,92"/>
+        <!-- Total line  -->
+        <polyline fill="none" stroke="#5a7a99" stroke-width="1.5" stroke-dasharray="3,3"
+          points="55,80 90,82 125,84 160,82 195,80 230,78 265,76 300,75 335,73 370,72 405,70 460,68"/>
+        <text x="464" y="89" text-anchor="end" font-family="Space Mono" font-size="9" fill="#00ff9d" font-weight="700">68%</text>
+        <g font-family="Space Mono" font-size="8" fill="#5a7a99" text-anchor="middle" letter-spacing="0.05em">
+          <text x="55"  y="225">FEB</text>
+          <text x="195" y="225">MAR</text>
+          <text x="335" y="225">APR</text>
+          <text x="460" y="225">NOW</text>
+        </g>
+      </svg>
+    </div>
+    <div class="chart-legend">
+      <span><i class="cyan"></i>AI auto-cleared</span>
+      <span><i class="muted"></i>Cleared by humans</span>
+    </div>
+  </div>
+
+  <!-- ─── TEAM LEADERBOARD ─────────────────────────────────────── -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">LO Production · April
+        <small>Originated volume by loan officer</small>
+      </div>
+      <div class="chart-meta">3 active LOs · $4.72M total</div>
+    </div>
+    <div class="chart-body">
+      <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
+        <span class="lb-rank gold">1</span>
+        <div>
+          <div class="lb-name">Davis Rackler <small>OWNER · LO</small></div>
+          <div class="lb-bar" style="--p:100%"></div>
+        </div>
+        <div>
+          <div class="lb-vol">$2.18M</div>
+          <div class="lb-meta">7 files · 38.6% AI</div>
+        </div>
+      </div>
+      <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
+        <span class="lb-rank silver">2</span>
+        <div>
+          <div class="lb-name">Corbin Matisse <small>LO</small></div>
+          <div class="lb-bar" style="--p:74%"></div>
+        </div>
+        <div>
+          <div class="lb-vol">$1.62M</div>
+          <div class="lb-meta">5 files · 41.2% AI</div>
+        </div>
+      </div>
+      <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
+        <span class="lb-rank bronze">3</span>
+        <div>
+          <div class="lb-name">Ana Whitfield <small>LO · pt-time</small></div>
+          <div class="lb-bar" style="--p:42%"></div>
+        </div>
+        <div>
+          <div class="lb-vol">$0.92M</div>
+          <div class="lb-meta">2 files · 35.0% AI</div>
+        </div>
+      </div>
+      <div style="margin-top:1.25rem; padding-top:1rem; border-top: 1px dashed var(--border);">
+        <div class="chart-title" style="margin-bottom:0.6rem;">Processor &amp; UW Throughput</div>
+        <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
+          <span class="lb-rank">·</span>
+          <div>
+            <div class="lb-name">Sarah Hayes <small>PROCESSOR</small></div>
+            <div class="lb-bar" style="--p:100%"></div>
+          </div>
+          <div>
+            <div class="lb-vol">9 files</div>
+            <div class="lb-meta">avg 14 cond/day</div>
+          </div>
+        </div>
+        <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
+          <span class="lb-rank">·</span>
+          <div>
+            <div class="lb-name">Diana Mendez <small>UNDERWRITER</small></div>
+            <div class="lb-bar" style="--p:78%"></div>
+          </div>
+          <div>
+            <div class="lb-vol">5 files</div>
+            <div class="lb-meta">avg 6.4h/file</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── EXCEPTIONS / ATTENTION ───────────────────────────────── -->
+  <div class="chart-card">
+    <div class="chart-head">
+      <div class="chart-title">Needs Attention · This Week
+        <small>Files at risk · sorted by urgency</small>
+      </div>
+      <div class="chart-meta"><b class="down">7 items</b> · 3 critical</div>
+    </div>
+    <div class="chart-body">
+      <div class="exc-list">
+
+        <div class="exc-row crit">
+          <span class="exc-loan">OF-1042</span>
+          <div class="exc-msg">Rate lock expires in 4 days · CD pending borrower signature
+            <small>Chen, S+M · $425K · CTC · auto-extend recommended</small>
+          </div>
+          <span class="exc-when">4d</span>
+        </div>
+
+        <div class="exc-row crit">
+          <span class="exc-loan">OF-1045</span>
+          <div class="exc-msg">DTI exception 44.8% blocking UW review · 2 days stale
+            <small>Thompson, K. · $465K · Diana awaiting LOX from borrower</small>
+          </div>
+          <span class="exc-when">2d</span>
+        </div>
+
+        <div class="exc-row crit">
+          <span class="exc-loan">OF-1041</span>
+          <div class="exc-msg">Tax return rescan requested · borrower silent 4 days
+            <small>Anderson, P. · $280K · Corbin to call today</small>
+          </div>
+          <span class="exc-when">4d</span>
+        </div>
+
+        <div class="exc-row warn">
+          <span class="exc-loan">OF-1037</span>
+          <div class="exc-msg">Rate lock expires in 6 days · all conditions cleared
+            <small>Singh, A. · $425K · scheduling docs ASAP</small>
+          </div>
+          <span class="exc-when">6d</span>
+        </div>
+
+        <div class="exc-row warn">
+          <span class="exc-loan">OF-1043</span>
+          <div class="exc-msg">$3,200 deposit LOX outstanding · UW blocking
+            <small>Rodriguez, J. · $310K · LOX requested 2m ago</small>
+          </div>
+          <span class="exc-when">today</span>
+        </div>
+
+        <div class="exc-row info">
+          <span class="exc-loan">OF-1048</span>
+          <div class="exc-msg">3-day TRID waiting · Loan Estimate sent
+            <small>Williams, T. · $310K · earliest CTC eligible Friday</small>
+          </div>
+          <span class="exc-when">2d</span>
+        </div>
+
+        <div class="exc-row info">
+          <span class="exc-loan">OF-1052</span>
+          <div class="exc-msg">New lead · LE clock starts at app submission
+            <small>Patel, R. · $255K refi · awaiting initial app</small>
+          </div>
+          <span class="exc-when">new</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── RATE LOCK PIPELINE ───────────────────────────────────── -->
+  <div class="chart-card full">
+    <div class="chart-head">
+      <div class="chart-title">Rate Lock Calendar · Next 30 Days
+        <small>Locked loans by expiration date · click to extend</small>
+      </div>
+      <div class="chart-meta"><b class="down">4</b> expiring within 7 days · <b>$1.34M</b> at risk</div>
+    </div>
+    <div class="chart-body">
+      <svg viewBox="0 0 1000 200" preserveAspectRatio="none">
+        <!-- Timeline axis -->
+        <line x1="40" y1="100" x2="980" y2="100" stroke="#1a3a5c" stroke-width="1"/>
+        <!-- Today marker -->
+        <line x1="60" y1="40" x2="60" y2="160" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+        <text x="60" y="32" text-anchor="middle" font-family="Space Mono" font-size="10" fill="#00d4ff" font-weight="700">TODAY</text>
+
+        <!-- Day ticks · 30 days, x = 60 + day*30.6 -->
+        <g stroke="#1a3a5c" stroke-width="0.5">
+          <line x1="60"   y1="96" x2="60"   y2="104"/>
+          <line x1="274"  y1="96" x2="274"  y2="104"/>
+          <line x1="488"  y1="96" x2="488"  y2="104"/>
+          <line x1="702"  y1="96" x2="702"  y2="104"/>
+          <line x1="916"  y1="96" x2="916"  y2="104"/>
+        </g>
+        <g font-family="Space Mono" font-size="9" fill="#5a7a99" text-anchor="middle">
+          <text x="60"  y="120">APR 29</text>
+          <text x="274" y="120">MAY 06</text>
+          <text x="488" y="120">MAY 13</text>
+          <text x="702" y="120">MAY 20</text>
+          <text x="916" y="120">MAY 27</text>
+        </g>
+
+        <!-- Loan locks (4 in critical 0-7d zone, 2 in 7-14d, etc) -->
+        <!-- Critical · OF-1042 in 4 days = x ~183 -->
+        <g>
+          <line x1="183" y1="85" x2="183" y2="100" stroke="#ff4444" stroke-width="2"/>
+          <circle cx="183" cy="85" r="6" fill="#ff4444"/>
+          <text x="183" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#ff4444" font-weight="700">OF-1042</text>
+          <text x="183" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$425K · 4d</text>
+        </g>
+
+        <!-- Warn · OF-1037 in 6 days = x 244 -->
+        <g>
+          <line x1="244" y1="115" x2="244" y2="100" stroke="#f5a623" stroke-width="2"/>
+          <circle cx="244" cy="115" r="6" fill="#f5a623"/>
+          <text x="244" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#f5a623" font-weight="700">OF-1037</text>
+          <text x="244" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$425K · 6d</text>
+        </g>
+
+        <!-- OF-1035 in 9 days (Docs Out) x 335 -->
+        <g>
+          <line x1="335" y1="85" x2="335" y2="100" stroke="#f5a623" stroke-width="2"/>
+          <circle cx="335" cy="85" r="6" fill="#f5a623"/>
+          <text x="335" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#f5a623" font-weight="700">OF-1035</text>
+          <text x="335" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$245K · 9d</text>
+        </g>
+
+        <!-- OF-1038 in 12 days x 427 -->
+        <g>
+          <line x1="427" y1="115" x2="427" y2="100" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="427" cy="115" r="6" fill="#00d4ff"/>
+          <text x="427" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1038</text>
+          <text x="427" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$415K · 12d</text>
+        </g>
+
+        <!-- OF-1043 in 15 days x 519 -->
+        <g>
+          <line x1="519" y1="85" x2="519" y2="100" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="519" cy="85" r="6" fill="#00d4ff"/>
+          <text x="519" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1043</text>
+          <text x="519" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$310K · 15d</text>
+        </g>
+
+        <!-- OF-1041 in 18 days x 610 -->
+        <g>
+          <line x1="610" y1="115" x2="610" y2="100" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="610" cy="115" r="6" fill="#00d4ff"/>
+          <text x="610" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1041</text>
+          <text x="610" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$280K · 18d</text>
+        </g>
+
+        <!-- OF-1040 in 22 days x 733 -->
+        <g>
+          <line x1="733" y1="85" x2="733" y2="100" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="733" cy="85" r="6" fill="#00d4ff"/>
+          <text x="733" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1040</text>
+          <text x="733" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$335K · 22d</text>
+        </g>
+
+        <!-- OF-1047 in 25 days x 825 -->
+        <g>
+          <line x1="825" y1="115" x2="825" y2="100" stroke="#00d4ff" stroke-width="2"/>
+          <circle cx="825" cy="115" r="6" fill="#00d4ff"/>
+          <text x="825" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1047</text>
+          <text x="825" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$395K · 25d</text>
+        </g>
+
+        <!-- Critical zone shading -->
+        <rect x="60" y="40" width="214" height="120" fill="#ff4444" opacity="0.04"/>
+        <text x="167" y="178" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#ff4444" letter-spacing="0.1em">CRITICAL · &lt; 7 DAYS</text>
+      </svg>
+    </div>
+    <div class="chart-legend">
+      <span><i style="background:#ff4444;"></i>Lock expiring &lt; 7 days · extend or close</span>
+      <span><i class="amber"></i>7–10 days · monitor</span>
+      <span><i class="cyan"></i>10+ days · safe</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="index.html">← Landing page</a>
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+<script>
+  // Range tab toggle
+  document.querySelectorAll('.range-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.range-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

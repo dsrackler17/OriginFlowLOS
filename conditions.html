@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conditions · OriginFlow LOS — Live Demo</title>
+<meta name="description" content="Conditions tracker for OriginFlow LOS. PTD, PTC, ATC across the full branch pipeline.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--navy); color: var(--text);
+  font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  min-height: 100vh;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, .demo-banner, .cond-layout, footer, .metric-strip, .page-head, .filter-bar { position: relative; z-index: 1; }
+
+/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
+.demo-banner {
+  background: rgba(245,166,35,0.08);
+  border-bottom: 1px solid rgba(245,166,35,0.25);
+  padding: 0.55rem 2rem;
+  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--amber); flex-wrap: wrap;
+}
+.demo-banner strong { color: var(--white); font-weight: 700; }
+.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.sonar-icon { width: 26px; height: 26px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.55rem; line-height: 1.1; }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-value.white { color: var(--white); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.25rem;
+}
+.metric-trend {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--accent2); margin-top: 0.2rem;
+}
+.metric-trend.down { color: var(--red); }
+
+/* ─── PAGE HEAD ────────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.75rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  flex-wrap: wrap; gap: 1.5rem;
+  background: var(--deep);
+}
+.page-head-left .crumb {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
+}
+.page-head-left .crumb span { color: var(--accent); }
+.page-head-left h1 {
+  font-family: var(--serif); font-size: 2rem; font-weight: 400;
+  color: var(--white); line-height: 1.1; margin-bottom: 0.4rem;
+}
+.page-head-left p {
+  font-size: 0.85rem; color: var(--text); max-width: 56ch; line-height: 1.55;
+}
+.page-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 0.55rem 1rem;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700;
+}
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ─── FILTER BAR ───────────────────────────────────────────────────── */
+.filter-bar {
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 2rem;
+  display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center;
+}
+.filter-bar input, .filter-bar select {
+  font-family: var(--mono); font-size: 0.7rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.5rem 0.8rem;
+  outline: none; transition: border-color 0.15s;
+}
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
+.filter-bar input[type="text"] { flex: 1; min-width: 220px; }
+.tab {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  color: var(--muted); padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border); background: rgba(0,212,255,0.04);
+  cursor: pointer; transition: all 0.15s;
+  text-transform: uppercase;
+}
+.tab.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.1); }
+.tab:hover { color: var(--white); }
+.tab b { color: inherit; margin-left: 0.4rem; font-size: 0.7rem; }
+
+/* ─── COND LAYOUT ──────────────────────────────────────────────────── */
+.cond-layout {
+  display: grid; grid-template-columns: 1fr 320px;
+  gap: 1px; background: var(--border);
+  min-height: calc(100vh - 480px);
+}
+.cond-main {
+  background: var(--navy);
+  padding: 1.5rem 2rem;
+}
+
+/* ─── LOAN CARD WRAPPER ────────────────────────────────────────────── */
+.loan-block {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  background: var(--deep);
+}
+.loan-block-head {
+  background: var(--surface);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 1rem; align-items: center;
+}
+.loan-block-num {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.08em;
+}
+.loan-block-name {
+  font-family: var(--sans); font-size: 0.92rem; color: var(--white);
+  font-weight: 500;
+}
+.loan-block-name small {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+  margin-left: 0.6rem; letter-spacing: 0.04em;
+}
+.loan-block-stage {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.25rem 0.65rem;
+  border: 1px solid;
+}
+.loan-block-stage.uw { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
+.loan-block-stage.proc { color: var(--accent); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.06); }
+.loan-block-stage.ctc { color: var(--accent2); border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.06); }
+.loan-block-stage.cond { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
+
+.loan-block-progress {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--text);
+  display: flex; align-items: center; gap: 0.65rem;
+}
+.loan-block-progress .pbar {
+  width: 110px; height: 4px; background: var(--border); position: relative;
+}
+.loan-block-progress .pbar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  background: var(--accent2); width: var(--p, 0%);
+}
+
+.loan-cond-list {
+  padding: 0.6rem 0.9rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+
+.cond-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: 0.82rem;
+  transition: border-color 0.15s;
+}
+.cond-row:hover { border-color: rgba(0,212,255,0.3); }
+.cond-row.cleared {
+  background: rgba(0,255,157,0.04);
+  border-color: rgba(0,255,157,0.2);
+}
+.cond-row.cleared .cond-title { text-decoration: line-through; color: var(--muted); }
+
+.cond-checkbox {
+  width: 1.05rem; height: 1.05rem;
+  border: 1px solid var(--border); background: var(--deep);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.7rem;
+  flex-shrink: 0; cursor: pointer; transition: all 0.15s;
+}
+.cond-row.cleared .cond-checkbox {
+  background: var(--accent2); color: var(--navy); border-color: var(--accent2);
+}
+.cond-checkbox:hover { border-color: var(--accent); }
+
+.cond-cat {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  padding: 0.2rem 0.55rem; border: 1px solid;
+  flex-shrink: 0; text-align: center; min-width: 3rem;
+}
+.cond-cat.PTD { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.cond-cat.PTC { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.cond-cat.ATC { color: var(--accent); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+
+.cond-body { min-width: 0; }
+.cond-title { color: var(--text); line-height: 1.3; font-weight: 500; }
+.cond-desc {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  margin-top: 0.2rem; letter-spacing: 0.03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cond-desc .ai { color: var(--accent2); }
+.cond-desc .stale { color: var(--amber); }
+
+.cond-owner {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
+  color: var(--muted); flex-shrink: 0;
+}
+.cond-owner .av {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.4rem; height: 1.4rem;
+  font-weight: 700; font-size: 0.55rem;
+  background: var(--accent); color: var(--navy);
+  margin-right: 0.35rem;
+}
+.cond-owner .av.proc { background: var(--accent2); }
+.cond-owner .av.uw   { background: var(--amber); }
+.cond-owner .av.ai   { background: var(--accent); color: var(--navy); }
+
+.cond-action {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+  flex-shrink: 0;
+}
+.cond-action:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ─── BULK BAR ─────────────────────────────────────────────────────── */
+.bulk-bar {
+  background: var(--deep); border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 2rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 1;
+}
+.bulk-bar b { color: var(--accent); }
+.bulk-bar .bulk-actions { display: flex; gap: 0.5rem; }
+
+/* ─── SIDEBAR ──────────────────────────────────────────────────────── */
+.cond-sidebar {
+  background: var(--deep);
+  display: flex; flex-direction: column;
+}
+.sb-block {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.sb-title {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 0.85rem;
+}
+.cat-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.6rem; align-items: center;
+  padding: 0.4rem 0;
+  font-family: var(--mono); font-size: 0.7rem;
+}
+.cat-pill {
+  font-size: 0.55rem; letter-spacing: 0.12em; padding: 0.18rem 0.5rem;
+  border: 1px solid; min-width: 3rem; text-align: center;
+}
+.cat-pill.PTD { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.cat-pill.PTC { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.cat-pill.ATC { color: var(--accent); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+.cat-row .progress {
+  height: 4px; background: var(--border); position: relative;
+}
+.cat-row .progress::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%; width: var(--p, 0%);
+  background: var(--accent2);
+}
+.cat-row .progress.r::after { background: var(--red); }
+.cat-row .progress.a::after { background: var(--amber); }
+.cat-row .progress.c::after { background: var(--accent); }
+.cat-row .count { color: var(--white); font-weight: 700; }
+
+.staleness-row {
+  display: grid; grid-template-columns: 1fr auto;
+  padding: 0.4rem 0; font-family: var(--mono); font-size: 0.68rem;
+  border-bottom: 1px dashed var(--border);
+}
+.staleness-row:last-child { border-bottom: none; }
+.staleness-row .label { color: var(--muted); }
+.staleness-row .value { color: var(--white); font-weight: 700; }
+.staleness-row .value.warn { color: var(--amber); }
+.staleness-row .value.crit { color: var(--red); }
+
+.ai-savings {
+  background: rgba(0,255,157,0.04);
+  border: 1px solid rgba(0,255,157,0.2);
+  padding: 0.85rem 1rem; margin-top: 0.5rem;
+}
+.ai-savings .num {
+  font-family: var(--serif); font-size: 1.65rem; color: var(--accent2);
+  line-height: 1; margin: 0.3rem 0;
+}
+.ai-savings .label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ai-savings .sub {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--text);
+  letter-spacing: 0.04em; margin-top: 0.2rem;
+}
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 1280px) {
+  .metric-strip { grid-template-columns: repeat(3, 1fr); }
+  .cond-row { grid-template-columns: auto auto 1fr auto; }
+  .cond-action { display: none; }
+}
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .cond-layout { grid-template-columns: 1fr; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .loan-block-head { grid-template-columns: 1fr; gap: 0.4rem; }
+  .loan-block-progress { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
+  <a href="index.html">← Back to landing page</a>
+</div>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="dashboard.html">Pipeline</a></li>
+    <li><a href="documents.html">Documents</a></li>
+    <li><a href="conditions.html" class="active">Conditions</a></li>
+    <li><a href="reports.html">Reports</a></li>
+    <li><a href="audit.html">Audit Log</a></li>
+  </ul>
+  <div class="nav-right">
+    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; Submarine Catalyst</span>
+    <span>
+      <span class="nav-user-name">Davis Rackler</span>
+      <span class="nav-user-role">OWNER</span>
+    </span>
+    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- METRIC STRIP                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="metric-strip">
+  <div class="metric-cell">
+    <div class="metric-label">Total Conditions</div>
+    <div class="metric-value white">142</div>
+    <div class="metric-sub">across 14 active files</div>
+    <div class="metric-trend">avg 10.1 per file</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Cleared</div>
+    <div class="metric-value green">115</div>
+    <div class="metric-sub">81.0% of all conditions</div>
+    <div class="metric-trend">▲ 8 today</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Open · PTD</div>
+    <div class="metric-value red">9</div>
+    <div class="metric-sub">prior to docs</div>
+    <div class="metric-trend down">▲ 1 since Mon</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Open · PTC</div>
+    <div class="metric-value amber">12</div>
+    <div class="metric-sub">prior to closing</div>
+    <div class="metric-trend">▼ 3 today</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">Open · ATC</div>
+    <div class="metric-value cyan">6</div>
+    <div class="metric-sub">at close</div>
+    <div class="metric-trend">stable</div>
+  </div>
+  <div class="metric-cell">
+    <div class="metric-label">AI-Cleared %</div>
+    <div class="metric-value green">68%</div>
+    <div class="metric-sub">78 of 115 cleared</div>
+    <div class="metric-trend">▲ 4 pts vs March</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEAD                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page-head">
+  <div class="page-head-left">
+    <div class="crumb">DASHBOARD <span>›</span> CONDITIONS</div>
+    <h1>Conditions</h1>
+    <p>Every PTD, PTC, and ATC condition across the branch in one place. AI auto-clears anything it can prove from documents — humans handle the rest.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn" href="#">⤓ Export PDF</a>
+    <a class="btn" href="#">📋 Templates</a>
+    <a class="btn primary" href="#">+ Add Condition</a>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FILTER BAR                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="filter-bar">
+  <input type="text" placeholder="Search condition title, loan, borrower...">
+  <select>
+    <option>All loans (14)</option>
+    <option>OF-1043 · Rodriguez</option>
+    <option>OF-1042 · Chen</option>
+    <option>OF-1045 · Thompson</option>
+  </select>
+  <select>
+    <option>All assignees</option>
+    <option>Corbin Matisse · LO</option>
+    <option>Sarah Hayes · Processor</option>
+    <option>Diana Mendez · UW</option>
+    <option>AI · Claude Vision</option>
+  </select>
+  <span class="tab active">All <b>27</b></span>
+  <span class="tab" style="color:var(--red);">PTD <b>9</b></span>
+  <span class="tab" style="color:var(--amber);">PTC <b>12</b></span>
+  <span class="tab" style="color:var(--accent);">ATC <b>6</b></span>
+  <span class="tab" style="color:var(--accent2);">Cleared <b>115</b></span>
+  <span class="tab">Stale &gt; 5d</span>
+</div>
+
+<div class="bulk-bar">
+  <span><b>27 open conditions</b> across 14 loans · <b style="color:var(--accent2);">8 cleared today</b> (6 by AI, 2 by humans)</span>
+  <div class="bulk-actions">
+    <button class="btn">Notify Borrowers</button>
+    <button class="btn">Reassign Selected</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN: CONDITIONS BY LOAN                                             -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cond-layout">
+
+  <main class="cond-main">
+
+    <!-- OF-1043 RODRIGUEZ -->
+    <div class="loan-block">
+      <div class="loan-block-head">
+        <span class="loan-block-num">OF-1043</span>
+        <div class="loan-block-name">Rodriguez, James <small>$310K · LUBBOCK · CONV 30YR</small></div>
+        <span class="loan-block-stage uw">UNDERWRITING</span>
+        <span class="loan-block-progress">
+          9 / 15 cleared
+          <span class="pbar" style="--p:60%"></span>
+          60%
+        </span>
+      </div>
+      <div class="loan-cond-list">
+
+        <div class="cond-row cleared">
+          <span class="cond-checkbox">✓</span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">30-day paystub (most recent)</div>
+            <div class="cond-desc"><span class="ai">Auto-cleared by AI · paystub_2026_Q1.pdf · 98% conf</span> · 12s ago</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">View</button>
+        </div>
+
+        <div class="cond-row cleared">
+          <span class="cond-checkbox">✓</span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">Bank statement · 60 days</div>
+            <div class="cond-desc"><span class="ai">Auto-cleared by AI · chase_statement_feb2026.pdf</span> · 23m ago</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">View</button>
+        </div>
+
+        <div class="cond-row cleared">
+          <span class="cond-checkbox">✓</span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">Most recent W-2</div>
+            <div class="cond-desc"><span class="ai">Auto-cleared by AI · w2_2025_rodriguez.pdf</span> · yesterday</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">View</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">LOX · $3,200 deposit on 02/14/26</div>
+            <div class="cond-desc">Auto-created by AI deposit flag · awaiting borrower response</div>
+          </div>
+          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
+          <button class="cond-action">Notify</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">Homeowner's insurance binder</div>
+            <div class="cond-desc">Required prior to docs · LO follow-up needed</div>
+          </div>
+          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
+          <button class="cond-action">Notify</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">Final survey</div>
+            <div class="cond-desc">Title company ordered 2 days ago · expected by Friday</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Chase</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- OF-1045 THOMPSON -->
+    <div class="loan-block">
+      <div class="loan-block-head">
+        <span class="loan-block-num">OF-1045</span>
+        <div class="loan-block-name">Thompson, K. <small>$465K · LUBBOCK · CONV 30YR · DTI 44.8%</small></div>
+        <span class="loan-block-stage proc">PROCESSING</span>
+        <span class="loan-block-progress">
+          7 / 12 cleared
+          <span class="pbar" style="--p:58%"></span>
+          58%
+        </span>
+      </div>
+      <div class="loan-cond-list">
+
+        <div class="cond-row" style="border-color: rgba(255,68,68,0.4);">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">DTI exception · 44.8% qualifying back-end</div>
+            <div class="cond-desc"><span class="stale">⚠ blocking · UW review · 2 days open</span></div>
+          </div>
+          <span class="cond-owner"><span class="av uw">DM</span>Diana</span>
+          <button class="cond-action">Memo</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">VOR · 12 months rental history</div>
+            <div class="cond-desc">AI confidence 67% on handwritten landlord form · processor verifying</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Verify</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">Updated appraisal value review</div>
+            <div class="cond-desc">Appraisal came in at $516K, contract at $550K · LTV recomputed to 90%</div>
+          </div>
+          <span class="cond-owner"><span class="av uw">DM</span>Diana</span>
+          <button class="cond-action">Open</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">PMI quote · MGIC or Radian</div>
+            <div class="cond-desc">90% LTV · awaiting MI vendor selection</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Order</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">HOI binder · earthquake rider</div>
+            <div class="cond-desc">Property in mapped zone · standard binder insufficient</div>
+          </div>
+          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
+          <button class="cond-action">Notify</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- OF-1042 CHEN -->
+    <div class="loan-block">
+      <div class="loan-block-head">
+        <span class="loan-block-num">OF-1042</span>
+        <div class="loan-block-name">Chen, S+M <small>$425K · LUBBOCK · CONV 30YR · LOCK EXPIRES 4d</small></div>
+        <span class="loan-block-stage ctc">CLEAR-TO-CLOSE</span>
+        <span class="loan-block-progress">
+          14 / 16 cleared
+          <span class="pbar" style="--p:88%"></span>
+          88%
+        </span>
+      </div>
+      <div class="loan-cond-list">
+
+        <div class="cond-row cleared">
+          <span class="cond-checkbox">✓</span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">Title commitment</div>
+            <div class="cond-desc"><span class="ai">Auto-cleared by AI · title_commitment_chen.pdf · Stewart Title</span> · 5m ago</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">View</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat ATC">ATC</span>
+          <div class="cond-body">
+            <div class="cond-title">Updated paystub at signing</div>
+            <div class="cond-desc">Within 30 days of CD · auto-trigger 5 days pre-close</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">Schedule</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat ATC">ATC</span>
+          <div class="cond-body">
+            <div class="cond-title">Wire instructions verification</div>
+            <div class="cond-desc">Title to call back at known number · Stewart Title direct line on file</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Verify</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- OF-1041 ANDERSON -->
+    <div class="loan-block">
+      <div class="loan-block-head">
+        <span class="loan-block-num">OF-1041</span>
+        <div class="loan-block-name">Anderson, P. <small>$280K · LUBBOCK · CONV 30YR</small></div>
+        <span class="loan-block-stage uw">UNDERWRITING</span>
+        <span class="loan-block-progress">
+          8 / 12 cleared
+          <span class="pbar" style="--p:67%"></span>
+          67%
+        </span>
+      </div>
+      <div class="loan-cond-list">
+
+        <div class="cond-row cleared">
+          <span class="cond-checkbox">✓</span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">Most recent W-2</div>
+            <div class="cond-desc"><span class="ai">Auto-cleared by AI · w2_2025_anderson.pdf · AGI $87,400</span> · 1h ago</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">View</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTD">PTD</span>
+          <div class="cond-body">
+            <div class="cond-title">Tax return 2024 · all schedules</div>
+            <div class="cond-desc"><span class="stale">Borrower uploaded blurry scan · rescan requested 4h ago</span></div>
+          </div>
+          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
+          <button class="cond-action">Notify</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">Termite inspection</div>
+            <div class="cond-desc">Texas requirement · pest letter pending</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Order</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">Final flood determination</div>
+            <div class="cond-desc">CoreLogic ordered · Zone X expected</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Track</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- OF-1038 FOSTER -->
+    <div class="loan-block">
+      <div class="loan-block-head">
+        <span class="loan-block-num">OF-1038</span>
+        <div class="loan-block-name">Foster, D. <small>$415K · LUBBOCK · CONV 30YR</small></div>
+        <span class="loan-block-stage cond">CONDITIONAL</span>
+        <span class="loan-block-progress">
+          11 / 14 cleared
+          <span class="pbar" style="--p:79%"></span>
+          79%
+        </span>
+      </div>
+      <div class="loan-cond-list">
+
+        <div class="cond-row cleared">
+          <span class="cond-checkbox">✓</span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">Homeowner's binder</div>
+            <div class="cond-desc"><span class="ai">Auto-cleared by AI · State Farm · $2,142/yr</span> · 6h ago</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">View</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">CPL from title company</div>
+            <div class="cond-desc">Closing protection letter pending</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Chase</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat PTC">PTC</span>
+          <div class="cond-body">
+            <div class="cond-title">HOA estoppel cert · Tanglewood HOA</div>
+            <div class="cond-desc">Condo association · est dues $312/mo to verify</div>
+          </div>
+          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
+          <button class="cond-action">Order</button>
+        </div>
+
+        <div class="cond-row">
+          <span class="cond-checkbox"></span>
+          <span class="cond-cat ATC">ATC</span>
+          <div class="cond-body">
+            <div class="cond-title">3-day TRID waiting period</div>
+            <div class="cond-desc">CD signed 04/26 · earliest close 04/29</div>
+          </div>
+          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
+          <button class="cond-action">Track</button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────────────── -->
+  <aside class="cond-sidebar">
+
+    <div class="sb-block">
+      <div class="sb-title">By Category</div>
+      <div class="cat-row">
+        <span class="cat-pill PTD">PTD</span>
+        <div class="progress r" style="--p:65%"></div>
+        <span class="count">9 / 26</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-pill PTC">PTC</span>
+        <div class="progress a" style="--p:75%"></div>
+        <span class="count">12 / 48</span>
+      </div>
+      <div class="cat-row">
+        <span class="cat-pill ATC">ATC</span>
+        <div class="progress c" style="--p:90%"></div>
+        <span class="count">6 / 68</span>
+      </div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">By Owner</div>
+      <div class="cat-row">
+        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--accent);margin-right:0.4rem;"></span>AI · Claude</span>
+        <div class="progress c" style="--p:78%"></div>
+        <span class="count">21</span>
+      </div>
+      <div class="cat-row">
+        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--accent);margin-right:0.4rem;"></span>Corbin · LO</span>
+        <div class="progress c" style="--p:32%"></div>
+        <span class="count">9</span>
+      </div>
+      <div class="cat-row">
+        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--accent2);margin-right:0.4rem;"></span>Sarah · Proc</span>
+        <div class="progress c" style="--p:48%"></div>
+        <span class="count">14</span>
+      </div>
+      <div class="cat-row">
+        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--amber);margin-right:0.4rem;"></span>Diana · UW</span>
+        <div class="progress a" style="--p:18%"></div>
+        <span class="count">5</span>
+      </div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">Aging</div>
+      <div class="staleness-row">
+        <span class="label">&lt; 24h</span>
+        <span class="value">14</span>
+      </div>
+      <div class="staleness-row">
+        <span class="label">1–3 days</span>
+        <span class="value">8</span>
+      </div>
+      <div class="staleness-row">
+        <span class="label">3–5 days</span>
+        <span class="value warn">3</span>
+      </div>
+      <div class="staleness-row">
+        <span class="label">5+ days · stale</span>
+        <span class="value crit">2</span>
+      </div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">AI Impact · April</div>
+      <div class="ai-savings">
+        <div class="label">Conditions auto-cleared</div>
+        <div class="num">478</div>
+        <div class="sub">~31 hours of processor time saved</div>
+      </div>
+      <div class="ai-savings" style="margin-top:0.5rem;">
+        <div class="label">Documents auto-extracted</div>
+        <div class="num">782</div>
+        <div class="sub">$0.04/doc · ~92% of all uploads</div>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<footer>
+  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="index.html">← Landing page</a>
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+<script>
+  // Click checkboxes to toggle (demo only)
+  document.querySelectorAll('.cond-checkbox').forEach(cb => {
+    cb.addEventListener('click', e => {
+      const row = cb.closest('.cond-row');
+      row.classList.toggle('cleared');
+      cb.textContent = row.classList.contains('cleared') ? '✓' : '';
+    });
+  });
+  // Tab filters (demo only — visual)
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
