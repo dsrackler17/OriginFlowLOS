@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Early Access — OriginFlow LOS</title>
+<meta name="description" content="Request early access to OriginFlow LOS. Private beta opens Q2 2026 to a small group of independent mortgage branches.">
+<meta name="twitter:site" content="@DRackler">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  :root {
+    --navy:    #040d1a;
+    --deep:    #07152b;
+    --surface: #0b1f3a;
+    --panel:   #0f2647;
+    --border:  #1a3a5c;
+    --accent:  #00d4ff;
+    --accent2: #00ff9d;
+    --amber:   #f5a623;
+    --red:     #ff4444;
+    --text:    #c8dff0;
+    --muted:   #5a7a99;
+    --white:   #eaf4ff;
+    --mono:    'Space Mono', monospace;
+    --serif:   'DM Serif Display', serif;
+    --sans:    'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--navy); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+  nav, main, footer { position: relative; z-index: 1; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 3rem; border-bottom: 1px solid var(--border); background: rgba(4,13,26,0.85); backdrop-filter: blur(12px); }
+  .nav-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+  .sonar-icon { width: 32px; height: 32px; }
+  .sonar-icon svg { width: 100%; height: 100%; }
+  .nav-wordmark { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; color: var(--white); letter-spacing: 0.12em; text-transform: uppercase; }
+  .nav-wordmark span { color: var(--accent); }
+  .nav-right { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); }
+  .nav-right a { color: var(--accent); text-decoration: none; }
+  .nav-right a:hover { text-decoration: underline; }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 3rem 2rem; }
+  .auth-container { width: 100%; max-width: 540px; animation: fadeUp 0.6s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .auth-eyebrow { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
+  .auth-eyebrow::before { content: ''; display: block; width: 1.5rem; height: 1px; background: var(--accent); }
+  .auth-heading { font-family: var(--serif); font-size: 2.2rem; color: var(--white); margin-bottom: 0.4rem; line-height: 1.15; }
+  .auth-sub { font-size: 0.92rem; color: var(--muted); font-weight: 300; margin-bottom: 2rem; }
+  .auth-sub strong { color: var(--accent2); font-weight: 500; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; position: relative; overflow: hidden; }
+  .auth-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .form-group { margin-bottom: 1.1rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.1rem; }
+  .form-row .form-group { margin-bottom: 0; }
+  .form-label { display: block; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .form-label .req { color: var(--accent); }
+  .form-label .opt { color: var(--muted); font-weight: 400; }
+  .form-input, .form-select { width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--white); font-family: var(--mono); font-size: 0.82rem; padding: 0.7rem 1rem; outline: none; transition: border-color 0.2s; -webkit-appearance: none; appearance: none; }
+  .form-input::placeholder { color: var(--muted); }
+  .form-input:focus, .form-select:focus { border-color: var(--accent); }
+  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%235a7a99' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2.5rem; cursor: pointer; }
+  .form-select option { background: var(--panel); color: var(--white); }
+  .form-help { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); margin-top: 0.35rem; letter-spacing: 0.04em; line-height: 1.5; }
+  .btn-submit { display: block; width: 100%; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; background: var(--accent); color: var(--navy); border: none; padding: 0.95rem; cursor: pointer; font-weight: 700; transition: opacity 0.2s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); margin-top: 0.5rem; }
+  .btn-submit:hover { opacity: 0.85; }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0 1rem; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .auth-divider span { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+  .auth-switch { text-align: center; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; color: var(--muted); }
+  .auth-switch a { color: var(--accent); text-decoration: none; }
+  .auth-switch a:hover { text-decoration: underline; }
+  .terms-note { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); text-align: center; margin-top: 0.75rem; letter-spacing: 0.04em; line-height: 1.6; }
+  .terms-note a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+  .terms-note a:hover { color: var(--accent); }
+  .error-box { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: var(--red); font-family: var(--mono); font-size: 0.7rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; line-height: 1.6; }
+  .error-box.visible { display: block; }
+  .info-box { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.25); color: var(--accent); font-family: var(--mono); font-size: 0.7rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; line-height: 1.6; }
+  .info-box.visible { display: block; }
+  /* Success state — full takeover */
+  .success-state { display: none; text-align: center; padding: 3rem 1rem; }
+  .success-state.visible { display: block; }
+  .success-icon { font-family: var(--mono); font-size: 3rem; color: var(--accent2); margin-bottom: 1rem; line-height: 1; }
+  .success-title { font-family: var(--serif); font-size: 1.8rem; color: var(--white); margin-bottom: 0.75rem; }
+  .success-body { color: var(--muted); font-size: 0.95rem; line-height: 1.7; margin-bottom: 1.5rem; }
+  .success-body strong { color: var(--text); font-weight: 500; }
+  .success-tag { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em; color: var(--accent); padding: 0.5rem 1rem; border: 1px solid rgba(0,212,255,0.3); display: inline-block; }
+  footer { border-top: 1px solid var(--border); padding: 1.25rem 3rem; display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em; color: var(--muted); background: var(--deep); }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  @media (max-width: 640px) {
+    nav { padding: 1rem 1.25rem; }
+    footer { padding: 1rem 1.25rem; flex-direction: column; gap: 0.75rem; text-align: center; }
+    .form-row { grid-template-columns: 1fr; gap: 1.1rem; }
+    .auth-heading { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3">
+          <animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-right">Already have an account? <a href="/login.html">Sign in →</a></span>
+</nav>
+
+<main>
+  <div class="auth-container">
+    <div class="auth-eyebrow">Private Beta · Q2 2026</div>
+    <h1 class="auth-heading">Request<br>early access.</h1>
+    <p class="auth-sub">Founding 25 branches lock the rate forever. Tell us about your shop — <strong>I review every signup personally</strong>.</p>
+
+    <div class="auth-card">
+      <!-- Form view -->
+      <div id="form-view">
+        <div class="error-box" id="error-box"></div>
+        <div class="info-box"  id="info-box"></div>
+
+        <form id="signup-form" novalidate>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="first_name">First Name <span class="req">*</span></label>
+              <input class="form-input" type="text" id="first_name" name="first_name" required autocomplete="given-name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="last_name">Last Name <span class="req">*</span></label>
+              <input class="form-input" type="text" id="last_name" name="last_name" required autocomplete="family-name" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">Work Email <span class="req">*</span></label>
+            <input class="form-input" type="email" id="email" name="email" required autocomplete="email"
+                   placeholder="lo@yourbranch.com" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Password <span class="req">*</span></label>
+            <input class="form-input" type="password" id="password" name="password" required minlength="8"
+                   placeholder="••••••••" autocomplete="new-password" />
+            <div class="form-help">8+ characters. You'll set this now and use it to sign in once approved.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="branch_name">Branch / Company Name <span class="req">*</span></label>
+            <input class="form-input" type="text" id="branch_name" name="branch_name" required
+                   placeholder="South Plains Mortgage · Lubbock" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="role">Your Role <span class="req">*</span></label>
+              <select class="form-select" id="role" name="role" required>
+                <option value="">Select...</option>
+                <option value="loan_officer">Loan Officer</option>
+                <option value="processor">Processor</option>
+                <option value="underwriter">Underwriter</option>
+                <option value="branch_manager">Branch Manager</option>
+                <option value="owner">Owner / Principal</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="branch_size">Branch Size <span class="req">*</span></label>
+              <select class="form-select" id="branch_size" name="branch_size" required>
+                <option value="">Select...</option>
+                <option value="1-3">1-3 LOs</option>
+                <option value="4-10">4-10 LOs</option>
+                <option value="11-25">11-25 LOs</option>
+                <option value="26-50">26-50 LOs</option>
+                <option value="50+">50+ LOs</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="current_los">Currently Using <span class="req">*</span></label>
+            <select class="form-select" id="current_los" name="current_los" required>
+              <option value="">Select...</option>
+              <option value="encompass">Encompass</option>
+              <option value="calyx">Calyx Point</option>
+              <option value="byte">BytePro</option>
+              <option value="lendingpad">LendingPad</option>
+              <option value="floify">Floify</option>
+              <option value="other_web">Other web LOS</option>
+              <option value="spreadsheet">Spreadsheets / no LOS</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="nmls">NMLS # <span class="opt">(optional)</span></label>
+            <input class="form-input" type="text" id="nmls" name="nmls" inputmode="numeric"
+                   placeholder="1234567" />
+            <div class="form-help">Helps us prioritize verified industry signups.</div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="submit-btn">Request Early Access →</button>
+
+          <p class="terms-note">
+            By signing up, you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.
+            We'll send a verification email — verify it, and we'll be in touch about beta scheduling.
+          </p>
+        </form>
+
+        <div class="auth-divider"><span>or</span></div>
+        <div class="auth-switch">Already on the list? <a href="/login.html">Sign in →</a></div>
+      </div>
+
+      <!-- Success view -->
+      <div class="success-state" id="success-view">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title">You're on the list.</h2>
+        <p class="success-body">
+          Check <strong id="success-email">your inbox</strong> for a verification email from Supabase. Click the link to confirm, then sign in any time.<br><br>
+          I review every signup personally. Expect a note from me within 48 hours about beta scheduling.
+        </p>
+        <p class="success-tag">— Davis · OriginFlow LOS</p>
+        <p style="margin-top:2rem;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.06em;">
+          <a href="/login.html" style="color:var(--accent);text-decoration:none;">Continue to sign in →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
+  <div class="footer-links">
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+<script>
+  const errorBox  = document.getElementById('error-box');
+  const infoBox   = document.getElementById('info-box');
+  const submitBtn = document.getElementById('submit-btn');
+  const formView   = document.getElementById('form-view');
+  const successView = document.getElementById('success-view');
+
+  function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); infoBox.classList.remove('visible'); window.scrollTo({top:0,behavior:'smooth'}); }
+  function showInfo(msg)  { infoBox.textContent = msg; infoBox.classList.add('visible'); errorBox.classList.remove('visible'); }
+  function resetBtn() {
+    submitBtn.textContent = 'Request Early Access →';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+  }
+
+  // If already signed in, redirect to dashboard
+  if (typeof ofGetSession === 'function') {
+    ofGetSession()
+      .then(session => {
+        if (session) {
+          showInfo('Already signed in — redirecting to dashboard…');
+          window.location.href = '/dashboard.html';
+        }
+      })
+      .catch(err => console.warn('[OF Signup] session check error:', err));
+  }
+
+  document.getElementById('signup-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    errorBox.classList.remove('visible');
+    infoBox.classList.remove('visible');
+
+    // Pull all fields
+    const fd = new FormData(e.target);
+    const email       = fd.get('email').trim();
+    const password    = fd.get('password');
+    const first_name  = fd.get('first_name').trim();
+    const last_name   = fd.get('last_name').trim();
+    const branch_name = fd.get('branch_name').trim();
+    const role        = fd.get('role');
+    const branch_size = fd.get('branch_size');
+    const current_los = fd.get('current_los');
+    const nmls        = (fd.get('nmls') || '').trim();
+
+    // Client-side validation
+    if (!email || !password || !first_name || !last_name || !branch_name || !role || !branch_size || !current_los) {
+      showError('Please fill in all required fields.');
+      return;
+    }
+    if (password.length < 8) {
+      showError('Password must be at least 8 characters.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError('Please enter a valid email address.');
+      return;
+    }
+
+    submitBtn.textContent = 'Creating account...';
+    submitBtn.disabled    = true;
+    submitBtn.style.opacity = '0.7';
+
+    const sb = (typeof getSupabase === 'function') ? getSupabase() : null;
+    if (!sb) {
+      showError('Service unavailable. Refresh the page and try again.');
+      resetBtn();
+      return;
+    }
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 15000)
+    );
+
+    try {
+      // Sign up via Supabase Auth. The metadata in `data` is stored on
+      // auth.users.raw_user_meta_data and read by the tg_populate_early_access
+      // trigger to populate the early_access_signups table.
+      const result = await Promise.race([
+        sb.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name,
+              last_name,
+              branch_name,
+              role,
+              branch_size,
+              current_los,
+              nmls: nmls || null,
+              source: 'web_signup',
+            },
+            emailRedirectTo: window.location.origin + '/login.html?verified=true',
+          },
+        }),
+        timeout,
+      ]);
+      const { data, error } = result;
+
+      if (error) {
+        if (error.message && error.message.toLowerCase().includes('already registered')) {
+          showError('This email is already registered. Try signing in instead.');
+        } else if (error.message && error.message.toLowerCase().includes('rate limit')) {
+          showError('Too many signup attempts. Wait a minute and try again.');
+        } else {
+          showError(error.message || 'Sign-up failed. Please try again.');
+        }
+        resetBtn();
+        return;
+      }
+
+      // Success — show the success view
+      document.getElementById('success-email').textContent = email;
+      formView.style.display = 'none';
+      successView.classList.add('visible');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Optional: simple analytics ping
+      try { window.dataLayer && window.dataLayer.push({ event: 'signup_success', role, branch_size, current_los }); } catch(_) {}
+
+    } catch (err) {
+      if (err.message === 'timeout') {
+        showError('Sign-up timed out. Try again — your Supabase project may need a moment.');
+      } else if (err.message === 'Failed to fetch') {
+        showError('Cannot reach the server. Your Supabase project may be paused.');
+      } else {
+        showError('Connection error: ' + err.message);
+      }
+      resetBtn();
+    }
+  });
+</script>
+</body>
+</html>

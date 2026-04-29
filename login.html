@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — OriginFlow LOS</title>
+<meta name="description" content="Sign in to OriginFlow LOS. Access your pipeline, conditions, AI document extraction, and team chat.">
+<meta name="twitter:site" content="@DRackler">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  :root {
+    --navy:    #040d1a;
+    --deep:    #07152b;
+    --surface: #0b1f3a;
+    --panel:   #0f2647;
+    --border:  #1a3a5c;
+    --accent:  #00d4ff;
+    --accent2: #00ff9d;
+    --amber:   #f5a623;
+    --red:     #ff4444;
+    --text:    #c8dff0;
+    --muted:   #5a7a99;
+    --white:   #eaf4ff;
+    --mono:    'Space Mono', monospace;
+    --serif:   'DM Serif Display', serif;
+    --sans:    'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--navy); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+  nav, main, footer { position: relative; z-index: 1; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 3rem; border-bottom: 1px solid var(--border); background: rgba(4,13,26,0.85); backdrop-filter: blur(12px); }
+  .nav-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+  .sonar-icon { width: 32px; height: 32px; }
+  .sonar-icon svg { width: 100%; height: 100%; }
+  .nav-wordmark { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; color: var(--white); letter-spacing: 0.12em; text-transform: uppercase; }
+  .nav-wordmark span { color: var(--accent); }
+  .nav-right { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); }
+  .nav-right a { color: var(--accent); text-decoration: none; }
+  .nav-right a:hover { text-decoration: underline; }
+  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
+  .auth-container { width: 100%; max-width: 420px; animation: fadeUp 0.6s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .auth-eyebrow { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
+  .auth-eyebrow::before { content: ''; display: block; width: 1.5rem; height: 1px; background: var(--accent); }
+  .auth-heading { font-family: var(--serif); font-size: 2.2rem; color: var(--white); margin-bottom: 0.4rem; line-height: 1.15; }
+  .auth-sub { font-size: 0.9rem; color: var(--muted); font-weight: 300; margin-bottom: 2.5rem; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; position: relative; overflow: hidden; }
+  .auth-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-label { display: block; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .form-input { width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--white); font-family: var(--mono); font-size: 0.85rem; padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+  .form-input::placeholder { color: var(--muted); }
+  .form-input:focus { border-color: var(--accent); }
+  .form-footer { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .form-forgot { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .form-forgot:hover { color: var(--accent); }
+  .btn-submit { display: block; width: 100%; font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; background: var(--accent); color: var(--navy); border: none; padding: 0.9rem; cursor: pointer; font-weight: 700; transition: opacity 0.2s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
+  .btn-submit:hover { opacity: 0.85; }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .auth-divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .auth-divider span { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+  .auth-switch { text-align: center; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; color: var(--muted); }
+  .auth-switch a { color: var(--accent); text-decoration: none; }
+  .auth-switch a:hover { text-decoration: underline; }
+  .error-box { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: var(--red); font-family: var(--mono); font-size: 0.72rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; }
+  .error-box.visible { display: block; }
+  .info-box { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.25); color: var(--accent); font-family: var(--mono); font-size: 0.72rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; }
+  .info-box.visible { display: block; }
+  .success-box { background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.3); color: var(--accent2); font-family: var(--mono); font-size: 0.72rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; }
+  .success-box.visible { display: block; }
+  footer { border-top: 1px solid var(--border); padding: 1.25rem 3rem; display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em; color: var(--muted); background: var(--deep); }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  @media (max-width: 640px) {
+    nav { padding: 1rem 1.25rem; }
+    footer { padding: 1rem 1.25rem; flex-direction: column; gap: 0.75rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3">
+          <animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-right">No account? <a href="/signup.html">Request early access →</a></span>
+</nav>
+
+<main>
+  <div class="auth-container">
+    <div class="auth-eyebrow">Secure Access</div>
+    <h1 class="auth-heading">Sign in to<br>OriginFlow LOS.</h1>
+    <p class="auth-sub">Access your pipeline, conditions, and team chat.</p>
+
+    <div class="auth-card">
+      <div class="error-box"   id="error-box"></div>
+      <div class="info-box"    id="info-box"></div>
+      <div class="success-box" id="success-box"></div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input class="form-input" type="email" id="email" name="email"
+                 placeholder="lo@yourbranch.com" autocomplete="email" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" type="password" id="password" name="password"
+                 placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <div class="form-footer">
+          <span></span>
+          <a href="/forgot-password.html" class="form-forgot">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-submit" id="submit-btn">Sign In</button>
+      </form>
+
+      <div class="auth-divider"><span>or</span></div>
+      <div class="auth-switch">Don't have an account? <a href="/signup.html">Request early access →</a></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
+  <div class="footer-links">
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+<script>
+  const errorBox   = document.getElementById('error-box');
+  const infoBox    = document.getElementById('info-box');
+  const successBox = document.getElementById('success-box');
+  const submitBtn  = document.getElementById('submit-btn');
+
+  function showError(msg)   { errorBox.textContent = msg; errorBox.classList.add('visible'); infoBox.classList.remove('visible'); successBox.classList.remove('visible'); }
+  function showInfo(msg)    { infoBox.textContent = msg; infoBox.classList.add('visible'); errorBox.classList.remove('visible'); successBox.classList.remove('visible'); }
+  function showSuccess(msg) { successBox.textContent = msg; successBox.classList.add('visible'); errorBox.classList.remove('visible'); infoBox.classList.remove('visible'); }
+  function resetBtn() {
+    submitBtn.textContent = 'Sign In';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+  }
+
+  // Show "email verified" message if redirected from email confirmation
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('verified') === 'true') {
+    showSuccess('Email verified — sign in below.');
+  } else if (urlParams.get('signup') === 'pending') {
+    showInfo('Check your email to verify your account, then sign in.');
+  }
+
+  // Poll for session to be persisted before redirecting
+  async function waitForSessionAndRedirect(sb, destination) {
+    for (let i = 0; i < 30; i++) {
+      try {
+        const { data } = await sb.auth.getSession();
+        if (data?.session?.access_token) {
+          window.location.href = destination;
+          return true;
+        }
+      } catch (e) { /* keep polling */ }
+      await new Promise(r => setTimeout(r, 100));
+    }
+    return false;
+  }
+
+  // If already signed in, skip straight to dashboard
+  if (typeof ofGetSession === 'function') {
+    ofGetSession()
+      .then(session => {
+        if (session) {
+          showInfo('Already signed in — redirecting to dashboard…');
+          window.location.href = '/dashboard.html';
+        }
+      })
+      .catch(err => console.warn('[OF Login] session check error:', err));
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    errorBox.classList.remove('visible');
+    infoBox.classList.remove('visible');
+    successBox.classList.remove('visible');
+
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!email || !password) {
+      showError('Email and password required.');
+      return;
+    }
+
+    submitBtn.textContent  = 'Signing in...';
+    submitBtn.disabled     = true;
+    submitBtn.style.opacity = '0.7';
+
+    const sb = (typeof getSupabase === 'function') ? getSupabase() : null;
+    if (!sb) {
+      showError('Service unavailable. Please refresh and try again.');
+      resetBtn();
+      return;
+    }
+
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 15000)
+    );
+
+    try {
+      const result = await Promise.race([
+        sb.auth.signInWithPassword({ email, password }),
+        timeout,
+      ]);
+      const { data, error } = result;
+
+      if (error) {
+        if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+          showError('Please verify your email first. Check your inbox for the confirmation link.');
+        } else {
+          showError(error.message || 'Invalid email or password.');
+        }
+        resetBtn();
+        return;
+      }
+      if (!data?.session) {
+        showError('Sign-in succeeded but no session returned. Please try again.');
+        resetBtn();
+        return;
+      }
+
+      submitBtn.textContent = 'Loading dashboard...';
+      const ok = await waitForSessionAndRedirect(sb, '/dashboard.html');
+      if (!ok) {
+        showError('Signed in, but session did not persist. Try clearing cookies or switching browsers.');
+        resetBtn();
+      }
+    } catch (err) {
+      if (err.message === 'timeout') {
+        showError('Authentication timed out after 15 seconds. Try again in a moment.');
+      } else if (err.message === 'Failed to fetch') {
+        showError('Cannot reach auth server. Your Supabase project may be paused.');
+      } else {
+        showError('Connection error: ' + err.message);
+      }
+      resetBtn();
+    }
+  });
+</script>
+</body>
+</html>
