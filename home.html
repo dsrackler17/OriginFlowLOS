@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Home · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — your branch home. Live pipeline, role-scoped queues, branch chat.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.sonar-icon { width: 26px; height: 26px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── MAIN LAYOUT ──────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1px;
+  background: var(--border);
+}
+.home-content { background: var(--navy); padding: 2rem; overflow-y: auto; }
+.chat-rail    { background: var(--deep); display: flex; flex-direction: column; min-height: 0; }
+
+/* ─── LOADING / PENDING STATES ─────────────────────────────────────── */
+.state-screen {
+  grid-column: 1 / -1;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2.25rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.state-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.7rem 1.25rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+
+/* spinner */
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── HOME HEADER ──────────────────────────────────────────────────── */
+.home-header { margin-bottom: 1.75rem; }
+.home-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+}
+.home-greeting { font-family: var(--serif); font-size: 2rem; color: var(--white); line-height: 1.15; }
+.home-sub { color: var(--muted); margin-top: 0.4rem; max-width: 640px; }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 1.75rem;
+}
+.metric-cell { background: var(--surface); padding: 1rem 1.15rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.6rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.2rem;
+}
+
+/* ─── CONTENT GRID ─────────────────────────────────────────────────── */
+.content-grid {
+  display: grid; grid-template-columns: 1.2fr 1fr;
+  gap: 1.25rem; margin-bottom: 1.75rem;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  min-height: 280px;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+}
+.panel-title {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text);
+}
+.panel-tag {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0.15rem 0.5rem; border: 1px solid var(--border);
+}
+.panel-body {
+  padding: 0.6rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 520px;
+}
+.panel-empty {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  text-align: center; padding: 2.5rem 1rem; letter-spacing: 0.04em;
+}
+
+/* ─── FILE ROW ─────────────────────────────────────────────────────── */
+.file-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.7rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+  text-decoration: none; color: var(--text);
+  transition: border-color 0.15s;
+}
+.file-row:hover { border-color: rgba(0,212,255,0.4); }
+.file-num {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--accent);
+  font-weight: 700; letter-spacing: 0.06em;
+}
+.file-mid { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.file-name {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--white);
+  font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-meta {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.file-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+.file-amount { font-family: var(--mono); font-size: 0.78rem; color: var(--white); font-weight: 700; }
+.file-status {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.file-status.lead    { color: var(--muted);  border-color: var(--border); }
+.file-status.app     { color: var(--accent); border-color: rgba(0,212,255,0.4); }
+.file-status.proc    { color: var(--accent); border-color: rgba(0,212,255,0.4); }
+.file-status.uw      { color: var(--amber);  border-color: rgba(245,166,35,0.4); }
+.file-status.cond    { color: var(--amber);  border-color: rgba(245,166,35,0.4); }
+.file-status.ctc     { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.file-status.docs    { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.file-status.funded  { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.1); }
+
+/* ─── ACTION ROW ───────────────────────────────────────────────────── */
+.action-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.75rem; align-items: center;
+  padding: 0.6rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+}
+.action-row.urgent { border-left-color: var(--red); }
+.action-row.info   { border-left-color: var(--accent); }
+.action-icon { font-family: var(--mono); font-size: 0.85rem; color: var(--amber); }
+.action-row.urgent .action-icon { color: var(--red); }
+.action-row.info   .action-icon { color: var(--accent); }
+.action-text { color: var(--text); font-size: 0.82rem; line-height: 1.4; }
+.action-text strong { color: var(--white); }
+.action-cta {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent);
+  text-decoration: none; padding: 0.25rem 0.55rem;
+  border: 1px solid rgba(0,212,255,0.3);
+}
+
+/* ─── CTA ROW ──────────────────────────────────────────────────────── */
+.cta-row {
+  display: flex; gap: 0.75rem; flex-wrap: wrap;
+  padding-top: 0.5rem;
+}
+
+/* ─── CHAT RAIL ────────────────────────────────────────────────────── */
+.chat-rail-head {
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.chat-rail-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+}
+.chat-rail-pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent2);
+  animation: dot 1.4s ease infinite;
+}
+@keyframes dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.chat-tabs {
+  display: flex; gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.chat-tab {
+  flex: 1;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--deep); color: var(--muted);
+  border: none; padding: 0.55rem 0.4rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.chat-tab:hover { color: var(--text); }
+.chat-tab.active {
+  background: var(--surface); color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.chat-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  display: flex; flex-direction: column; gap: 0.55rem;
+  min-height: 0;
+}
+.chat-msg {
+  background: var(--surface);
+  border-left: 2px solid var(--border);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+}
+.chat-msg.system {
+  background: rgba(0,212,255,0.04);
+  border-left-color: var(--accent);
+  font-family: var(--mono); font-size: 0.66rem;
+  color: var(--muted);
+}
+.chat-msg.lo,    .chat-msg.admin       { border-left-color: var(--accent); }
+.chat-msg.processor                    { border-left-color: var(--accent2); }
+.chat-msg.underwriter                  { border-left-color: var(--amber); }
+.chat-msg.closer                       { border-left-color: var(--accent2); }
+.chat-msg.viewer                       { border-left-color: var(--muted); }
+.chat-msg.fresh { animation: msgIn 0.4s ease both; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.chat-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+.chat-author {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--white);
+  letter-spacing: 0.06em;
+}
+.chat-author small {
+  color: var(--muted); margin-left: 0.4rem; font-size: 0.55rem;
+}
+.chat-time { font-family: var(--mono); font-size: 0.55rem; color: var(--muted); }
+.chat-body { color: var(--text); line-height: 1.5; word-wrap: break-word; }
+.chat-mention { color: var(--accent); font-weight: 500; }
+
+.chat-empty {
+  text-align: center; padding: 2.5rem 1rem;
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.chat-error {
+  background: rgba(255,68,68,0.08);
+  border-left: 2px solid var(--red);
+  padding: 0.55rem 0.75rem;
+  font-family: var(--mono); font-size: 0.65rem;
+  color: var(--red);
+}
+
+.chat-input {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0.6rem;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+}
+.chat-input input {
+  background: var(--deep); border: 1px solid var(--border);
+  color: var(--white); font-family: var(--sans); font-size: 0.78rem;
+  padding: 0.55rem 0.7rem; outline: none;
+  transition: border-color 0.15s;
+}
+.chat-input input:focus { border-color: var(--accent); }
+.chat-input input:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-input button {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  text-transform: uppercase; background: var(--accent); color: var(--navy);
+  border: none; padding: 0.55rem 0.85rem; cursor: pointer;
+  font-weight: 700; transition: background 0.15s;
+}
+.chat-input button:hover:not(:disabled) { background: var(--accent2); }
+.chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-input .post-error {
+  grid-column: 1 / -1;
+  font-family: var(--mono); font-size: 0.6rem; color: var(--red);
+  letter-spacing: 0.04em; padding: 0.2rem 0;
+}
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 0.85rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ─── MOBILE ───────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  main { grid-template-columns: 1fr; }
+  .chat-rail { max-height: 480px; border-top: 1px solid var(--border); }
+  .content-grid { grid-template-columns: 1fr; }
+  .metric-row { grid-template-columns: repeat(2, 1fr); }
+  .home-content { padding: 1.25rem; }
+  .home-greeting { font-size: 1.55rem; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .home-content { padding: 1rem; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="/home.html" class="active">Home</a></li>
+    <li><a href="/pipeline.html">Pipeline</a></li>
+    <li><a href="#" onclick="alert('Documents view — next sprint'); return false;">Documents</a></li>
+    <li><a href="#" onclick="alert('Reports view — next sprint'); return false;">Reports</a></li>
+  </ul>
+  <div class="nav-right">
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
+    </span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<main id="main-grid">
+
+  <!-- LOADING STATE -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading your workspace…</div>
+  </div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">You're not signed in.</h1>
+    <p class="state-text">This is your branch home — you'll need to sign in to see your pipeline, talk to your team, and work loans.</p>
+    <div class="state-actions">
+      <a href="/login.html" class="btn primary">Sign in →</a>
+      <a href="/dashboard.html" class="btn">View public demo</a>
+    </div>
+  </div>
+
+  <!-- PROFILE PENDING (signed up but not yet attached to a branch) -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending · Q2 2026 beta</div>
+    <h1 class="state-heading">Your account is awaiting branch setup.</h1>
+    <p class="state-text">
+      You're signed in, but your branch hasn't been provisioned yet. We approve and onboard founding branches manually
+      so we can walk every team through their first file. You'll get an email from <strong>davis@originflowlos.com</strong>
+      when your branch is live — usually within 48 hours of signup.
+    </p>
+    <div class="state-actions">
+      <a href="/dashboard.html" class="btn">Browse the demo</a>
+      <a href="mailto:davis@originflowlos.com" class="btn">Email Davis</a>
+    </div>
+  </div>
+
+  <!-- ─── ACTIVE HOME (rendered once profile + branch are loaded) ─── -->
+  <section class="home-content" id="home-content" style="display:none;">
+
+    <header class="home-header">
+      <div class="home-eyebrow" id="home-eyebrow">Branch Home</div>
+      <h1 class="home-greeting" id="home-greeting">Welcome back.</h1>
+      <p class="home-sub" id="home-sub">Your role-scoped queue and team chat — the rest of the branch lives one click away in Pipeline.</p>
+    </header>
+
+    <!-- Metric row (filled per-role by JS) -->
+    <div class="metric-row" id="metric-row">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+    </div>
+
+    <div class="content-grid">
+      <!-- Left: my files (role-filtered) -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title" id="files-panel-title">Your Active Files</span>
+          <span class="panel-tag" id="files-panel-tag">live</span>
+        </div>
+        <div class="panel-body" id="files-list">
+          <div class="panel-empty">Loading your files…</div>
+        </div>
+      </div>
+
+      <!-- Right: action queue / role-specific list -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title" id="queue-panel-title">Action Needed</span>
+          <span class="panel-tag" id="queue-panel-tag">—</span>
+        </div>
+        <div class="panel-body" id="queue-list">
+          <div class="panel-empty">Loading your queue…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a href="/pipeline.html" class="btn primary">Open Full Pipeline →</a>
+      <a href="#" class="btn" onclick="alert('Documents view — next sprint'); return false;">Documents</a>
+      <a href="#" class="btn" onclick="alert('Reports view — next sprint'); return false;">Reports</a>
+    </div>
+
+  </section>
+
+  <!-- ─── CHAT RAIL ─────────────────────────────────────────────── -->
+  <aside class="chat-rail" id="chat-rail" style="display:none;">
+    <div class="chat-rail-head">
+      <span class="chat-rail-label">Branch Chat</span>
+      <span class="chat-rail-pulse" title="Live"></span>
+    </div>
+    <div class="chat-tabs" id="chat-tabs"></div>
+    <div class="chat-thread" id="chat-thread">
+      <div class="chat-empty">Loading conversation…</div>
+    </div>
+    <form class="chat-input" id="chat-form" autocomplete="off">
+      <input id="chat-input-box" type="text" placeholder="Message your team… use @ to mention" maxlength="4000" disabled>
+      <button id="chat-send-btn" type="submit" disabled>Send</button>
+      <div class="post-error" id="chat-post-error" style="display:none;"></div>
+    </form>
+  </aside>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<footer>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · live data · branch-scoped</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="/dashboard.html">Public demo</a>
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// home.html — wiring
+// ───────────────────────────────────────────────────────────────────────────
+// On load:
+//   1. Verify session via ofGetSession() → if absent, show signed-out state.
+//   2. Load profile (joined with branch). If profile missing → pending state.
+//   3. Render the role-specific home + metrics + my-files + action queue.
+//   4. Initialize the chat rail: load default channel set, fetch initial
+//      messages for the active channel, subscribe via Realtime.
+//
+// All queries respect RLS — the database physically prevents cross-branch
+// reads, so even if this client code had a bug the borrower data stays safe.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (sel) => document.querySelector(sel);
+
+// ─── Money / formatting helpers ──────────────────────────────────────────
+function money(cents) {
+  if (cents == null) return '—';
+  const n = Number(cents) / 100;
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000)     return '$' + Math.round(n / 1_000) + 'K';
+  return '$' + n.toFixed(0);
+}
+function pct(v) {
+  if (v == null) return '—';
+  return Number(v).toFixed(1) + '%';
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function statusClass(s) {
+  return ({
+    lead:'lead', application:'app', submitted:'app', processing:'proc',
+    underwriting:'uw', conditional_approval:'cond', clear_to_close:'ctc',
+    docs_out:'docs', funded:'funded', denied:'lead', withdrawn:'lead',
+    cancelled:'lead'
+  })[s] || 'lead';
+}
+function statusLabel(s) {
+  return ({
+    lead:'LEAD', application:'APP', submitted:'SUB', processing:'PROC',
+    underwriting:'UW', conditional_approval:'COND', clear_to_close:'CTC',
+    docs_out:'DOCS', funded:'FUNDED', denied:'DENIED', withdrawn:'WDRWN',
+    cancelled:'CANCEL'
+  })[s] || String(s).slice(0, 6).toUpperCase();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 1 — AUTH + PROFILE
+// ═══════════════════════════════════════════════════════════════════════════
+let supa  = null;
+let me    = null;        // { id, branch_id, role, full_name, email }
+let branch = null;       // { id, name, ... }
+
+function showState(id) {
+  document.getElementById('main-grid').style.gridTemplateColumns = '1fr';
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#home-content').style.display = 'none';
+  $('#chat-rail').style.display    = 'none';
+}
+
+function showHome() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById('main-grid').style.gridTemplateColumns =
+    window.innerWidth > 1024 ? '1fr 360px' : '1fr';
+  $('#home-content').style.display = 'block';
+  $('#chat-rail').style.display    = 'flex';
+}
+
+async function bootstrap() {
+  supa = (typeof ofSupabase === 'function') ? ofSupabase() : null;
+  if (!supa) {
+    console.error('[Home] Supabase client unavailable — check /js/config.js');
+    showState('state-signed-out');
+    return;
+  }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) {
+    console.warn('[Home] session error:', err);
+  }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  // Load profile + branch in one round trip.
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr) {
+    console.error('[Home] profile load error:', profErr);
+    showState('state-pending');
+    return;
+  }
+  if (!profile || !profile.branch_id) {
+    // Signed in via auth but no profile row yet → still in early-access lead status
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id:        profile.id,
+    branch_id: profile.branch_id,
+    role:      profile.role,
+    full_name: profile.full_name || session.user.email || 'You',
+    email:     profile.email     || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  // Wire nav bar
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+
+  showHome();
+
+  // Render role-specific home
+  await renderRoleHome();
+
+  // Initialize chat
+  await initChat();
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 2 — ROLE-SCOPED HOME
+// ───────────────────────────────────────────────────────────────────────────
+// Each role gets a tailored greeting + its own metric set + its own list of
+// "my files" + an action queue. Queries hit the `loans` table filtered by
+// the matching role-id column (lo_id / processor_id / underwriter_id) so
+// performance stays cheap thanks to the indexes on those columns.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ROLE_CONFIG = {
+  lo:           { label:'Loan Officer',         filterCol:'lo_id',         queueLabel:'New leads & app-stage files' },
+  loa:          { label:'LO Assistant',         filterCol:'loa_id',        queueLabel:'Files needing your touch'    },
+  processor:    { label:'Processor',            filterCol:'processor_id',  queueLabel:'Open conditions to clear'    },
+  underwriter:  { label:'Underwriter',          filterCol:'underwriter_id',queueLabel:'UW queue'                    },
+  closer:       { label:'Closer',               filterCol:null,            queueLabel:'Clear-to-close + docs out'   },
+  admin:        { label:'Branch Admin',         filterCol:null,            queueLabel:'Branch-wide flags'           },
+  viewer:       { label:'Viewer',               filterCol:null,            queueLabel:'Recent activity'             },
+};
+
+async function renderRoleHome() {
+  const cfg  = ROLE_CONFIG[me.role] || ROLE_CONFIG.viewer;
+  const hour = new Date().getHours();
+  const tod  = hour < 5 ? 'evening' : hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  const firstName = (me.full_name || '').split(' ')[0];
+
+  $('#home-eyebrow').textContent  = cfg.label.toUpperCase() + ' · ' + branch.name.toUpperCase();
+  $('#home-greeting').textContent = 'Good ' + tod + (firstName ? ', ' + firstName + '.' : '.');
+
+  // Render role-specific subcopy
+  const subcopy = {
+    lo:          'Your leads, your active files, and your branch chat. The full pipeline is one click away.',
+    loa:         'Everything assigned to you. Process tasks, track conditions, talk to the team.',
+    processor:   'Your assigned files and outstanding conditions. AI auto-clears what it can — the rest is on you.',
+    underwriter: 'Your underwriting queue and conditional approvals. Decide, condition, kick back. No file locks.',
+    closer:      'Clear-to-close files and docs-out. Get them across the line.',
+    admin:       'Branch-wide rollup. Everyone\'s pipeline, the team chat, and the full pipeline view.',
+    viewer:      'Read-only view of branch activity. Compliance and accounting access without edit rights.',
+  };
+  $('#home-sub').textContent = subcopy[me.role] || subcopy.viewer;
+
+  // Files panel header
+  $('#files-panel-title').textContent =
+    cfg.filterCol ? 'Your Active Files' : 'Branch Active Files';
+
+  $('#queue-panel-title').textContent = cfg.queueLabel;
+
+  // Kick off all the queries in parallel
+  await Promise.all([
+    loadMetrics(cfg),
+    loadMyFiles(cfg),
+    loadQueue(cfg),
+  ]);
+}
+
+// ─── METRICS ─────────────────────────────────────────────────────────────
+// Lightweight: a few counts + sums. For the MVP these are 4 separate queries.
+// If they get slow we move to a SQL view or a postgres function. For now,
+// indexed lookups on (branch_id, status) and (lo_id) etc. keep this <100ms.
+async function loadMetrics(cfg) {
+  const row = $('#metric-row');
+
+  // Helper: count + sum for a given filter
+  async function summarize(filter) {
+    let q = supa.from('loans')
+      .select('loan_amount_cents, status', { count: 'exact', head: false })
+      .eq('branch_id', me.branch_id)
+      .is('archived_at', null);
+    for (const [k, v] of Object.entries(filter)) {
+      if (Array.isArray(v))      q = q.in(k, v);
+      else                       q = q.eq(k, v);
+    }
+    const { data, count, error } = await q;
+    if (error) { console.warn('metric query error:', error); return { count: 0, total: 0 }; }
+    const total = (data || []).reduce((s, r) => s + (r.loan_amount_cents || 0), 0);
+    return { count: count ?? (data?.length ?? 0), total };
+  }
+
+  const myFilter = cfg.filterCol ? { [cfg.filterCol]: me.id } : {};
+
+  if (me.role === 'lo' || me.role === 'loa') {
+    const [leads, app, active, ctc] = await Promise.all([
+      summarize({ ...myFilter, status: 'lead' }),
+      summarize({ ...myFilter, status: ['application','submitted'] }),
+      summarize({ ...myFilter, status: ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'] }),
+      summarize({ ...myFilter, status: 'clear_to_close' }),
+    ]);
+    row.innerHTML = `
+      <div class="metric-cell"><div class="metric-label">Leads</div><div class="metric-value cyan">${leads.count}</div><div class="metric-sub">awaiting outreach</div></div>
+      <div class="metric-cell"><div class="metric-label">In Application</div><div class="metric-value">${app.count}</div><div class="metric-sub">${money(app.total)}</div></div>
+      <div class="metric-cell"><div class="metric-label">Your Active Pipeline</div><div class="metric-value cyan">${money(active.total)}</div><div class="metric-sub">${active.count} files</div></div>
+      <div class="metric-cell"><div class="metric-label">Clear-to-Close</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">${money(ctc.total)}</div></div>
+    `;
+  } else if (me.role === 'processor') {
+    const [assigned, processing, uw, ctc] = await Promise.all([
+      summarize({ ...myFilter, status: ['submitted','processing','underwriting','conditional_approval'] }),
+      summarize({ ...myFilter, status: 'processing' }),
+      summarize({ ...myFilter, status: ['underwriting','conditional_approval'] }),
+      summarize({ ...myFilter, status: 'clear_to_close' }),
+    ]);
+    // Open conditions count (separate query, simple)
+    const condQ = await supa.from('conditions')
+      .select('id, loans!inner(processor_id, branch_id)', { count: 'exact', head: true })
+      .eq('loans.branch_id', me.branch_id)
+      .eq('loans.processor_id', me.id)
+      .eq('status', 'outstanding');
+    const openConditions = condQ.count ?? 0;
+    row.innerHTML = `
+      <div class="metric-cell"><div class="metric-label">Files Assigned</div><div class="metric-value cyan">${assigned.count}</div><div class="metric-sub">${money(assigned.total)}</div></div>
+      <div class="metric-cell"><div class="metric-label">Open Conditions</div><div class="metric-value amber">${openConditions}</div><div class="metric-sub">across your files</div></div>
+      <div class="metric-cell"><div class="metric-label">In Underwriting</div><div class="metric-value">${uw.count}</div><div class="metric-sub">UW + conditional</div></div>
+      <div class="metric-cell"><div class="metric-label">Clear-to-Close</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">${money(ctc.total)}</div></div>
+    `;
+  } else if (me.role === 'underwriter') {
+    const [uwQueue, cond, ctc, denied] = await Promise.all([
+      summarize({ ...myFilter, status: 'underwriting' }),
+      summarize({ ...myFilter, status: 'conditional_approval' }),
+      summarize({ ...myFilter, status: 'clear_to_close' }),
+      summarize({ ...myFilter, status: 'denied' }),
+    ]);
+    row.innerHTML = `
+      <div class="metric-cell"><div class="metric-label">UW Queue</div><div class="metric-value amber">${uwQueue.count}</div><div class="metric-sub">${money(uwQueue.total)}</div></div>
+      <div class="metric-cell"><div class="metric-label">Conditional</div><div class="metric-value">${cond.count}</div><div class="metric-sub">awaiting clear</div></div>
+      <div class="metric-cell"><div class="metric-label">Cleared (Yours)</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">CTC</div></div>
+      <div class="metric-cell"><div class="metric-label">Denied (Yours)</div><div class="metric-value">${denied.count}</div><div class="metric-sub">w/ ECOA letter</div></div>
+    `;
+  } else {
+    // admin / closer / viewer — branch-wide
+    const [active, uw, ctc, funded] = await Promise.all([
+      summarize({ status: ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'] }),
+      summarize({ status: ['underwriting','conditional_approval'] }),
+      summarize({ status: 'clear_to_close' }),
+      summarize({ status: 'funded' }),
+    ]);
+    row.innerHTML = `
+      <div class="metric-cell"><div class="metric-label">Active Pipeline</div><div class="metric-value cyan">${money(active.total)}</div><div class="metric-sub">${active.count} files</div></div>
+      <div class="metric-cell"><div class="metric-label">In Underwriting</div><div class="metric-value amber">${uw.count}</div><div class="metric-sub">UW + conditional</div></div>
+      <div class="metric-cell"><div class="metric-label">Clear-to-Close</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">ready to fund</div></div>
+      <div class="metric-cell"><div class="metric-label">Funded</div><div class="metric-value green">${funded.count}</div><div class="metric-sub">${money(funded.total)}</div></div>
+    `;
+  }
+}
+
+// ─── MY FILES ────────────────────────────────────────────────────────────
+async function loadMyFiles(cfg) {
+  const list = $('#files-list');
+
+  let q = supa.from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
+      property_address, purpose, updated_at,
+      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .order('updated_at', { ascending: false })
+    .limit(8);
+
+  if (cfg.filterCol) q = q.eq(cfg.filterCol, me.id);
+
+  const { data, error } = await q;
+  if (error) {
+    console.error('files load error:', error);
+    list.innerHTML = `<div class="panel-empty" style="color:var(--red);">Error loading files: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+  if (!data || data.length === 0) {
+    list.innerHTML = `<div class="panel-empty">No active files yet. Create one from Pipeline →</div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(loan => {
+    const bs = (loan.borrowers || [])
+      .sort((a,b) => (a.position||0) - (b.position||0))
+      .map(b => b.borrower);
+    const primary = bs[0];
+    const name = primary ? `${primary.last_name}, ${primary.first_name}` : 'Borrower TBD';
+    const cob  = bs.length > 1 ? ` <small style="color:var(--muted);">+${bs.length - 1}</small>` : '';
+    const city = (loan.property_address && loan.property_address.city) ? loan.property_address.city.toUpperCase() : '—';
+    const state = (loan.property_address && loan.property_address.state) ? loan.property_address.state.toUpperCase() : '';
+    return `
+      <a class="file-row" href="/pipeline.html#${escapeHtml(loan.id)}">
+        <span class="file-num">${escapeHtml(loan.loan_number)}</span>
+        <span class="file-mid">
+          <span class="file-name">${escapeHtml(name)}${cob}</span>
+          <span class="file-meta">${city}${state ? ', ' + state : ''} · ${escapeHtml(loan.purpose || '—')} · DTI ${pct(loan.dti_back_pct)} · LTV ${pct(loan.ltv_pct)}</span>
+        </span>
+        <span class="file-right">
+          <span class="file-amount">${money(loan.loan_amount_cents)}</span>
+          <span class="file-status ${statusClass(loan.status)}">${statusLabel(loan.status)}</span>
+        </span>
+      </a>
+    `;
+  }).join('');
+}
+
+// ─── ACTION QUEUE (role-specific) ────────────────────────────────────────
+async function loadQueue(cfg) {
+  const list = $('#queue-list');
+  $('#queue-panel-tag').textContent = '';
+
+  try {
+    if (me.role === 'lo' || me.role === 'loa') {
+      // Leads + application-stage files older than 24h
+      const cutoff = new Date(Date.now() - 24*3600*1000).toISOString();
+      const { data, error } = await supa.from('loans')
+        .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
+        .eq('branch_id', me.branch_id)
+        .eq(cfg.filterCol, me.id)
+        .in('status', ['lead','application'])
+        .lt('updated_at', cutoff)
+        .order('updated_at', { ascending: true })
+        .limit(8);
+      if (error) throw error;
+      renderActionList(list, data, (loan) => {
+        const b = (loan.borrowers || [])[0]?.borrower;
+        const name = b ? `${b.last_name}, ${b.first_name}` : 'lead';
+        return {
+          icon: '⚐',
+          urgency: loan.status === 'lead' ? 'urgent' : '',
+          text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(name)} — no activity ${timeAgo(loan.updated_at)}`,
+          href: `/pipeline.html#${loan.id}`,
+        };
+      }, 'No stale leads. Good hunting.');
+      $('#queue-panel-tag').textContent = (data || []).length + ' stale';
+
+    } else if (me.role === 'processor' || me.role === 'loa') {
+      // Outstanding conditions on my files (or all files for loa)
+      let q = supa.from('conditions')
+        .select(`
+          id, title, category, created_at,
+          loans!inner ( id, loan_number, branch_id, processor_id, lo_id )
+        `)
+        .eq('loans.branch_id', me.branch_id)
+        .eq('status', 'outstanding')
+        .order('created_at', { ascending: true })
+        .limit(8);
+      if (me.role === 'processor') q = q.eq('loans.processor_id', me.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      renderActionList(list, data, (cond) => ({
+        icon: cond.category === 'PTD' ? '⚑' : '⚑',
+        urgency: cond.category === 'PTD' ? 'urgent' : '',
+        text: `<strong>${escapeHtml(cond.loans.loan_number)}</strong> · ${escapeHtml(cond.title)} <span style="color:var(--muted);">· ${escapeHtml(cond.category || 'PTD')}</span>`,
+        href: `/pipeline.html#${cond.loans.id}`,
+      }), 'All your conditions are clear. Nice.');
+      $('#queue-panel-tag').textContent = (data || []).length + ' open';
+
+    } else if (me.role === 'underwriter') {
+      // Files in UW or conditional assigned to me
+      const { data, error } = await supa.from('loans')
+        .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
+        .eq('branch_id', me.branch_id)
+        .eq('underwriter_id', me.id)
+        .in('status', ['underwriting','conditional_approval'])
+        .order('updated_at', { ascending: true })
+        .limit(8);
+      if (error) throw error;
+      renderActionList(list, data, (loan) => {
+        const b = (loan.borrowers || [])[0]?.borrower;
+        const name = b ? `${b.last_name}, ${b.first_name}` : 'file';
+        return {
+          icon: loan.status === 'underwriting' ? '⚑' : '✓',
+          urgency: '',
+          text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(name)} — ${statusLabel(loan.status)} since ${timeAgo(loan.updated_at)}`,
+          href: `/pipeline.html#${loan.id}`,
+        };
+      }, 'UW queue is empty.');
+      $('#queue-panel-tag').textContent = (data || []).length + ' files';
+
+    } else {
+      // admin / closer / viewer — recent branch activity from audit_logs
+      const { data, error } = await supa.from('audit_logs')
+        .select('id, table_name, operation, actor_role, created_at, loan_id')
+        .eq('branch_id', me.branch_id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      list.innerHTML = (data || []).map(row => `
+        <div class="action-row info">
+          <span class="action-icon">●</span>
+          <span class="action-text">
+            <strong>${escapeHtml(row.actor_role || 'system')}</strong> ${escapeHtml(row.operation)} on ${escapeHtml(row.table_name)}
+            <span style="color:var(--muted);">· ${timeAgo(row.created_at)}</span>
+          </span>
+          ${row.loan_id ? `<a class="action-cta" href="/pipeline.html#${row.loan_id}">View →</a>` : '<span></span>'}
+        </div>
+      `).join('') || `<div class="panel-empty">No recent activity.</div>`;
+      $('#queue-panel-tag').textContent = 'last 10 events';
+    }
+  } catch (err) {
+    console.error('queue load error:', err);
+    list.innerHTML = `<div class="panel-empty" style="color:var(--red);">Error loading queue: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderActionList(el, rows, mapper, emptyText) {
+  if (!rows || rows.length === 0) {
+    el.innerHTML = `<div class="panel-empty">${escapeHtml(emptyText)}</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(r => {
+    const m = mapper(r);
+    return `
+      <div class="action-row ${m.urgency || ''}">
+        <span class="action-icon">${m.icon}</span>
+        <span class="action-text">${m.text}</span>
+        <a class="action-cta" href="${m.href}">Open →</a>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 3 — CHAT
+// ───────────────────────────────────────────────────────────────────────────
+// One Realtime subscription scoped to the current channel.
+// On channel switch: unsubscribe, fetch new channel's messages, re-subscribe.
+// Realtime reads still pass through RLS server-side, so a leaked client
+// can't tap into another branch's stream.
+// ═══════════════════════════════════════════════════════════════════════════
+
+let channels      = [];     // [{ id, slug, label, kind, scope_role }]
+let activeChannel = null;
+let realtimeSub   = null;
+
+async function initChat() {
+  const tabs = $('#chat-tabs');
+  const thread = $('#chat-thread');
+
+  // Load this branch's chat channels (default 5 are seeded by trigger).
+  const { data, error } = await supa.from('chat_channels')
+    .select('id, slug, label, kind, scope_role, loan_id')
+    .eq('branch_id', me.branch_id)
+    .in('kind', ['general','role'])
+    .order('kind', { ascending: false })   // general first (kind sorts: 'role'<'general' alphabetically; we want general first)
+    .order('label', { ascending: true });
+
+  if (error) {
+    console.error('channels load error:', error);
+    thread.innerHTML = `<div class="chat-error">Couldn't load channels: ${escapeHtml(error.message)}. Did you run sql/003_chat_and_routing.sql?</div>`;
+    return;
+  }
+
+  // Sort: general first, then role channels alphabetically
+  channels = (data || []).sort((a, b) => {
+    if (a.kind === 'general' && b.kind !== 'general') return -1;
+    if (a.kind !== 'general' && b.kind === 'general') return 1;
+    return a.label.localeCompare(b.label);
+  });
+
+  if (channels.length === 0) {
+    thread.innerHTML = `<div class="chat-error">No channels found for this branch. Run sql/003_chat_and_routing.sql.</div>`;
+    return;
+  }
+
+  // Render tabs
+  tabs.innerHTML = channels.map((c, i) => `
+    <button class="chat-tab ${i === 0 ? 'active' : ''}" data-channel-id="${c.id}">${escapeHtml(c.label)}</button>
+  `).join('');
+  tabs.querySelectorAll('.chat-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchChannel(btn.dataset.channelId));
+  });
+
+  // Wire input
+  const form = $('#chat-form');
+  const inp  = $('#chat-input-box');
+  const btn  = $('#chat-send-btn');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await sendMessage(inp.value);
+  });
+
+  // Switch to first channel — that loads messages + subscribes
+  await switchChannel(channels[0].id);
+}
+
+async function switchChannel(channelId) {
+  const ch = channels.find(c => c.id === channelId);
+  if (!ch) return;
+  activeChannel = ch;
+
+  // Update tab UI
+  document.querySelectorAll('.chat-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.channelId === channelId);
+  });
+
+  // Update input enabled-state based on role gate (role channels)
+  const canPost = canPostInChannel(ch);
+  $('#chat-input-box').disabled = !canPost;
+  $('#chat-send-btn').disabled  = !canPost;
+  $('#chat-input-box').placeholder = canPost
+    ? `Message #${ch.label}… use @ to mention`
+    : `#${ch.label} is read-only for ${me.role.toUpperCase()}s`;
+
+  // Tear down any prior subscription
+  if (realtimeSub) {
+    try { await supa.removeChannel(realtimeSub); } catch (_) {}
+    realtimeSub = null;
+  }
+
+  // Load initial messages for this channel
+  const thread = $('#chat-thread');
+  thread.innerHTML = `<div class="chat-empty">Loading #${escapeHtml(ch.label)}…</div>`;
+
+  const { data, error } = await supa.from('chat_messages_enriched')
+    .select('*')
+    .eq('channel_id', channelId)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  if (error) {
+    thread.innerHTML = `<div class="chat-error">Couldn't load messages: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    thread.innerHTML = `<div class="chat-empty">No messages yet — start the conversation.</div>`;
+  } else {
+    thread.innerHTML = data.map(m => renderMsg(m, false)).join('');
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  // Subscribe to live INSERTs on this channel
+  realtimeSub = supa
+    .channel(`chat:${channelId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `channel_id=eq.${channelId}` },
+      async (payload) => {
+        // Realtime gives us the raw chat_messages row. We need author_name + role —
+        // hydrate via a quick lookup. Cheap because it's one row.
+        const row = payload.new;
+        const { data: prof } = await supa.from('profiles')
+          .select('full_name, role')
+          .eq('id', row.author_id)
+          .maybeSingle();
+        const enriched = {
+          ...row,
+          author_name: prof?.full_name || 'Teammate',
+          author_role: prof?.role || 'viewer',
+        };
+        appendMsg(enriched, true);
+      }
+    )
+    .subscribe();
+}
+
+function canPostInChannel(ch) {
+  if (ch.kind === 'general') return true;
+  if (ch.kind === 'role') {
+    return me.role === 'admin' || me.role === ch.scope_role;
+  }
+  return false;
+}
+
+function renderMsg(m, fresh) {
+  if (m.is_system) {
+    return `<div class="chat-msg system fresh"><div class="chat-body">${escapeHtml(m.body)}</div></div>`;
+  }
+  const role = (m.author_role || 'viewer').toLowerCase();
+  const body = escapeHtml(m.body).replace(/@(\w+)/g, '<span class="chat-mention">@$1</span>');
+  return `
+    <div class="chat-msg ${role} ${fresh ? 'fresh' : ''}">
+      <div class="chat-head">
+        <span class="chat-author">${escapeHtml(m.author_name)} <small>${role.toUpperCase()}</small></span>
+        <span class="chat-time">${timeAgo(m.created_at)}</span>
+      </div>
+      <div class="chat-body">${body}</div>
+    </div>
+  `;
+}
+
+function appendMsg(m, fresh) {
+  const thread = $('#chat-thread');
+  // Clear empty-state if present
+  const empty = thread.querySelector('.chat-empty');
+  if (empty) thread.innerHTML = '';
+  thread.insertAdjacentHTML('beforeend', renderMsg(m, fresh));
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendMessage(text) {
+  const body = String(text || '').trim();
+  const errEl = $('#chat-post-error');
+  errEl.style.display = 'none';
+  if (!body || !activeChannel) return;
+  if (!canPostInChannel(activeChannel)) return;
+
+  const inp = $('#chat-input-box');
+  const btn = $('#chat-send-btn');
+  inp.disabled = true; btn.disabled = true;
+
+  // Optimistic insert — let RLS validate server-side
+  const { error } = await supa.from('chat_messages').insert({
+    branch_id:  me.branch_id,
+    channel_id: activeChannel.id,
+    author_id:  me.id,
+    body,
+  });
+
+  inp.disabled = false; btn.disabled = false;
+  if (error) {
+    errEl.textContent = `Couldn't send: ${error.message}`;
+    errEl.style.display = 'block';
+    console.error('chat insert error:', error);
+    return;
+  }
+  inp.value = '';
+  inp.focus();
+  // Realtime subscription will deliver the message back to us with the
+  // server-assigned id + timestamp, so we don't append here to avoid dupes.
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+// Re-flow grid on resize (chat rail collapses under 1024)
+window.addEventListener('resize', () => {
+  if ($('#home-content').style.display !== 'none') {
+    document.getElementById('main-grid').style.gridTemplateColumns =
+      window.innerWidth > 1024 ? '1fr 360px' : '1fr';
+  }
+});
+</script>
+
+</body>
+</html>
