@@ -197,7 +197,7 @@
       .then(session => {
         if (session) {
           showInfo('Already signed in — redirecting to dashboard…');
-          window.location.href = '/dashboard.html';
+          window.location.href = '/home.html';
         }
       })
       .catch(err => console.warn('[OF Login] session check error:', err));
