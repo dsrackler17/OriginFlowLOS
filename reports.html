@@ -1156,10 +1156,27 @@ let branch = null;
 
 // Schema feature flags. Each is null until detectSchema() probes the DB,
 // then true if the column/relationship is usable, false if missing.
-// Both hard-coded queries that previously 400'd are now gated on these.
+// All hard-coded queries that previously 400'd are now gated on these.
+//
+// Three-state for officer info because they can fail independently:
+//   loans_officer_col=false → don't reference the column anywhere
+//   loans_officer_col=true, loans_officer_fk=false → use column, fetch
+//                                                   profile names separately
+//   loans_officer_col=true, loans_officer_fk=true  → use both directly
+//
+// loans_cols is a per-column map for OPTIONAL loans columns that some
+// deployments have and some don't. We probe each one independently and
+// only include the available ones in SELECT. Renderers tolerate undefined
+// values (CSV exports become empty strings, filters fall back to
+// updated_at, etc.).
 let SCHEMA = {
-  borrowers_hmda:  null,   // hmda_race, hmda_ethnicity, hmda_sex columns
-  loans_officer_fk: null,  // loans.loan_officer_id → profiles FK registered
+  borrowers_hmda:    null,  // hmda_race, hmda_ethnicity, hmda_sex columns
+  loans_officer_col: null,  // loans.loan_officer_id column exists
+  loans_officer_fk:  null,  // loans.loan_officer_id → profiles FK registered
+  loans_cols: {
+    stage_entered_at: null, // optional — used by velocity / funded-detection
+    archived_at:      null, // optional — used by soft-delete WHERE filter
+  },
 };
 
 // Date range
@@ -1302,7 +1319,10 @@ function endOfDayISO(date) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function detectSchema() {
-  if (SCHEMA.borrowers_hmda !== null && SCHEMA.loans_officer_fk !== null) return;
+  if (SCHEMA.borrowers_hmda !== null &&
+      SCHEMA.loans_officer_col !== null &&
+      SCHEMA.loans_officer_fk !== null &&
+      Object.values(SCHEMA.loans_cols).every(v => v !== null)) return;
 
   // Probe 1: borrowers.hmda_race column
   try {
@@ -1310,7 +1330,7 @@ async function detectSchema() {
       .select('id, hmda_race')
       .limit(1);
     if (error) {
-      console.info('[reports] HMDA columns not detected on borrowers — compliance tab will show migration banner. Error:', error.message);
+      console.info('[reports] HMDA columns missing on borrowers — compliance tab will show migration banner. Error:', error.message);
       SCHEMA.borrowers_hmda = false;
     } else {
       SCHEMA.borrowers_hmda = true;
@@ -1319,21 +1339,73 @@ async function detectSchema() {
     SCHEMA.borrowers_hmda = false;
   }
 
-  // Probe 2: loans → profiles FK via loan_officer_id
-  // Try the embed; if it errors, fall back to standalone profiles fetch.
+  // Probe 2: loans.loan_officer_id column itself.
+  // This is separate from the FK embed because the column can exist without
+  // the FK being registered with PostgREST. If THIS probe fails, the column
+  // doesn't exist at all and we must omit it from every SELECT.
   try {
     const { error } = await supa.from('loans')
-      .select('id, officer:loan_officer_id ( full_name )')
+      .select('id, loan_officer_id')
       .limit(1);
     if (error) {
-      console.info('[reports] loans→profiles officer FK not detected — using standalone profiles fetch. Error:', error.message);
-      SCHEMA.loans_officer_fk = false;
+      console.info('[reports] loans.loan_officer_id column missing — LO leaderboard will show "Unassigned" for everyone. Error:', error.message);
+      SCHEMA.loans_officer_col = false;
     } else {
-      SCHEMA.loans_officer_fk = true;
+      SCHEMA.loans_officer_col = true;
     }
   } catch (e) {
+    SCHEMA.loans_officer_col = false;
+  }
+
+  // Probe 3: loans → profiles FK via loan_officer_id.
+  // Only meaningful if the column itself exists.
+  if (SCHEMA.loans_officer_col) {
+    try {
+      const { error } = await supa.from('loans')
+        .select('id, officer:loan_officer_id ( full_name )')
+        .limit(1);
+      if (error) {
+        console.info('[reports] loans→profiles officer FK not registered — using standalone profiles fetch. Error:', error.message);
+        SCHEMA.loans_officer_fk = false;
+      } else {
+        SCHEMA.loans_officer_fk = true;
+      }
+    } catch (e) {
+      SCHEMA.loans_officer_fk = false;
+    }
+  } else {
     SCHEMA.loans_officer_fk = false;
   }
+
+  // Probe 4: optional loans columns (stage_entered_at, archived_at).
+  // Probed in parallel since they're independent. Each just needs a yes/no.
+  await Promise.all(
+    Object.keys(SCHEMA.loans_cols).map(async (col) => {
+      try {
+        const { error } = await supa.from('loans')
+          .select(`id, ${col}`)
+          .limit(1);
+        if (error) {
+          console.info(`[reports] loans.${col} column missing — page will work without it but some metrics may degrade. Error:`, error.message);
+          SCHEMA.loans_cols[col] = false;
+        } else {
+          SCHEMA.loans_cols[col] = true;
+        }
+      } catch (e) {
+        SCHEMA.loans_cols[col] = false;
+      }
+    })
+  );
+
+  // Loud diagnostic — if you don't see this in the console, you're running
+  // a cached version of this file. Hard-reload (Cmd/Ctrl+Shift+R).
+  console.warn('[reports] Schema detection complete:', {
+    'borrowers.hmda_*':       SCHEMA.borrowers_hmda      ? '✓ available' : '✗ missing',
+    'loans.loan_officer_id':  SCHEMA.loans_officer_col   ? '✓ available' : '✗ missing',
+    'loans→profiles FK':      SCHEMA.loans_officer_fk    ? '✓ available' : '✗ missing',
+    'loans.stage_entered_at': SCHEMA.loans_cols.stage_entered_at ? '✓ available' : '✗ missing',
+    'loans.archived_at':      SCHEMA.loans_cols.archived_at      ? '✓ available' : '✗ missing',
+  });
 }
 
 // Build the SELECT string for the bulk loans fetch dynamically. Includes
@@ -1345,16 +1417,42 @@ function buildLoanSelect() {
   const borrowerCols = SCHEMA.borrowers_hmda
     ? 'id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex'
     : 'id, first_name, last_name';
-  const officerEmbed = SCHEMA.loans_officer_fk
-    ? 'officer:loan_officer_id ( full_name, role ),'
-    : '';
+
+  // Three states for officer info, evaluated independently:
+  //   col + FK   → include both the column and the embed (full data in one go)
+  //   col only   → include the column, embed will fail so we fetch profiles separately
+  //   neither    → omit completely; LO leaderboard shows everyone as "Unassigned"
+  let officerPart = '';
+  if (SCHEMA.loans_officer_fk) {
+    officerPart = 'loan_officer_id, officer:loan_officer_id ( full_name, role ),';
+  } else if (SCHEMA.loans_officer_col) {
+    officerPart = 'loan_officer_id,';
+  }
+
+  // Optional loans columns — include only those that exist
+  const optionalCols = Object.entries(SCHEMA.loans_cols)
+    .filter(([_, present]) => present === true)
+    .map(([col]) => col)
+    .join(', ');
+  const optionalPart = optionalCols ? optionalCols + ',' : '';
+
   return `
     id, branch_id, loan_number, status, purpose, loan_amount_cents,
-    created_at, updated_at, stage_entered_at, archived_at,
-    loan_officer_id,
-    ${officerEmbed}
+    created_at, updated_at,
+    ${optionalPart}
+    ${officerPart}
     loan_borrowers ( position, borrower:borrower_id ( ${borrowerCols} ) )
   `;
+}
+
+// Apply the optional `archived_at IS NULL` filter only if the column exists.
+// Some deployments don't have soft-delete on loans yet — in that case there's
+// nothing to filter and including the WHERE clause would 400.
+function applyArchivedFilter(query) {
+  if (SCHEMA.loans_cols.archived_at) {
+    return query.is('archived_at', null);
+  }
+  return query;
 }
 
 // When the officer FK isn't registered, fetch profiles for this branch
@@ -1719,17 +1817,13 @@ async function fetchDataset() {
   const SELECT = buildLoanSelect();
 
   const [createdRes, activeRes] = await Promise.all([
-    supa.from('loans')
-      .select(SELECT)
+    applyArchivedFilter(supa.from('loans').select(SELECT))
       .eq('branch_id', me.branch_id)
-      .is('archived_at', null)
       .gte('created_at', fromISO)
       .lte('created_at', toISO)
       .limit(2000),
-    supa.from('loans')
-      .select(SELECT)
+    applyArchivedFilter(supa.from('loans').select(SELECT))
       .eq('branch_id', me.branch_id)
-      .is('archived_at', null)
       .not('status', 'in', '(funded,denied,withdrawn)')
       .limit(2000),
   ]);
@@ -1743,11 +1837,16 @@ async function fetchDataset() {
   (activeRes.data  || []).forEach(l => { if (!loanMap.has(l.id)) loanMap.set(l.id, l); });
   let loans = [...loanMap.values()];
 
-  // If the officer FK isn't registered, backfill officer info from a
-  // separate profiles fetch. Single round-trip per refresh (cached).
-  if (!SCHEMA.loans_officer_fk) {
+  // If the officer FK isn't registered (but the column is), backfill officer
+  // info from a separate profiles fetch. Single round-trip per refresh
+  // (cached). If the column is missing entirely, there's nothing to look up.
+  if (SCHEMA.loans_officer_col && !SCHEMA.loans_officer_fk) {
     await ensureProfilesCache();
     loans.forEach(attachOfficerToLoan);
+  } else if (!SCHEMA.loans_officer_col) {
+    // Column missing — make officer null on every loan so renderers can
+    // safely read `l.officer?.full_name` without surprises.
+    loans.forEach(l => { l.officer = null; });
   }
 
   // Normalize borrower objects so renderers can read hmda_* unconditionally
@@ -2861,33 +2960,47 @@ async function exportFullDataset() {
     const all = [];
     let from = 0;
 
-    // Build a slimmer SELECT for the export (we don't need every column)
+    // Build a slimmer SELECT for the export (we don't need every column).
+    // Same three-state officer logic as buildLoanSelect, plus optional cols.
     const borrowerCols = SCHEMA.borrowers_hmda
       ? 'first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex'
       : 'first_name, last_name';
-    const officerEmbed = SCHEMA.loans_officer_fk
-      ? 'officer:loan_officer_id ( full_name ),'
-      : '';
+    let officerPart = '';
+    if (SCHEMA.loans_officer_fk) {
+      officerPart = 'loan_officer_id, officer:loan_officer_id ( full_name ),';
+    } else if (SCHEMA.loans_officer_col) {
+      officerPart = 'loan_officer_id,';
+    }
+    const optionalCols = Object.entries(SCHEMA.loans_cols)
+      .filter(([_, present]) => present === true)
+      .map(([col]) => col)
+      .join(', ');
+    const optionalPart = optionalCols ? optionalCols + ',' : '';
     const SELECT = `
       id, loan_number, status, purpose, loan_amount_cents,
-      loan_officer_id, ${officerEmbed}
-      property_address, created_at, updated_at, stage_entered_at,
+      ${officerPart}
+      property_address, created_at, updated_at,
+      ${optionalPart}
       loan_borrowers ( position, borrower:borrower_id ( ${borrowerCols} ) )
     `;
 
     while (from < HARD_CAP) {
-      const { data, error } = await supa.from('loans')
-        .select(SELECT)
+      const { data, error } = await applyArchivedFilter(
+          supa.from('loans').select(SELECT)
+        )
         .eq('branch_id', me.branch_id)
-        .is('archived_at', null)
         .gte('created_at', fromISO)
         .lte('created_at', toISO + 'T23:59:59')
         .order('created_at', { ascending: false })
         .range(from, from + PAGE - 1);
       if (error) throw error;
       if (!data || data.length === 0) break;
-      // Backfill officer if the FK isn't registered
-      if (!SCHEMA.loans_officer_fk) data.forEach(attachOfficerToLoan);
+      // Backfill officer if the FK isn't registered but column exists
+      if (SCHEMA.loans_officer_col && !SCHEMA.loans_officer_fk) {
+        data.forEach(attachOfficerToLoan);
+      } else if (!SCHEMA.loans_officer_col) {
+        data.forEach(l => { l.officer = null; });
+      }
       // Normalize borrowers so HMDA columns are at least null
       data.forEach(l => (l.loan_borrowers || []).forEach(lb => normalizeBorrower(lb.borrower)));
       all.push(...data);
