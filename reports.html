@@ -1169,6 +1169,10 @@ let branch = null;
 // only include the available ones in SELECT. Renderers tolerate undefined
 // values (CSV exports become empty strings, filters fall back to
 // updated_at, etc.).
+//
+// tables tracks optional auxiliary tables. These don't crash the page when
+// missing — affected panels just render empty states explaining what's
+// needed for them to work.
 let SCHEMA = {
   borrowers_hmda:    null,  // hmda_race, hmda_ethnicity, hmda_sex columns
   loans_officer_col: null,  // loans.loan_officer_id column exists
@@ -1176,6 +1180,10 @@ let SCHEMA = {
   loans_cols: {
     stage_entered_at: null, // optional — used by velocity / funded-detection
     archived_at:      null, // optional — used by soft-delete WHERE filter
+  },
+  tables: {
+    stage_changes: null,    // audit table for stage transitions
+    conditions:    null,    // underwriting conditions / clear-time tracking
   },
 };
 
@@ -1322,7 +1330,8 @@ async function detectSchema() {
   if (SCHEMA.borrowers_hmda !== null &&
       SCHEMA.loans_officer_col !== null &&
       SCHEMA.loans_officer_fk !== null &&
-      Object.values(SCHEMA.loans_cols).every(v => v !== null)) return;
+      Object.values(SCHEMA.loans_cols).every(v => v !== null) &&
+      Object.values(SCHEMA.tables).every(v => v !== null)) return;
 
   // Probe 1: borrowers.hmda_race column
   try {
@@ -1397,6 +1406,26 @@ async function detectSchema() {
     })
   );
 
+  // Probe 5: optional auxiliary tables (stage_changes, conditions).
+  // Detect missing tables up front so we don't issue queries we know will
+  // 404. The minimum-impact probe is `select id limit 1` — even if the
+  // table is empty the call succeeds with empty data and no error.
+  await Promise.all(
+    Object.keys(SCHEMA.tables).map(async (tbl) => {
+      try {
+        const { error } = await supa.from(tbl).select('*', { head: true, count: 'exact' }).limit(0);
+        if (error) {
+          console.info(`[reports] ${tbl} table not found — affected panels will show empty states. Error:`, error.message);
+          SCHEMA.tables[tbl] = false;
+        } else {
+          SCHEMA.tables[tbl] = true;
+        }
+      } catch (e) {
+        SCHEMA.tables[tbl] = false;
+      }
+    })
+  );
+
   // Loud diagnostic — if you don't see this in the console, you're running
   // a cached version of this file. Hard-reload (Cmd/Ctrl+Shift+R).
   console.warn('[reports] Schema detection complete:', {
@@ -1405,6 +1434,8 @@ async function detectSchema() {
     'loans→profiles FK':      SCHEMA.loans_officer_fk    ? '✓ available' : '✗ missing',
     'loans.stage_entered_at': SCHEMA.loans_cols.stage_entered_at ? '✓ available' : '✗ missing',
     'loans.archived_at':      SCHEMA.loans_cols.archived_at      ? '✓ available' : '✗ missing',
+    'stage_changes table':    SCHEMA.tables.stage_changes        ? '✓ available' : '✗ missing',
+    'conditions table':       SCHEMA.tables.conditions           ? '✓ available' : '✗ missing',
   });
 }
 
@@ -1855,41 +1886,45 @@ async function fetchDataset() {
   });
 
   // 2. Stage changes — used for velocity, throughput, and app→CTC time.
+  // Skip entirely if the table doesn't exist; affected panels show empty states.
   let stageChanges = [];
   let stageChangesPeriod = [];
-  try {
-    const bufferStart = new Date(fromISO);
-    bufferStart.setDate(bufferStart.getDate() - 90);
-    const bufferStartISO = bufferStart.toISOString().slice(0, 10);
-    const { data, error } = await supa.from('stage_changes')
-      .select('id, loan_id, from_status, to_status, changed_by, actor_role, created_at')
-      .eq('branch_id', me.branch_id)
-      .gte('created_at', bufferStartISO)
-      .lte('created_at', toISO)
-      .order('created_at', { ascending: true })
-      .limit(20000);
-    if (error && error.code !== '42P01') throw error;
-    stageChanges = data || [];
-    stageChangesPeriod = stageChanges.filter(c =>
-      c.created_at >= fromISO && c.created_at <= toISO + 'T23:59:59'
-    );
-  } catch (err) {
-    console.warn('stage_changes unavailable:', err.message);
+  if (SCHEMA.tables.stage_changes) {
+    try {
+      const bufferStart = new Date(fromISO);
+      bufferStart.setDate(bufferStart.getDate() - 90);
+      const bufferStartISO = bufferStart.toISOString().slice(0, 10);
+      const { data, error } = await supa.from('stage_changes')
+        .select('id, loan_id, from_status, to_status, changed_by, actor_role, created_at')
+        .eq('branch_id', me.branch_id)
+        .gte('created_at', bufferStartISO)
+        .lte('created_at', toISO)
+        .order('created_at', { ascending: true })
+        .limit(20000);
+      if (error) throw error;
+      stageChanges = data || [];
+      stageChangesPeriod = stageChanges.filter(c =>
+        c.created_at >= fromISO && c.created_at <= toISO + 'T23:59:59'
+      );
+    } catch (err) {
+      console.warn('stage_changes fetch failed:', err.message);
+    }
   }
 
   // 3. Conditions — used for clear-time analysis.
+  // Skip if the table doesn't exist; conditions panel shows empty state.
   let conditions = [];
-  if (loans.length > 0) {
+  if (SCHEMA.tables.conditions && loans.length > 0) {
     const loanIds = loans.map(l => l.id);
     try {
       const { data, error } = await supa.from('conditions')
         .select('id, loan_id, status, created_at, cleared_at, title')
         .in('loan_id', loanIds)
         .limit(10000);
-      if (error && error.code !== '42P01') throw error;
+      if (error) throw error;
       conditions = data || [];
     } catch (err) {
-      console.warn('conditions unavailable:', err.message);
+      console.warn('conditions fetch failed:', err.message);
     }
   }
 
