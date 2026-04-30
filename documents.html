@@ -978,7 +978,7 @@ footer a:hover { color: var(--accent); }
 //
 // Schema expected on `documents` table:
 //   id, branch_id, loan_id (nullable), uploaded_by,
-//   file_name, file_url, file_size_bytes, mime_type,
+//   filename, file_url, file_size_bytes, mime_type,
 //   doc_type, status (uploaded|extracting|extracted|applied|failed),
 //   extraction_data (jsonb), extraction_confidence (numeric 0-1),
 //   uploaded_at, extracted_at, archived_at
@@ -1294,7 +1294,7 @@ async function loadLoans() {
 async function loadDocs() {
   let q = supa.from('documents')
     .select(`
-      id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
+      id, branch_id, loan_id, uploaded_by, filename, file_url, file_size_bytes,
       mime_type, doc_type, status, extraction_data, extraction_confidence,
       uploaded_at, extracted_at, archived_at
     `)
@@ -1391,7 +1391,7 @@ function applyFilters(rows) {
     if (filters.status !== 'all' && d.status !== filters.status) return false;
     if (filters.search) {
       const haystack = [
-        d.file_name,
+        d.filename,
         d.doc_type,
         loansById.get(d.loan_id)?.loan_number || '',
         d.uploader?.full_name || '',
@@ -1458,8 +1458,8 @@ function renderList() {
 }
 
 function renderRow(d) {
-  const ext = fileExt(d.file_name);
-  const extCls = fileExtClass(d.mime_type, d.file_name);
+  const ext = fileExt(d.filename);
+  const extCls = fileExtClass(d.mime_type, d.filename);
   const docTypeLabel = DOC_TYPES[d.doc_type] || (d.doc_type || '—');
   const docTypeDetected = d.status === 'extracted' || d.status === 'applied';
   const loan = d.loan_id ? loansById.get(d.loan_id) : null;
@@ -1477,7 +1477,7 @@ function renderRow(d) {
     <div class="doc-row ${isSelected ? 'selected' : ''}" data-doc-id="${escapeHtml(d.id)}">
       <div class="doc-icon ${extCls}">${escapeHtml(ext)}</div>
       <div class="doc-mid">
-        <div class="doc-name">${escapeHtml(d.file_name)}</div>
+        <div class="doc-name">${escapeHtml(d.filename)}</div>
         <div class="doc-meta">${meta.join(' · ')}</div>
       </div>
       <div class="doc-type ${docTypeDetected ? 'detected' : ''}">${escapeHtml(docTypeLabel)}</div>
@@ -1514,7 +1514,7 @@ function renderDetail(doc) {
 
   const loan = doc.loan_id ? loansById.get(doc.loan_id) : null;
   const docTypeLabel = DOC_TYPES[doc.doc_type] || doc.doc_type || 'Auto-detect';
-  const ext = fileExt(doc.file_name);
+  const ext = fileExt(doc.filename);
 
   // Head
   const meta = [];
@@ -1534,7 +1534,7 @@ function renderDetail(doc) {
   const canPreview = !isQuarantined && !isInfected && doc.file_url;
 
   $('#detail-head').innerHTML = `
-    <div class="dh-name">${escapeHtml(doc.file_name)}</div>
+    <div class="dh-name">${escapeHtml(doc.filename)}</div>
     <div class="dh-meta-row">${meta.join('')}</div>
     <div class="dh-actions">
       ${canPreview ? `<a class="dh-action" href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">↗ Open file</a>` : ''}
@@ -1741,7 +1741,7 @@ function renderPreview(doc) {
         <div class="preview-head">Preview · Image</div>
         <div class="preview-body">
           <img src="${escapeHtml(doc.file_url)}"
-               alt="${escapeHtml(doc.file_name)}"
+               alt="${escapeHtml(doc.filename)}"
                loading="lazy"
                onerror="this.parentElement.innerHTML='<div class=&quot;preview-fallback&quot;>Image failed to load (CORS or 404).<br><a href=&quot;${escapeHtml(doc.file_url)}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Open in new tab</a></div>'">
         </div>
@@ -1785,7 +1785,7 @@ function renderPreview(doc) {
           </div>
           <iframe id="${previewId}"
                   src="${escapeHtml(doc.file_url)}#toolbar=0"
-                  title="${escapeHtml(doc.file_name)}"
+                  title="${escapeHtml(doc.filename)}"
                   style="width:100%; height:320px; border:none; background:white; opacity:0;"
                   onload="OF_pdfPreviewLoaded('${previewId}', '${escapeHtml(doc.file_url)}')"
                   onerror="OF_pdfPreviewFailed('${previewId}', '${escapeHtml(doc.file_url)}')"></iframe>
@@ -2148,7 +2148,7 @@ async function confirmUpload() {
         branch_id: me.branch_id,
         loan_id: loanId,
         uploaded_by: me.id,
-        file_name: file.name,
+        filename: file.name,
         file_url: uploaded.file_url,
         file_size_bytes: uploaded.file_size_bytes ?? file.size,
         mime_type: uploaded.mime_type ?? file.type ?? 'application/octet-stream',
@@ -2320,7 +2320,7 @@ function handleRealtimeDelete(row) {
 async function fetchSingleDoc(id) {
   const { data, error } = await supa.from('documents')
     .select(`
-      id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
+      id, branch_id, loan_id, uploaded_by, filename, file_url, file_size_bytes,
       mime_type, doc_type, status, extraction_data, extraction_confidence,
       uploaded_at, extracted_at, archived_at
     `)
