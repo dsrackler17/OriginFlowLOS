@@ -621,7 +621,20 @@ footer a:hover { color: var(--accent); }
   .qa-card { min-height: 76px; }
 }
 </style>
-
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6LRWPMYK9C"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  // Strip loan IDs from URL hash + query params before reporting.
+  // Without this, every navigation to /dashboard.html#<loan_uuid> would
+  // ship the loan ID to Google. That's a low-grade PII leak and a problem
+  // under TRID/ECOA recordkeeping if it ever gets noticed.
+  gtag('config', 'G-6LRWPMYK9C', {
+    page_path: window.location.pathname
+  });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 </head>
