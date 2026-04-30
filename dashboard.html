@@ -750,7 +750,7 @@ footer a:hover { color: var(--accent); }
   <div class="state-screen" id="state-pending" style="display:none;">
     <div class="state-eyebrow">Account pending · Q2 2026 beta</div>
     <h1 class="state-heading">Your account is awaiting branch setup.</h1>
-    <p class="state-text">You're signed in, but your branch hasn't been provisioned yet. You'll get an email from <strong>davis@originflowlos.com</strong> when your branch is live.</p>
+    <p class="state-text">You're signed in, but your branch hasn't been provisioned yet. You'll get an email from <strong>dsrackler@gmail.com</strong> when your branch is live.</p>
     <a href="/home.html" class="btn">Back to Home</a>
   </div>
 
@@ -992,6 +992,33 @@ function escapeHtml(s) {
   }[c]));
 }
 
+// ─── Last-seen tracking ─────────────────────────────────────────────────
+// Updates profiles.last_seen_at so the /team.html metrics ("active in last
+// 7 days") stay honest. Fire-and-forget — never blocks the page, never
+// throws to the caller. Throttled to once per 60s per browser via
+// localStorage to avoid hammering the DB on rapid navigation between pages.
+async function touchLastSeen() {
+  try {
+    if (!supa || !me?.id) return;
+    const KEY = 'of_last_seen_touched_at';
+    const last = parseInt(localStorage.getItem(KEY) || '0', 10);
+    const now = Date.now();
+    if (now - last < 60000) return;  // throttle: once per 60s
+    localStorage.setItem(KEY, String(now));
+    // Don't await — let the write happen in the background. Errors are
+    // logged but never propagated (RLS, network blip, missing column,
+    // whatever — the page renders normally regardless).
+    supa.from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', me.id)
+      .then(({ error }) => { if (error) console.warn('last_seen update:', error.message); });
+  } catch (err) {
+    // localStorage disabled, etc. — silent failure, the throttle just
+    // becomes per-page-load instead of per-minute.
+    console.warn('touchLastSeen:', err);
+  }
+}
+
 function money(cents) {
   if (cents == null) return '—';
   const n = Number(cents) / 100;
@@ -1075,6 +1102,10 @@ async function bootstrap() {
     email: profile.email || session.user.email,
   };
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  // Update last_seen_at so the team page metrics stay honest. Throttled to
+  // once per 60s via localStorage to avoid spamming writes on rapid navigation.
+  touchLastSeen();
 
   $('#nav-user-name').textContent  = me.full_name;
   $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
