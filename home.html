@@ -659,7 +659,7 @@ footer a:hover { color: var(--accent); }
       <span class="nav-search-text">Search loans, borrowers…</span>
       <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
     </button>
-    <a href="/loans/new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
     <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
       <span class="nav-user-name" id="nav-user-name">…</span>
@@ -829,7 +829,7 @@ footer a:hover { color: var(--accent); }
 //   /documents.html  — branch document library
 //   /reports.html    — branch reports
 //   /team.html       — admin: users, roles, assignments (admin only)
-//   /loans/new.html  — new loan intake form
+//   /loans-new.html  — new loan intake form
 //   /login.html      — sign in
 //
 // All loan/condition deep-links route to /dashboard.html#<loan_id>.
@@ -1001,12 +1001,12 @@ function renderQuickActions() {
 
   // Role-specific primary card
   const primaryByRole = {
-    lo:          { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans/new.html', kbd:'N' },
-    loa:         { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans/new.html', kbd:'N' },
+    lo:          { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans-new.html', kbd:'N' },
+    loa:         { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans-new.html', kbd:'N' },
     processor:   { icon:'⚐', label:'Conditions',   sub:'open · across files',     href:'/dashboard.html?view=conditions' },
     underwriter: { icon:'⚑', label:'UW Queue',     sub:'awaiting your decision',  href:'/dashboard.html?view=uw' },
     closer:      { icon:'✓', label:'CTC Files',    sub:'ready to fund',           href:'/dashboard.html?view=ctc' },
-    admin:       { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans/new.html', kbd:'N' },
+    admin:       { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans-new.html', kbd:'N' },
     viewer:      { icon:'▦', label:'Pipeline',     sub:'all stages',              href:'/dashboard.html', kbd:'D' },
   };
 
@@ -1021,7 +1021,7 @@ function renderQuickActions() {
   if (me.role === 'lo' || me.role === 'loa' || me.role === 'admin') {
     cards.push({ icon:'⚐', label:'Conditions', sub:'open · across files', href:'/dashboard.html?view=conditions' });
   } else if (me.role === 'processor') {
-    cards.push({ icon:'+', label:'New Loan', sub:'start an application', href:'/loans/new.html', kbd:'N' });
+    cards.push({ icon:'+', label:'New Loan', sub:'start an application', href:'/loans-new.html', kbd:'N' });
   } else if (me.role === 'underwriter') {
     cards.push({ icon:'⚐', label:'Conditional', sub:'awaiting clear', href:'/dashboard.html?view=conditional' });
   } else if (me.role === 'closer') {
@@ -1219,7 +1219,7 @@ async function loadMyFiles(cfg) {
     return;
   }
   if (!data || data.length === 0) {
-    list.innerHTML = `<div class="panel-empty">No active files yet. <a href="/loans/new.html" style="color:var(--accent);">Start one →</a></div>`;
+    list.innerHTML = `<div class="panel-empty">No active files yet. <a href="/loans-new.html" style="color:var(--accent);">Start one →</a></div>`;
     return;
   }
 
@@ -1581,7 +1581,7 @@ function renderCmdkNavShortcuts() {
     { icon:'∷', title:'Reports',        sub:'pipeline · funded',   href:'/reports.html',   tag:'GO' },
   ];
   if (me.role !== 'viewer') {
-    shortcuts.unshift({ icon:'+', title:'Start a New Loan', sub:'/loans/new.html', href:'/loans/new.html', tag:'NEW' });
+    shortcuts.unshift({ icon:'+', title:'Start a New Loan', sub:'/loans-new.html', href:'/loans-new.html', tag:'NEW' });
   }
   if (me.role === 'admin') {
     shortcuts.push({ icon:'⚙', title:'Team & Branch Settings', sub:'users, roles, assignments', href:'/team.html', tag:'GO' });
@@ -1767,7 +1767,7 @@ function initKeyboardShortcuts() {
     if (e.key === 'n' || e.key === 'N') {
       if (me && me.role !== 'viewer') {
         e.preventDefault();
-        window.location.href = '/loans/new.html';
+        window.location.href = '/loans-new.html';
       }
     } else if (e.key === 'd' || e.key === 'D') {
       e.preventDefault();
