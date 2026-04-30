@@ -676,7 +676,9 @@ function showHome() {
 }
 
 async function bootstrap() {
-  supa = (typeof ofSupabase === 'function') ? ofSupabase() : null;
+  // FIX: was `ofSupabase()` — that function doesn't exist in /js/config.js.
+  // Use `getSupabase()` which is the actual exported helper.
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
   if (!supa) {
     console.error('[Home] Supabase client unavailable — check /js/config.js');
     showState('state-signed-out');

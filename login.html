@@ -154,6 +154,10 @@
 </footer>
 
 <script>
+  // After a successful sign-in we send the user to their authenticated branch
+  // home, NOT to /dashboard.html (which is the public marketing demo).
+  const POST_LOGIN_DEST = '/home.html';
+
   const errorBox   = document.getElementById('error-box');
   const infoBox    = document.getElementById('info-box');
   const successBox = document.getElementById('success-box');
@@ -191,13 +195,13 @@
     return false;
   }
 
-  // If already signed in, skip straight to dashboard
+  // If already signed in, skip straight to home
   if (typeof ofGetSession === 'function') {
     ofGetSession()
       .then(session => {
         if (session) {
-          showInfo('Already signed in — redirecting to dashboard…');
-          window.location.href = '/home.html';
+          showInfo('Already signed in — redirecting to your branch home…');
+          window.location.href = POST_LOGIN_DEST;
         }
       })
       .catch(err => console.warn('[OF Login] session check error:', err));
@@ -254,8 +258,10 @@
         return;
       }
 
-      submitBtn.textContent = 'Loading dashboard...';
-      const ok = await waitForSessionAndRedirect(sb, '/dashboard.html');
+      // FIX: was redirecting to /dashboard.html (the public demo). Send the
+      // signed-in user to their actual branch home instead.
+      submitBtn.textContent = 'Loading your branch home...';
+      const ok = await waitForSessionAndRedirect(sb, POST_LOGIN_DEST);
       if (!ok) {
         showError('Signed in, but session did not persist. Try clearing cookies or switching browsers.');
         resetBtn();

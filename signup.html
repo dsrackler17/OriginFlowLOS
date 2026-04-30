@@ -256,6 +256,11 @@
 </footer>
 
 <script>
+  // Where to send a user who's already authenticated when they hit /signup.html.
+  // Their authenticated home is /home.html, NOT /dashboard.html (that's the
+  // public marketing demo).
+  const POST_LOGIN_DEST = '/home.html';
+
   const errorBox  = document.getElementById('error-box');
   const infoBox   = document.getElementById('info-box');
   const submitBtn = document.getElementById('submit-btn');
@@ -270,13 +275,13 @@
     submitBtn.style.opacity = '1';
   }
 
-  // If already signed in, redirect to dashboard
+  // If already signed in, redirect to home
   if (typeof ofGetSession === 'function') {
     ofGetSession()
       .then(session => {
         if (session) {
-          showInfo('Already signed in — redirecting to dashboard…');
-          window.location.href = '/dashboard.html';
+          showInfo('Already signed in — redirecting to your branch home…');
+          window.location.href = POST_LOGIN_DEST;
         }
       })
       .catch(err => console.warn('[OF Signup] session check error:', err));
