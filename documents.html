@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Documents · OriginFlow LOS — Live Demo</title>
-<meta name="description" content="AI document extraction pipeline for OriginFlow LOS. Real-time Claude Vision processing across the entire branch pipeline.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Documents · OriginFlow LOS</title>
+<meta name="description" content="Branch document library — drop in a doc, AI extracts the data, conditions clear themselves.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +29,7 @@
   --sans:    'DM Sans', system-ui, sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 body {
   background: var(--navy);
   color: var(--text);
@@ -36,6 +37,8 @@ body {
   font-size: 16px;
   line-height: 1.6;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 body::before {
   content: '';
@@ -46,19 +49,7 @@ body::before {
   background-size: 40px 40px;
   pointer-events: none; z-index: 0;
 }
-nav, .demo-banner, .doc-layout, footer, .metric-strip { position: relative; z-index: 1; }
-
-/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
-.demo-banner {
-  background: rgba(245,166,35,0.08);
-  border-bottom: 1px solid rgba(245,166,35,0.25);
-  padding: 0.55rem 2rem;
-  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
-  color: var(--amber); flex-wrap: wrap;
-}
-.demo-banner strong { color: var(--white); font-weight: 700; }
-.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+nav, main, footer { position: relative; z-index: 1; }
 
 /* ─── NAV ──────────────────────────────────────────────────────────── */
 nav {
@@ -68,10 +59,10 @@ nav {
   background: rgba(4,13,26,0.92);
   backdrop-filter: blur(12px);
   position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
 }
-.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
 .sonar-icon { width: 26px; height: 26px; }
-.sonar-icon svg { width: 100%; height: 100%; }
 .nav-wordmark {
   font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
   color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
@@ -84,6 +75,33 @@ nav {
   transition: color 0.2s;
 }
 .nav-center a:hover, .nav-center a.active { color: var(--accent); }
+
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 .nav-branch {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
@@ -105,305 +123,577 @@ nav {
 }
 .nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
 
-/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
-.metric-strip {
-  display: grid; grid-template-columns: repeat(6, 1fr);
-  gap: 1px; background: var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
-.metric-label {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
-}
-.metric-value {
-  font-family: var(--serif); font-size: 1.55rem; line-height: 1.1;
-}
-.metric-value.cyan  { color: var(--accent); }
-.metric-value.green { color: var(--accent2); }
-.metric-value.amber { color: var(--amber); }
-.metric-value.red   { color: var(--red); }
-.metric-value.white { color: var(--white); }
-.metric-sub {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
-  color: var(--muted); margin-top: 0.25rem;
-}
-.metric-trend {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--accent2);
-  margin-top: 0.2rem;
-}
-.metric-trend.down { color: var(--red); }
-
 /* ─── PAGE HEADER ──────────────────────────────────────────────────── */
 .page-head {
   padding: 1.75rem 2rem 1.25rem;
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: flex-end; justify-content: space-between;
-  flex-wrap: wrap; gap: 1.5rem;
-  background: var(--deep); position: relative; z-index: 1;
+  background: var(--deep);
 }
-.page-head-left h1 {
-  font-family: var(--serif); font-size: 2rem; font-weight: 400;
-  color: var(--white); line-height: 1.1; margin-bottom: 0.4rem;
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
 }
-.page-head-left .crumb {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
+.page-title {
+  font-family: var(--serif); font-size: 1.85rem; color: var(--white);
+  line-height: 1.15;
 }
-.page-head-left .crumb span { color: var(--accent); }
-.page-head-left p {
-  font-size: 0.85rem; color: var(--text); max-width: 56ch; line-height: 1.55;
+.page-sub {
+  color: var(--muted); margin-top: 0.35rem; max-width: 720px;
+  font-size: 0.92rem;
 }
-.page-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.btn {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
-  text-transform: uppercase; padding: 0.55rem 1rem;
-  border: 1px solid var(--border); background: var(--surface);
-  color: var(--text); cursor: pointer; transition: all 0.15s;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+
+.view-toggle {
+  display: inline-flex; gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-top: 1rem;
 }
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn.primary {
+.view-toggle button {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--surface); color: var(--muted);
+  border: none; padding: 0.55rem 1rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.active {
+  background: var(--accent); color: var(--navy); font-weight: 700;
+}
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 0.95rem 1.2rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.4rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.2rem;
+}
+
+/* ─── MAIN GRID ────────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.docs-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1px;
+  background: var(--border);
+  min-height: 0;
+}
+.docs-list-pane {
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.docs-detail-pane {
+  background: var(--deep);
+  display: flex; flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── FILTERS BAR ──────────────────────────────────────────────────── */
+.filter-bar {
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; align-items: center; gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.filter-input, .filter-select {
+  font-family: var(--mono); font-size: 0.65rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.45rem 0.7rem;
+  outline: none; transition: border-color 0.15s;
+}
+.filter-input { min-width: 220px; flex: 1; max-width: 320px; }
+.filter-input:focus, .filter-select:focus { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--muted); }
+.filter-spacer { flex: 1; }
+
+.upload-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.upload-btn:hover { background: var(--accent2); border-color: var(--accent2); }
+.upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── DROPZONE ─────────────────────────────────────────────────────── */
+.dropzone {
+  margin: 1rem 1.5rem;
+  border: 2px dashed var(--border);
+  background: rgba(0,212,255,0.02);
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.dropzone:hover, .dropzone.drag-active {
+  border-color: var(--accent);
+  background: rgba(0,212,255,0.06);
+}
+.dropzone.drag-active { border-style: solid; }
+.dz-icon {
+  font-family: var(--mono); font-size: 1.6rem; color: var(--accent);
+  display: block; margin-bottom: 0.5rem;
+}
+.dz-text {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--text);
+  letter-spacing: 0.06em;
+}
+.dz-text strong { color: var(--accent); font-weight: 700; }
+.dz-sub {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.4rem;
+}
+
+/* ─── DOC LIST ─────────────────────────────────────────────────────── */
+.docs-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 1.5rem 1.5rem;
+}
+.doc-row {
+  display: grid;
+  grid-template-columns: 36px 1fr 100px 90px 90px 90px;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.75rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 0.4rem;
+}
+.doc-row:hover { border-color: rgba(0,212,255,0.4); }
+.doc-row.selected {
+  border-color: var(--accent);
+  background: rgba(0,212,255,0.04);
+}
+.doc-icon {
+  width: 36px; height: 36px;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.65rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.04em;
+}
+.doc-icon.PDF { color: var(--red); border-color: rgba(255,68,68,0.3); }
+.doc-icon.IMG { color: var(--accent2); border-color: rgba(0,255,157,0.3); }
+.doc-icon.DOC { color: var(--accent); border-color: rgba(0,212,255,0.3); }
+.doc-mid {
+  display: flex; flex-direction: column; gap: 0.15rem;
+  min-width: 0;
+}
+.doc-name {
+  font-family: var(--sans); font-size: 0.88rem; color: var(--white);
+  font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.doc-meta {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.doc-meta a {
+  color: var(--accent); text-decoration: none;
+}
+.doc-meta a:hover { text-decoration: underline; }
+
+.doc-type {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.15rem 0.5rem; text-align: center;
+}
+.doc-type.detected {
+  color: var(--accent);
+  border-color: rgba(0,212,255,0.4);
+  background: rgba(0,212,255,0.06);
+}
+
+.doc-status {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 0.15rem 0.45rem;
+  border: 1px solid; text-align: center;
+}
+.doc-status.quarantined { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.doc-status.uploaded   { color: var(--muted); border-color: var(--border); }
+.doc-status.extracting { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.doc-status.extracted  { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.doc-status.failed     { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.doc-status.applied    { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.1); font-weight: 700; }
+.doc-status.infected   { color: var(--red); border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.12); font-weight: 700; }
+
+.doc-conf {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--text);
+  text-align: center;
+}
+.doc-conf.high { color: var(--accent2); }
+.doc-conf.med  { color: var(--amber); }
+.doc-conf.low  { color: var(--red); }
+
+.doc-time {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  text-align: right; letter-spacing: 0.04em;
+}
+
+.docs-empty {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  text-align: center; padding: 3rem 1rem; letter-spacing: 0.04em;
+}
+
+/* ─── DETAIL PANE ──────────────────────────────────────────────────── */
+.detail-empty {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  text-align: center; padding: 4rem 1.5rem; letter-spacing: 0.04em;
+  display: flex; align-items: center; justify-content: center;
+  flex: 1;
+}
+.detail-empty-icon {
+  font-family: var(--mono); font-size: 2rem; color: var(--border);
+  display: block; margin-bottom: 0.85rem;
+}
+
+.detail-head {
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.dh-name {
+  font-family: var(--sans); font-size: 0.95rem; color: var(--white);
+  font-weight: 500; margin-bottom: 0.3rem;
+  word-break: break-word;
+}
+.dh-meta-row {
+  display: flex; gap: 0.75rem; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 0.6rem;
+  color: var(--muted); letter-spacing: 0.04em;
+}
+.dh-actions {
+  display: flex; gap: 0.4rem; margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+.dh-action {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.dh-action:hover { border-color: var(--accent); color: var(--accent); }
+.dh-action.danger:hover { border-color: var(--red); color: var(--red); }
+.dh-action.primary {
   background: var(--accent); color: var(--navy); border-color: var(--accent);
   font-weight: 700;
 }
-.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.dh-action.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.dh-action:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ─── FILTER BAR ───────────────────────────────────────────────────── */
-.filter-bar {
-  background: var(--deep);
-  border-bottom: 1px solid var(--border);
-  padding: 0.85rem 2rem;
-  display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center;
-  position: relative; z-index: 1;
-}
-.filter-bar input, .filter-bar select {
-  font-family: var(--mono); font-size: 0.7rem;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 0.5rem 0.8rem;
-  outline: none; transition: border-color 0.15s; min-width: 0;
-}
-.filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
-.filter-bar input[type="text"] { flex: 1; min-width: 240px; }
-.filter-tag {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
-  color: var(--muted); padding: 0.4rem 0.7rem;
-  border: 1px solid var(--border); background: rgba(0,212,255,0.04);
-  cursor: pointer; transition: all 0.15s;
-}
-.filter-tag.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.08); }
-.filter-tag:hover { color: var(--white); border-color: var(--muted); }
-
-/* ─── DOC LAYOUT ───────────────────────────────────────────────────── */
-.doc-layout {
-  display: grid; grid-template-columns: 1fr 320px;
-  gap: 1px; background: var(--border);
-  min-height: calc(100vh - 480px);
+.detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem;
 }
 
-/* ─── DOC GRID ─────────────────────────────────────────────────────── */
-.doc-section {
-  background: var(--navy);
-  padding: 1.5rem 2rem;
-}
-.section-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1rem; padding-bottom: 0.65rem;
-  border-bottom: 1px solid var(--border);
-}
-.section-head + .section-head { margin-top: 2rem; }
-.section-title {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--text);
-  display: flex; align-items: center; gap: 0.6rem;
-}
-.section-title .dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--accent2); animation: dot 1.4s ease infinite;
-}
-.section-title .dot.amber { background: var(--amber); }
-.section-title .dot.red   { background: var(--red); }
-@keyframes dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-.section-head .meta {
-  font-family: var(--mono); font-size: 0.6rem;
-  color: var(--muted); letter-spacing: 0.06em;
-}
-
-.doc-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 0.75rem;
-}
-
-.doc-card {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 0; transition: border-color 0.2s, box-shadow 0.2s;
-  cursor: pointer; display: flex; flex-direction: column;
-}
-.doc-card:hover { border-color: rgba(0,212,255,0.4); }
-.doc-card.fresh {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(0,212,255,0.25);
-  animation: cardFlash 2s ease both;
-}
-@keyframes cardFlash {
-  0%   { box-shadow: 0 0 0 0 rgba(0,212,255,0.5); }
-  60%  { box-shadow: 0 0 0 8px rgba(0,212,255,0); }
-  100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); }
-}
-.doc-card-head {
-  padding: 0.7rem 0.85rem;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-  background: var(--deep);
-}
-.doc-icon {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
-  color: var(--accent); padding: 0.15rem 0.45rem;
-  border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.06);
-  flex-shrink: 0;
-}
-.doc-icon.amber { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
-.doc-icon.green { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
-.doc-icon.red   { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
-.doc-loan {
-  font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
-  color: var(--accent); letter-spacing: 0.06em; text-decoration: none;
-}
-.doc-card-body { padding: 0.85rem; flex: 1; }
-.doc-name {
-  font-family: var(--mono); font-size: 0.78rem; color: var(--white);
-  word-break: break-all; line-height: 1.35; margin-bottom: 0.3rem;
-}
-.doc-borrower {
-  font-family: var(--sans); font-size: 0.78rem; color: var(--text);
-  margin-bottom: 0.5rem;
-}
-.doc-fields {
-  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
-  display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 0.6rem;
-  margin-bottom: 0.75rem;
-}
-.doc-fields b { color: var(--text); font-weight: 400; }
-.doc-fields b.flag { color: var(--amber); }
-.doc-card-foot {
-  padding: 0.55rem 0.85rem;
-  border-top: 1px solid var(--border);
-  background: rgba(7,21,43,0.6);
-  display: flex; align-items: center; justify-content: space-between;
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.doc-card-foot .conf {
-  color: var(--accent2); padding: 0.1rem 0.45rem;
-  border: 1px solid rgba(0,255,157,0.3); background: rgba(0,255,157,0.06);
-}
-.doc-card-foot .conf.low { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
-.doc-card-foot .conf.fail { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
-
-.doc-card .progress {
-  height: 2px; background: var(--border); position: relative;
-}
-.doc-card .progress::after {
-  content: ''; position: absolute; left: 0; top: 0; height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  width: var(--p, 0%);
-}
-
-/* ─── UPLOAD DROPZONE ──────────────────────────────────────────────── */
-.upload-band {
-  background: var(--deep); border-bottom: 1px solid var(--border);
-  padding: 1rem 2rem; display: flex; gap: 1rem; align-items: center;
-  position: relative; z-index: 1;
-}
-.upload-band .dz {
-  flex: 1; border: 2px dashed var(--border);
-  padding: 0.85rem 1.25rem; text-align: center;
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em;
-  color: var(--muted); cursor: pointer; transition: all 0.2s;
-}
-.upload-band .dz:hover {
-  border-color: var(--accent); color: var(--accent);
-  background: rgba(0,212,255,0.04);
-}
-.upload-band .dz strong { color: var(--white); margin-right: 0.5rem; }
-.upload-stats {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em;
-  color: var(--muted); display: flex; gap: 1.25rem; flex-shrink: 0;
-}
-.upload-stats b { color: var(--accent); font-weight: 700; }
-.upload-stats span b.green { color: var(--accent2); }
-
-/* ─── ACTIVITY SIDEBAR ─────────────────────────────────────────────── */
-.activity-sidebar {
-  background: var(--deep);
-  display: flex; flex-direction: column;
-}
-.activity-head {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border);
+/* ─── EXTRACTION PANEL ─────────────────────────────────────────────── */
+.ext-panel {
+  border: 1px solid var(--border);
   background: var(--surface);
-  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
 }
-.activity-label {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+.ext-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.7rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+}
+.ext-title {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text);
+}
+.ext-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  padding: 0.1rem 0.45rem; border: 1px solid;
+  color: var(--accent2); border-color: rgba(0,255,157,0.4);
+  background: rgba(0,255,157,0.06);
+}
+.ext-tag.pending { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.ext-tag.failed { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+
+.ext-body { padding: 0.85rem 0.95rem; }
+
+.ext-status-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--muted); letter-spacing: 0.04em;
+}
+.ext-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ext-fields {
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+.ext-field-row {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 0.75rem; padding: 0.4rem 0;
+  border-bottom: 1px dotted var(--border);
+  font-size: 0.78rem;
+}
+.ext-field-row:last-child { border-bottom: none; }
+.ext-field-label {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.ext-field-val {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--white);
+  text-align: right; word-break: break-word;
+}
+.ext-field-val.flag { color: var(--amber); }
+.ext-field-val.alert { color: var(--red); }
+
+.ext-actions {
+  display: flex; flex-direction: column; gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+.ext-action-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.65rem; align-items: center;
+  padding: 0.55rem 0.7rem;
+  background: var(--panel); border: 1px solid var(--border);
+  border-left: 2px solid var(--accent2);
+}
+.ext-action-row.warning { border-left-color: var(--amber); }
+.ext-action-row.applied {
+  background: rgba(0,255,157,0.04);
+  border-color: rgba(0,255,157,0.2);
+  border-left-color: var(--accent2);
+}
+.ext-action-icon {
+  font-family: var(--mono); font-size: 0.85rem; color: var(--accent2);
+}
+.ext-action-row.warning .ext-action-icon { color: var(--amber); }
+.ext-action-text {
+  font-size: 0.78rem; color: var(--text); line-height: 1.4;
+}
+.ext-action-text strong { color: var(--white); }
+.ext-action-text small {
+  display: block;
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  margin-top: 0.15rem; letter-spacing: 0.04em;
+}
+.ext-action-btn {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(0,212,255,0.3);
+  background: transparent; color: var(--accent);
+  transition: all 0.15s;
+}
+.ext-action-btn:hover { background: var(--accent); color: var(--navy); }
+.ext-action-btn:disabled {
+  opacity: 0.4; cursor: not-allowed;
+  border-color: var(--border); color: var(--muted);
+}
+.ext-action-btn.applied {
+  background: var(--accent2); color: var(--navy); border-color: var(--accent2);
+  font-weight: 700;
+}
+
+/* ─── PREVIEW ──────────────────────────────────────────────────────── */
+.preview-box {
+  background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.preview-head {
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--text);
+}
+.preview-body {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 180px;
+  padding: 0.5rem;
+  background: var(--navy);
+}
+.preview-body img {
+  max-width: 100%; max-height: 280px; object-fit: contain;
+}
+.preview-body iframe {
+  width: 100%; height: 320px; border: none; background: white;
+}
+.preview-fallback {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  text-align: center; letter-spacing: 0.04em;
+  padding: 1.5rem;
+}
+.preview-fallback a {
+  display: inline-block; margin-top: 0.5rem;
+  color: var(--accent); text-decoration: none;
+  border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.4rem 0.85rem;
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.preview-fallback a:hover { background: var(--accent); color: var(--navy); }
+
+/* ─── UPLOAD MODAL ─────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.modal-overlay.open { display: flex; animation: modalIn 0.15s ease both; }
+@keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 540px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+}
+.modal-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--accent);
 }
-.activity-pulse {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--accent2); animation: dot 1.4s ease infinite;
+.modal-body { padding: 1.25rem; }
+.modal-foot {
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: flex-end; gap: 0.6rem;
 }
-.activity-body {
-  flex: 1; overflow-y: auto; padding: 0.6rem 0.75rem;
-  display: flex; flex-direction: column; gap: 0.5rem;
+
+.field-block { margin-bottom: 1rem; }
+.field-label {
+  display: block;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
 }
-.act-row {
-  display: grid; grid-template-columns: 5rem 1fr;
-  gap: 0.5rem; padding: 0.5rem 0.55rem;
-  border-left: 2px solid var(--border);
-  background: rgba(11,31,58,0.4);
-  font-size: 0.72rem;
-  animation: actSlide 0.4s ease both;
+.field-input {
+  width: 100%;
+  background: var(--deep); border: 1px solid var(--border);
+  color: var(--white); font-family: var(--sans); font-size: 0.92rem;
+  padding: 0.6rem 0.8rem; outline: none;
 }
-@keyframes actSlide { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
-.act-row.fresh { border-left-color: var(--accent); background: rgba(0,212,255,0.05); }
-.act-row.green { border-left-color: var(--accent2); }
-.act-row.amber { border-left-color: var(--amber); }
-.act-row.red   { border-left-color: var(--red); }
-.act-time {
-  font-family: var(--mono); font-size: 0.56rem; color: var(--muted);
+.field-input:focus { border-color: var(--accent); }
+
+.upload-progress {
+  height: 4px; background: var(--border); margin: 0.6rem 0;
+  position: relative; overflow: hidden;
+}
+.upload-progress-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: var(--accent2);
+  width: 0%; transition: width 0.2s;
+}
+.upload-status {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
   letter-spacing: 0.04em;
 }
-.act-body { color: var(--text); line-height: 1.5; }
-.act-actor { color: var(--white); font-weight: 500; }
-.act-loan { font-family: var(--mono); color: var(--accent); font-size: 0.7rem; }
 
-/* ─── DOC TYPE BREAKDOWN ───────────────────────────────────────────── */
-.type-breakdown {
-  padding: 1.25rem; border-top: 1px solid var(--border);
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
 }
-.type-row {
-  display: grid; grid-template-columns: 1fr auto;
-  gap: 0.5rem; padding: 0.5rem 0;
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── STATE SCREENS ────────────────────────────────────────────────── */
+.state-screen {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+
+/* ─── TOAST ────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
   font-family: var(--mono); font-size: 0.7rem;
-  border-bottom: 1px dashed var(--border);
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none;
+  animation: toastIn 0.2s ease both;
+  max-width: 400px;
 }
-.type-row:last-child { border-bottom: none; }
-.type-row .label { color: var(--text); }
-.type-row .count { color: var(--accent); font-weight: 700; }
-.type-row .bar {
-  grid-column: 1 / -1; height: 3px; background: var(--border);
-  position: relative; margin-top: 0.3rem;
-}
-.type-row .bar::after {
-  content: ''; position: absolute; left: 0; top: 0; height: 100%;
-  background: var(--accent); width: var(--p, 0%);
-}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
   display: flex; align-items: center; justify-content: space-between;
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
   color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
@@ -411,29 +701,46 @@ footer a:hover { color: var(--accent); }
 
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1280px) {
-  .metric-strip { grid-template-columns: repeat(3, 1fr); }
+  .docs-grid { grid-template-columns: 1fr 340px; }
 }
 @media (max-width: 1024px) {
   .nav-center { display: none; }
-  .doc-layout { grid-template-columns: 1fr; }
-  .activity-sidebar { max-height: 350px; }
+  .nav-search { display: none; }
+  .docs-grid { grid-template-columns: 1fr; }
+  .docs-detail-pane { max-height: 500px; border-top: 1px solid var(--border); }
+  .doc-row {
+    grid-template-columns: 36px 1fr 80px;
+    gap: 0.6rem;
+  }
+  .doc-row .doc-type, .doc-row .doc-conf, .doc-row .doc-time {
+    display: none;
+  }
   .metric-strip { grid-template-columns: repeat(2, 1fr); }
-  .upload-band { flex-direction: column; align-items: stretch; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .page-head { padding: 1.25rem 1rem 1rem; }
+  .page-title { font-size: 1.4rem; }
+  .filter-bar { padding: 0.6rem 1rem; }
+  .filter-input { min-width: 140px; }
+  .docs-list { padding: 0.5rem 1rem 1rem; }
+  .dropzone { margin: 0.75rem 1rem; padding: 1rem; }
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- DEMO BANNER + NAV                                                    -->
+<!-- NAV                                                                  -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="demo-banner">
-  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
-  <a href="index.html">← Back to landing page</a>
-</div>
-
 <nav>
-  <a href="index.html" class="nav-logo">
+  <a href="/home.html" class="nav-logo">
     <div class="sonar-icon">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
@@ -449,616 +756,1641 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
-    <li><a href="dashboard.html">Pipeline</a></li>
-    <li><a href="documents.html" class="active">Documents</a></li>
-    <li><a href="conditions.html">Conditions</a></li>
-    <li><a href="reports.html">Reports</a></li>
-    <li><a href="audit.html">Audit Log</a></li>
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html" class="active">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
   </ul>
   <div class="nav-right">
-    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; Submarine Catalyst</span>
+    <button class="nav-search" id="nav-search-btn" type="button">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
-      <span class="nav-user-name">Davis Rackler</span>
-      <span class="nav-user-role">OWNER</span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
     </span>
-    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- METRIC STRIP                                                         -->
+<!-- MAIN                                                                 -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="metric-strip">
-  <div class="metric-cell">
-    <div class="metric-label">Docs This Month</div>
-    <div class="metric-value cyan">847</div>
-    <div class="metric-sub">across 14 active files</div>
-    <div class="metric-trend">▲ 124 vs March</div>
+<main id="main">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading documents…</div>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">AI Auto-Extracted</div>
-    <div class="metric-value green">782</div>
-    <div class="metric-sub">92.3% of total</div>
-    <div class="metric-trend">▲ 4.1 pts vs March</div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">Documents are branch-scoped.</h1>
+    <p class="state-text">Sign in to see your branch's document library.</p>
+    <a href="/login.html" class="btn primary">Sign in →</a>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Avg Confidence</div>
-    <div class="metric-value white">96.4%</div>
-    <div class="metric-sub">across all extractions</div>
-    <div class="metric-trend">stable</div>
+
+  <!-- PROFILE PENDING -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending</div>
+    <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
+    <p class="state-text">You'll get an email from <strong>davis@originflowlos.com</strong> when it's live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Needs Review</div>
-    <div class="metric-value amber">11</div>
-    <div class="metric-sub">low confidence or flagged</div>
-    <div class="metric-trend down">▲ 3 since yesterday</div>
+
+  <!-- ─── ACTIVE ─── -->
+  <div id="docs-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+
+    <!-- PAGE HEADER -->
+    <header class="page-head">
+      <div class="page-eyebrow" id="page-eyebrow">DOCUMENT LIBRARY</div>
+      <h1 class="page-title" id="page-title">Documents</h1>
+      <p class="page-sub" id="page-sub">Drop in a paystub. AI extracts the data, writes it to the loan file, and clears the matching condition.</p>
+      <div class="view-toggle">
+        <button id="view-branch" class="active">Branch Library</button>
+        <button id="view-loan" style="display:none;">This Loan Only</button>
+      </div>
+    </header>
+
+    <!-- METRICS -->
+    <section class="metric-strip" id="metric-strip">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+    </section>
+
+    <!-- FILTERS -->
+    <div class="filter-bar">
+      <input type="text" class="filter-input" id="filter-search" placeholder="Search by file name, borrower, or loan #…">
+      <select class="filter-select" id="filter-loan">
+        <option value="all">All loans</option>
+      </select>
+      <select class="filter-select" id="filter-doctype">
+        <option value="all">All document types</option>
+        <option value="paystub">Paystub</option>
+        <option value="w2">W-2</option>
+        <option value="bank_statement">Bank statement</option>
+        <option value="tax_return">Tax return</option>
+        <option value="id">Driver's license / ID</option>
+        <option value="appraisal">Appraisal</option>
+        <option value="title">Title</option>
+        <option value="insurance">Insurance binder</option>
+        <option value="other">Other</option>
+      </select>
+      <select class="filter-select" id="filter-status">
+        <option value="all">All statuses</option>
+        <option value="quarantined">Scanning (quarantined)</option>
+        <option value="uploaded">Uploaded (no AI)</option>
+        <option value="extracting">Extracting</option>
+        <option value="extracted">Extracted</option>
+        <option value="applied">Applied to loan</option>
+        <option value="failed">Failed</option>
+      </select>
+      <div class="filter-spacer"></div>
+      <button class="upload-btn" id="upload-btn" type="button">+ Upload</button>
+    </div>
+
+    <!-- GRID: LIST + DETAIL -->
+    <div class="docs-grid">
+
+      <section class="docs-list-pane">
+        <!-- DROPZONE -->
+        <div class="dropzone" id="dropzone">
+          <span class="dz-icon">⇪</span>
+          <div class="dz-text"><strong>Drop files</strong> or click to browse</div>
+          <div class="dz-sub" id="dropzone-sub">PDF, JPG, PNG · auto-extracted by Claude Vision · max 25MB each</div>
+          <input type="file" id="file-input" multiple accept="application/pdf,image/png,image/jpeg" style="display:none;">
+        </div>
+
+        <div class="docs-list" id="docs-list">
+          <div class="docs-empty">Loading documents…</div>
+        </div>
+      </section>
+
+      <aside class="docs-detail-pane" id="docs-detail-pane">
+        <div class="detail-empty" id="detail-empty">
+          <div>
+            <span class="detail-empty-icon">▤</span>
+            <div>Select a document to inspect AI extraction,<br>preview the file, or apply data to a loan.</div>
+          </div>
+        </div>
+        <div id="detail-content" style="display:none; flex:1; display:flex; flex-direction:column; min-height:0;">
+          <div class="detail-head" id="detail-head"></div>
+          <div class="detail-body" id="detail-body"></div>
+        </div>
+      </aside>
+
+    </div>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Manual Entry</div>
-    <div class="metric-value white">54</div>
-    <div class="metric-sub">processor-keyed</div>
-    <div class="metric-trend">▼ 22 vs last month</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Time Saved · April</div>
-    <div class="metric-value green">142h</div>
-    <div class="metric-sub">at $35/hr ≈ $4,970</div>
-    <div class="metric-trend">▲ 28h vs March</div>
-  </div>
-</section>
+
+</main>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- PAGE HEAD + UPLOAD BAND                                              -->
+<!-- UPLOAD MODAL                                                         -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="page-head">
-  <div class="page-head-left">
-    <div class="crumb">DASHBOARD <span>›</span> DOCUMENTS</div>
-    <h1>Document Pipeline</h1>
-    <p>Every PDF, image, and bank statement uploaded to any loan in your branch — auto-extracted by Claude Vision the moment it hits the file. Outliers and low-confidence items surface here for review.</p>
-  </div>
-  <div class="page-actions">
-    <a class="btn" href="#">⤓ Export CSV</a>
-    <a class="btn" href="#">⚙ AI Settings</a>
-    <a class="btn primary" href="#">+ Bulk Upload</a>
-  </div>
-</section>
-
-<div class="upload-band">
-  <div class="dz" onclick="alert('Demo only — drag/drop wired to Claude Vision in production')">
-    <strong>📥 DROP FILES HERE</strong> or click to browse · routes to the right loan automatically by borrower SSN/name match
-  </div>
-  <div class="upload-stats">
-    <span><b>847</b> processed today</span>
-    <span><b class="green" style="color:var(--accent2)">12.4s</b> avg time-to-extract</span>
-    <span><b>$0.04</b> avg cost/doc</span>
+<div class="modal-overlay" id="upload-modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Upload Document<span id="upload-count" style="color:var(--muted); margin-left:0.5rem;"></span></span>
+    </div>
+    <div class="modal-body">
+      <div class="field-block">
+        <label class="field-label">File</label>
+        <div id="upload-filename" style="font-family:var(--mono); font-size:0.75rem; color:var(--white); padding:0.4rem 0; word-break:break-all;">—</div>
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="upload-loan">Loan File <span style="color:var(--muted); text-transform:none;">(optional · leave blank for branch library)</span></label>
+        <select class="field-input" id="upload-loan">
+          <option value="">— Branch library only —</option>
+        </select>
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="upload-doctype">Document Type <span style="color:var(--muted); text-transform:none;">(AI will detect if left blank)</span></label>
+        <select class="field-input" id="upload-doctype">
+          <option value="">— Auto-detect —</option>
+          <option value="paystub">Paystub</option>
+          <option value="w2">W-2</option>
+          <option value="bank_statement">Bank statement</option>
+          <option value="tax_return">Tax return</option>
+          <option value="id">Driver's license / ID</option>
+          <option value="appraisal">Appraisal</option>
+          <option value="title">Title</option>
+          <option value="insurance">Insurance binder</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="upload-progress" id="upload-progress" style="display:none;">
+        <div class="upload-progress-fill" id="upload-progress-fill"></div>
+      </div>
+      <div class="upload-status" id="upload-status"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="upload-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="upload-confirm" type="button">Upload & Extract</button>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- FILTER BAR                                                           -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="filter-bar">
-  <input type="text" placeholder="Search filename, borrower, loan, employer...">
-  <select>
-    <option>All loans (14)</option>
-    <option>OF-1043 · Rodriguez</option>
-    <option>OF-1042 · Chen</option>
-    <option>OF-1041 · Anderson</option>
-    <option>OF-1045 · Thompson</option>
-  </select>
-  <select>
-    <option>All doc types</option>
-    <option>Paystub</option>
-    <option>Bank statement</option>
-    <option>W-2</option>
-    <option>Tax return</option>
-    <option>Driver's license</option>
-    <option>Appraisal</option>
-    <option>Title commitment</option>
-  </select>
-  <select>
-    <option>All time</option>
-    <option>Today</option>
-    <option>Last 7 days</option>
-    <option>Last 30 days</option>
-  </select>
-  <span class="filter-tag active">All <b style="color:var(--white);margin-left:0.3rem;">847</b></span>
-  <span class="filter-tag">AI Auto ✓</span>
-  <span class="filter-tag" style="color:var(--amber);">⚠ Needs Review</span>
-  <span class="filter-tag" style="color:var(--red);">✕ Failed</span>
-</div>
+<!-- toast -->
+<div class="toast" id="toast" role="status"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MAIN: DOC SECTIONS + ACTIVITY                                        -->
+<!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="doc-layout">
-
-  <main class="doc-section">
-
-    <!-- NEEDS REVIEW -->
-    <div class="section-head">
-      <div class="section-title"><span class="dot amber"></span>Needs Review · 11</div>
-      <div class="meta">low confidence · borrower LOX needed · or processor flagged</div>
-    </div>
-
-    <div class="doc-grid">
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon amber">⚠ DEPOSIT FLAG</span>
-          <a href="dashboard.html#detail-section" class="doc-loan">OF-1043</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">chase_statement_feb2026.pdf</div>
-          <div class="doc-borrower">Rodriguez, James</div>
-          <div class="doc-fields">
-            <span>Type</span><b>BANK STATEMENT</b>
-            <span>Account</span><b>····2841</b>
-            <span>Period</span><b>Feb 1–28, 2026</b>
-            <span>Balance</span><b>$24,118</b>
-            <span>Flag</span><b class="flag">$3,200 unidentified deposit</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:94%"></div>
-        <div class="doc-card-foot">
-          <span>extracted 23m ago · auto-cleared 1 condition</span>
-          <span class="conf low">94% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon amber">⚠ LOW CONF</span>
-          <a href="#" class="doc-loan">OF-1045</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">handwritten_VOR_landlord.jpg</div>
-          <div class="doc-borrower">Thompson, K.</div>
-          <div class="doc-fields">
-            <span>Type</span><b>VOR · Manual</b>
-            <span>Landlord</span><b>R. Olivarez</b>
-            <span>Months</span><b class="flag">illegible — see image</b>
-            <span>Late pmts</span><b class="flag">field empty</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:67%"></div>
-        <div class="doc-card-foot">
-          <span>processor must verify · 1h ago</span>
-          <span class="conf low">67% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon red">✕ FAILED</span>
-          <a href="#" class="doc-loan">OF-1041</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">scan_2026-04-28-blurry.pdf</div>
-          <div class="doc-borrower">Anderson, P.</div>
-          <div class="doc-fields">
-            <span>Type</span><b class="flag">UNKNOWN</b>
-            <span>Pages</span><b>3</b>
-            <span>Reason</span><b class="flag">image quality too low for OCR</b>
-            <span>Action</span><b>request rescan from borrower</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:14%"></div>
-        <div class="doc-card-foot">
-          <span>2 retries · 4h ago</span>
-          <span class="conf fail">FAIL</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon amber">⚠ MISMATCH</span>
-          <a href="#" class="doc-loan">OF-1048</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">w2_2025_williams.pdf</div>
-          <div class="doc-borrower">Williams, Tasha</div>
-          <div class="doc-fields">
-            <span>Type</span><b>W-2 · 2025</b>
-            <span>Employer</span><b>Texas Tech Univ Health</b>
-            <span>Box 1 wages</span><b>$54,820</b>
-            <span>SSN match</span><b class="flag">last 4 ≠ application</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:88%"></div>
-        <div class="doc-card-foot">
-          <span>LO must reconcile · 2h ago</span>
-          <span class="conf low">88% conf</span>
-        </div>
-      </article>
-
-    </div>
-
-    <!-- RECENTLY EXTRACTED -->
-    <div class="section-head">
-      <div class="section-title"><span class="dot"></span>Recently Auto-Extracted · last 24h</div>
-      <div class="meta">cleared without human touch — sorted newest first</div>
-    </div>
-
-    <div class="doc-grid">
-
-      <article class="doc-card fresh">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="dashboard.html#detail-section" class="doc-loan">OF-1043</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">paystub_2026_Q1.pdf</div>
-          <div class="doc-borrower">Rodriguez, James</div>
-          <div class="doc-fields">
-            <span>Type</span><b>PAYSTUB</b>
-            <span>Employer</span><b>South Plains Health</b>
-            <span>Period</span><b>2026-03-15</b>
-            <span>Gross</span><b>$4,807.69</b>
-            <span>YTD</span><b>$28,846.14</b>
-            <span>Monthly</span><b>$10,416.66</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:98%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "30-day paystub" · 12s ago</span>
-          <span class="conf">98% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1041</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">w2_2025_anderson.pdf</div>
-          <div class="doc-borrower">Anderson, P.</div>
-          <div class="doc-fields">
-            <span>Type</span><b>W-2 · 2025</b>
-            <span>Employer</span><b>Lubbock ISD</b>
-            <span>Box 1 wages</span><b>$87,400</b>
-            <span>Box 2 fed tax</span><b>$11,892</b>
-            <span>Box 12a</span><b>D · $4,200</b>
-            <span>State wages</span><b>$87,400</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:99%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "Most recent W-2" · 1h ago</span>
-          <span class="conf">99% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1042</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">title_commitment_chen.pdf</div>
-          <div class="doc-borrower">Chen, S+M</div>
-          <div class="doc-fields">
-            <span>Type</span><b>TITLE COMMIT</b>
-            <span>Title co.</span><b>Stewart Title Lubbock</b>
-            <span>File #</span><b>STL-26-04417</b>
-            <span>Effective</span><b>2026-04-22</b>
-            <span>Coverage</span><b>$425,000</b>
-            <span>Exceptions</span><b>4 standard</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:96%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "Title commitment" · 5m ago</span>
-          <span class="conf">96% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1044</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">tax_return_2024_williams.pdf</div>
-          <div class="doc-borrower">Williams, T.</div>
-          <div class="doc-fields">
-            <span>Type</span><b>1040 · 2024</b>
-            <span>AGI</span><b>$94,217</b>
-            <span>Filing</span><b>Single</b>
-            <span>Sched C</span><b>none</b>
-            <span>Refund</span><b>$3,210</b>
-            <span>Sig date</span><b>2025-03-08</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:97%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "Most recent tax return" · 2h ago</span>
-          <span class="conf">97% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1040</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">drivers_license_kim.jpg</div>
-          <div class="doc-borrower">Kim, J.</div>
-          <div class="doc-fields">
-            <span>Type</span><b>DL · TX</b>
-            <span>License #</span><b>1814····</b>
-            <span>DOB</span><b>1987-09-04</b>
-            <span>Expires</span><b>2028-09-04</b>
-            <span>Address match</span><b>✓</b>
-            <span>Photo match</span><b>✓ via NDS</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:99%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "ID verification" · 4h ago</span>
-          <span class="conf">99% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1038</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">homeowners_quote_foster.pdf</div>
-          <div class="doc-borrower">Foster, D.</div>
-          <div class="doc-fields">
-            <span>Type</span><b>HOI BINDER</b>
-            <span>Carrier</span><b>State Farm</b>
-            <span>Annual prem</span><b>$2,142</b>
-            <span>Dwelling</span><b>$485,000</b>
-            <span>Deductible</span><b>$2,500</b>
-            <span>Effective</span><b>2026-05-01</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:95%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "Homeowner's binder" · 6h ago</span>
-          <span class="conf">95% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1037</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">appraisal_singh_amarillo.pdf</div>
-          <div class="doc-borrower">Singh, A.</div>
-          <div class="doc-fields">
-            <span>Type</span><b>APPRAISAL · 1004</b>
-            <span>Appraiser</span><b>R. Vega · TX-1182947</b>
-            <span>Effective date</span><b>2026-04-19</b>
-            <span>Appraised value</span><b>$531,250</b>
-            <span>Comps used</span><b>3</b>
-            <span>Adjustments</span><b>within tolerance</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:98%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "Appraisal report" · 8h ago</span>
-          <span class="conf">98% conf</span>
-        </div>
-      </article>
-
-      <article class="doc-card">
-        <div class="doc-card-head">
-          <span class="doc-icon green">✓ AUTO</span>
-          <a href="#" class="doc-loan">OF-1042</a>
-        </div>
-        <div class="doc-card-body">
-          <div class="doc-name">wells_fargo_mar2026.pdf</div>
-          <div class="doc-borrower">Chen, S+M</div>
-          <div class="doc-fields">
-            <span>Type</span><b>BANK STATEMENT</b>
-            <span>Account</span><b>····7102</b>
-            <span>Period</span><b>Mar 2026</b>
-            <span>Ending bal</span><b>$87,420</b>
-            <span>Avg daily</span><b>$82,108</b>
-            <span>Large deposits</span><b>0 flagged</b>
-          </div>
-        </div>
-        <div class="progress" style="--p:97%"></div>
-        <div class="doc-card-foot">
-          <span>cleared "60-day bank statement" · 12h ago</span>
-          <span class="conf">97% conf</span>
-        </div>
-      </article>
-
-    </div>
-
-    <!-- HISTORY -->
-    <div class="section-head" style="margin-top:2rem;">
-      <div class="section-title">All Documents · 847 this month</div>
-      <div class="meta"><a href="#" style="color:var(--accent);text-decoration:none;">View full archive →</a></div>
-    </div>
-
-    <p style="font-family:var(--mono); font-size:0.7rem; color:var(--muted); padding:1rem 0;">
-      Showing 11 of 847 documents matching current filters · click any card to open the loan file ·
-      use the upload band above to push more docs into the pipeline.
-    </p>
-
-  </main>
-
-  <!-- ─── ACTIVITY SIDEBAR ──────────────────────────────────────── -->
-  <aside class="activity-sidebar">
-    <div class="activity-head">
-      <span class="activity-label">Live · Extraction</span>
-      <span class="activity-pulse"></span>
-    </div>
-    <div class="activity-body" id="activity-body">
-      <div class="act-row fresh green">
-        <div class="act-time">just now</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> extracted PAYSTUB on <span class="act-loan">OF-1043</span> · 98% conf
-        </div>
-      </div>
-      <div class="act-row fresh">
-        <div class="act-time">12s ago</div>
-        <div class="act-body">
-          <span class="act-actor">Sarah Hayes</span> uploaded <em>paystub_2026_Q1.pdf</em>
-        </div>
-      </div>
-      <div class="act-row amber">
-        <div class="act-time">2m ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> flagged $3,200 unidentified deposit on <span class="act-loan">OF-1043</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">5m ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> auto-cleared TITLE COMMIT on <span class="act-loan">OF-1042</span>
-        </div>
-      </div>
-      <div class="act-row red">
-        <div class="act-time">14m ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> failed to OCR <em>scan_2026-04-28-blurry.pdf</em> on <span class="act-loan">OF-1041</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">23m ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> auto-cleared "60-day bank statement" on <span class="act-loan">OF-1043</span>
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">31m ago</div>
-        <div class="act-body">
-          <span class="act-actor">Sarah Hayes</span> overrode AI extraction on <span class="act-loan">OF-1045</span> · VOR landlord
-        </div>
-      </div>
-      <div class="act-row amber">
-        <div class="act-time">1h ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> SSN mismatch on <em>w2_2025_williams.pdf</em> · <span class="act-loan">OF-1048</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">1h ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> extracted W-2 from <span class="act-loan">OF-1041</span> · AGI $87,400
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">2h ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> auto-cleared 1040 on <span class="act-loan">OF-1044</span>
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">3h ago</div>
-        <div class="act-body">
-          <span class="act-actor">Corbin Matisse</span> bulk-uploaded 6 docs to <span class="act-loan">OF-1046</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">4h ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> auto-cleared DL on <span class="act-loan">OF-1040</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- TYPE BREAKDOWN -->
-    <div class="type-breakdown">
-      <div class="section-title" style="margin-bottom:0.6rem;">By Document Type</div>
-      <div class="type-row">
-        <span class="label">Paystubs</span><span class="count">187</span>
-        <div class="bar" style="--p:88%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">Bank statements</span><span class="count">164</span>
-        <div class="bar" style="--p:78%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">W-2s</span><span class="count">98</span>
-        <div class="bar" style="--p:46%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">Tax returns</span><span class="count">76</span>
-        <div class="bar" style="--p:36%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">ID / DL</span><span class="count">71</span>
-        <div class="bar" style="--p:34%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">Title docs</span><span class="count">62</span>
-        <div class="bar" style="--p:29%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">Appraisals</span><span class="count">54</span>
-        <div class="bar" style="--p:26%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">HOI binders</span><span class="count">48</span>
-        <div class="bar" style="--p:23%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">VORs / LOXs</span><span class="count">41</span>
-        <div class="bar" style="--p:19%"></div>
-      </div>
-      <div class="type-row">
-        <span class="label">Other</span><span class="count">46</span>
-        <div class="bar" style="--p:22%"></div>
-      </div>
-    </div>
-  </aside>
-
-</div>
-
 <footer>
-  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · Documents · Claude Vision extraction</span>
   <div style="display:flex;gap:1.25rem;">
-    <a href="index.html">← Landing page</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
-    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+    <a href="/home.html">Home</a>
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/reports.html">Reports</a>
   </div>
 </footer>
 
 <script>
-  // ─── Live activity feed simulation ─────────────────────────────────
-  const fakeActivities = [
-    { type: 'green', actor: 'AI · Claude Vision', body: 'extracted BANK STMT from <span class="act-loan">OF-1047</span> · 96% conf' },
-    { type: '',      actor: 'Corbin Matisse',     body: 'uploaded <em>verbal_VOE_henderson.pdf</em> to <span class="act-loan">OF-1046</span>' },
-    { type: 'amber', actor: 'AI · Claude Vision', body: 'flagged conflicting employer name on <span class="act-loan">OF-1048</span>' },
-    { type: 'green', actor: 'AI · Claude Vision', body: 'auto-cleared "Homeowner\'s binder" on <span class="act-loan">OF-1037</span>' },
-    { type: '',      actor: 'Sarah Hayes',        body: 'reviewed and approved AI extraction on <span class="act-loan">OF-1045</span>' },
-    { type: 'green', actor: 'AI · Claude Vision', body: 'extracted DL · 99% conf · <span class="act-loan">OF-1052</span>' },
-  ];
-  let idx = 0;
-  const body = document.getElementById('activity-body');
-  setInterval(() => {
-    const a = fakeActivities[idx % fakeActivities.length];
-    idx++;
-    const row = document.createElement('div');
-    row.className = `act-row fresh ${a.type}`;
-    row.innerHTML = `<div class="act-time">just now</div>
-      <div class="act-body"><span class="act-actor">${a.actor}</span> ${a.body}</div>`;
-    body.insertBefore(row, body.firstChild);
-    const rows = body.querySelectorAll('.act-row');
-    rows.forEach((r, i) => {
-      if (i > 0) {
-        r.classList.remove('fresh');
-        const time = r.querySelector('.act-time');
-        if (time && time.textContent === 'just now') time.textContent = '12s ago';
-      }
-    });
-    while (body.children.length > 16) body.removeChild(body.lastChild);
-  }, 11000);
+// ═══════════════════════════════════════════════════════════════════════════
+// /documents.html — Branch document library with per-loan view
+//
+// What this file does NOT do:
+//   1. Upload bytes anywhere — the actual file URL is expected to come from
+//      somewhere external (S3, R2, your own bucket). Wire up your uploader
+//      inside `window.OF_uploadFile(file)` near the bottom of this script.
+//   2. Run Claude Vision — extraction is delegated to
+//      `window.OF_extractDocument(documentId)` which you point at your own
+//      Supabase edge function.
+//
+// What this file DOES:
+//   • Loads documents from `documents` table, scoped by branch + optional loan
+//   • Two views: branch library and per-loan
+//   • Real-time updates when anyone uploads/extracts
+//   • Search, filter, preview
+//   • Inline AI extraction panel (calls your hook for results)
+//   • "Apply to loan" actions — writes extracted fields back to loans/borrowers
+//
+// Schema expected on `documents` table:
+//   id, branch_id, loan_id (nullable), uploaded_by,
+//   file_name, file_url, file_size_bytes, mime_type,
+//   doc_type, status (uploaded|extracting|extracted|applied|failed),
+//   extraction_data (jsonb), extraction_confidence (numeric 0-1),
+//   uploaded_at, extracted_at, archived_at
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (s) => document.querySelector(s);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+// ─── State ───────────────────────────────────────────────────────────────
+let supa = null;
+let me = null;
+let branch = null;
+
+let docs = [];
+let docsById = new Map();
+let loans = [];          // for the loan filter dropdown
+let loansById = new Map();
+let selectedDocId = null;
+let realtimeChan = null;
+
+let view = 'branch';     // 'branch' | 'loan'
+let scopedLoanId = null; // when view==='loan'
+
+let filters = {
+  search: '',
+  loan_id: 'all',
+  doc_type: 'all',
+  status: 'all',
+};
+
+// pending upload (when modal is open)
+let pendingFile = null;
+let pendingFileQueue = [];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOC TYPES + EXTRACTION SCHEMA
+// ═══════════════════════════════════════════════════════════════════════════
+
+const DOC_TYPES = {
+  paystub:        'Paystub',
+  w2:             'W-2',
+  bank_statement: 'Bank Statement',
+  tax_return:     'Tax Return',
+  id:             'ID / License',
+  appraisal:      'Appraisal',
+  title:          'Title',
+  insurance:      'Insurance',
+  other:          'Other',
+};
+
+// What "actions" can each doc type produce when extracted? This drives the
+// "Apply to loan" buttons in the detail panel.
+const ACTION_LABELS = {
+  write_income:        'Write monthly income to loan',
+  write_asset:         'Write asset balance to loan',
+  write_property_value:'Write appraised value to loan',
+  clear_condition:     'Clear matching condition',
+  flag_review:         'Flag for processor review',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function bytes(n) {
+  if (n == null) return '—';
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(0) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function fileExtClass(mimeType, fileName) {
+  const ext = (fileName || '').split('.').pop().toLowerCase();
+  if ((mimeType || '').startsWith('image/')) return 'IMG';
+  if (ext === 'pdf' || mimeType === 'application/pdf') return 'PDF';
+  return 'DOC';
+}
+function fileExt(fileName) {
+  return (fileName || '').split('.').pop().toUpperCase().slice(0, 4) || 'DOC';
+}
+// Confidence is *expected* to be 0-1 (see schema for extraction_confidence
+// numeric(4,3)). But edge functions returning 0-100 instead of 0.0-1.0 is a
+// classic foot-gun, so we auto-detect: any value > 1 is treated as a
+// percentage and normalized. A one-shot console warning fires the first time
+// we see one so you can fix the hook without 10,000 log lines.
+let _confWarnedHigh = false;
+function _normConf(conf) {
+  if (conf == null) return null;
+  const n = Number(conf);
+  if (!isFinite(n) || n < 0) return null;
+  if (n > 1) {
+    if (!_confWarnedHigh) {
+      _confWarnedHigh = true;
+      console.warn('[OF Docs] extraction_confidence returned > 1 (' + n +
+        '). Expected 0-1. Auto-normalizing as percentage. Fix your extraction hook to return 0-1.');
+    }
+    return Math.min(n / 100, 1);
+  }
+  return n;
+}
+function confClass(conf) {
+  const n = _normConf(conf);
+  if (n == null) return '';
+  if (n >= 0.9) return 'high';
+  if (n >= 0.7) return 'med';
+  return 'low';
+}
+function confLabel(conf) {
+  const n = _normConf(conf);
+  if (n == null) return '—';
+  return Math.round(n * 100) + '%';
+}
+
+function showToast(msg, isError) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH + BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile) { showState('state-pending'); return; }
+  if (!profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  // Read URL params: ?loan_id=<id>
+  const params = new URLSearchParams(window.location.search);
+  const urlLoanId = params.get('loan_id');
+  if (urlLoanId) {
+    scopedLoanId = urlLoanId;
+    view = 'loan';
+  }
+
+  showActive();
+  await loadLoans();        // populate filter dropdown + scoped-loan info
+  await loadDocs();
+  initFilters();
+  initUpload();
+  initDropzone();
+  initRealtime();
+  initViewToggle();
+  initSearchShortcut();
+
+  // Deep-link to a specific doc: #<doc_id>
+  if (window.location.hash) {
+    const id = window.location.hash.slice(1);
+    if (id && docsById.has(id)) selectDoc(id);
+  }
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#docs-active').style.display = 'none';
+}
+function showActive() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#docs-active').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD LOANS (for filter dropdown + per-loan view)
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadLoans() {
+  const { data, error } = await supa.from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, property_address,
+      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .order('updated_at', { ascending: false });
+
+  if (error) { console.error('loans load error:', error); return; }
+  loans = data || [];
+  loansById.clear();
+  loans.forEach(l => loansById.set(l.id, l));
+
+  // Populate filter dropdown + upload modal dropdown
+  const opts = loans.map(l => {
+    const b = (l.borrowers || [])[0]?.borrower;
+    const name = b ? `${b.last_name}` : 'Borrower TBD';
+    return `<option value="${escapeHtml(l.id)}">${escapeHtml(l.loan_number)} · ${escapeHtml(name)}</option>`;
+  }).join('');
+
+  const filterSel = $('#filter-loan');
+  filterSel.innerHTML = `<option value="all">All loans</option>` + opts;
+  if (scopedLoanId) filterSel.value = scopedLoanId;
+
+  $('#upload-loan').innerHTML = `<option value="">— Branch library only —</option>` + opts;
+
+  // Update the page header for per-loan view
+  if (view === 'loan' && scopedLoanId && loansById.has(scopedLoanId)) {
+    const l = loansById.get(scopedLoanId);
+    const b = (l.borrowers || [])[0]?.borrower;
+    const name = b ? `${b.last_name}, ${b.first_name}` : 'Borrower TBD';
+    $('#page-eyebrow').textContent = `LOAN ${l.loan_number} · ${name.toUpperCase()}`;
+    $('#page-title').textContent = `Documents on this file`;
+    $('#page-sub').textContent = "Everything that's been uploaded to this loan. Drop in a doc — Claude Vision extracts the data and clears matching conditions automatically.";
+    $('#view-loan').style.display = 'inline-flex';
+    $('#view-loan').classList.add('active');
+    $('#view-branch').classList.remove('active');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD DOCS
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadDocs() {
+  let q = supa.from('documents')
+    .select(`
+      id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
+      mime_type, doc_type, status, extraction_data, extraction_confidence,
+      uploaded_at, extracted_at, archived_at,
+      uploader:uploaded_by ( full_name, role )
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .order('uploaded_at', { ascending: false })
+    .limit(200);
+
+  if (view === 'loan' && scopedLoanId) {
+    q = q.eq('loan_id', scopedLoanId);
+  }
+
+  const { data, error } = await q;
+  if (error) {
+    console.error('docs load error:', error);
+    $('#docs-list').innerHTML = `<div class="docs-empty" style="color:var(--red);">Couldn't load: ${escapeHtml(error.message)}</div>`;
+    return;
+  }
+  docs = data || [];
+  docsById.clear();
+  docs.forEach(d => docsById.set(d.id, d));
+
+  loadMetrics();
+  renderList();
+  // Refresh detail if open
+  if (selectedDocId && docsById.has(selectedDocId)) {
+    renderDetail(docsById.get(selectedDocId));
+  }
+}
+
+function loadMetrics() {
+  const total = docs.length;
+  const extracted = docs.filter(d => d.status === 'extracted' || d.status === 'applied').length;
+  const applied = docs.filter(d => d.status === 'applied').length;
+  const pending = docs.filter(d => d.status === 'extracting' || d.status === 'uploaded').length;
+
+  // Avg confidence on extracted docs (normalized 0-1)
+  const confs = docs
+    .map(d => _normConf(d.extraction_confidence))
+    .filter(v => v != null);
+  const avgConf = confs.length ? (confs.reduce((a,b) => a+b, 0) / confs.length) : null;
+
+  $('#metric-strip').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">${view === 'loan' ? 'On This Loan' : 'Branch Library'}</div>
+      <div class="metric-value">${total}</div>
+      <div class="metric-sub">documents total</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">AI-Extracted</div>
+      <div class="metric-value cyan">${extracted}</div>
+      <div class="metric-sub">${total ? Math.round(extracted/total*100) : 0}% of library</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Applied to Loans</div>
+      <div class="metric-value green">${applied}</div>
+      <div class="metric-sub">data written back</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Avg Confidence</div>
+      <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${confLabel(avgConf)}</div>
+      <div class="metric-sub">${pending ? pending + ' still pending' : 'across extractions'}</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initFilters() {
+  $('#filter-search').addEventListener('input', e => {
+    filters.search = e.target.value.trim().toLowerCase();
+    renderList();
+  });
+  $('#filter-loan').addEventListener('change', e => {
+    filters.loan_id = e.target.value;
+    renderList();
+  });
+  $('#filter-doctype').addEventListener('change', e => {
+    filters.doc_type = e.target.value;
+    renderList();
+  });
+  $('#filter-status').addEventListener('change', e => {
+    filters.status = e.target.value;
+    renderList();
+  });
+}
+
+function applyFilters(rows) {
+  return rows.filter(d => {
+    if (filters.loan_id !== 'all' && d.loan_id !== filters.loan_id) return false;
+    if (filters.doc_type !== 'all' && d.doc_type !== filters.doc_type) return false;
+    if (filters.status !== 'all' && d.status !== filters.status) return false;
+    if (filters.search) {
+      const haystack = [
+        d.file_name,
+        d.doc_type,
+        loansById.get(d.loan_id)?.loan_number || '',
+        d.uploader?.full_name || '',
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(filters.search)) return false;
+    }
+    return true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VIEW TOGGLE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initViewToggle() {
+  $('#view-branch').addEventListener('click', () => switchView('branch'));
+  $('#view-loan').addEventListener('click', () => switchView('loan'));
+}
+
+async function switchView(v) {
+  if (v === view) return;
+  if (v === 'loan' && !scopedLoanId) return;
+  view = v;
+  // Update URL
+  const url = new URL(window.location);
+  if (v === 'loan' && scopedLoanId) url.searchParams.set('loan_id', scopedLoanId);
+  else url.searchParams.delete('loan_id');
+  history.pushState({}, '', url);
+  $('#view-branch').classList.toggle('active', v === 'branch');
+  $('#view-loan').classList.toggle('active', v === 'loan');
+  if (v === 'branch') {
+    $('#page-eyebrow').textContent = 'DOCUMENT LIBRARY';
+    $('#page-title').textContent = 'Documents';
+    $('#page-sub').textContent = 'Drop in a paystub. AI extracts the data, writes it to the loan file, and clears the matching condition.';
+  }
+  await loadDocs();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER LIST
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderList() {
+  const filtered = applyFilters(docs);
+  const list = $('#docs-list');
+
+  if (filtered.length === 0) {
+    if (docs.length === 0) {
+      list.innerHTML = `
+        <div class="docs-empty">
+          No documents yet. Drop a file in the upload zone above to get started.<br>
+          <small style="opacity:0.7; display:block; margin-top:0.5rem;">Claude Vision will auto-detect the type, extract every field, and clear matching conditions on the loan.</small>
+        </div>`;
+    } else {
+      list.innerHTML = `<div class="docs-empty">No documents match your filters.</div>`;
+    }
+    return;
+  }
+
+  list.innerHTML = filtered.map(d => renderRow(d)).join('');
+  list.querySelectorAll('.doc-row').forEach(row => {
+    row.addEventListener('click', () => selectDoc(row.dataset.docId));
+  });
+}
+
+function renderRow(d) {
+  const ext = fileExt(d.file_name);
+  const extCls = fileExtClass(d.mime_type, d.file_name);
+  const docTypeLabel = DOC_TYPES[d.doc_type] || (d.doc_type || '—');
+  const docTypeDetected = d.status === 'extracted' || d.status === 'applied';
+  const loan = d.loan_id ? loansById.get(d.loan_id) : null;
+  const loanNum = loan?.loan_number || (d.loan_id ? d.loan_id.slice(0,6) : null);
+
+  const isSelected = selectedDocId === d.id;
+
+  const meta = [];
+  if (loanNum) meta.push(`<a href="/dashboard.html#${escapeHtml(d.loan_id)}" onclick="event.stopPropagation()">${escapeHtml(loanNum)}</a>`);
+  else meta.push('Branch library');
+  if (d.uploader?.full_name) meta.push(escapeHtml(d.uploader.full_name));
+  meta.push(bytes(d.file_size_bytes));
+
+  return `
+    <div class="doc-row ${isSelected ? 'selected' : ''}" data-doc-id="${escapeHtml(d.id)}">
+      <div class="doc-icon ${extCls}">${escapeHtml(ext)}</div>
+      <div class="doc-mid">
+        <div class="doc-name">${escapeHtml(d.file_name)}</div>
+        <div class="doc-meta">${meta.join(' · ')}</div>
+      </div>
+      <div class="doc-type ${docTypeDetected ? 'detected' : ''}">${escapeHtml(docTypeLabel)}</div>
+      <div class="doc-status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</div>
+      <div class="doc-conf ${confClass(d.extraction_confidence)}">${confLabel(d.extraction_confidence)}</div>
+      <div class="doc-time">${timeAgo(d.uploaded_at)}</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SELECT + RENDER DETAIL
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function selectDoc(id) {
+  selectedDocId = id;
+  // Update hash without scroll
+  const url = new URL(window.location);
+  url.hash = id;
+  history.replaceState({}, '', url);
+
+  document.querySelectorAll('.doc-row').forEach(r => {
+    r.classList.toggle('selected', r.dataset.docId === id);
+  });
+
+  const doc = docsById.get(id);
+  if (!doc) return;
+  renderDetail(doc);
+}
+
+function renderDetail(doc) {
+  $('#detail-empty').style.display = 'none';
+  $('#detail-content').style.display = 'flex';
+
+  const loan = doc.loan_id ? loansById.get(doc.loan_id) : null;
+  const docTypeLabel = DOC_TYPES[doc.doc_type] || doc.doc_type || 'Auto-detect';
+  const ext = fileExt(doc.file_name);
+
+  // Head
+  const meta = [];
+  meta.push(`<span>${escapeHtml(ext)} · ${bytes(doc.file_size_bytes)}</span>`);
+  meta.push(`<span>${escapeHtml(docTypeLabel)}</span>`);
+  if (loan) meta.push(`<span><a href="/dashboard.html#${escapeHtml(doc.loan_id)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(loan.loan_number)}</a></span>`);
+  else meta.push(`<span>Branch library</span>`);
+  if (doc.uploader?.full_name) meta.push(`<span>by ${escapeHtml(doc.uploader.full_name)}</span>`);
+  meta.push(`<span>${timeAgo(doc.uploaded_at)}</span>`);
+
+  // Don't allow extraction or preview if the file is being scanned or has been
+  // flagged as malicious.
+  const isQuarantined = doc.status === 'quarantined';
+  const isInfected = doc.status === 'infected';
+  const canExtract = !isQuarantined && !isInfected && (doc.status === 'uploaded' || doc.status === 'failed');
+  const canDelete = me.role !== 'viewer';
+  const canPreview = !isQuarantined && !isInfected && doc.file_url;
+
+  $('#detail-head').innerHTML = `
+    <div class="dh-name">${escapeHtml(doc.file_name)}</div>
+    <div class="dh-meta-row">${meta.join('')}</div>
+    <div class="dh-actions">
+      ${canPreview ? `<a class="dh-action" href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">↗ Open file</a>` : ''}
+      ${canExtract ? `<button class="dh-action primary" id="btn-extract">${doc.status === 'failed' ? 'Retry extraction' : 'Run AI extraction'}</button>` : ''}
+      ${doc.status === 'extracted' && doc.loan_id ? `<button class="dh-action primary" id="btn-apply-all">Apply all to loan</button>` : ''}
+      ${canDelete ? `<button class="dh-action danger" id="btn-archive">Archive</button>` : ''}
+    </div>
+  `;
+
+  // Wire actions
+  if (canExtract) $('#btn-extract').addEventListener('click', () => runExtraction(doc.id));
+  if (canDelete)  $('#btn-archive').addEventListener('click', () => archiveDoc(doc.id));
+  if (doc.status === 'extracted' && doc.loan_id) {
+    $('#btn-apply-all').addEventListener('click', () => applyAllToLoan(doc.id));
+  }
+
+  // Body
+  const body = $('#detail-body');
+  if (isQuarantined) {
+    body.innerHTML = `
+      <div class="ext-panel">
+        <div class="ext-head">
+          <span class="ext-title">File scanning in progress</span>
+          <span class="ext-tag pending">QUARANTINED</span>
+        </div>
+        <div class="ext-body">
+          <div class="ext-status-row">
+            <span class="ext-spinner"></span>
+            <span>This file is being scanned for malware before being made available.
+            Preview, extraction, and "open file" are disabled until the scan completes.</span>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  if (isInfected) {
+    body.innerHTML = `
+      <div class="ext-panel">
+        <div class="ext-head">
+          <span class="ext-title">⚠ File flagged as malicious</span>
+          <span class="ext-tag failed">INFECTED</span>
+        </div>
+        <div class="ext-body">
+          <div class="ext-status-row" style="color: var(--red);">
+            <span>This file was flagged by the malware scanner and has been quarantined.
+            It cannot be previewed, opened, or extracted. Archive it and contact the uploader.</span>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  body.innerHTML = `
+    ${renderExtractionPanel(doc)}
+    ${renderPreview(doc)}
+  `;
+
+  // Wire extraction action buttons
+  body.querySelectorAll('[data-action-key]').forEach(btn => {
+    btn.addEventListener('click', () => applyAction(doc.id, btn.dataset.actionKey, btn.dataset.actionIdx));
+  });
+}
+
+function renderExtractionPanel(doc) {
+  const status = doc.status;
+  const data = doc.extraction_data || {};
+
+  if (status === 'uploaded') {
+    return `
+      <div class="ext-panel">
+        <div class="ext-head">
+          <span class="ext-title">Claude Vision Extraction</span>
+          <span class="ext-tag pending">PENDING</span>
+        </div>
+        <div class="ext-body">
+          <div class="ext-status-row">
+            <span>Click "Run AI extraction" above to detect document type, extract every field, and propose actions.</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  if (status === 'extracting') {
+    return `
+      <div class="ext-panel">
+        <div class="ext-head">
+          <span class="ext-title">Claude Vision Extraction</span>
+          <span class="ext-tag pending">EXTRACTING</span>
+        </div>
+        <div class="ext-body">
+          <div class="ext-status-row">
+            <span class="ext-spinner"></span>
+            <span>Reading the document, detecting type, and pulling fields…</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  if (status === 'failed') {
+    return `
+      <div class="ext-panel">
+        <div class="ext-head">
+          <span class="ext-title">Claude Vision Extraction</span>
+          <span class="ext-tag failed">FAILED</span>
+        </div>
+        <div class="ext-body">
+          <div class="ext-status-row" style="color: var(--red);">
+            <span>${escapeHtml(data.error || 'Extraction failed. Try again or contact support.')}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // extracted or applied
+  const fields = Array.isArray(data.fields) ? data.fields : [];
+  const actions = Array.isArray(data.suggested_actions) ? data.suggested_actions : [];
+  const appliedSet = new Set(Array.isArray(data.applied_actions) ? data.applied_actions : []);
+
+  return `
+    <div class="ext-panel">
+      <div class="ext-head">
+        <span class="ext-title">Claude Vision Extraction · ${confLabel(doc.extraction_confidence)} confidence</span>
+        <span class="ext-tag">EXTRACTED</span>
+      </div>
+      <div class="ext-body">
+        ${fields.length === 0
+          ? `<div class="ext-status-row"><span>No fields extracted.</span></div>`
+          : `
+            <div class="ext-fields">
+              ${fields.map(f => `
+                <div class="ext-field-row">
+                  <span class="ext-field-label">${escapeHtml(f.label || f.key || '—')}</span>
+                  <span class="ext-field-val ${f.flagged ? 'flag' : ''} ${f.alert ? 'alert' : ''}">${escapeHtml(f.value ?? '—')}</span>
+                </div>
+              `).join('')}
+            </div>
+          `
+        }
+
+        ${actions.length > 0 ? `
+          <div class="ext-actions">
+            ${actions.map((a, i) => {
+              const isApplied = appliedSet.has(a.key) || a.applied;
+              return `
+                <div class="ext-action-row ${a.severity === 'warning' ? 'warning' : ''} ${isApplied ? 'applied' : ''}">
+                  <span class="ext-action-icon">${isApplied ? '✓' : '→'}</span>
+                  <span class="ext-action-text">
+                    <strong>${escapeHtml(a.label || ACTION_LABELS[a.key] || a.key)}</strong>
+                    ${a.detail ? `<small>${escapeHtml(a.detail)}</small>` : ''}
+                  </span>
+                  ${doc.loan_id
+                    ? `<button class="ext-action-btn ${isApplied ? 'applied' : ''}"
+                          data-action-key="${escapeHtml(a.key)}"
+                          data-action-idx="${i}"
+                          ${isApplied ? 'disabled' : ''}>
+                          ${isApplied ? 'Applied' : 'Apply'}
+                      </button>`
+                    : `<span class="ext-action-btn" style="opacity:0.5;">No loan</span>`}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderPreview(doc) {
+  if (!doc.file_url) {
+    return `
+      <div class="preview-box">
+        <div class="preview-head">Preview</div>
+        <div class="preview-body">
+          <div class="preview-fallback">No file URL on this document.<br>Make sure your uploader populated <code>file_url</code>.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  const mime = doc.mime_type || '';
+  if (mime.startsWith('image/')) {
+    return `
+      <div class="preview-box">
+        <div class="preview-head">Preview · Image</div>
+        <div class="preview-body">
+          <img src="${escapeHtml(doc.file_url)}"
+               alt="${escapeHtml(doc.file_name)}"
+               loading="lazy"
+               onerror="this.parentElement.innerHTML='<div class=&quot;preview-fallback&quot;>Image failed to load (CORS or 404).<br><a href=&quot;${escapeHtml(doc.file_url)}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Open in new tab</a></div>'">
+        </div>
+      </div>
+    `;
+  }
+  if (mime === 'application/pdf') {
+    // PDFs in iframes can fail silently from CORS, X-Frame-Options, or
+    // Content-Security-Policy headers on the storage bucket. We start a
+    // 2.5s watchdog: if the iframe never fires `load`, assume it's blocked
+    // and swap in a "open in new tab" fallback. Browsers fire `load` even
+    // for blocked content sometimes, so we also do a contentDocument probe
+    // where the same-origin policy permits.
+    //
+    // CORS / headers your bucket needs for inline PDF preview:
+    //   Access-Control-Allow-Origin: <your domain>
+    //   Content-Disposition: inline   (NOT attachment)
+    //   X-Frame-Options: SAMEORIGIN or omitted entirely
+    //   Content-Security-Policy: frame-ancestors ... must allow your domain
+    const previewId = 'pdf-preview-' + doc.id;
+    return `
+      <div class="preview-box">
+        <div class="preview-head">Preview · PDF</div>
+        <div class="preview-body" id="${previewId}-wrap" style="padding:0; min-height:320px; position:relative;">
+          <div id="${previewId}-loading"
+               style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+                      font-family:var(--mono); font-size:0.65rem; color:var(--muted);
+                      letter-spacing:0.04em; pointer-events:none;">
+            Loading PDF…
+          </div>
+          <iframe id="${previewId}"
+                  src="${escapeHtml(doc.file_url)}#toolbar=0"
+                  title="${escapeHtml(doc.file_name)}"
+                  style="width:100%; height:320px; border:none; background:white; opacity:0;"
+                  onload="OF_pdfPreviewLoaded('${previewId}', '${escapeHtml(doc.file_url)}')"
+                  onerror="OF_pdfPreviewFailed('${previewId}', '${escapeHtml(doc.file_url)}')"></iframe>
+        </div>
+      </div>
+      <script>
+        // 2.5s watchdog — if onload never fires, assume blocked
+        (function() {
+          var id = '${previewId}';
+          setTimeout(function() {
+            var wrap = document.getElementById(id + '-wrap');
+            var loading = document.getElementById(id + '-loading');
+            if (loading && loading.parentElement) {
+              // Still in DOM == iframe never fired load
+              OF_pdfPreviewFailed(id, ${JSON.stringify(doc.file_url)});
+            }
+          }, 2500);
+        })();
+      </script>
+    `;
+  }
+  return `
+    <div class="preview-box">
+      <div class="preview-head">Preview</div>
+      <div class="preview-body">
+        <div class="preview-fallback">
+          ${escapeHtml(mime || 'Unknown file type')} can't be previewed inline.
+          <br><a href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">Open in new tab</a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// PDF iframe load handlers (called from inline onload/onerror)
+window.OF_pdfPreviewLoaded = function(id, url) {
+  const iframe = document.getElementById(id);
+  const loading = document.getElementById(id + '-loading');
+  if (!iframe) return;
+
+  // Some browsers fire load even when X-Frame-Options blocks rendering. Try
+  // to peek at contentDocument; SecurityError == cross-origin blocked
+  // (which is fine, the PDF is rendering — we just can't see into it).
+  // Empty body or 0-height == actually broken.
+  let blocked = false;
+  try {
+    const doc = iframe.contentDocument;
+    if (doc && doc.body && doc.body.innerHTML === '' && doc.body.offsetHeight === 0) {
+      blocked = true;
+    }
+  } catch (_e) {
+    // SecurityError = cross-origin, which means the PDF is rendering OK
+    // (we just can't poke at it). This is the success case for most CDNs.
+  }
+
+  if (blocked) {
+    OF_pdfPreviewFailed(id, url);
+  } else {
+    if (loading) loading.remove();
+    iframe.style.opacity = '1';
+  }
+};
+
+window.OF_pdfPreviewFailed = function(id, url) {
+  const wrap = document.getElementById(id + '-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = `
+    <div class="preview-fallback" style="padding: 2rem 1.5rem;">
+      PDF can't be previewed inline.<br>
+      <small style="font-size:0.55rem; color:var(--muted); display:block; margin: 0.4rem 0 0.8rem; letter-spacing:0.04em;">
+        Likely your storage bucket sends <code>X-Frame-Options: DENY</code> or<br>
+        <code>Content-Disposition: attachment</code>. Check the file URL's response headers.
+      </small>
+      <a href="${url}" target="_blank" rel="noopener">Open in new tab</a>
+    </div>
+  `;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI EXTRACTION
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function runExtraction(docId) {
+  const doc = docsById.get(docId);
+  if (!doc) return;
+
+  // Optimistic UI: mark as extracting
+  doc.status = 'extracting';
+  renderDetail(doc);
+  renderList();
+
+  try {
+    // Mark in DB so other users see it too
+    await supa.from('documents')
+      .update({ status: 'extracting' })
+      .eq('id', docId);
+
+    // ───────────────────────────────────────────────────────────────
+    // YOUR AI HOOK
+    //
+    // Implement window.OF_extractDocument(documentId) somewhere on the
+    // page (or in a separate <script>) that calls your Supabase edge
+    // function which calls Claude Vision. It should return a Promise
+    // resolving to:
+    //   {
+    //     doc_type: 'paystub' | 'w2' | 'bank_statement' | ...,
+    //     confidence: 0-1,
+    //     fields: [{ label, value, key?, flagged?, alert? }],
+    //     suggested_actions: [{ key, label, detail?, severity? }]
+    //   }
+    //
+    // The hook is responsible for the actual fetch + auth headers.
+    // ───────────────────────────────────────────────────────────────
+    if (typeof window.OF_extractDocument !== 'function') {
+      throw new Error('No AI hook configured. Implement window.OF_extractDocument(documentId) — see /documents.html source.');
+    }
+
+    const result = await window.OF_extractDocument(docId);
+    if (!result || typeof result !== 'object') {
+      throw new Error('Extraction hook returned invalid data.');
+    }
+
+    // Persist
+    const { error } = await supa.from('documents')
+      .update({
+        status: 'extracted',
+        doc_type: result.doc_type || doc.doc_type || null,
+        extraction_data: {
+          fields: result.fields || [],
+          suggested_actions: result.suggested_actions || [],
+          applied_actions: [],
+          extracted_at_utc: new Date().toISOString(),
+        },
+        extraction_confidence: result.confidence ?? null,
+        extracted_at: new Date().toISOString(),
+      })
+      .eq('id', docId);
+
+    if (error) throw error;
+
+    showToast('Extraction complete · ' + (result.fields?.length || 0) + ' fields found.');
+    await loadDocs();
+  } catch (err) {
+    console.error('extract err:', err);
+    await supa.from('documents')
+      .update({
+        status: 'failed',
+        extraction_data: { error: err.message },
+      })
+      .eq('id', docId);
+    showToast('Extraction failed: ' + err.message, true);
+    await loadDocs();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// APPLY EXTRACTION ACTIONS TO LOAN
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function applyAction(docId, actionKey, actionIdx) {
+  const doc = docsById.get(docId);
+  if (!doc || !doc.loan_id) return;
+
+  const data = doc.extraction_data || {};
+  const action = (data.suggested_actions || [])[actionIdx];
+  if (!action) return;
+
+  try {
+    // ───────────────────────────────────────────────────────────────
+    // YOUR APPLY HOOK
+    //
+    // window.OF_applyExtractionAction(documentId, action) is where the
+    // actual write-back happens (income → loans table, asset →
+    // liabilities/assets table, condition → conditions.status='cleared',
+    // etc). It should return a Promise resolving to {ok: true} or
+    // throw on failure.
+    //
+    // If you don't implement this hook, we'll just record that the
+    // action was clicked — useful for demo mode without backend wiring.
+    // ───────────────────────────────────────────────────────────────
+    if (typeof window.OF_applyExtractionAction === 'function') {
+      await window.OF_applyExtractionAction(docId, action);
+    } else {
+      console.warn('No window.OF_applyExtractionAction hook — recording click only.');
+    }
+
+    // Mark as applied in extraction_data + bump status if all applied
+    const applied = new Set(data.applied_actions || []);
+    applied.add(actionKey);
+
+    const allApplied = (data.suggested_actions || []).every(a => applied.has(a.key));
+
+    const update = {
+      extraction_data: { ...data, applied_actions: [...applied] },
+    };
+    if (allApplied) update.status = 'applied';
+
+    const { error } = await supa.from('documents')
+      .update(update)
+      .eq('id', docId);
+    if (error) throw error;
+
+    showToast('Applied · ' + (action.label || action.key));
+    await loadDocs();
+  } catch (err) {
+    console.error('apply err:', err);
+    showToast('Apply failed: ' + err.message, true);
+  }
+}
+
+async function applyAllToLoan(docId) {
+  const doc = docsById.get(docId);
+  if (!doc) return;
+  const actions = (doc.extraction_data?.suggested_actions || []);
+  const applied = new Set(doc.extraction_data?.applied_actions || []);
+  const todo = actions.filter(a => !applied.has(a.key));
+  if (todo.length === 0) {
+    showToast('All actions already applied.');
+    return;
+  }
+  for (let i = 0; i < actions.length; i++) {
+    if (applied.has(actions[i].key)) continue;
+    await applyAction(docId, actions[i].key, i);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ARCHIVE
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function archiveDoc(docId) {
+  if (!confirm('Archive this document? It will be hidden from the library but kept for audit.')) return;
+  try {
+    const { error } = await supa.from('documents')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', docId);
+    if (error) throw error;
+    showToast('Archived.');
+    selectedDocId = null;
+    $('#detail-content').style.display = 'none';
+    $('#detail-empty').style.display = 'flex';
+    await loadDocs();
+  } catch (err) {
+    showToast('Archive failed: ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UPLOAD (modal + dropzone)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initUpload() {
+  $('#upload-btn').addEventListener('click', () => $('#file-input').click());
+  $('#upload-cancel').addEventListener('click', closeUploadModal);
+  $('#upload-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeUploadModal();
+  });
+  $('#upload-confirm').addEventListener('click', confirmUpload);
+
+  $('#file-input').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) queueFiles(files);
+    e.target.value = '';  // reset so same file can be picked twice
+  });
+}
+
+function initDropzone() {
+  const dz = $('#dropzone');
+  dz.addEventListener('click', () => $('#file-input').click());
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, (e) => {
+    e.preventDefault(); dz.classList.add('drag-active');
+  }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, (e) => {
+    e.preventDefault();
+    if (ev === 'dragleave' && dz.contains(e.relatedTarget)) return;
+    dz.classList.remove('drag-active');
+  }));
+  dz.addEventListener('drop', (e) => {
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length > 0) queueFiles(files);
+  });
+}
+
+function queueFiles(files) {
+  // Filter for accepted types + max size
+  const MAX = 25 * 1024 * 1024;
+  const accepted = [];
+  for (const f of files) {
+    if (f.size > MAX) {
+      showToast(`${f.name} is over 25MB — skipped.`, true);
+      continue;
+    }
+    accepted.push(f);
+  }
+  if (accepted.length === 0) return;
+  pendingFileQueue = accepted;
+  pendingFile = pendingFileQueue.shift();
+  openUploadModal();
+}
+
+function openUploadModal() {
+  if (!pendingFile) return;
+  $('#upload-filename').textContent = pendingFile.name + ' · ' + bytes(pendingFile.size);
+  $('#upload-count').textContent = pendingFileQueue.length > 0 ? `(${pendingFileQueue.length + 1} queued)` : '';
+  $('#upload-loan').value = scopedLoanId || '';
+  $('#upload-doctype').value = '';
+  $('#upload-progress').style.display = 'none';
+  $('#upload-progress-fill').style.width = '0%';
+  $('#upload-status').textContent = '';
+  $('#upload-confirm').disabled = false;
+  $('#upload-modal').classList.add('open');
+}
+
+function closeUploadModal() {
+  $('#upload-modal').classList.remove('open');
+  pendingFile = null;
+  pendingFileQueue = [];
+}
+
+async function confirmUpload() {
+  if (!pendingFile) return;
+  const loanId = $('#upload-loan').value || null;
+  const docType = $('#upload-doctype').value || null;
+  const file = pendingFile;
+
+  $('#upload-confirm').disabled = true;
+  $('#upload-progress').style.display = 'block';
+  $('#upload-status').textContent = 'Uploading file…';
+
+  try {
+    // ───────────────────────────────────────────────────────────────
+    // YOUR UPLOAD HOOK
+    //
+    // window.OF_uploadFile(file, onProgress) should return a Promise
+    // resolving to:
+    //   { file_url, file_size_bytes, mime_type }
+    //
+    // The hook is responsible for actually putting the bytes somewhere
+    // (S3, R2, your own storage, whatever). It must return a publicly
+    // accessible URL (or signed URL with adequate TTL) for inline
+    // preview to work.
+    //
+    // If no hook is implemented, this falls back to a plain object URL
+    // (works for demos but won't survive page reload).
+    // ───────────────────────────────────────────────────────────────
+    let uploaded;
+    if (typeof window.OF_uploadFile === 'function') {
+      uploaded = await window.OF_uploadFile(file, (pct) => {
+        $('#upload-progress-fill').style.width = pct + '%';
+        $('#upload-status').textContent = `Uploading… ${pct}%`;
+      });
+    } else {
+      console.warn('No window.OF_uploadFile hook — falling back to object URL (preview only, will not persist).');
+      $('#upload-progress-fill').style.width = '100%';
+      uploaded = {
+        file_url: URL.createObjectURL(file),
+        file_size_bytes: file.size,
+        mime_type: file.type || 'application/octet-stream',
+      };
+    }
+
+    $('#upload-status').textContent = 'Saving record…';
+
+    // Upload hook may signal that the file is being scanned and shouldn't be
+    // touched yet (status='quarantined'). Default to 'uploaded' if the hook
+    // doesn't say otherwise — same as the legacy behavior.
+    const initialStatus = (uploaded.initial_status === 'quarantined' ||
+                           uploaded.initial_status === 'uploaded')
+      ? uploaded.initial_status
+      : 'uploaded';
+
+    const { data: row, error } = await supa.from('documents')
+      .insert({
+        branch_id: me.branch_id,
+        loan_id: loanId,
+        uploaded_by: me.id,
+        file_name: file.name,
+        file_url: uploaded.file_url,
+        file_size_bytes: uploaded.file_size_bytes ?? file.size,
+        mime_type: uploaded.mime_type ?? file.type ?? 'application/octet-stream',
+        doc_type: docType,
+        status: initialStatus,
+        uploaded_at: new Date().toISOString(),
+      })
+      .select().single();
+    if (error) throw error;
+
+    showToast(`Uploaded ${file.name}.`);
+
+    // Auto-trigger extraction ONLY if:
+    //   1. an extraction hook is configured
+    //   2. the file came back as 'uploaded' (not quarantined / scanning)
+    //
+    // If your OF_uploadFile returns status='quarantined', extraction will be
+    // skipped here and re-attempted automatically when realtime sees the
+    // status change to 'uploaded' after the scan passes.
+    if (typeof window.OF_extractDocument === 'function' && row.status === 'uploaded') {
+      await loadDocs();
+      runExtraction(row.id).catch(err => console.warn('auto-extract failed:', err));
+    } else {
+      await loadDocs();
+    }
+
+    // If more files queued, reopen the modal
+    if (pendingFileQueue.length > 0) {
+      pendingFile = pendingFileQueue.shift();
+      openUploadModal();
+    } else {
+      closeUploadModal();
+    }
+  } catch (err) {
+    console.error('upload err:', err);
+    $('#upload-status').textContent = 'Failed: ' + err.message;
+    $('#upload-status').style.color = 'var(--red)';
+    $('#upload-confirm').disabled = false;
+    showToast('Upload failed: ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME — row-level patching
+//
+// We listen for INSERT/UPDATE/DELETE on the documents table scoped to this
+// branch and patch the in-memory `docs` array surgically rather than
+// re-fetching the whole library on every change. For a branch with 5,000
+// documents and active uploaders, the previous "reload everything" approach
+// was hammering the database on every keystroke from another user.
+//
+// Tradeoff: realtime payloads from Supabase don't include joined data
+// (uploader profile, etc.), so we re-fetch the *single* affected row when
+// new rows arrive to populate the joined fields. Cost is one row read per
+// remote event, vs. previously fetching every row in the branch.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initRealtime() {
+  realtimeChan = supa
+    .channel(`docs:${me.branch_id}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'documents', filter: `branch_id=eq.${me.branch_id}` },
+      (payload) => handleRealtimeInsert(payload.new))
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'documents', filter: `branch_id=eq.${me.branch_id}` },
+      (payload) => handleRealtimeUpdate(payload.new))
+    .on('postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'documents', filter: `branch_id=eq.${me.branch_id}` },
+      (payload) => handleRealtimeDelete(payload.old))
+    .subscribe();
+}
+
+// Throttle: in case 50 docs get inserted in a second (rare, but possible if
+// someone uses the API), debounce the metric strip refresh so we don't
+// recalculate it on every single insert.
+let _metricRefreshTimer = null;
+function _scheduleMetricRefresh() {
+  clearTimeout(_metricRefreshTimer);
+  _metricRefreshTimer = setTimeout(loadMetrics, 200);
+}
+
+async function handleRealtimeInsert(row) {
+  // Skip if this insert isn't visible in the current view
+  if (view === 'loan' && row.loan_id !== scopedLoanId) return;
+  // Skip if it's archived (shouldn't happen on INSERT but defensive)
+  if (row.archived_at) return;
+  // Skip if we already have this row (e.g., we just inserted it locally)
+  if (docsById.has(row.id)) {
+    // Update in place instead — same path as UPDATE
+    return handleRealtimeUpdate(row);
+  }
+
+  // Realtime payloads don't include joined uploader data — fetch it
+  const enriched = await fetchSingleDoc(row.id);
+  if (!enriched) return;
+
+  docs.unshift(enriched);
+  docsById.set(enriched.id, enriched);
+  _scheduleMetricRefresh();
+  renderList();
+}
+
+async function handleRealtimeUpdate(row) {
+  // If it just got archived, treat as delete
+  if (row.archived_at) return handleRealtimeDelete(row);
+
+  // If the loan_id changed and we're in a per-loan view, this row may be
+  // entering or leaving our view
+  if (view === 'loan') {
+    const wasInView = docsById.has(row.id);
+    const nowInView = (row.loan_id === scopedLoanId);
+    if (wasInView && !nowInView) return handleRealtimeDelete(row);
+    if (!wasInView && nowInView) return handleRealtimeInsert(row);
+    if (!wasInView && !nowInView) return;  // not relevant
+  }
+
+  // Detect quarantined → uploaded transition (scan completed). If our hook
+  // is set up, kick off extraction automatically — same UX as if the file
+  // had been clean from the start.
+  const prev = docsById.get(row.id);
+  const justCleared = prev && prev.status === 'quarantined' && row.status === 'uploaded';
+
+  // Patch the row. Re-fetch with joins so uploader name etc. stays current.
+  const enriched = await fetchSingleDoc(row.id);
+  if (!enriched) return;
+
+  const idx = docs.findIndex(d => d.id === enriched.id);
+  if (idx >= 0) {
+    docs[idx] = enriched;
+  } else {
+    docs.unshift(enriched);
+  }
+  docsById.set(enriched.id, enriched);
+  _scheduleMetricRefresh();
+  renderList();
+
+  // If the patched row is the one we have open in the detail pane, refresh it
+  if (selectedDocId === enriched.id) {
+    renderDetail(enriched);
+  }
+
+  if (justCleared && typeof window.OF_extractDocument === 'function') {
+    runExtraction(enriched.id).catch(err => console.warn('post-scan extract failed:', err));
+  }
+}
+
+function handleRealtimeDelete(row) {
+  if (!docsById.has(row.id)) return;
+  docs = docs.filter(d => d.id !== row.id);
+  docsById.delete(row.id);
+  _scheduleMetricRefresh();
+  renderList();
+
+  // If the deleted row was selected, close the detail pane
+  if (selectedDocId === row.id) {
+    selectedDocId = null;
+    $('#detail-content').style.display = 'none';
+    $('#detail-empty').style.display = 'flex';
+    if (window.location.hash) {
+      history.replaceState({}, '', window.location.pathname + window.location.search);
+    }
+  }
+}
+
+async function fetchSingleDoc(id) {
+  const { data, error } = await supa.from('documents')
+    .select(`
+      id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
+      mime_type, doc_type, status, extraction_data, extraction_confidence,
+      uploaded_at, extracted_at, archived_at,
+      uploader:uploaded_by ( full_name, role )
+    `)
+    .eq('id', id)
+    .maybeSingle();
+  if (error) {
+    console.warn('realtime row fetch failed:', error);
+    return null;
+  }
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEARCH SHORTCUT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initSearchShortcut() {
+  $('#nav-search-btn').addEventListener('click', () => {
+    $('#filter-search').focus();
+    $('#filter-search').select();
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      $('#filter-search').focus();
+      $('#filter-search').select();
+    }
+    if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes((e.target.tagName||''))) {
+      e.preventDefault();
+      $('#filter-search').focus();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXAMPLE HOOKS — REPLACE WITH YOUR REAL IMPLEMENTATIONS
+//
+// Implement these in your own <script> block (or in /js/of-hooks.js loaded
+// before this file). Until you wire them up, the page degrades gracefully:
+// uploads fall back to object URLs (preview-only, won't survive reload),
+// "Run AI extraction" shows an error, "Apply" just records the click.
+//
+// ─── 1. UPLOAD ─────────────────────────────────────────────────────────────
+// Returns the *initial* status the document should be created with:
+//   - 'quarantined' if you do async malware scanning (recommended)
+//   - 'uploaded' if you scan synchronously or skip scanning
+//
+// /*
+// window.OF_uploadFile = async function(file, onProgress) {
+//   // 1. Reject obviously bad MIME types BEFORE upload (cheap defense)
+//   const ALLOWED = ['application/pdf','image/png','image/jpeg','image/jpg'];
+//   if (!ALLOWED.includes(file.type)) {
+//     throw new Error('File type not allowed: ' + (file.type || 'unknown'));
+//   }
+//
+//   // 2. PUT bytes to your bucket. Make sure the bucket sets:
+//   //      Access-Control-Allow-Origin: <your domain>
+//   //      Content-Disposition: inline
+//   //      X-Content-Type-Options: nosniff
+//   //      Cache-Control: private, max-age=0    (for sensitive docs)
+//   //    OMIT or set to SAMEORIGIN: X-Frame-Options
+//   //    For Cloudflare R2: enable CORS for your domain in dashboard.
+//   //    For S3: PutBucketCors policy with AllowedOrigins=[your_domain].
+//   const url = await yourPresignedPut(file, onProgress);
+//
+//   // 3. Kick off async malware scan (don't wait for it).
+//   //    Your scan handler should UPDATE documents SET status='uploaded'
+//   //    when clean, or status='infected' when bad. The page realtime-
+//   //    listens and auto-extracts when the row flips to 'uploaded'.
+//   await yourScanQueue.enqueue(url);
+//
+//   return {
+//     file_url: url,
+//     file_size_bytes: file.size,
+//     mime_type: file.type,
+//     // Optional: tell the documents.html page what status to insert with.
+//     // If omitted, defaults to 'uploaded' (no scanning gate).
+//     initial_status: 'quarantined',
+//   };
+// };
+//
+// ─── 2. AI EXTRACTION ──────────────────────────────────────────────────────
+// Calls your Supabase edge function which calls Claude Vision.
+//
+// window.OF_extractDocument = async function(documentId) {
+//   const supa = getSupabase();
+//   const { data, error } = await supa.functions.invoke('extract-document', {
+//     body: { document_id: documentId }
+//   });
+//   if (error) throw error;
+//
+//   // Required return shape — the page will normalize confidence > 1
+//   // automatically, but you should return 0-1 to be explicit:
+//   //   {
+//   //     doc_type: 'paystub' | 'w2' | 'bank_statement' | ...,
+//   //     confidence: 0.0-1.0,
+//   //     fields: [{label, value, key?, flagged?, alert?}],
+//   //     suggested_actions: [{key, label, detail?, severity?}]
+//   //   }
+//   return data;
+// };
+//
+// ─── 3. APPLY EXTRACTION ACTION ────────────────────────────────────────────
+// Server-side: write extracted data back to the loan/borrower/condition.
+//
+// window.OF_applyExtractionAction = async function(documentId, action) {
+//   const supa = getSupabase();
+//   const { data, error } = await supa.functions.invoke('apply-extraction-action', {
+//     body: { document_id: documentId, action_key: action.key }
+//   });
+//   if (error) throw error;
+//   return data;
+// };
+// */
+// ═══════════════════════════════════════════════════════════════════════════
 </script>
 
 </body>
