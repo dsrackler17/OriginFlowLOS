@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard · OriginFlow LOS — Live Demo</title>
-<meta name="description" content="Live dashboard demo of OriginFlow LOS — the web-native loan origination system for independent mortgage branches. Real-time pipeline, AI document extraction, auto-clearing conditions.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pipeline · OriginFlow LOS</title>
+<meta name="description" content="Live branch pipeline. Drag, drop, done.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +29,7 @@
   --sans:    'DM Sans', system-ui, sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 body {
   background: var(--navy);
   color: var(--text);
@@ -36,6 +37,8 @@ body {
   font-size: 16px;
   line-height: 1.6;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 body::before {
   content: '';
@@ -46,19 +49,7 @@ body::before {
   background-size: 40px 40px;
   pointer-events: none; z-index: 0;
 }
-nav, .demo-banner, .dash-layout, footer { position: relative; z-index: 1; }
-
-/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
-.demo-banner {
-  background: rgba(245,166,35,0.08);
-  border-bottom: 1px solid rgba(245,166,35,0.25);
-  padding: 0.55rem 2rem;
-  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
-  color: var(--amber); flex-wrap: wrap;
-}
-.demo-banner strong { color: var(--white); font-weight: 700; }
-.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+nav, main, footer, .modal-overlay { position: relative; z-index: 1; }
 
 /* ─── NAV ──────────────────────────────────────────────────────────── */
 nav {
@@ -68,10 +59,10 @@ nav {
   background: rgba(4,13,26,0.92);
   backdrop-filter: blur(12px);
   position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
 }
-.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
 .sonar-icon { width: 26px; height: 26px; }
-.sonar-icon svg { width: 100%; height: 100%; }
 .nav-wordmark {
   font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
   color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
@@ -84,6 +75,33 @@ nav {
   transition: color 0.2s;
 }
 .nav-center a:hover, .nav-center a.active { color: var(--accent); }
+
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 .nav-branch {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
@@ -91,9 +109,7 @@ nav {
   padding: 0.3rem 0.75rem;
 }
 .nav-branch strong { color: var(--accent2); }
-.nav-user-name {
-  font-family: var(--sans); font-size: 0.78rem; color: var(--white);
-}
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
 .nav-user-role {
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
   color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
@@ -113,128 +129,142 @@ nav {
   gap: 1px; background: var(--border);
   border-bottom: 1px solid var(--border);
 }
-.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
+.metric-cell { background: var(--surface); padding: 0.95rem 1.2rem; }
 .metric-label {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
 }
-.metric-value {
-  font-family: var(--serif); font-size: 1.55rem; line-height: 1.1;
-}
+.metric-value { font-family: var(--serif); font-size: 1.4rem; line-height: 1.1; color: var(--white); }
 .metric-value.cyan  { color: var(--accent); }
 .metric-value.green { color: var(--accent2); }
 .metric-value.amber { color: var(--amber); }
-.metric-value.white { color: var(--white); }
 .metric-sub {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
-  color: var(--muted); margin-top: 0.25rem;
-}
-.metric-trend {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--accent2);
-  margin-top: 0.2rem;
-}
-.metric-trend.down { color: var(--red); }
-
-/* ─── MAIN LAYOUT ──────────────────────────────────────────────────── */
-.dash-main {
-  display: grid; grid-template-columns: 1fr 320px;
-  gap: 1px; background: var(--border);
-  min-height: calc(100vh - 280px);
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.2rem;
 }
 
-/* ─── PIPELINE ─────────────────────────────────────────────────────── */
-.pipeline-section { background: var(--navy); overflow: hidden; }
-.pipeline-head {
-  padding: 1rem 1.5rem;
+/* ─── PIPELINE CONTROL BAR ─────────────────────────────────────────── */
+.pipe-controls {
+  padding: 0.75rem 1.5rem;
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 1rem;
+  background: var(--deep);
+  display: flex; align-items: center; gap: 0.75rem;
+  flex-wrap: wrap;
 }
-.pipeline-title {
-  font-family: var(--serif); font-size: 1.4rem; color: var(--white);
+.pipe-title {
+  font-family: var(--serif); font-size: 1.1rem; color: var(--white);
+  margin-right: 0.5rem;
 }
-.pipeline-meta {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
-  color: var(--muted);
+.pipe-live-dot {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-right: auto;
 }
-.pipeline-meta span {
-  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--accent2); margin-right: 0.4rem;
-  animation: dot 1.4s ease infinite;
+.pipe-live-dot::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent2); animation: dot 1.4s ease infinite;
 }
 @keyframes dot { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-.pipeline-controls { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-.pipeline-controls select, .pipeline-controls input {
+
+.pipe-input, .pipe-select {
   font-family: var(--mono); font-size: 0.65rem;
   background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 0.4rem 0.7rem;
+  color: var(--text); padding: 0.45rem 0.7rem;
   outline: none; transition: border-color 0.15s;
 }
-.pipeline-controls input:focus, .pipeline-controls select:focus { border-color: var(--accent); }
+.pipe-input { min-width: 240px; }
+.pipe-input:focus, .pipe-select:focus { border-color: var(--accent); }
+.pipe-input::placeholder { color: var(--muted); }
 
-.pipeline-scroll {
+/* ─── BOARD ────────────────────────────────────────────────────────── */
+.board-wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+.board {
+  flex: 1;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 290px;
   overflow-x: auto;
-  height: calc(100% - 60px);
+  overflow-y: hidden;
+  min-height: 0;
 }
-.pipe-col {
+.col {
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
   background: var(--navy);
+  min-height: 0;
 }
-.pipe-col:last-child { border-right: none; }
-.pipe-col-head {
+.col:last-child { border-right: none; }
+.col-head {
   padding: 0.85rem 1rem;
   border-top: 2px solid;
   background: var(--deep);
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 5;
+  flex-shrink: 0;
 }
-.pipe-col-label {
+.col-label {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--text);
 }
-.pipe-col-count {
+.col-count {
   font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
   background: var(--surface); border: 1px solid var(--border);
   padding: 0.1rem 0.45rem; min-width: 1.6rem; text-align: center;
 }
-.pipe-col-volume {
+.col-volume {
   font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.05em;
   color: var(--muted); padding: 0 1rem 0.5rem; background: var(--deep);
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
-.pipe-col-body { padding: 0.6rem; display: flex; flex-direction: column; gap: 0.6rem; overflow-y: auto; }
-.pipe-empty {
+.col-body {
+  padding: 0.6rem;
+  display: flex; flex-direction: column; gap: 0.6rem;
+  overflow-y: auto;
+  flex: 1;
+  transition: background 0.15s;
+}
+.col-body.drop-target { background: rgba(0,212,255,0.06); }
+.col-body.drop-forbidden { background: rgba(255,68,68,0.06); }
+.col-empty {
   font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  text-align: center; padding: 1rem 0; letter-spacing: 0.04em;
+  text-align: center; padding: 1.5rem 0.5rem; letter-spacing: 0.04em;
+  border: 1px dashed var(--border); margin-top: 0.5rem;
 }
 
 /* ─── LOAN CARD ────────────────────────────────────────────────────── */
 .loan-card {
   background: var(--surface); border: 1px solid var(--border);
-  padding: 0.8rem 0.9rem; cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 0.8rem 0.9rem; cursor: grab;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
   position: relative;
+  user-select: none;
 }
 .loan-card:hover { border-color: rgba(0,212,255,0.4); }
+.loan-card:active { cursor: grabbing; }
+.loan-card.dragging {
+  opacity: 0.4;
+  transform: rotate(-1deg) scale(0.97);
+}
 .loan-card.featured {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px rgba(0,212,255,0.3);
 }
-.loan-card.pulse {
-  animation: cardPulse 2.4s cubic-bezier(0.16, 1, 0.3, 1);
-  border-color: var(--accent);
+.loan-card.flash {
+  animation: cardFlash 1.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes cardPulse {
-  0%   { box-shadow: 0 0 0 0   rgba(0,212,255,0.55); border-color: var(--accent); }
-  60%  { box-shadow: 0 0 0 12px rgba(0,212,255,0);   border-color: var(--accent); }
-  100% { box-shadow: 0 0 0 0   rgba(0,212,255,0);   border-color: var(--border); }
+@keyframes cardFlash {
+  0%   { box-shadow: 0 0 0 0   rgba(0,255,157,0.6); border-color: var(--accent2); }
+  50%  { box-shadow: 0 0 0 12px rgba(0,255,157,0);   border-color: var(--accent2); }
+  100% { box-shadow: 0 0 0 0   rgba(0,255,157,0);   border-color: var(--border); }
 }
-
 .lc-top {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 0.4rem;
@@ -254,11 +284,11 @@ nav {
 .lc-prop {
   font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
   margin-top: 0.15rem; letter-spacing: 0.04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
 .lc-stats {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 0; margin-top: 0.6rem; border: 1px solid var(--border);
+  margin-top: 0.6rem; border: 1px solid var(--border);
 }
 .lc-stat {
   padding: 0.4rem 0.3rem; text-align: center;
@@ -272,24 +302,31 @@ nav {
 .lc-stat-val { font-family: var(--mono); font-size: 0.74rem; color: var(--white); }
 .lc-stat-val.hot { color: var(--amber); }
 .lc-stat-val.green { color: var(--accent2); }
+.lc-stat-val.muted { color: var(--muted); }
 
 .lc-foot {
   display: flex; align-items: center; justify-content: space-between;
-  margin-top: 0.55rem;
+  margin-top: 0.55rem; gap: 0.5rem;
 }
-.lc-team { display: flex; gap: 0.25rem; }
-.lc-flags { display: flex; gap: 0.3rem; }
+.lc-team { display: flex; gap: 0.25rem; flex-shrink: 0; }
+.lc-flags { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-end; }
 .lc-flag {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
   padding: 0.1rem 0.4rem; border: 1px solid;
+  white-space: nowrap;
 }
 .lc-flag.amber { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
 .lc-flag.red   { color: var(--red);   border-color: rgba(255,68,68,0.5);  background: rgba(255,68,68,0.1); }
 .lc-flag.green { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.08); }
+.lc-flag.muted { color: var(--muted); border-color: var(--border); }
 
-.avatar {
-  display: inline-flex; align-items: center; gap: 0.25rem;
+.lc-stale {
+  position: absolute; top: 6px; right: 6px;
+  font-family: var(--mono); font-size: 0.5rem; color: var(--amber);
+  letter-spacing: 0.06em;
 }
+
+.avatar { display: inline-flex; align-items: center; gap: 0.25rem; }
 .avatar-init {
   font-family: var(--mono); font-size: 0.55rem; font-weight: 700;
   background: var(--accent); color: var(--navy);
@@ -298,172 +335,144 @@ nav {
 }
 .avatar-init.proc { background: var(--accent2); }
 .avatar-init.uw { background: var(--amber); }
+.avatar-init.closer { background: var(--accent2); }
+.avatar-init.muted { background: var(--muted); }
 
-/* ─── ACTIVITY SIDEBAR ─────────────────────────────────────────────── */
-.activity-sidebar {
-  background: var(--deep);
+/* ─── EMPTY STATES ─────────────────────────────────────────────────── */
+.state-screen {
+  flex: 1;
   display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
 }
-.activity-head {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  display: flex; align-items: center; justify-content: space-between;
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
 }
-.activity-label {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--accent);
+.state-heading {
+  font-family: var(--serif); font-size: 2.25rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
 }
-.activity-pulse {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--accent2); animation: dot 1.4s ease infinite;
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.7rem 1.25rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 0.4rem;
 }
-.activity-body {
-  flex: 1; overflow-y: auto; padding: 0.6rem 0.75rem;
-  display: flex; flex-direction: column; gap: 0.5rem;
-}
-.act-row {
-  display: grid; grid-template-columns: 5rem 1fr;
-  gap: 0.5rem; padding: 0.5rem 0.55rem;
-  border-left: 2px solid var(--border);
-  background: rgba(11,31,58,0.4);
-  font-size: 0.72rem;
-  animation: actSlide 0.4s ease both;
-}
-@keyframes actSlide { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
-.act-row.fresh {
-  border-left-color: var(--accent);
-  background: rgba(0,212,255,0.05);
-}
-.act-row.green { border-left-color: var(--accent2); }
-.act-row.amber { border-left-color: var(--amber); }
-.act-row.red { border-left-color: var(--red); }
-.act-time {
-  font-family: var(--mono); font-size: 0.56rem; color: var(--muted);
-  letter-spacing: 0.04em;
-}
-.act-body { color: var(--text); line-height: 1.5; }
-.act-actor { color: var(--white); font-weight: 500; }
-.act-loan {
-  font-family: var(--mono); color: var(--accent); font-size: 0.7rem;
-}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.btn.danger { color: var(--red); border-color: rgba(255,68,68,0.4); }
+.btn.danger:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--border); color: var(--text); }
 
-/* ─── EXPANDED LOAN VIEW ───────────────────────────────────────────── */
-.loan-detail {
-  background: var(--deep); border-top: 2px solid var(--accent);
-  padding: 0; position: relative;
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
 }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── DETAIL PANEL ─────────────────────────────────────────────────── */
+.detail {
+  border-top: 2px solid var(--accent);
+  background: var(--deep);
+  display: none;
+}
+.detail.open { display: block; }
 .detail-head {
   background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 1.5rem 2rem; display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center; gap: 2rem;
+  padding: 1.25rem 2rem;
+  display: grid; grid-template-columns: 1fr auto auto;
+  align-items: center; gap: 1.5rem;
 }
-.detail-head-left { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
-.detail-num {
-  font-family: var(--mono); font-size: 1.1rem; font-weight: 700;
+.dh-left { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; min-width: 0; }
+.dh-num {
+  font-family: var(--mono); font-size: 1rem; font-weight: 700;
   color: var(--accent); letter-spacing: 0.1em;
 }
-.detail-name {
-  font-family: var(--serif); font-size: 1.4rem; color: var(--white);
-}
-.detail-prop { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
-.detail-status {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
-  text-transform: uppercase; padding: 0.4rem 0.85rem;
+.dh-name { font-family: var(--serif); font-size: 1.3rem; color: var(--white); }
+.dh-prop { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+.dh-status {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 0.35rem 0.8rem;
   border: 1px solid; background: rgba(245,166,35,0.08);
   color: var(--amber); border-color: rgba(245,166,35,0.4);
 }
-.detail-amount {
-  font-family: var(--serif); font-size: 1.8rem; color: var(--white);
+.dh-amount {
+  font-family: var(--serif); font-size: 1.6rem; color: var(--white);
   text-align: right;
 }
-.detail-amount-sub {
-  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
-  text-align: right; letter-spacing: 0.06em;
+.dh-amount-sub {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  text-align: right; letter-spacing: 0.05em;
 }
+.dh-close {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  background: transparent; border: 1px solid var(--border);
+  padding: 0.5rem 0.85rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.dh-close:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
 
 .detail-body {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr 1fr;
+  display: grid; grid-template-columns: 1.1fr 1fr 1fr;
   gap: 1px; background: var(--border);
 }
-.detail-panel { background: var(--deep); padding: 1.5rem; }
-.detail-panel-head {
+.detail-panel { background: var(--deep); padding: 1.25rem 1.4rem; min-height: 280px; }
+.dp-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 0.85rem; border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
   margin-bottom: 1rem;
 }
-.panel-title {
+.dp-title {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--text);
 }
-.panel-tag {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--accent2); padding: 0.15rem 0.55rem;
-  border: 1px solid rgba(0,255,157,0.3); background: rgba(0,255,157,0.06);
+.dp-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+}
+.dp-empty {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  text-align: center; padding: 1.5rem 0.5rem; letter-spacing: 0.04em;
 }
 
-/* AI extraction panel */
-.extraction-doc {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 1rem; margin-bottom: 1rem; font-family: var(--mono);
+/* details panel content */
+.fact-list {
+  display: flex; flex-direction: column; gap: 0.55rem;
+  font-size: 0.78rem;
 }
-.ext-doc-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
-  margin-bottom: 0.75rem;
-}
-.ext-doc-name { font-size: 0.72rem; color: var(--white); }
-.ext-doc-conf {
-  font-size: 0.58rem; color: var(--accent2);
-  padding: 0.1rem 0.45rem; border: 1px solid rgba(0,255,157,0.4);
-  background: rgba(0,255,157,0.08); letter-spacing: 0.05em;
-}
-.ext-fields {
-  display: flex; flex-direction: column; gap: 0.4rem;
-  font-size: 0.68rem;
-}
-.ext-row {
+.fact-row {
   display: grid; grid-template-columns: 1fr auto;
-  gap: 0.75rem;
+  gap: 0.75rem; padding: 0.4rem 0;
+  border-bottom: 1px dotted var(--border);
 }
-.ext-label { color: var(--muted); }
-.ext-val { color: var(--white); }
-.ext-val.flag { color: var(--amber); }
-.ext-divider {
-  border: none; border-top: 1px dashed var(--border);
-  margin: 0.6rem 0;
+.fact-row:last-child { border-bottom: none; }
+.fact-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
+  color: var(--muted); text-transform: uppercase;
 }
-.ext-action {
-  font-size: 0.6rem; color: var(--accent2); display: flex; gap: 0.5rem;
-  align-items: center; padding: 0.4rem 0; letter-spacing: 0.04em;
-}
-.ext-action.cleared { color: var(--accent); }
-.ext-action.recompute { color: var(--accent2); }
+.fact-val { color: var(--white); font-family: var(--mono); font-size: 0.72rem; }
 
-.dropzone {
-  border: 2px dashed var(--border); padding: 1rem;
-  text-align: center; font-family: var(--mono);
-  font-size: 0.68rem; color: var(--muted);
-  letter-spacing: 0.06em; cursor: pointer;
-  transition: all 0.2s; background: rgba(0,212,255,0.02);
-}
-.dropzone:hover {
-  border-color: var(--accent); color: var(--accent);
-  background: rgba(0,212,255,0.04);
-}
-.dropzone .dz-icon { font-size: 1.3rem; display: block; margin-bottom: 0.4rem; }
-
-/* Conditions panel */
+/* conditions panel */
 .cond-list {
-  display: flex; flex-direction: column; gap: 0.5rem;
-  max-height: 400px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.45rem;
+  max-height: 380px; overflow-y: auto;
 }
 .cond-row {
   display: grid; grid-template-columns: auto 1fr auto;
-  gap: 0.75rem; align-items: center;
-  padding: 0.65rem 0.85rem;
+  gap: 0.7rem; align-items: center;
+  padding: 0.55rem 0.75rem;
   background: var(--surface); border: 1px solid var(--border);
   font-size: 0.78rem;
 }
@@ -472,13 +481,6 @@ nav {
   border-color: rgba(0,255,157,0.2);
 }
 .cond-row.cleared .cond-title { text-decoration: line-through; color: var(--muted); }
-.cond-row.fresh-cleared {
-  animation: condClearFlash 1.6s ease both;
-}
-@keyframes condClearFlash {
-  0%   { background: rgba(0,255,157,0.2);  border-color: var(--accent2); }
-  100% { background: rgba(0,255,157,0.04); border-color: rgba(0,255,157,0.2); }
-}
 .cond-checkbox {
   width: 1rem; height: 1rem;
   border: 1px solid var(--border);
@@ -492,78 +494,160 @@ nav {
 }
 .cond-title { color: var(--text); line-height: 1.3; }
 .cond-desc {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  margin-top: 0.2rem; letter-spacing: 0.03em;
+  font-family: var(--mono); font-size: 0.56rem; color: var(--muted);
+  margin-top: 0.15rem; letter-spacing: 0.03em;
 }
 .cond-cat {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
-  padding: 0.1rem 0.4rem; border: 1px solid;
+  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.1em;
+  padding: 0.1rem 0.35rem; border: 1px solid;
   flex-shrink: 0;
 }
 .cond-cat.PTD { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
 .cond-cat.PTC { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
 .cond-cat.ATC { color: var(--accent); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
 
-/* Internal chat panel */
+/* chat panel */
 .chat-thread {
-  display: flex; flex-direction: column; gap: 0.6rem;
-  max-height: 400px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.55rem;
+  max-height: 320px; overflow-y: auto;
   padding-right: 0.25rem;
+  margin-bottom: 0.6rem;
 }
 .chat-msg {
   background: var(--surface); border-left: 2px solid var(--border);
-  padding: 0.6rem 0.85rem; font-size: 0.8rem;
+  padding: 0.55rem 0.8rem; font-size: 0.78rem;
 }
 .chat-msg.system {
   background: rgba(0,212,255,0.04);
   border-left-color: var(--accent);
-  font-family: var(--mono); font-size: 0.68rem;
+  font-family: var(--mono); font-size: 0.62rem;
   color: var(--muted);
 }
-.chat-msg.lo { border-left-color: var(--accent); }
-.chat-msg.proc { border-left-color: var(--accent2); }
-.chat-msg.uw { border-left-color: var(--amber); }
+.chat-msg.lo, .chat-msg.admin { border-left-color: var(--accent); }
+.chat-msg.processor, .chat-msg.closer { border-left-color: var(--accent2); }
+.chat-msg.underwriter { border-left-color: var(--amber); }
 .chat-head {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.25rem;
 }
 .chat-author {
-  font-family: var(--mono); font-size: 0.62rem; color: var(--white);
+  font-family: var(--mono); font-size: 0.6rem; color: var(--white);
   letter-spacing: 0.06em;
 }
-.chat-author small {
-  color: var(--muted); margin-left: 0.4rem; font-size: 0.55rem;
-}
-.chat-time {
-  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
-}
-.chat-body { color: var(--text); line-height: 1.5; }
-.chat-mention {
-  color: var(--accent); font-weight: 500;
-}
-.chat-input {
-  margin-top: 0.85rem;
+.chat-author small { color: var(--muted); margin-left: 0.4rem; font-size: 0.55rem; }
+.chat-time { font-family: var(--mono); font-size: 0.55rem; color: var(--muted); }
+.chat-body { color: var(--text); line-height: 1.5; word-wrap: break-word; }
+.chat-mention { color: var(--accent); font-weight: 500; }
+.chat-input-form {
   display: grid; grid-template-columns: 1fr auto;
   gap: 0.4rem;
 }
-.chat-input input {
+.chat-input-form input {
   background: var(--surface); border: 1px solid var(--border);
   color: var(--white); font-family: var(--sans); font-size: 0.78rem;
-  padding: 0.55rem 0.75rem; outline: none;
+  padding: 0.55rem 0.7rem; outline: none;
+  transition: border-color 0.15s;
 }
-.chat-input input:focus { border-color: var(--accent); }
-.chat-input button {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+.chat-input-form input:focus { border-color: var(--accent); }
+.chat-input-form button {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
   text-transform: uppercase; background: var(--accent); color: var(--navy);
   border: none; padding: 0.55rem 0.85rem; cursor: pointer;
-  font-weight: 700;
+  font-weight: 700; transition: background 0.15s;
 }
+.chat-input-form button:hover:not(:disabled) { background: var(--accent2); }
+.chat-input-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── CONFIRM MODAL ────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.modal-overlay.open { display: flex; animation: modalIn 0.15s ease both; }
+@keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 480px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.08);
+}
+.modal-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent);
+}
+.modal-body { padding: 1.5rem 1.25rem; }
+.modal-prompt {
+  font-family: var(--serif); font-size: 1.25rem; color: var(--white);
+  line-height: 1.3; margin-bottom: 0.5rem;
+}
+.modal-detail {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-bottom: 1rem;
+}
+.modal-stage-flow {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--deep); border: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+.modal-stage-pill {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border); color: var(--text);
+}
+.modal-stage-pill.from { color: var(--muted); border-color: var(--border); }
+.modal-stage-pill.to { color: var(--accent2); border-color: var(--accent2); background: rgba(0,255,157,0.08); }
+.modal-stage-arrow { color: var(--accent); font-family: var(--mono); font-size: 1rem; }
+.modal-warning {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--amber);
+  letter-spacing: 0.04em; padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(245,166,35,0.3);
+  background: rgba(245,166,35,0.06);
+  margin-bottom: 1.25rem;
+  display: none;
+}
+.modal-warning.show { display: block; }
+.modal-foot {
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: flex-end; gap: 0.6rem;
+}
+
+/* ─── TOAST ────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none;
+  animation: toastIn 0.2s ease both;
+  max-width: 360px;
+}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
   display: flex; align-items: center; justify-content: space-between;
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
   color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
@@ -573,34 +657,35 @@ footer a:hover { color: var(--accent); }
 @media (max-width: 1280px) {
   .metric-strip { grid-template-columns: repeat(3, 1fr); }
   .detail-body { grid-template-columns: 1fr; }
+  .detail-head { grid-template-columns: 1fr auto; }
+  .dh-amount, .dh-amount-sub { text-align: left; }
 }
 @media (max-width: 1024px) {
   .nav-center { display: none; }
-  .dash-main { grid-template-columns: 1fr; }
-  .activity-sidebar { max-height: 350px; }
+  .nav-search { display: none; }
   .metric-strip { grid-template-columns: repeat(2, 1fr); }
-  .detail-head { grid-template-columns: 1fr; gap: 1rem; }
-  .detail-amount, .detail-amount-sub { text-align: left; }
+  .pipe-input { min-width: 180px; flex: 1; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .pipe-controls { padding: 0.6rem 1rem; }
+  .pipe-title { display: none; }
 }
 </style>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- DEMO BANNER                                                          -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="demo-banner">
-  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
-  <a href="index.html">← Back to landing page</a>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- NAV                                                                  -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <nav>
-  <a href="index.html" class="nav-logo">
+  <a href="/home.html" class="nav-logo">
     <div class="sonar-icon">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
@@ -616,892 +701,1241 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
-    <li><a href="#" class="active">Pipeline</a></li>
-    <li><a href="#">Documents</a></li>
-    <li><a href="#">Conditions</a></li>
-    <li><a href="#">Reports</a></li>
-    <li><a href="#">Audit Log</a></li>
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html" class="active">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
   </ul>
   <div class="nav-right">
-    <span class="nav-branch"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">Demo Branch</span></span>
+    <button class="nav-search" id="nav-search-btn" type="button" aria-label="Search loans">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans/new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
-      <span class="nav-user-name" id="nav-user-name">Demo User</span>
-      <span class="nav-user-role" id="nav-user-role">PREVIEW</span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
     </span>
-    <button class="nav-signout" id="nav-signout-btn" onclick="handleSignOut()">Sign Out</button>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- METRIC STRIP                                                         -->
+<!-- MAIN                                                                 -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="metric-strip">
-  <div class="metric-cell">
-    <div class="metric-label">Active Pipeline</div>
-    <div class="metric-value cyan">$4.72M</div>
-    <div class="metric-sub">14 files in flight</div>
-    <div class="metric-trend">▲ $620K vs last month</div>
+<main id="main">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading your pipeline…</div>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">In Underwriting</div>
-    <div class="metric-value amber">5</div>
-    <div class="metric-sub">UW + Conditional</div>
-    <div class="metric-trend">▲ 2 since Monday</div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">You're not signed in.</h1>
+    <p class="state-text">The pipeline shows your branch's live loan files. Sign in to see what your team is working on.</p>
+    <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+      <a href="/login.html" class="btn primary">Sign in →</a>
+      <a href="/demo.html" class="btn">View public demo</a>
+    </div>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Clear-to-Close</div>
-    <div class="metric-value green">3</div>
-    <div class="metric-sub">Ready to fund this week</div>
-    <div class="metric-trend">▲ 1 today</div>
+
+  <!-- PROFILE PENDING -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending · Q2 2026 beta</div>
+    <h1 class="state-heading">Your account is awaiting branch setup.</h1>
+    <p class="state-text">You're signed in, but your branch hasn't been provisioned yet. You'll get an email from <strong>davis@originflowlos.com</strong> when your branch is live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Open Conditions</div>
-    <div class="metric-value white">27</div>
-    <div class="metric-sub">across all files</div>
-    <div class="metric-trend">▼ 8 cleared today (AI: 6)</div>
+
+  <!-- ─── ACTIVE PIPELINE ─── -->
+  <div id="pipeline-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+
+    <!-- METRIC STRIP -->
+    <section class="metric-strip" id="metric-strip">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+    </section>
+
+    <!-- CONTROLS -->
+    <div class="pipe-controls">
+      <span class="pipe-title">Pipeline</span>
+      <span class="pipe-live-dot" id="live-dot">live · synced</span>
+      <input type="text" class="pipe-input" id="filter-search" placeholder="Search loan #, borrower, address…">
+      <select class="pipe-select" id="filter-assignee">
+        <option value="all">All files</option>
+        <option value="mine">Assigned to me</option>
+        <option value="unassigned">Unassigned</option>
+      </select>
+      <select class="pipe-select" id="filter-purpose">
+        <option value="all">All purposes</option>
+        <option value="purchase">Purchase</option>
+        <option value="refinance">Refinance</option>
+        <option value="cash_out_refi">Cash-Out Refi</option>
+        <option value="construction">Construction</option>
+      </select>
+      <select class="pipe-select" id="filter-sort">
+        <option value="updated">Sort: Last activity</option>
+        <option value="stage_age">Sort: Days in stage</option>
+        <option value="amount">Sort: Loan amount</option>
+        <option value="number">Sort: Loan number</option>
+      </select>
+    </div>
+
+    <!-- BOARD -->
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <!-- columns rendered by JS -->
+      </div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <section class="detail" id="detail">
+      <div class="detail-head">
+        <div class="dh-left">
+          <span class="dh-num" id="dh-num">—</span>
+          <div>
+            <div class="dh-name" id="dh-name">—</div>
+            <div class="dh-prop" id="dh-prop">—</div>
+          </div>
+          <span class="dh-status" id="dh-status">—</span>
+        </div>
+        <div>
+          <div class="dh-amount" id="dh-amount">—</div>
+          <div class="dh-amount-sub" id="dh-amount-sub">—</div>
+        </div>
+        <button class="dh-close" id="dh-close" type="button">✕ Close</button>
+      </div>
+      <div class="detail-body">
+        <div class="detail-panel">
+          <div class="dp-head">
+            <span class="dp-title">Details</span>
+            <span class="dp-tag" id="dp-tag-status">—</span>
+          </div>
+          <div id="detail-facts">
+            <div class="dp-empty">Loading…</div>
+          </div>
+        </div>
+        <div class="detail-panel">
+          <div class="dp-head">
+            <span class="dp-title">Conditions</span>
+            <span class="dp-tag" id="dp-tag-cond">—</span>
+          </div>
+          <div class="cond-list" id="detail-conditions">
+            <div class="dp-empty">Loading conditions…</div>
+          </div>
+        </div>
+        <div class="detail-panel">
+          <div class="dp-head">
+            <span class="dp-title">File Chat</span>
+            <span class="dp-tag" id="dp-tag-chat">—</span>
+          </div>
+          <div class="chat-thread" id="detail-chat">
+            <div class="dp-empty">Loading chat…</div>
+          </div>
+          <form class="chat-input-form" id="detail-chat-form" autocomplete="off">
+            <input type="text" id="detail-chat-input" placeholder="Message about this file… use @ to mention" maxlength="2000" disabled>
+            <button type="submit" id="detail-chat-send" disabled>Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Avg DTI · Pipeline</div>
-    <div class="metric-value white">38.4%</div>
-    <div class="metric-sub">qualifying back-end</div>
-    <div class="metric-trend">stable vs last week</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Avg Days · App→CTC</div>
-    <div class="metric-value green">18.2</div>
-    <div class="metric-sub">vs Encompass benchmark 47</div>
-    <div class="metric-trend">▼ 2.3 days vs March</div>
-  </div>
-</section>
+
+</main>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MAIN: PIPELINE + ACTIVITY                                            -->
+<!-- CONFIRM MODAL (stage change)                                         -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="dash-main">
-
-  <!-- ─── PIPELINE ──────────────────────────────────────────────── -->
-  <section class="pipeline-section">
-    <div class="pipeline-head">
-      <div>
-        <div class="pipeline-title">Pipeline</div>
-        <div class="pipeline-meta"><span></span>Live · synced 0.2s ago · 14 active files</div>
-      </div>
-      <div class="pipeline-controls">
-        <input type="text" placeholder="Search ticker, borrower, address..." style="width:240px;">
-        <select>
-          <option>All assigned</option>
-          <option>My files only</option>
-          <option>Unassigned</option>
-        </select>
-        <select>
-          <option>Sort: Last activity</option>
-          <option>Sort: Days in stage</option>
-          <option>Sort: Loan amount</option>
-        </select>
-      </div>
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Confirm Stage Change</span>
     </div>
-
-    <div class="pipeline-scroll">
-
-      <!-- LEAD -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--muted);">
-          <span class="pipe-col-label">Lead</span>
-          <span class="pipe-col-count">2</span>
-        </div>
-        <div class="pipe-col-volume">$ 540,000 · 2 files</div>
-        <div class="pipe-col-body">
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1051</span><span class="lc-amt">$285K</span></div>
-            <div class="lc-name">Garcia, Maria</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">—</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">—</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">—</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team"><span class="avatar"><span class="avatar-init">CM</span></span></div>
-              <div class="lc-flags"><span class="lc-flag amber">⚐ NEW</span></div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1052</span><span class="lc-amt">$255K</span></div>
-            <div class="lc-name">Patel, R. <span class="lc-cob">+1</span></div>
-            <div class="lc-prop">AMARILLO, TX · refinance</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">—</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">—</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">—</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team"><span class="avatar"><span class="avatar-init">CM</span></span></div>
-              <div class="lc-flags"></div>
-            </div>
-          </article>
-        </div>
+    <div class="modal-body">
+      <div class="modal-prompt" id="modal-prompt">Move loan?</div>
+      <div class="modal-detail" id="modal-detail">—</div>
+      <div class="modal-stage-flow">
+        <span class="modal-stage-pill from" id="modal-from">—</span>
+        <span class="modal-stage-arrow">→</span>
+        <span class="modal-stage-pill to" id="modal-to">—</span>
       </div>
-
-      <!-- APPLICATION -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--accent);">
-          <span class="pipe-col-label">Application</span>
-          <span class="pipe-col-count">2</span>
-        </div>
-        <div class="pipe-col-volume">$ 510,000 · 2 files</div>
-        <div class="pipe-col-body">
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1048</span><span class="lc-amt">$310K</span></div>
-            <div class="lc-name">Williams, Tasha</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">42.1%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">95.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.875%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 8</span></div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1049</span><span class="lc-amt">$200K</span></div>
-            <div class="lc-name">Nguyen, T.</div>
-            <div class="lc-prop">PLAINVIEW, TX · refi</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">36.8%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">68.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.625%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team"><span class="avatar"><span class="avatar-init">CM</span></span></div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 6</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- SUBMITTED -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--accent);">
-          <span class="pipe-col-label">Submitted</span>
-          <span class="pipe-col-count">1</span>
-        </div>
-        <div class="pipe-col-volume">$ 420,000 · 1 file</div>
-        <div class="pipe-col-body">
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1046</span><span class="lc-amt">$420K</span></div>
-            <div class="lc-name">Henderson, M. <span class="lc-cob">+1</span></div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">39.2%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">85.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.750%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 4</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- PROCESSING -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--accent);">
-          <span class="pipe-col-label">Processing</span>
-          <span class="pipe-col-count">3</span>
-        </div>
-        <div class="pipe-col-volume">$ 1.05M · 3 files</div>
-        <div class="pipe-col-body">
-          <article class="loan-card pulse" id="featured-card-mini">
-            <div class="lc-top"><span class="lc-num">OF-1044</span><span class="lc-amt">$189K</span></div>
-            <div class="lc-name">Williams, T.</div>
-            <div class="lc-prop">LUBBOCK, TX · refi</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">35.6%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">72.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.500%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag green">⚑ 2 ✓</span></div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1045</span><span class="lc-amt">$465K</span></div>
-            <div class="lc-name">Thompson, K.</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val hot">44.8%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">90.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">7.125%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags">
-                <span class="lc-flag red">DTI</span>
-                <span class="lc-flag amber">⚑ 5</span>
-              </div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1047</span><span class="lc-amt">$395K</span></div>
-            <div class="lc-name">Brooks, A. <span class="lc-cob">+1</span></div>
-            <div class="lc-prop">AMARILLO, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">37.4%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">80.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.625%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 3</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- UNDERWRITING -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--amber);">
-          <span class="pipe-col-label">Underwriting</span>
-          <span class="pipe-col-count">3</span>
-        </div>
-        <div class="pipe-col-volume">$ 925K · 3 files</div>
-        <div class="pipe-col-body">
-          <article class="loan-card featured" onclick="document.getElementById('detail-section').scrollIntoView({behavior:'smooth'});">
-            <div class="lc-top"><span class="lc-num">OF-1043</span><span class="lc-amt">$310K</span></div>
-            <div class="lc-name">Rodriguez, James</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">38.4%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">85.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.750%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-                <span class="avatar"><span class="avatar-init uw">DM</span></span>
-              </div>
-              <div class="lc-flags">
-                <span class="lc-flag amber">⚑ 6</span>
-                <span class="lc-flag red">⚐ DEPOSIT</span>
-              </div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1041</span><span class="lc-amt">$280K</span></div>
-            <div class="lc-name">Anderson, P.</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">39.8%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">80.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.625%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init uw">DM</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 4</span></div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1040</span><span class="lc-amt">$335K</span></div>
-            <div class="lc-name">Kim, J. <span class="lc-cob">+1</span></div>
-            <div class="lc-prop">LEVELLAND, TX · refi</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">36.2%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">75.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.500%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init uw">DM</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 2</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- CONDITIONAL -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--amber);">
-          <span class="pipe-col-label">Conditional</span>
-          <span class="pipe-col-count">2</span>
-        </div>
-        <div class="pipe-col-volume">$ 750K · 2 files</div>
-        <div class="pipe-col-body">
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1038</span><span class="lc-amt">$415K</span></div>
-            <div class="lc-name">Foster, D.</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">37.8%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">80.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.500%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init uw">DM</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 3</span></div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1039</span><span class="lc-amt">$335K</span></div>
-            <div class="lc-name">Reyes, C.</div>
-            <div class="lc-prop">MIDLAND, TX · refi</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val">35.1%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val">70.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.375%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init uw">DM</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag amber">⚑ 2</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- CLEAR-TO-CLOSE -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--accent2);">
-          <span class="pipe-col-label">Clear-to-Close</span>
-          <span class="pipe-col-count">2</span>
-        </div>
-        <div class="pipe-col-volume">$ 850K · 2 files</div>
-        <div class="pipe-col-body">
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1042</span><span class="lc-amt">$425K</span></div>
-            <div class="lc-name">Chen, S+M</div>
-            <div class="lc-prop">LUBBOCK, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val green">38.4%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val green">80.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.500%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags">
-                <span class="lc-flag green">✓ ALL</span>
-                <span class="lc-flag amber">⏱ LOCK 4d</span>
-              </div>
-            </div>
-          </article>
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1037</span><span class="lc-amt">$425K</span></div>
-            <div class="lc-name">Singh, A. <span class="lc-cob">+1</span></div>
-            <div class="lc-prop">AMARILLO, TX · purchase</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val green">36.9%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val green">80.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.500%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag green">✓ ALL</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- DOCS OUT -->
-      <div class="pipe-col">
-        <div class="pipe-col-head" style="border-top-color:var(--accent2);">
-          <span class="pipe-col-label">Docs Out</span>
-          <span class="pipe-col-count">1</span>
-        </div>
-        <div class="pipe-col-volume">$ 245K · 1 file</div>
-        <div class="pipe-col-body">
-          <article class="loan-card">
-            <div class="lc-top"><span class="lc-num">OF-1035</span><span class="lc-amt">$245K</span></div>
-            <div class="lc-name">Carter, B.</div>
-            <div class="lc-prop">LUBBOCK, TX · refi</div>
-            <div class="lc-stats">
-              <div class="lc-stat"><span class="lc-stat-label">DTI</span><span class="lc-stat-val green">34.5%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">LTV</span><span class="lc-stat-val green">68.0%</span></div>
-              <div class="lc-stat"><span class="lc-stat-label">Rate</span><span class="lc-stat-val">6.375%</span></div>
-            </div>
-            <div class="lc-foot">
-              <div class="lc-team">
-                <span class="avatar"><span class="avatar-init">CM</span></span>
-                <span class="avatar"><span class="avatar-init proc">SH</span></span>
-              </div>
-              <div class="lc-flags"><span class="lc-flag green">CD SENT</span></div>
-            </div>
-          </article>
-        </div>
-      </div>
-
+      <div class="modal-warning" id="modal-warning"></div>
     </div>
-  </section>
-
-  <!-- ─── ACTIVITY SIDEBAR ──────────────────────────────────────── -->
-  <aside class="activity-sidebar">
-    <div class="activity-head">
-      <span class="activity-label">Live Activity</span>
-      <span class="activity-pulse"></span>
+    <div class="modal-foot">
+      <button class="btn" id="modal-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="modal-confirm" type="button">Confirm Move</button>
     </div>
-    <div class="activity-body" id="activity-body">
-      <div class="act-row fresh green">
-        <div class="act-time">just now</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> auto-cleared "30-day paystub" condition on <span class="act-loan">OF-1043</span>
-        </div>
-      </div>
-      <div class="act-row fresh">
-        <div class="act-time">12s ago</div>
-        <div class="act-body">
-          <span class="act-actor">Sarah Hayes</span> uploaded <em>paystub_2026_Q1.pdf</em> to <span class="act-loan">OF-1043</span>
-        </div>
-      </div>
-      <div class="act-row amber">
-        <div class="act-time">2m ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> flagged $3,200 unidentified deposit on <span class="act-loan">OF-1043</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">5m ago</div>
-        <div class="act-body">
-          <span class="act-actor">Diana Mendez</span> moved <span class="act-loan">OF-1042</span> from Conditional → <strong style="color:var(--accent2);">Clear-to-Close</strong>
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">12m ago</div>
-        <div class="act-body">
-          <span class="act-actor">Sarah Hayes</span> @-mentioned <strong style="color:var(--white)">@Diana</strong> on <span class="act-loan">OF-1045</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">23m ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> auto-cleared "Bank statement (60 days)" on <span class="act-loan">OF-1043</span>
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">31m ago</div>
-        <div class="act-body">
-          <span class="act-actor">Corbin Matisse</span> created lead <span class="act-loan">OF-1052</span> · Patel
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">42m ago</div>
-        <div class="act-body">
-          <span class="act-actor">System</span> rate lock on <span class="act-loan">OF-1042</span> expires in 4 days
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">1h ago</div>
-        <div class="act-body">
-          <span class="act-actor">AI · Claude Vision</span> extracted W-2 from <span class="act-loan">OF-1041</span> · AGI $87,400
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">1h ago</div>
-        <div class="act-body">
-          <span class="act-actor">Diana Mendez</span> issued conditional approval on <span class="act-loan">OF-1038</span>
-        </div>
-      </div>
-      <div class="act-row green">
-        <div class="act-time">2h ago</div>
-        <div class="act-body">
-          <span class="act-actor">System</span> recomputed DTI on <span class="act-loan">OF-1044</span> · 38.7% → <strong style="color:var(--accent2);">35.6%</strong>
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">3h ago</div>
-        <div class="act-body">
-          <span class="act-actor">Sarah Hayes</span> updated property value on <span class="act-loan">OF-1045</span>
-        </div>
-      </div>
-      <div class="act-row">
-        <div class="act-time">4h ago</div>
-        <div class="act-body">
-          <span class="act-actor">Corbin Matisse</span> sent Loan Estimate on <span class="act-loan">OF-1048</span> · 3-day clock started
-        </div>
-      </div>
-    </div>
-  </aside>
-
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- EXPANDED LOAN VIEW                                                   -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="loan-detail" id="detail-section">
-  <div class="detail-head">
-    <div class="detail-head-left">
-      <span class="detail-num">OF-1043</span>
-      <div>
-        <div class="detail-name">Rodriguez, James</div>
-        <div class="detail-prop">2418 84th Street · Lubbock, TX 79423 · Purchase · Conventional 30-yr</div>
-      </div>
-      <span class="detail-status">Underwriting</span>
-    </div>
-    <div>
-      <div class="detail-amount">$310,000</div>
-      <div class="detail-amount-sub">$364,706 PV · 85% LTV · 38.4% DTI · 6.750% locked</div>
-    </div>
-  </div>
-
-  <div class="detail-body">
-
-    <!-- ─── AI EXTRACTION PANEL ─────────────────────────────────── -->
-    <div class="detail-panel">
-      <div class="detail-panel-head">
-        <span class="panel-title">📄 AI Document Pipeline</span>
-        <span class="panel-tag">CLAUDE VISION</span>
-      </div>
-
-      <div class="extraction-doc">
-        <div class="ext-doc-head">
-          <span class="ext-doc-name">paystub_2026_Q1.pdf</span>
-          <span class="ext-doc-conf">98% conf</span>
-        </div>
-        <div class="ext-fields">
-          <div class="ext-row"><span class="ext-label">Document type</span><span class="ext-val">PAYSTUB</span></div>
-          <div class="ext-row"><span class="ext-label">Employer</span><span class="ext-val">South Plains Health LLC</span></div>
-          <div class="ext-row"><span class="ext-label">Pay period end</span><span class="ext-val">2026-03-15</span></div>
-          <div class="ext-row"><span class="ext-label">Gross (this period)</span><span class="ext-val">$4,807.69</span></div>
-          <div class="ext-row"><span class="ext-label">YTD gross</span><span class="ext-val">$28,846.14</span></div>
-          <div class="ext-row"><span class="ext-label">Computed monthly</span><span class="ext-val">$10,416.66</span></div>
-        </div>
-        <hr class="ext-divider">
-        <div class="ext-action">→ wrote $10,416.66 to income_sources · ✓ saved</div>
-        <div class="ext-action cleared">→ cleared condition "30-day paystub" · ✓ done</div>
-        <div class="ext-action recompute">→ recomputed DTI · 38.4% (was 41.8%)</div>
-      </div>
-
-      <div class="extraction-doc">
-        <div class="ext-doc-head">
-          <span class="ext-doc-name">chase_statement_feb2026.pdf</span>
-          <span class="ext-doc-conf">94% conf</span>
-        </div>
-        <div class="ext-fields">
-          <div class="ext-row"><span class="ext-label">Document type</span><span class="ext-val">BANK STATEMENT</span></div>
-          <div class="ext-row"><span class="ext-label">Account ending</span><span class="ext-val">····2841</span></div>
-          <div class="ext-row"><span class="ext-label">Statement period</span><span class="ext-val">Feb 1–28, 2026</span></div>
-          <div class="ext-row"><span class="ext-label">Ending balance</span><span class="ext-val">$24,118.42</span></div>
-          <div class="ext-row"><span class="ext-label">Avg daily balance</span><span class="ext-val">$22,847.10</span></div>
-          <div class="ext-row"><span class="ext-label">Large deposits flagged</span><span class="ext-val flag">⚐ 1 ($3,200 unidentified)</span></div>
-        </div>
-        <hr class="ext-divider">
-        <div class="ext-action">→ wrote balance to assets table · ✓ saved</div>
-        <div class="ext-action" style="color:var(--amber);">→ flagged $3,200 deposit on 02/14 — needs LOX from borrower</div>
-      </div>
-
-      <div class="dropzone" onclick="alert('Demo only — drag/drop wired to Claude Vision in production')">
-        <span class="dz-icon">📥</span>
-        DROP OR CLICK TO UPLOAD<br>
-        <small style="opacity:0.7">PDF, JPG, PNG · Auto-extracted by Claude Vision</small>
-      </div>
-    </div>
-
-    <!-- ─── CONDITIONS PANEL ─────────────────────────────────────── -->
-    <div class="detail-panel">
-      <div class="detail-panel-head">
-        <span class="panel-title">✓ Conditions · 9 of 15 cleared</span>
-        <span class="panel-tag">AI: 6 cleared</span>
-      </div>
-
-      <div class="cond-list">
-        <!-- Cleared -->
-        <div class="cond-row cleared fresh-cleared">
-          <span class="cond-checkbox">✓</span>
-          <div>
-            <div class="cond-title">30-day paystub (most recent)</div>
-            <div class="cond-desc">Auto-cleared by AI · paystub_2026_Q1.pdf · 98% conf · 12s ago</div>
-          </div>
-          <span class="cond-cat PTD">PTD</span>
-        </div>
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <div>
-            <div class="cond-title">Bank statement · 60 days</div>
-            <div class="cond-desc">Auto-cleared by AI · chase_statement_feb2026.pdf · 23m ago</div>
-          </div>
-          <span class="cond-cat PTD">PTD</span>
-        </div>
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <div>
-            <div class="cond-title">Most recent W-2</div>
-            <div class="cond-desc">Auto-cleared by AI · w2_2025_rodriguez.pdf · yesterday</div>
-          </div>
-          <span class="cond-cat PTD">PTD</span>
-        </div>
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <div>
-            <div class="cond-title">Driver's license · valid</div>
-            <div class="cond-desc">Cleared by Sarah Hayes · 2d ago</div>
-          </div>
-          <span class="cond-cat PTD">PTD</span>
-        </div>
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <div>
-            <div class="cond-title">Verbal VOE</div>
-            <div class="cond-desc">Completed · Sarah Hayes · 3d ago</div>
-          </div>
-          <span class="cond-cat PTD">PTD</span>
-        </div>
-        <!-- Outstanding -->
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <div>
-            <div class="cond-title">LOX · $3,200 deposit on 02/14</div>
-            <div class="cond-desc">Auto-created by AI deposit flag · awaiting borrower</div>
-          </div>
-          <span class="cond-cat PTD">PTD</span>
-        </div>
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <div>
-            <div class="cond-title">Homeowner's insurance binder</div>
-            <div class="cond-desc">Required prior to docs · LO follow-up needed</div>
-          </div>
-          <span class="cond-cat PTC">PTC</span>
-        </div>
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <div>
-            <div class="cond-title">Final survey</div>
-            <div class="cond-desc">Title company ordered 2d ago</div>
-          </div>
-          <span class="cond-cat PTC">PTC</span>
-        </div>
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <div>
-            <div class="cond-title">Updated paystub at signing</div>
-            <div class="cond-desc">Within 30 days of CD</div>
-          </div>
-          <span class="cond-cat ATC">ATC</span>
-        </div>
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <div>
-            <div class="cond-title">Wire instructions verification</div>
-            <div class="cond-desc">Title to call back at known number</div>
-          </div>
-          <span class="cond-cat ATC">ATC</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─── INTERNAL CHAT PANEL ──────────────────────────────────── -->
-    <div class="detail-panel">
-      <div class="detail-panel-head">
-        <span class="panel-title">💬 Internal Chat · OF-1043</span>
-        <span class="panel-tag">3 active</span>
-      </div>
-
-      <div class="chat-thread" id="chat-thread">
-        <div class="chat-msg system">
-          <div class="chat-body">⚙️ Loan moved to Underwriting by Sarah Hayes · 2 days ago</div>
-        </div>
-        <div class="chat-msg lo">
-          <div class="chat-head">
-            <span class="chat-author">Corbin Matisse <small>LO</small></span>
-            <span class="chat-time">2d ago</span>
-          </div>
-          <div class="chat-body">
-            <span class="chat-mention">@Sarah</span> Borrower says he can pull paystubs from his employer portal tomorrow. W-2 should be straightforward — single employer for 4 years.
-          </div>
-        </div>
-        <div class="chat-msg proc">
-          <div class="chat-head">
-            <span class="chat-author">Sarah Hayes <small>PROCESSOR</small></span>
-            <span class="chat-time">2d ago</span>
-          </div>
-          <div class="chat-body">
-            Sounds good. I'll work on the title and appraisal in parallel. <span class="chat-mention">@Diana</span> can you give us a heads-up on what conditions you'll likely need for the deposit pattern? I want to get ahead of it.
-          </div>
-        </div>
-        <div class="chat-msg uw">
-          <div class="chat-head">
-            <span class="chat-author">Diana Mendez <small>UNDERWRITER</small></span>
-            <span class="chat-time">1d ago</span>
-          </div>
-          <div class="chat-body">
-            Standard stuff. LOX on anything &gt; 50% of monthly income, source documentation if possible. Borrower said anything about side income or family transfers?
-          </div>
-        </div>
-        <div class="chat-msg system">
-          <div class="chat-body">🤖 AI · Claude Vision flagged $3,200 deposit on 02/14 · LOX condition auto-created · 2m ago</div>
-        </div>
-        <div class="chat-msg proc">
-          <div class="chat-head">
-            <span class="chat-author">Sarah Hayes <small>PROCESSOR</small></span>
-            <span class="chat-time">just now</span>
-          </div>
-          <div class="chat-body">
-            <span class="chat-mention">@Corbin</span> AI caught it before I even saw it. I'm reaching out to the borrower now for the LOX. Should be quick — looks like a tax refund based on the deposit name.
-          </div>
-        </div>
-      </div>
-
-      <div class="chat-input">
-        <input type="text" placeholder="Message the team... use @ to mention" id="chat-msg-input">
-        <button onclick="sendMessage()">Send</button>
-      </div>
-    </div>
-
-  </div>
-</section>
+<!-- toast -->
+<div class="toast" id="toast" role="status"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span id="foot-status">v0.2 · live data · branch-scoped</span>
   <div style="display:flex;gap:1.25rem;">
-    <a href="index.html">← Landing page</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
-    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+    <a href="/home.html">Home</a>
+    <a href="/documents.html">Documents</a>
+    <a href="/reports.html">Reports</a>
   </div>
 </footer>
 
 <script>
-  // ─── Auth: pull user info from session, wire Sign Out ──────────────
-  // Dashboard is publicly viewable as a demo, but if there's an active
-  // session we personalize the top-right with the signed-in user's name.
-  (async function initSession() {
-    if (typeof ofGetSession !== 'function') return;
-    try {
-      const session = await ofGetSession();
-      if (!session) return;
-      const user = session.user;
-      const meta = user.user_metadata || {};
-      const fullName = (meta.first_name && meta.last_name)
-        ? `${meta.first_name} ${meta.last_name}`
-        : (user.email ? user.email.split('@')[0] : 'Signed in');
-      const branchName = meta.branch_name || 'Your Branch';
-      const role = (meta.role || 'preview').toUpperCase().replace('_', ' ');
-      document.getElementById('nav-user-name').textContent = fullName;
-      document.getElementById('nav-user-role').textContent = role;
-      document.getElementById('nav-branch-name').textContent = branchName;
-    } catch (err) {
-      console.warn('[OF Dashboard] session init error:', err);
-    }
-  })();
+// ═══════════════════════════════════════════════════════════════════════════
+// /dashboard.html (Live Pipeline)
+//
+// Replaces the static demo. The marketing demo lives at /demo.html.
+//
+// Real-time Kanban over Supabase: drag cards between stages with confirmation,
+// audit-logged via stage_changes table. Inline detail panel for the selected
+// loan. Hash routing — /dashboard.html#<loan_id> deep-links and matches the
+// "Open →" links from home.html and the command palette.
+// ═══════════════════════════════════════════════════════════════════════════
 
-  function handleSignOut() {
-    if (typeof ofSignOut === 'function') {
-      ofSignOut();
-    } else {
-      window.location.href = '/';
-    }
+const $ = (s) => document.querySelector(s);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+// ─── State ───────────────────────────────────────────────────────────────
+let supa = null;
+let me = null;
+let branch = null;
+
+let allLoans = [];
+let loansById = new Map();
+let selectedLoanId = null;
+let realtimeChan = null;
+let detailRealtimeChan = null;
+
+// Filters
+let filters = {
+  search: '',
+  assignee: 'all',     // 'all' | 'mine' | 'unassigned'
+  purpose: 'all',
+  sort: 'updated',     // 'updated' | 'stage_age' | 'amount' | 'number'
+};
+
+// Drag state
+let dragLoanId = null;
+let pendingMove = null;  // { loanId, fromStatus, toStatus }
+
+// ─── Stages ──────────────────────────────────────────────────────────────
+// Order matters — left to right on the board
+const STAGES = [
+  { key: 'lead',                  label: 'Lead',           color: 'var(--muted)'   },
+  { key: 'application',           label: 'Application',    color: 'var(--accent)'  },
+  { key: 'submitted',             label: 'Submitted',      color: 'var(--accent)'  },
+  { key: 'processing',            label: 'Processing',     color: 'var(--accent)'  },
+  { key: 'underwriting',          label: 'Underwriting',   color: 'var(--amber)'   },
+  { key: 'conditional_approval',  label: 'Conditional',    color: 'var(--amber)'   },
+  { key: 'clear_to_close',        label: 'Clear-to-Close', color: 'var(--accent2)' },
+  { key: 'docs_out',              label: 'Docs Out',       color: 'var(--accent2)' },
+  { key: 'funded',                label: 'Funded',         color: 'var(--accent2)' },
+];
+const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.key, i]));
+const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+
+// ─── Permissions matrix ──────────────────────────────────────────────────
+// Who can move from <fromStatus> → <toStatus>?
+// admin can do anything. Otherwise:
+//   lo / loa: lead, application, submitted, processing  (early stages)
+//   processor: submitted, processing, underwriting (re-submit), clear_to_close, docs_out
+//   underwriter: underwriting → conditional_approval / clear_to_close / processing (kickback) / denied
+//   closer: clear_to_close, docs_out, funded
+//   viewer: never
+function canRoleMove(role, fromStatus, toStatus) {
+  if (role === 'admin') return true;
+  if (role === 'viewer') return false;
+
+  const from = STAGE_INDEX[fromStatus];
+  const to = STAGE_INDEX[toStatus];
+  if (from == null || to == null) return false;
+
+  // LO/LOA: own the file through processing handoff
+  if (role === 'lo' || role === 'loa') {
+    return from <= STAGE_INDEX.processing && to <= STAGE_INDEX.processing + 1;  // can push to UW
+  }
+  // Processor: receives at submitted, owns through CTC, can kick back
+  if (role === 'processor') {
+    return from >= STAGE_INDEX.submitted && to <= STAGE_INDEX.docs_out;
+  }
+  // Underwriter: owns UW + conditional, can clear, kickback, or deny
+  if (role === 'underwriter') {
+    return from >= STAGE_INDEX.underwriting && from <= STAGE_INDEX.conditional_approval;
+  }
+  // Closer: CTC → docs out → funded
+  if (role === 'closer') {
+    return from >= STAGE_INDEX.clear_to_close;
+  }
+  return false;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function money(cents) {
+  if (cents == null) return '—';
+  const n = Number(cents) / 100;
+  if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
+  if (n >= 1_000)     return '$' + Math.round(n / 1_000) + 'K';
+  return '$' + n.toFixed(0);
+}
+function moneyFull(cents) {
+  if (cents == null) return '—';
+  return '$' + (Number(cents) / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function pct(v) {
+  if (v == null) return '—';
+  return Number(v).toFixed(1) + '%';
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function daysIn(iso) {
+  if (!iso) return 0;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+function initials(name) {
+  if (!name) return '?';
+  const parts = String(name).split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function showToast(msg, isError) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile) {
+    showState('state-pending');
+    return;
+  }
+  if (!profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
   }
 
-  // ─── Simulate live activity feed ────────────────────────────────────
-  // Every 12 seconds, add a new activity row at the top to give the
-  // feed a "live" feel during demos.
-  const fakeActivities = [
-    { type: 'green', actor: 'AI · Claude Vision', body: 'auto-extracted W-2 from <span class="act-loan">OF-1041</span> · AGI $87,400' },
-    { type: '',      actor: 'Sarah Hayes',         body: 'uploaded <em>appraisal_OF-1045.pdf</em> to <span class="act-loan">OF-1045</span>' },
-    { type: 'amber', actor: 'System',              body: 'rate lock on <span class="act-loan">OF-1037</span> expires in 6 days' },
-    { type: 'green', actor: 'Diana Mendez',        body: 'cleared "Title commitment" on <span class="act-loan">OF-1042</span>' },
-    { type: '',      actor: 'Corbin Matisse',      body: 'opened <span class="act-loan">OF-1043</span>' },
-    { type: 'green', actor: 'AI · Claude Vision',  body: 'auto-cleared "Tax return 2024" on <span class="act-loan">OF-1041</span>' },
-    { type: '',      actor: 'System',              body: 'recomputed LTV on <span class="act-loan">OF-1045</span> after appraisal' },
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+
+  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  showActive();
+  await loadAllLoans();
+  await loadMetrics();
+  renderBoard();
+  initFilters();
+  initRealtime();
+  initDragHandlers();
+  initModalHandlers();
+  initDetailHandlers();
+  initSearchShortcut();
+
+  // Deep-link: open detail if hash present
+  if (window.location.hash) {
+    const id = window.location.hash.slice(1);
+    if (id) openDetail(id);
+  }
+  window.addEventListener('hashchange', () => {
+    const id = window.location.hash.slice(1);
+    if (id) openDetail(id);
+    else closeDetail();
+  });
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#pipeline-active').style.display = 'none';
+}
+
+function showActive() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  const el = $('#pipeline-active');
+  el.style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadAllLoans() {
+  const { data, error } = await supa.from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
+      interest_rate_pct, property_address, purpose, updated_at, created_at,
+      stage_entered_at,
+      lo_id, loa_id, processor_id, underwriter_id,
+      lo:lo_id ( id, full_name, role ),
+      loa:loa_id ( id, full_name, role ),
+      processor:processor_id ( id, full_name, role ),
+      underwriter:underwriter_id ( id, full_name, role ),
+      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) ),
+      conditions ( id, status, category )
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('loans load error:', error);
+    showToast('Couldn\'t load pipeline: ' + error.message, true);
+    return;
+  }
+  allLoans = data || [];
+  loansById.clear();
+  allLoans.forEach(l => loansById.set(l.id, l));
+}
+
+async function loadMetrics() {
+  // Computed from the full pipeline we just loaded
+  const active = allLoans.filter(l => !['lead','funded','denied','withdrawn','cancelled'].includes(l.status));
+  const activeVol = active.reduce((s, l) => s + (l.loan_amount_cents || 0), 0);
+  const inUW = allLoans.filter(l => ['underwriting','conditional_approval'].includes(l.status)).length;
+  const ctc = allLoans.filter(l => l.status === 'clear_to_close');
+  const funded = allLoans.filter(l => l.status === 'funded');
+  const fundedVol = funded.reduce((s, l) => s + (l.loan_amount_cents || 0), 0);
+
+  const openCondCount = allLoans.reduce((s, l) =>
+    s + (l.conditions || []).filter(c => c.status === 'outstanding').length, 0);
+
+  // Avg DTI across active
+  const dtis = active.map(l => l.dti_back_pct).filter(v => v != null);
+  const avgDti = dtis.length ? (dtis.reduce((a,b) => a + Number(b), 0) / dtis.length) : null;
+
+  // Avg days from application → CTC for funded loans this quarter — approximated by stage_entered_at deltas
+  // For v0.2 we just show a placeholder calc
+  const avgDays = active.length ? Math.round(active.reduce((s, l) => s + daysIn(l.created_at), 0) / active.length) : null;
+
+  $('#metric-strip').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">Active Pipeline</div>
+      <div class="metric-value cyan">${money(activeVol)}</div>
+      <div class="metric-sub">${active.length} files in flight</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">In Underwriting</div>
+      <div class="metric-value amber">${inUW}</div>
+      <div class="metric-sub">UW + Conditional</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Clear-to-Close</div>
+      <div class="metric-value green">${ctc.length}</div>
+      <div class="metric-sub">${money(ctc.reduce((s,l) => s + (l.loan_amount_cents||0), 0))}</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Open Conditions</div>
+      <div class="metric-value">${openCondCount}</div>
+      <div class="metric-sub">across all files</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Avg DTI · Pipeline</div>
+      <div class="metric-value">${avgDti != null ? pct(avgDti) : '—'}</div>
+      <div class="metric-sub">qualifying back-end</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Funded YTD</div>
+      <div class="metric-value green">${money(fundedVol)}</div>
+      <div class="metric-sub">${funded.length} closed</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTERING & SORTING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function applyFilters(loans) {
+  let out = loans;
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    out = out.filter(l => {
+      const num = (l.loan_number || '').toLowerCase();
+      if (num.includes(q)) return true;
+      const addr = l.property_address || {};
+      const addrStr = `${addr.street||''} ${addr.city||''} ${addr.state||''}`.toLowerCase();
+      if (addrStr.includes(q)) return true;
+      const names = (l.borrowers || []).map(b => b.borrower).filter(Boolean)
+        .map(b => `${b.first_name||''} ${b.last_name||''}`.toLowerCase()).join(' ');
+      return names.includes(q);
+    });
+  }
+  if (filters.assignee === 'mine') {
+    out = out.filter(l => [l.lo_id, l.loa_id, l.processor_id, l.underwriter_id].includes(me.id));
+  } else if (filters.assignee === 'unassigned') {
+    out = out.filter(l => !l.lo_id && !l.loa_id && !l.processor_id && !l.underwriter_id);
+  }
+  if (filters.purpose !== 'all') {
+    out = out.filter(l => l.purpose === filters.purpose);
+  }
+  // Sort
+  out = [...out].sort((a, b) => {
+    if (filters.sort === 'amount') return (b.loan_amount_cents || 0) - (a.loan_amount_cents || 0);
+    if (filters.sort === 'number') return String(a.loan_number).localeCompare(String(b.loan_number));
+    if (filters.sort === 'stage_age') {
+      const ad = daysIn(a.stage_entered_at || a.updated_at);
+      const bd = daysIn(b.stage_entered_at || b.updated_at);
+      return bd - ad;
+    }
+    // default: updated desc
+    return new Date(b.updated_at) - new Date(a.updated_at);
+  });
+  return out;
+}
+
+function initFilters() {
+  $('#filter-search').addEventListener('input', (e) => {
+    filters.search = e.target.value.trim();
+    renderBoard();
+  });
+  $('#filter-assignee').addEventListener('change', (e) => {
+    filters.assignee = e.target.value; renderBoard();
+  });
+  $('#filter-purpose').addEventListener('change', (e) => {
+    filters.purpose = e.target.value; renderBoard();
+  });
+  $('#filter-sort').addEventListener('change', (e) => {
+    filters.sort = e.target.value; renderBoard();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER BOARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderBoard() {
+  const filtered = applyFilters(allLoans);
+  const grouped = Object.fromEntries(STAGES.map(s => [s.key, []]));
+  for (const l of filtered) {
+    if (grouped[l.status]) grouped[l.status].push(l);
+  }
+
+  const html = STAGES.map(stage => {
+    const loans = grouped[stage.key] || [];
+    const vol = loans.reduce((s, l) => s + (l.loan_amount_cents || 0), 0);
+    return `
+      <div class="col" data-stage="${stage.key}">
+        <div class="col-head" style="border-top-color: ${stage.color};">
+          <span class="col-label">${escapeHtml(stage.label)}</span>
+          <span class="col-count">${loans.length}</span>
+        </div>
+        <div class="col-volume">${money(vol)} · ${loans.length} file${loans.length===1?'':'s'}</div>
+        <div class="col-body" data-drop-stage="${stage.key}">
+          ${loans.length === 0
+            ? `<div class="col-empty">No files</div>`
+            : loans.map(l => renderCard(l)).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  $('#board').innerHTML = html;
+  wireCards();
+  wireDropTargets();
+}
+
+function renderCard(loan) {
+  const bs = (loan.borrowers || []).sort((a,b) => (a.position||0) - (b.position||0)).map(b => b.borrower).filter(Boolean);
+  const primary = bs[0];
+  const name = primary ? `${primary.last_name}, ${primary.first_name}` : 'Borrower TBD';
+  const cob = bs.length > 1 ? ` <span class="lc-cob">+${bs.length - 1}</span>` : '';
+  const addr = loan.property_address || {};
+  const city = (addr.city || '').toUpperCase();
+  const state = (addr.state || '').toUpperCase();
+
+  const dti = loan.dti_back_pct;
+  const ltv = loan.ltv_pct;
+  const rate = loan.interest_rate_pct;
+
+  const dtiCls = dti != null && Number(dti) >= 43 ? 'hot' : (dti != null && Number(dti) <= 36 ? 'green' : '');
+  const ltvCls = ltv != null && Number(ltv) > 95 ? 'hot' : (ltv != null && Number(ltv) <= 80 ? 'green' : '');
+
+  // Team avatars
+  const team = [];
+  if (loan.lo)         team.push({ init: initials(loan.lo.full_name), cls: '' });
+  if (loan.processor)  team.push({ init: initials(loan.processor.full_name), cls: 'proc' });
+  if (loan.underwriter)team.push({ init: initials(loan.underwriter.full_name), cls: 'uw' });
+
+  // Flag list
+  const openConds = (loan.conditions || []).filter(c => c.status === 'outstanding').length;
+  const flags = [];
+  if (openConds > 0) flags.push(`<span class="lc-flag amber">⚑ ${openConds}</span>`);
+  if (dti != null && Number(dti) >= 43) flags.push(`<span class="lc-flag red">DTI</span>`);
+  if (loan.status === 'clear_to_close' && openConds === 0) flags.push(`<span class="lc-flag green">✓ ALL</span>`);
+  if (loan.status === 'lead') flags.push(`<span class="lc-flag muted">NEW</span>`);
+
+  const isFeatured = loan.id === selectedLoanId;
+  const stageDays = daysIn(loan.stage_entered_at || loan.updated_at);
+  const showStale = stageDays >= 5 && !['funded','denied','withdrawn','cancelled','lead'].includes(loan.status);
+
+  return `
+    <article class="loan-card ${isFeatured ? 'featured' : ''}" draggable="true" data-loan-id="${escapeHtml(loan.id)}">
+      ${showStale ? `<span class="lc-stale">${stageDays}d</span>` : ''}
+      <div class="lc-top">
+        <span class="lc-num">${escapeHtml(loan.loan_number)}</span>
+        <span class="lc-amt">${money(loan.loan_amount_cents)}</span>
+      </div>
+      <div class="lc-name">${escapeHtml(name)}${cob}</div>
+      <div class="lc-prop">${escapeHtml(city)}${state ? ', ' + escapeHtml(state) : ''} · ${escapeHtml(loan.purpose || '—')}</div>
+      <div class="lc-stats">
+        <div class="lc-stat">
+          <span class="lc-stat-label">DTI</span>
+          <span class="lc-stat-val ${dtiCls}">${dti != null ? pct(dti) : '—'}</span>
+        </div>
+        <div class="lc-stat">
+          <span class="lc-stat-label">LTV</span>
+          <span class="lc-stat-val ${ltvCls}">${ltv != null ? pct(ltv) : '—'}</span>
+        </div>
+        <div class="lc-stat">
+          <span class="lc-stat-label">Rate</span>
+          <span class="lc-stat-val muted">${rate != null ? Number(rate).toFixed(3) + '%' : '—'}</span>
+        </div>
+      </div>
+      <div class="lc-foot">
+        <div class="lc-team">
+          ${team.length === 0
+            ? `<span class="avatar"><span class="avatar-init muted">··</span></span>`
+            : team.map(t => `<span class="avatar"><span class="avatar-init ${t.cls}">${escapeHtml(t.init)}</span></span>`).join('')}
+        </div>
+        <div class="lc-flags">${flags.join('')}</div>
+      </div>
+    </article>
+  `;
+}
+
+function wireCards() {
+  document.querySelectorAll('.loan-card').forEach(card => {
+    // click → open detail
+    card.addEventListener('click', (e) => {
+      // don't open detail if dragging
+      if (card.classList.contains('dragging')) return;
+      const id = card.dataset.loanId;
+      window.location.hash = id;
+    });
+    // drag start
+    card.addEventListener('dragstart', (e) => {
+      dragLoanId = card.dataset.loanId;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', dragLoanId);
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      dragLoanId = null;
+      document.querySelectorAll('.col-body').forEach(b => {
+        b.classList.remove('drop-target', 'drop-forbidden');
+      });
+    });
+  });
+}
+
+function wireDropTargets() {
+  document.querySelectorAll('.col-body').forEach(body => {
+    body.addEventListener('dragover', (e) => {
+      if (!dragLoanId) return;
+      const loan = loansById.get(dragLoanId);
+      if (!loan) return;
+      const toStage = body.dataset.dropStage;
+      if (toStage === loan.status) return;  // same column
+      const allowed = canRoleMove(me.role, loan.status, toStage);
+      e.preventDefault();
+      e.dataTransfer.dropEffect = allowed ? 'move' : 'none';
+      body.classList.toggle('drop-target', allowed);
+      body.classList.toggle('drop-forbidden', !allowed);
+    });
+    body.addEventListener('dragleave', () => {
+      body.classList.remove('drop-target', 'drop-forbidden');
+    });
+    body.addEventListener('drop', (e) => {
+      e.preventDefault();
+      body.classList.remove('drop-target', 'drop-forbidden');
+      if (!dragLoanId) return;
+      const loan = loansById.get(dragLoanId);
+      if (!loan) return;
+      const toStage = body.dataset.dropStage;
+      if (toStage === loan.status) return;
+      if (!canRoleMove(me.role, loan.status, toStage)) {
+        showToast(`Your role (${me.role.toUpperCase()}) can't move from ${STAGE_LABEL[loan.status]} to ${STAGE_LABEL[toStage]}.`, true);
+        return;
+      }
+      promptStageChange(loan.id, loan.status, toStage);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STAGE CHANGE — confirm modal + audit
+// ═══════════════════════════════════════════════════════════════════════════
+
+function promptStageChange(loanId, fromStatus, toStatus) {
+  const loan = loansById.get(loanId);
+  if (!loan) return;
+  pendingMove = { loanId, fromStatus, toStatus };
+
+  const bs = (loan.borrowers || []).map(b => b.borrower).filter(Boolean);
+  const name = bs[0] ? `${bs[0].last_name}, ${bs[0].first_name}` : 'Borrower TBD';
+
+  $('#modal-prompt').textContent = `Move ${loan.loan_number} to ${STAGE_LABEL[toStatus]}?`;
+  $('#modal-detail').textContent = `${name} · ${money(loan.loan_amount_cents)} · ${(loan.purpose || '').replace('_', ' ')}`;
+  $('#modal-from').textContent = STAGE_LABEL[fromStatus];
+  $('#modal-to').textContent = STAGE_LABEL[toStatus];
+
+  // Warnings
+  const warnings = [];
+  const openConds = (loan.conditions || []).filter(c => c.status === 'outstanding').length;
+
+  if (toStatus === 'clear_to_close' && openConds > 0) {
+    warnings.push(`⚠ ${openConds} open condition${openConds===1?'':'s'} — clearing to close anyway will require manual override on close.`);
+  }
+  if (toStatus === 'funded' && fromStatus !== 'docs_out') {
+    warnings.push(`⚠ Funding from ${STAGE_LABEL[fromStatus]} skips docs-out. Make sure CD timing is compliant.`);
+  }
+  // Backward move
+  if (STAGE_INDEX[toStatus] < STAGE_INDEX[fromStatus]) {
+    warnings.push(`⚠ Moving backwards — this is a kickback. Document your reason in file chat.`);
+  }
+
+  const w = $('#modal-warning');
+  if (warnings.length) {
+    w.innerHTML = warnings.map(escapeHtml).join('<br>');
+    w.classList.add('show');
+  } else {
+    w.classList.remove('show');
+  }
+
+  $('#modal-overlay').classList.add('open');
+}
+
+function initModalHandlers() {
+  $('#modal-cancel').addEventListener('click', closeModal);
+  $('#modal-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+  $('#modal-confirm').addEventListener('click', confirmStageChange);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#modal-overlay').classList.contains('open')) {
+      closeModal();
+    }
+  });
+}
+
+function closeModal() {
+  $('#modal-overlay').classList.remove('open');
+  pendingMove = null;
+}
+
+async function confirmStageChange() {
+  if (!pendingMove) return;
+  const { loanId, fromStatus, toStatus } = pendingMove;
+  const btn = $('#modal-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Moving…';
+
+  try {
+    // Optimistic update
+    const loan = loansById.get(loanId);
+    if (loan) {
+      loan.status = toStatus;
+      loan.stage_entered_at = new Date().toISOString();
+      loan.updated_at = loan.stage_entered_at;
+    }
+    renderBoard();
+
+    // Persist — update loan
+    const { error: updErr } = await supa.from('loans')
+      .update({ status: toStatus, stage_entered_at: new Date().toISOString() })
+      .eq('id', loanId);
+    if (updErr) throw updErr;
+
+    // Audit log — stage_changes table (best-effort; if absent, fall back to audit_logs)
+    const auditPayload = {
+      loan_id: loanId,
+      branch_id: me.branch_id,
+      from_status: fromStatus,
+      to_status: toStatus,
+      changed_by: me.id,
+      actor_role: me.role,
+    };
+    const { error: scErr } = await supa.from('stage_changes').insert(auditPayload);
+    if (scErr) {
+      console.warn('stage_changes write failed (non-fatal):', scErr);
+      // Try audit_logs as fallback
+      await supa.from('audit_logs').insert({
+        loan_id: loanId,
+        branch_id: me.branch_id,
+        actor_id: me.id,
+        actor_role: me.role,
+        operation: 'stage_change',
+        table_name: 'loans',
+        diff: { from_status: fromStatus, to_status: toStatus },
+      }).then(({ error }) => {
+        if (error) console.warn('audit_logs fallback also failed:', error);
+      });
+    }
+
+    // Flash the moved card
+    setTimeout(() => {
+      const card = document.querySelector(`[data-loan-id="${loanId}"]`);
+      if (card) {
+        card.classList.add('flash');
+        setTimeout(() => card.classList.remove('flash'), 1600);
+      }
+    }, 50);
+
+    showToast(`Moved ${loan?.loan_number || 'file'} → ${STAGE_LABEL[toStatus]}`);
+    await loadMetrics();
+    closeModal();
+  } catch (err) {
+    console.error('stage change error:', err);
+    showToast('Couldn\'t move: ' + err.message, true);
+    // Roll back
+    await loadAllLoans();
+    renderBoard();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirm Move';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME (anyone in branch moves a card → we re-render)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initRealtime() {
+  realtimeChan = supa
+    .channel(`pipeline:${me.branch_id}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'loans', filter: `branch_id=eq.${me.branch_id}` },
+      async () => {
+        await loadAllLoans();
+        await loadMetrics();
+        renderBoard();
+        // refresh detail if open
+        if (selectedLoanId) refreshDetailFacts();
+      }
+    )
+    .subscribe();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function openDetail(loanId) {
+  selectedLoanId = loanId;
+  renderBoard();  // re-render to show "featured" border
+  $('#detail').classList.add('open');
+  $('#detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  await refreshDetailFacts();
+  await loadDetailConditions(loanId);
+  await loadDetailChat(loanId);
+}
+
+function closeDetail() {
+  selectedLoanId = null;
+  $('#detail').classList.remove('open');
+  if (window.location.hash) {
+    history.replaceState(null, '', window.location.pathname);
+  }
+  renderBoard();
+  if (detailRealtimeChan) {
+    try { supa.removeChannel(detailRealtimeChan); } catch (_) {}
+    detailRealtimeChan = null;
+  }
+}
+
+function initDetailHandlers() {
+  $('#dh-close').addEventListener('click', closeDetail);
+  $('#detail-chat-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await sendDetailChat();
+  });
+}
+
+async function refreshDetailFacts() {
+  if (!selectedLoanId) return;
+  const loan = loansById.get(selectedLoanId);
+  if (!loan) {
+    // Maybe it's a deep-link to something we filtered out — fetch directly
+    const { data, error } = await supa.from('loans')
+      .select(`
+        id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
+        interest_rate_pct, property_address, purpose, updated_at, created_at,
+        stage_entered_at, loan_program, occupancy, property_type,
+        property_value_cents, loan_term_months, estimated_closing_date,
+        lo:lo_id ( full_name, role ),
+        processor:processor_id ( full_name, role ),
+        underwriter:underwriter_id ( full_name, role ),
+        borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name, email, phone ) )
+      `)
+      .eq('id', selectedLoanId)
+      .eq('branch_id', me.branch_id)
+      .maybeSingle();
+    if (error || !data) {
+      $('#detail-facts').innerHTML = `<div class="dp-empty">Couldn\'t load loan: ${escapeHtml(error?.message || 'not found')}</div>`;
+      return;
+    }
+    loansById.set(data.id, data);
+  }
+  renderDetailHead(loansById.get(selectedLoanId));
+  renderDetailFacts(loansById.get(selectedLoanId));
+}
+
+function renderDetailHead(loan) {
+  const bs = (loan.borrowers || []).sort((a,b) => (a.position||0) - (b.position||0)).map(b => b.borrower).filter(Boolean);
+  const primary = bs[0];
+  const name = primary ? `${primary.last_name}, ${primary.first_name}` : 'Borrower TBD';
+  const cob = bs.length > 1 ? ` +${bs.length - 1}` : '';
+  const addr = loan.property_address || {};
+  const addrStr = [addr.street, addr.unit, [addr.city, addr.state, addr.zip].filter(Boolean).join(', ')]
+    .filter(Boolean).join(' · ');
+
+  $('#dh-num').textContent = loan.loan_number || '—';
+  $('#dh-name').textContent = name + cob;
+  $('#dh-prop').textContent = [addrStr, loan.purpose, loan.loan_program].filter(Boolean).join(' · ').replace(/_/g, ' ');
+  $('#dh-status').textContent = STAGE_LABEL[loan.status] || loan.status;
+  $('#dh-amount').textContent = moneyFull(loan.loan_amount_cents);
+
+  const subParts = [];
+  if (loan.property_value_cents) subParts.push(`${moneyFull(loan.property_value_cents)} PV`);
+  if (loan.ltv_pct != null) subParts.push(`${pct(loan.ltv_pct)} LTV`);
+  if (loan.dti_back_pct != null) subParts.push(`${pct(loan.dti_back_pct)} DTI`);
+  if (loan.interest_rate_pct != null) subParts.push(`${Number(loan.interest_rate_pct).toFixed(3)}%`);
+  $('#dh-amount-sub').textContent = subParts.join(' · ') || '—';
+
+  $('#dp-tag-status').textContent = `${daysIn(loan.stage_entered_at || loan.updated_at)}d in stage`;
+}
+
+function renderDetailFacts(loan) {
+  const bs = (loan.borrowers || []).sort((a,b) => (a.position||0) - (b.position||0)).map(b => b.borrower).filter(Boolean);
+  const primary = bs[0];
+  const cob = bs[1];
+  const addr = loan.property_address || {};
+
+  const rows = [
+    ['Loan number', loan.loan_number],
+    ['Loan amount', moneyFull(loan.loan_amount_cents)],
+    ['Property value', loan.property_value_cents ? moneyFull(loan.property_value_cents) : '—'],
+    ['LTV', loan.ltv_pct != null ? pct(loan.ltv_pct) : '—'],
+    ['DTI (back)', loan.dti_back_pct != null ? pct(loan.dti_back_pct) : '—'],
+    ['Rate', loan.interest_rate_pct != null ? Number(loan.interest_rate_pct).toFixed(3) + '%' : '—'],
+    ['Term', loan.loan_term_months ? Math.round(loan.loan_term_months / 12) + ' yrs' : '—'],
+    ['Program', (loan.loan_program || '—').toUpperCase()],
+    ['Purpose', (loan.purpose || '—').replace(/_/g, ' ')],
+    ['Occupancy', (loan.occupancy || '—').replace(/_/g, ' ')],
+    ['Property type', (loan.property_type || '—').replace(/_/g, ' ')],
+    ['Est close', loan.estimated_closing_date || '—'],
+    ['Primary borrower', primary ? `${primary.first_name} ${primary.last_name}` : '—'],
+    ...(primary?.email ? [['Email', primary.email]] : []),
+    ...(primary?.phone ? [['Phone', primary.phone]] : []),
+    ...(cob ? [['Co-borrower', `${cob.first_name} ${cob.last_name}`]] : []),
+    ['Address', [addr.street, addr.unit, addr.city, addr.state, addr.zip].filter(Boolean).join(', ') || '—'],
+    ['LO', loan.lo?.full_name || 'Unassigned'],
+    ['Processor', loan.processor?.full_name || 'Unassigned'],
+    ['Underwriter', loan.underwriter?.full_name || 'Unassigned'],
+    ['Created', new Date(loan.created_at).toLocaleString()],
+    ['Updated', timeAgo(loan.updated_at)],
   ];
 
-  let idx = 0;
-  const body = document.getElementById('activity-body');
+  $('#detail-facts').innerHTML = `
+    <div class="fact-list">
+      ${rows.map(([l, v]) => `
+        <div class="fact-row">
+          <span class="fact-label">${escapeHtml(l)}</span>
+          <span class="fact-val">${escapeHtml(v ?? '—')}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
 
-  setInterval(() => {
-    const a = fakeActivities[idx % fakeActivities.length];
-    idx++;
-    const row = document.createElement('div');
-    row.className = `act-row fresh ${a.type}`;
-    row.innerHTML = `
-      <div class="act-time">just now</div>
-      <div class="act-body"><span class="act-actor">${a.actor}</span> ${a.body}</div>
-    `;
-    body.insertBefore(row, body.firstChild);
-    // Update existing fresh rows to remove their fresh styling and shift timestamps
-    const rows = body.querySelectorAll('.act-row');
-    rows.forEach((r, i) => {
-      if (i > 0) {
-        r.classList.remove('fresh');
-        const time = r.querySelector('.act-time');
-        if (time && time.textContent === 'just now') time.textContent = '12s ago';
-        else if (time && time.textContent === '12s ago') time.textContent = '24s ago';
-      }
-    });
-    // Keep list manageable
-    while (body.children.length > 18) body.removeChild(body.lastChild);
-  }, 12000);
+async function loadDetailConditions(loanId) {
+  const { data, error } = await supa.from('conditions')
+    .select('id, title, description, category, status, cleared_at, cleared_by, created_at')
+    .eq('loan_id', loanId)
+    .order('status', { ascending: true })  // outstanding before cleared
+    .order('created_at', { ascending: true });
 
-  // ─── Pulse a different card every 8 seconds for liveness ────────────
-  setInterval(() => {
-    const cards = document.querySelectorAll('.loan-card');
-    if (cards.length === 0) return;
-    const card = cards[Math.floor(Math.random() * cards.length)];
-    if (card.classList.contains('pulse')) return;
-    card.classList.add('pulse');
-    setTimeout(() => card.classList.remove('pulse'), 2400);
-  }, 8000);
-
-  // ─── Chat send (demo only) ──────────────────────────────────────────
-  function sendMessage() {
-    const input = document.getElementById('chat-msg-input');
-    const text = input.value.trim();
-    if (!text) return;
-    const thread = document.getElementById('chat-thread');
-    const div = document.createElement('div');
-    div.className = 'chat-msg lo';
-    div.innerHTML = `
-      <div class="chat-head">
-        <span class="chat-author">Corbin Matisse <small>LO</small></span>
-        <span class="chat-time">just now</span>
-      </div>
-      <div class="chat-body">${text.replace(/@(\w+)/g, '<span class="chat-mention">@$1</span>')}</div>
-    `;
-    thread.appendChild(div);
-    input.value = '';
-    thread.scrollTop = thread.scrollHeight;
+  if (error) {
+    $('#detail-conditions').innerHTML = `<div class="dp-empty">Couldn't load: ${escapeHtml(error.message)}</div>`;
+    return;
   }
-  // Enter key submits
-  document.getElementById('chat-msg-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendMessage();
+  if (!data || data.length === 0) {
+    $('#detail-conditions').innerHTML = `<div class="dp-empty">No conditions on this file yet.</div>`;
+    $('#dp-tag-cond').textContent = '0 / 0';
+    return;
+  }
+  const cleared = data.filter(c => c.status === 'cleared').length;
+  $('#dp-tag-cond').textContent = `${cleared} / ${data.length}`;
+
+  $('#detail-conditions').innerHTML = data.map(c => `
+    <div class="cond-row ${c.status === 'cleared' ? 'cleared' : ''}">
+      <span class="cond-checkbox">${c.status === 'cleared' ? '✓' : ''}</span>
+      <div>
+        <div class="cond-title">${escapeHtml(c.title)}</div>
+        <div class="cond-desc">${escapeHtml(c.description || '')} ${c.cleared_at ? '· cleared ' + timeAgo(c.cleared_at) : ''}</div>
+      </div>
+      <span class="cond-cat ${escapeHtml(c.category || 'PTD')}">${escapeHtml(c.category || 'PTD')}</span>
+    </div>
+  `).join('');
+}
+
+async function loadDetailChat(loanId) {
+  // Find or expect a per-loan channel. Channels with kind='loan' and loan_id matching.
+  const { data: chs, error: chErr } = await supa.from('chat_channels')
+    .select('id, label, kind, loan_id')
+    .eq('branch_id', me.branch_id)
+    .eq('kind', 'loan')
+    .eq('loan_id', loanId)
+    .maybeSingle();
+
+  if (chErr) {
+    $('#detail-chat').innerHTML = `<div class="dp-empty">Chat unavailable: ${escapeHtml(chErr.message)}</div>`;
+    return;
+  }
+  if (!chs) {
+    $('#detail-chat').innerHTML = `<div class="dp-empty">No chat channel for this loan yet. Send a message to start one.</div>`;
+    $('#dp-tag-chat').textContent = '—';
+    $('#detail-chat-input').disabled = me.role === 'viewer';
+    $('#detail-chat-send').disabled = me.role === 'viewer';
+    $('#detail-chat-input').dataset.channelId = '';
+    $('#detail-chat-input').dataset.loanId = loanId;
+    return;
+  }
+
+  // Load last 100 messages
+  const { data: msgs, error: mErr } = await supa.from('chat_messages_enriched')
+    .select('*')
+    .eq('channel_id', chs.id)
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  if (mErr) {
+    $('#detail-chat').innerHTML = `<div class="dp-empty">Couldn't load chat: ${escapeHtml(mErr.message)}</div>`;
+    return;
+  }
+
+  $('#dp-tag-chat').textContent = `${(msgs || []).length} msg`;
+  $('#detail-chat').innerHTML = (msgs || []).length === 0
+    ? `<div class="dp-empty">No messages yet — start the conversation.</div>`
+    : msgs.map(renderChatMsg).join('');
+  $('#detail-chat').scrollTop = $('#detail-chat').scrollHeight;
+
+  $('#detail-chat-input').disabled = me.role === 'viewer';
+  $('#detail-chat-send').disabled = me.role === 'viewer';
+  $('#detail-chat-input').placeholder = me.role === 'viewer'
+    ? 'Viewers cannot post'
+    : `Message about ${loansById.get(loanId)?.loan_number || 'this file'}…`;
+  $('#detail-chat-input').dataset.channelId = chs.id;
+  $('#detail-chat-input').dataset.loanId = loanId;
+
+  // Subscribe for live updates
+  if (detailRealtimeChan) {
+    try { await supa.removeChannel(detailRealtimeChan); } catch (_) {}
+  }
+  detailRealtimeChan = supa
+    .channel(`loan-chat:${chs.id}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `channel_id=eq.${chs.id}` },
+      async (payload) => {
+        const row = payload.new;
+        const { data: prof } = await supa.from('profiles')
+          .select('full_name, role').eq('id', row.author_id).maybeSingle();
+        const enriched = {
+          ...row,
+          author_name: prof?.full_name || 'Teammate',
+          author_role: prof?.role || 'viewer',
+        };
+        $('#detail-chat').insertAdjacentHTML('beforeend', renderChatMsg(enriched));
+        $('#detail-chat').scrollTop = $('#detail-chat').scrollHeight;
+      }
+    )
+    .subscribe();
+}
+
+function renderChatMsg(m) {
+  if (m.is_system) {
+    return `<div class="chat-msg system"><div class="chat-body">${escapeHtml(m.body)}</div></div>`;
+  }
+  const role = (m.author_role || 'viewer').toLowerCase();
+  const body = escapeHtml(m.body).replace(/@(\w+)/g, '<span class="chat-mention">@$1</span>');
+  return `
+    <div class="chat-msg ${role}">
+      <div class="chat-head">
+        <span class="chat-author">${escapeHtml(m.author_name)} <small>${role.toUpperCase()}</small></span>
+        <span class="chat-time">${timeAgo(m.created_at)}</span>
+      </div>
+      <div class="chat-body">${body}</div>
+    </div>
+  `;
+}
+
+async function sendDetailChat() {
+  const inp = $('#detail-chat-input');
+  const body = String(inp.value || '').trim();
+  if (!body) return;
+  let channelId = inp.dataset.channelId;
+  const loanId = inp.dataset.loanId;
+  if (!loanId) return;
+
+  const btn = $('#detail-chat-send');
+  inp.disabled = true; btn.disabled = true;
+
+  try {
+    // Create channel if missing
+    if (!channelId) {
+      const loan = loansById.get(loanId);
+      const label = loan?.loan_number || 'Loan';
+      const { data: newCh, error: createErr } = await supa.from('chat_channels')
+        .insert({
+          branch_id: me.branch_id,
+          slug: `loan-${loanId}`,
+          label,
+          kind: 'loan',
+          loan_id: loanId,
+        })
+        .select().single();
+      if (createErr) throw createErr;
+      channelId = newCh.id;
+      inp.dataset.channelId = channelId;
+    }
+
+    const { error } = await supa.from('chat_messages').insert({
+      branch_id: me.branch_id,
+      channel_id: channelId,
+      author_id: me.id,
+      body,
+    });
+    if (error) throw error;
+    inp.value = '';
+    // Reload chat to wire realtime if this was the first message
+    if (!detailRealtimeChan) await loadDetailChat(loanId);
+  } catch (err) {
+    showToast('Send failed: ' + err.message, true);
+    console.error('chat send err:', err);
+  } finally {
+    inp.disabled = me.role === 'viewer'; btn.disabled = me.role === 'viewer';
+    inp.focus();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEARCH SHORTCUT (delegates to /home.html#cmdk via hash route — for now
+// the search button just navigates back home where the palette lives)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initSearchShortcut() {
+  $('#nav-search-btn').addEventListener('click', () => {
+    // Focus the in-page filter — it's the equivalent on the pipeline
+    $('#filter-search').focus();
+    $('#filter-search').select();
   });
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      $('#filter-search').focus();
+      $('#filter-search').select();
+    }
+    if (e.key === '/' && !['INPUT','TEXTAREA'].includes((e.target.tagName||''))) {
+      e.preventDefault();
+      $('#filter-search').focus();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DRAG INIT (fallback for when board re-renders)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initDragHandlers() {
+  // body delegate for any dragend (cleanup)
+  document.addEventListener('dragend', () => {
+    document.querySelectorAll('.col-body').forEach(b => {
+      b.classList.remove('drop-target', 'drop-forbidden');
+    });
+    document.querySelectorAll('.loan-card').forEach(c => c.classList.remove('dragging'));
+    dragLoanId = null;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
 </script>
 
 </body>
