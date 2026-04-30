@@ -1178,8 +1178,7 @@ async function loadAllLoans() {
   const { data, error } = await supa.from('loans')
     .select(`
       id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
-      property_address, purpose, updated_at, created_at,
-      stage_entered_at,
+      rate_bps, property_address, purpose, updated_at, created_at,
       lo_id, loa_id, processor_id, underwriter_id,
       lo:profiles!lo_id ( id, full_name, role ),
       loa:profiles!loa_id ( id, full_name, role ),
@@ -1288,8 +1287,10 @@ function applyFilters(loans) {
     if (filters.sort === 'amount') return (b.loan_amount_cents || 0) - (a.loan_amount_cents || 0);
     if (filters.sort === 'number') return String(a.loan_number).localeCompare(String(b.loan_number));
     if (filters.sort === 'stage_age') {
-      const ad = daysIn(a.stage_entered_at || a.updated_at);
-      const bd = daysIn(b.stage_entered_at || b.updated_at);
+      // No `stage_entered_at` column in schema — `updated_at` is the best
+      // proxy for time-in-stage since it bumps on every stage change.
+      const ad = daysIn(a.updated_at);
+      const bd = daysIn(b.updated_at);
       return bd - ad;
     }
     // default: updated desc
@@ -1360,7 +1361,7 @@ function renderCard(loan) {
 
   const dti = loan.dti_back_pct;
   const ltv = loan.ltv_pct;
-  const rate = loan.interest_rate_pct;
+  const rate = loan.rate_bps;
 
   const dtiCls = dti != null && Number(dti) >= 43 ? 'hot' : (dti != null && Number(dti) <= 36 ? 'green' : '');
   const ltvCls = ltv != null && Number(ltv) > 95 ? 'hot' : (ltv != null && Number(ltv) <= 80 ? 'green' : '');
@@ -1380,7 +1381,7 @@ function renderCard(loan) {
   if (loan.status === 'lead') flags.push(`<span class="lc-flag muted">NEW</span>`);
 
   const isFeatured = loan.id === selectedLoanId;
-  const stageDays = daysIn(loan.stage_entered_at || loan.updated_at);
+  const stageDays = daysIn(loan.updated_at);
   const showStale = stageDays >= 5 && !['funded','denied','withdrawn','cancelled','lead'].includes(loan.status);
 
   return `
@@ -1403,7 +1404,7 @@ function renderCard(loan) {
         </div>
         <div class="lc-stat">
           <span class="lc-stat-label">Rate</span>
-          <span class="lc-stat-val muted">${rate != null ? Number(rate).toFixed(3) + '%' : '—'}</span>
+          <span class="lc-stat-val muted">${rate != null ? (Number(rate) / 100).toFixed(3) + '%' : '—'}</span>
         </div>
       </div>
       <div class="lc-foot">
@@ -1551,14 +1552,14 @@ async function confirmStageChange() {
     const loan = loansById.get(loanId);
     if (loan) {
       loan.status = toStatus;
-      loan.stage_entered_at = new Date().toISOString();
-      loan.updated_at = loan.stage_entered_at;
+      loan.updated_at = new Date().toISOString();
     }
     renderBoard();
 
-    // Persist — update loan
+    // Persist — update loan. The schema has no `stage_entered_at` column,
+    // so we just stamp `updated_at` and rely on it for stage-age display.
     const { error: updErr } = await supa.from('loans')
-      .update({ status: toStatus, stage_entered_at: new Date().toISOString() })
+      .update({ status: toStatus, updated_at: new Date().toISOString() })
       .eq('id', loanId);
     if (updErr) throw updErr;
 
@@ -1677,9 +1678,9 @@ async function refreshDetailFacts() {
     const { data, error } = await supa.from('loans')
       .select(`
         id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
-        property_address, purpose, updated_at, created_at,
-        stage_entered_at, loan_program, occupancy, property_type,
-        property_value_cents, loan_term_months, estimated_closing_date,
+        rate_bps, property_address, purpose, updated_at, created_at,
+        program, occupancy, property_type,
+        appraised_value_cents, term_months, cd_sent_at,
         lo:profiles!lo_id ( full_name, role ),
         processor:profiles!processor_id ( full_name, role ),
         underwriter:profiles!underwriter_id ( full_name, role ),
@@ -1709,18 +1710,18 @@ function renderDetailHead(loan) {
 
   $('#dh-num').textContent = loan.loan_number || '—';
   $('#dh-name').textContent = name + cob;
-  $('#dh-prop').textContent = [addrStr, loan.purpose, loan.loan_program].filter(Boolean).join(' · ').replace(/_/g, ' ');
+  $('#dh-prop').textContent = [addrStr, loan.purpose, loan.program].filter(Boolean).join(' · ').replace(/_/g, ' ');
   $('#dh-status').textContent = STAGE_LABEL[loan.status] || loan.status;
   $('#dh-amount').textContent = moneyFull(loan.loan_amount_cents);
 
   const subParts = [];
-  if (loan.property_value_cents) subParts.push(`${moneyFull(loan.property_value_cents)} PV`);
+  if (loan.appraised_value_cents) subParts.push(`${moneyFull(loan.appraised_value_cents)} PV`);
   if (loan.ltv_pct != null) subParts.push(`${pct(loan.ltv_pct)} LTV`);
   if (loan.dti_back_pct != null) subParts.push(`${pct(loan.dti_back_pct)} DTI`);
-  if (loan.interest_rate_pct != null) subParts.push(`${Number(loan.interest_rate_pct).toFixed(3)}%`);
+  if (loan.rate_bps != null) subParts.push(`${(Number(loan.rate_bps) / 100).toFixed(3)}%`);
   $('#dh-amount-sub').textContent = subParts.join(' · ') || '—';
 
-  $('#dp-tag-status').textContent = `${daysIn(loan.stage_entered_at || loan.updated_at)}d in stage`;
+  $('#dp-tag-status').textContent = `${daysIn(loan.updated_at)}d in stage`;
 }
 
 function renderDetailFacts(loan) {
@@ -1732,16 +1733,16 @@ function renderDetailFacts(loan) {
   const rows = [
     ['Loan number', loan.loan_number],
     ['Loan amount', moneyFull(loan.loan_amount_cents)],
-    ['Property value', loan.property_value_cents ? moneyFull(loan.property_value_cents) : '—'],
+    ['Appraised value', loan.appraised_value_cents ? moneyFull(loan.appraised_value_cents) : '—'],
     ['LTV', loan.ltv_pct != null ? pct(loan.ltv_pct) : '—'],
     ['DTI (back)', loan.dti_back_pct != null ? pct(loan.dti_back_pct) : '—'],
-    ['Rate', loan.interest_rate_pct != null ? Number(loan.interest_rate_pct).toFixed(3) + '%' : '—'],
-    ['Term', loan.loan_term_months ? Math.round(loan.loan_term_months / 12) + ' yrs' : '—'],
-    ['Program', (loan.loan_program || '—').toUpperCase()],
+    ['Rate', loan.rate_bps != null ? (Number(loan.rate_bps) / 100).toFixed(3) + '%' : '—'],
+    ['Term', loan.term_months ? Math.round(loan.term_months / 12) + ' yrs' : '—'],
+    ['Program', (loan.program || '—').toUpperCase()],
     ['Purpose', (loan.purpose || '—').replace(/_/g, ' ')],
     ['Occupancy', (loan.occupancy || '—').replace(/_/g, ' ')],
     ['Property type', (loan.property_type || '—').replace(/_/g, ' ')],
-    ['Est close', loan.estimated_closing_date || '—'],
+    ['CD sent', loan.cd_sent_at ? new Date(loan.cd_sent_at).toLocaleDateString() : '—'],
     ['Primary borrower', primary ? `${primary.first_name} ${primary.last_name}` : '—'],
     ...(primary?.email ? [['Email', primary.email]] : []),
     ...(primary?.phone ? [['Phone', primary.phone]] : []),
