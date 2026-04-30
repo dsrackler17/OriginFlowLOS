@@ -59,8 +59,9 @@ nav {
   background: rgba(4,13,26,0.92);
   backdrop-filter: blur(12px);
   position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
 }
-.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
 .sonar-icon { width: 26px; height: 26px; }
 .sonar-icon svg { width: 100%; height: 100%; }
 .nav-wordmark {
@@ -76,6 +77,37 @@ nav {
 }
 .nav-center a:hover, .nav-center a.active { color: var(--accent); }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
+
+/* Cmd+K trigger button in nav */
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+
+/* New loan button — primary action */
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
+
 .nav-branch {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
   color: var(--muted); border: 1px solid var(--border);
@@ -148,13 +180,60 @@ main {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ─── HOME HEADER ──────────────────────────────────────────────────── */
-.home-header { margin-bottom: 1.75rem; }
+.home-header { margin-bottom: 1.5rem; }
 .home-eyebrow {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
 }
 .home-greeting { font-family: var(--serif); font-size: 2rem; color: var(--white); line-height: 1.15; }
 .home-sub { color: var(--muted); margin-top: 0.4rem; max-width: 640px; }
+
+/* ─── QUICK ACTIONS ────────────────────────────────────────────────── */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 1.75rem;
+}
+.qa-card {
+  display: flex; flex-direction: column; gap: 0.35rem;
+  background: var(--surface);
+  padding: 0.85rem 0.9rem;
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+  min-height: 88px;
+  justify-content: space-between;
+}
+.qa-card:hover { background: var(--panel); }
+.qa-card.primary { background: rgba(0,212,255,0.08); }
+.qa-card.primary:hover { background: rgba(0,212,255,0.14); }
+.qa-card.primary .qa-icon { color: var(--accent); }
+.qa-card.primary .qa-label { color: var(--white); }
+.qa-icon {
+  font-family: var(--mono); font-size: 1.2rem; color: var(--accent);
+  line-height: 1;
+}
+.qa-label {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text); font-weight: 700;
+}
+.qa-sub {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.qa-kbd {
+  font-family: var(--mono); font-size: 0.52rem;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.05rem 0.3rem; align-self: flex-start;
+  border-radius: 2px;
+}
 
 /* ─── METRIC STRIP ─────────────────────────────────────────────────── */
 .metric-row {
@@ -402,6 +481,100 @@ main {
   letter-spacing: 0.04em; padding: 0.2rem 0;
 }
 
+/* ─── COMMAND PALETTE (CMD+K) ──────────────────────────────────────── */
+.cmdk-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  align-items: flex-start; justify-content: center;
+  padding-top: 12vh;
+}
+.cmdk-overlay.open { display: flex; animation: cmdkIn 0.12s ease both; }
+@keyframes cmdkIn { from { opacity: 0; } to { opacity: 1; } }
+.cmdk-modal {
+  width: 90%; max-width: 640px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.08);
+  display: flex; flex-direction: column;
+  max-height: 70vh;
+}
+.cmdk-input-wrap {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.cmdk-input-icon { font-family: var(--mono); color: var(--accent); font-size: 1.1rem; }
+.cmdk-input {
+  flex: 1;
+  background: transparent; border: none; outline: none;
+  color: var(--white); font-family: var(--sans); font-size: 1rem;
+}
+.cmdk-input::placeholder { color: var(--muted); }
+.cmdk-esc {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  border: 1px solid var(--border); padding: 0.15rem 0.45rem; border-radius: 2px;
+}
+.cmdk-results {
+  overflow-y: auto;
+  padding: 0.5rem;
+  display: flex; flex-direction: column; gap: 1px;
+  min-height: 60px;
+}
+.cmdk-section-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0.6rem 0.6rem 0.3rem;
+}
+.cmdk-result {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.65rem 0.75rem;
+  background: transparent;
+  border: 1px solid transparent;
+  text-decoration: none; color: var(--text);
+  cursor: pointer;
+}
+.cmdk-result.active {
+  background: var(--panel);
+  border-color: rgba(0,212,255,0.3);
+}
+.cmdk-result-icon { font-family: var(--mono); font-size: 0.8rem; color: var(--accent); }
+.cmdk-result-mid { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.cmdk-result-title {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--white);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cmdk-result-sub {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.cmdk-result-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  border: 1px solid var(--border); padding: 0.1rem 0.4rem;
+}
+.cmdk-empty {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  padding: 1.5rem 1rem; text-align: center; letter-spacing: 0.04em;
+}
+.cmdk-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.55rem 1.1rem;
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  font-family: var(--mono); font-size: 0.55rem;
+  color: var(--muted); letter-spacing: 0.06em;
+}
+.cmdk-foot kbd {
+  font-family: var(--mono); font-size: 0.55rem;
+  color: var(--text); border: 1px solid var(--border);
+  padding: 0.05rem 0.3rem; border-radius: 2px;
+  margin: 0 0.15rem;
+}
+
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
   border-top: 1px solid var(--border); padding: 0.85rem 2rem;
@@ -411,22 +584,41 @@ footer {
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
+.footer-shortcuts {
+  display: flex; gap: 0.85rem; flex-wrap: wrap;
+}
+.footer-shortcuts kbd {
+  font-family: var(--mono); font-size: 0.55rem;
+  color: var(--text); border: 1px solid var(--border);
+  padding: 0.05rem 0.3rem; border-radius: 2px;
+  margin: 0 0.15rem;
+}
 
 /* ─── MOBILE ───────────────────────────────────────────────────────── */
+@media (max-width: 1180px) {
+  .nav-search { min-width: 160px; }
+  .nav-search-text { display: none; }
+}
 @media (max-width: 1024px) {
   .nav-center { display: none; }
+  .nav-search { display: none; }
   main { grid-template-columns: 1fr; }
   .chat-rail { max-height: 480px; border-top: 1px solid var(--border); }
   .content-grid { grid-template-columns: 1fr; }
   .metric-row { grid-template-columns: repeat(2, 1fr); }
+  .quick-actions { grid-template-columns: repeat(3, 1fr); }
   .home-content { padding: 1.25rem; }
   .home-greeting { font-size: 1.55rem; }
+  .footer-shortcuts { display: none; }
 }
 @media (max-width: 540px) {
-  nav { padding: 0.85rem 1rem; }
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
   .nav-branch { display: none; }
   .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
   .home-content { padding: 1rem; }
+  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+  .qa-card { min-height: 76px; }
 }
 </style>
 
@@ -456,11 +648,18 @@ footer a:hover { color: var(--accent); }
   </a>
   <ul class="nav-center">
     <li><a href="/home.html" class="active">Home</a></li>
-    <li><a href="/dashboard.html">Dashboard</a></li>
-    <li><a href="#" onclick="alert('Documents view — next sprint'); return false;">Documents</a></li>
-    <li><a href="#" onclick="alert('Reports view — next sprint'); return false;">Reports</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
   </ul>
   <div class="nav-right">
+    <button class="nav-search" id="nav-search-btn" type="button" aria-label="Search loans (Cmd+K)">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans/new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
     <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
       <span class="nav-user-name" id="nav-user-name">…</span>
@@ -517,6 +716,11 @@ footer a:hover { color: var(--accent); }
       <p class="home-sub" id="home-sub">Your role-scoped queue and team chat — the rest of the branch lives one click away in the Dashboard.</p>
     </header>
 
+    <!-- QUICK ACTIONS — role-aware command center strip -->
+    <div class="quick-actions" id="quick-actions">
+      <!-- populated by renderQuickActions() -->
+    </div>
+
     <div class="metric-row" id="metric-row">
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
@@ -547,9 +751,10 @@ footer a:hover { color: var(--accent); }
     </div>
 
     <div class="cta-row">
-      <a href="/dashboard.html" class="btn primary">Open Full Dashboard →</a>
-      <a href="#" class="btn" onclick="alert('Documents view — next sprint'); return false;">Documents</a>
-      <a href="#" class="btn" onclick="alert('Reports view — next sprint'); return false;">Reports</a>
+      <a href="/dashboard.html" class="btn primary">Open Full Pipeline →</a>
+      <a href="/documents.html" class="btn">Documents</a>
+      <a href="/reports.html" class="btn">Reports</a>
+      <a href="/team.html" class="btn" id="cta-team" style="display:none;">Team & Branch</a>
     </div>
 
   </section>
@@ -574,13 +779,41 @@ footer a:hover { color: var(--accent); }
 </main>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COMMAND PALETTE (Cmd/Ctrl+K)                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cmdk-overlay" id="cmdk-overlay" role="dialog" aria-modal="true" aria-label="Search loans">
+  <div class="cmdk-modal">
+    <div class="cmdk-input-wrap">
+      <span class="cmdk-input-icon">⌕</span>
+      <input id="cmdk-input" class="cmdk-input" type="text" placeholder="Search by loan number, borrower last name, or property address…" autocomplete="off">
+      <span class="cmdk-esc">esc</span>
+    </div>
+    <div class="cmdk-results" id="cmdk-results">
+      <div class="cmdk-empty">Start typing to search your branch.</div>
+    </div>
+    <div class="cmdk-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigate · <kbd>↵</kbd> open · <kbd>esc</kbd> close</span>
+      <span>OriginFlow LOS · branch-scoped</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
   <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <div class="footer-shortcuts">
+    <span><kbd id="kbd-search">⌘K</kbd> search</span>
+    <span><kbd>N</kbd> new loan</span>
+    <span><kbd>D</kbd> pipeline</span>
+    <span><kbd>?</kbd> shortcuts</span>
+  </div>
   <span>v0.2 · live data · branch-scoped</span>
   <div style="display:flex;gap:1.25rem;">
-    <a href="/dashboard.html">Dashboard</a>
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/documents.html">Documents</a>
+    <a href="/reports.html">Reports</a>
     <a href="#">Privacy</a>
     <a href="#">Terms</a>
   </div>
@@ -589,12 +822,21 @@ footer a:hover { color: var(--accent); }
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // home.html — wiring
-// All loan/condition links route to /dashboard.html (which IS your pipeline
-// view). When you build a dedicated /pipeline.html later, search/replace
-// "/dashboard.html#" → "/pipeline.html#" in this file.
+//
+// Routes used by this file:
+//   /home.html       — this page
+//   /dashboard.html  — full pipeline view (stage columns, every loan)
+//   /documents.html  — branch document library
+//   /reports.html    — branch reports
+//   /team.html       — admin: users, roles, assignments (admin only)
+//   /loans/new.html  — new loan intake form
+//   /login.html      — sign in
+//
+// All loan/condition deep-links route to /dashboard.html#<loan_id>.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (sel) => document.querySelector(sel);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
 // ─── Money / formatting helpers ──────────────────────────────────────────
 function money(cents) {
@@ -666,6 +908,10 @@ function showHome() {
 }
 
 async function bootstrap() {
+  // wire keyboard shortcut hint to platform
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+  $('#kbd-search').textContent     = isMac ? '⌘K' : 'Ctrl+K';
+
   supa = (typeof getSupabase === 'function') ? getSupabase() : null;
   if (!supa) {
     console.error('[Home] Supabase client unavailable — check /js/config.js');
@@ -714,9 +960,22 @@ async function bootstrap() {
   $('#nav-branch-name').textContent = branch.name;
   $('#nav-branch-pill').style.display = 'inline-flex';
 
+  // Show admin-only links
+  if (me.role === 'admin') {
+    $('#nav-team-li').style.display = 'list-item';
+    $('#cta-team').style.display    = 'inline-flex';
+  }
+  // Hide "+ New Loan" for read-only viewers
+  if (me.role === 'viewer') {
+    $('#nav-newloan').style.display = 'none';
+  }
+
   showHome();
+  renderQuickActions();
   await renderRoleHome();
   await initChat();
+  initCommandPalette();
+  initKeyboardShortcuts();
 }
 
 function handleSignOut() {
@@ -725,7 +984,92 @@ function handleSignOut() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 2 — ROLE-SCOPED HOME
+// SECTION 2 — QUICK ACTIONS (role-aware command center strip)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderQuickActions() {
+  const el = $('#quick-actions');
+  const kbd = isMac ? '⌘K' : 'Ctrl K';
+
+  // Cards available to everyone (search + docs + reports)
+  const common = {
+    search:    { icon:'⌕', label:'Search', sub:'loans · borrowers', href:'#cmdk', kbd },
+    documents: { icon:'▤', label:'Documents', sub:'branch library', href:'/documents.html' },
+    reports:   { icon:'∷', label:'Reports', sub:'pipeline · funded', href:'/reports.html' },
+    pipeline:  { icon:'▦', label:'Pipeline', sub:'all stages', href:'/dashboard.html', kbd:'D' },
+  };
+
+  // Role-specific primary card
+  const primaryByRole = {
+    lo:          { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans/new.html', kbd:'N' },
+    loa:         { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans/new.html', kbd:'N' },
+    processor:   { icon:'⚐', label:'Conditions',   sub:'open · across files',     href:'/dashboard.html?view=conditions' },
+    underwriter: { icon:'⚑', label:'UW Queue',     sub:'awaiting your decision',  href:'/dashboard.html?view=uw' },
+    closer:      { icon:'✓', label:'CTC Files',    sub:'ready to fund',           href:'/dashboard.html?view=ctc' },
+    admin:       { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans/new.html', kbd:'N' },
+    viewer:      { icon:'▦', label:'Pipeline',     sub:'all stages',              href:'/dashboard.html', kbd:'D' },
+  };
+
+  const primary = primaryByRole[me.role] || primaryByRole.viewer;
+
+  // Build the row — primary first, then search, pipeline, conditions/docs/reports/team
+  const cards = [];
+  cards.push({ ...primary, primary: true });
+  cards.push(common.search);
+  cards.push(common.pipeline);
+
+  if (me.role === 'lo' || me.role === 'loa' || me.role === 'admin') {
+    cards.push({ icon:'⚐', label:'Conditions', sub:'open · across files', href:'/dashboard.html?view=conditions' });
+  } else if (me.role === 'processor') {
+    cards.push({ icon:'+', label:'New Loan', sub:'start an application', href:'/loans/new.html', kbd:'N' });
+  } else if (me.role === 'underwriter') {
+    cards.push({ icon:'⚐', label:'Conditional', sub:'awaiting clear', href:'/dashboard.html?view=conditional' });
+  } else if (me.role === 'closer') {
+    cards.push({ icon:'⊟', label:'Docs Out', sub:'awaiting return', href:'/dashboard.html?view=docs_out' });
+  } else {
+    cards.push(common.documents);
+  }
+
+  cards.push(common.documents);
+  cards.push(common.reports);
+
+  if (me.role === 'admin') {
+    // Admin gets a 7th... we cap at 6 so swap reports for team. Actually keep both — let's show 6 only.
+    // Replace the last "documents" duplicate with team for admin if we'd otherwise duplicate.
+    cards[cards.length - 2] = { icon:'⚙', label:'Team', sub:'users · roles', href:'/team.html' };
+  }
+
+  // Cap at 6 (matches grid)
+  const final = cards.slice(0, 6);
+
+  el.innerHTML = final.map(c => {
+    const isSearch = c.href === '#cmdk';
+    const cls = c.primary ? 'qa-card primary' : 'qa-card';
+    const tag = isSearch ? 'button' : 'a';
+    const attr = isSearch
+      ? `type="button" data-cmdk-trigger="1"`
+      : `href="${escapeHtml(c.href)}"`;
+    const kbd = c.kbd ? `<span class="qa-kbd">${escapeHtml(c.kbd)}</span>` : '<span></span>';
+    return `
+      <${tag} class="${cls}" ${attr}>
+        <span class="qa-icon">${c.icon}</span>
+        <span>
+          <span class="qa-label">${escapeHtml(c.label)}</span><br>
+          <span class="qa-sub">${escapeHtml(c.sub || '')}</span>
+        </span>
+        ${kbd}
+      </${tag}>
+    `;
+  }).join('');
+
+  // wire the search card to open the palette
+  el.querySelectorAll('[data-cmdk-trigger]').forEach(btn => {
+    btn.addEventListener('click', openCommandPalette);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 3 — ROLE-SCOPED HOME
 // ═══════════════════════════════════════════════════════════════════════════
 
 const ROLE_CONFIG = {
@@ -875,7 +1219,7 @@ async function loadMyFiles(cfg) {
     return;
   }
   if (!data || data.length === 0) {
-    list.innerHTML = `<div class="panel-empty">No active files yet. Create one from the Dashboard →</div>`;
+    list.innerHTML = `<div class="panel-empty">No active files yet. <a href="/loans/new.html" style="color:var(--accent);">Start one →</a></div>`;
     return;
   }
 
@@ -1018,7 +1362,7 @@ function renderActionList(el, rows, mapper, emptyText) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SECTION 3 — CHAT
+// SECTION 4 — CHAT
 // ═══════════════════════════════════════════════════════════════════════════
 
 let channels      = [];
@@ -1194,6 +1538,248 @@ async function sendMessage(text) {
   }
   inp.value = '';
   inp.focus();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 5 — COMMAND PALETTE (Cmd/Ctrl+K)
+// ═══════════════════════════════════════════════════════════════════════════
+
+let cmdkOpen = false;
+let cmdkActiveIndex = 0;
+let cmdkResults = [];
+let cmdkDebounceTimer = null;
+
+function initCommandPalette() {
+  $('#nav-search-btn').addEventListener('click', openCommandPalette);
+  $('#cmdk-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeCommandPalette();
+  });
+  $('#cmdk-input').addEventListener('input', onCmdkInput);
+  $('#cmdk-input').addEventListener('keydown', onCmdkKeydown);
+}
+
+function openCommandPalette() {
+  cmdkOpen = true;
+  $('#cmdk-overlay').classList.add('open');
+  setTimeout(() => $('#cmdk-input').focus(), 50);
+  // Show navigation shortcuts when no query
+  renderCmdkNavShortcuts();
+}
+
+function closeCommandPalette() {
+  cmdkOpen = false;
+  $('#cmdk-overlay').classList.remove('open');
+  $('#cmdk-input').value = '';
+  cmdkResults = [];
+  cmdkActiveIndex = 0;
+}
+
+function renderCmdkNavShortcuts() {
+  const shortcuts = [
+    { icon:'▦', title:'Open Pipeline',  sub:'all stages',          href:'/dashboard.html', tag:'GO' },
+    { icon:'▤', title:'Documents',      sub:'branch library',      href:'/documents.html', tag:'GO' },
+    { icon:'∷', title:'Reports',        sub:'pipeline · funded',   href:'/reports.html',   tag:'GO' },
+  ];
+  if (me.role !== 'viewer') {
+    shortcuts.unshift({ icon:'+', title:'Start a New Loan', sub:'/loans/new.html', href:'/loans/new.html', tag:'NEW' });
+  }
+  if (me.role === 'admin') {
+    shortcuts.push({ icon:'⚙', title:'Team & Branch Settings', sub:'users, roles, assignments', href:'/team.html', tag:'GO' });
+  }
+
+  cmdkResults = shortcuts;
+  cmdkActiveIndex = 0;
+
+  const el = $('#cmdk-results');
+  el.innerHTML = `
+    <div class="cmdk-section-label">Jump to</div>
+    ${shortcuts.map((s, i) => `
+      <a class="cmdk-result ${i === 0 ? 'active' : ''}" href="${escapeHtml(s.href)}" data-cmdk-idx="${i}">
+        <span class="cmdk-result-icon">${s.icon}</span>
+        <span class="cmdk-result-mid">
+          <span class="cmdk-result-title">${escapeHtml(s.title)}</span>
+          <span class="cmdk-result-sub">${escapeHtml(s.sub)}</span>
+        </span>
+        <span class="cmdk-result-tag">${escapeHtml(s.tag)}</span>
+      </a>
+    `).join('')}
+  `;
+  wireCmdkResults();
+}
+
+function onCmdkInput(e) {
+  const q = e.target.value.trim();
+  clearTimeout(cmdkDebounceTimer);
+  if (!q) {
+    renderCmdkNavShortcuts();
+    return;
+  }
+  // 150ms debounce so we don't hammer Postgres
+  cmdkDebounceTimer = setTimeout(() => searchLoans(q), 150);
+}
+
+async function searchLoans(q) {
+  const el = $('#cmdk-results');
+  el.innerHTML = `<div class="cmdk-empty">Searching…</div>`;
+
+  // Search by loan_number (case-insensitive prefix)
+  const numQ = supa.from('loans')
+    .select('id, loan_number, status, loan_amount_cents, property_address, borrowers:loan_borrowers(position, borrower:borrower_id(first_name, last_name))')
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .ilike('loan_number', `%${q}%`)
+    .limit(6);
+
+  // Search by borrower last name
+  const borQ = supa.from('borrowers')
+    .select('id, first_name, last_name, loans:loan_borrowers(loan:loan_id(id, loan_number, status, loan_amount_cents, property_address, branch_id, archived_at))')
+    .eq('branch_id', me.branch_id)
+    .or(`last_name.ilike.%${q}%,first_name.ilike.%${q}%`)
+    .limit(6);
+
+  const [{ data: numHits, error: numErr }, { data: borHits, error: borErr }] = await Promise.all([numQ, borQ]);
+
+  if (numErr) console.warn('cmdk num search err:', numErr);
+  if (borErr) console.warn('cmdk bor search err:', borErr);
+
+  const hits = [];
+  const seen = new Set();
+
+  (numHits || []).forEach(loan => {
+    if (seen.has(loan.id)) return;
+    seen.add(loan.id);
+    const b = (loan.borrowers || [])[0]?.borrower;
+    const name = b ? `${b.last_name}, ${b.first_name}` : 'Borrower TBD';
+    const city = loan.property_address?.city || '';
+    const state = loan.property_address?.state || '';
+    hits.push({
+      icon:  '◈',
+      title: `${loan.loan_number} · ${name}`,
+      sub:   `${money(loan.loan_amount_cents)} · ${city}${state ? ', ' + state : ''} · ${statusLabel(loan.status)}`,
+      href:  `/dashboard.html#${loan.id}`,
+      tag:   statusLabel(loan.status),
+    });
+  });
+
+  (borHits || []).forEach(b => {
+    (b.loans || []).forEach(lb => {
+      const loan = lb.loan;
+      if (!loan || loan.archived_at || loan.branch_id !== me.branch_id) return;
+      if (seen.has(loan.id)) return;
+      seen.add(loan.id);
+      const city = loan.property_address?.city || '';
+      const state = loan.property_address?.state || '';
+      hits.push({
+        icon:  '◈',
+        title: `${loan.loan_number} · ${b.last_name}, ${b.first_name}`,
+        sub:   `${money(loan.loan_amount_cents)} · ${city}${state ? ', ' + state : ''} · ${statusLabel(loan.status)}`,
+        href:  `/dashboard.html#${loan.id}`,
+        tag:   statusLabel(loan.status),
+      });
+    });
+  });
+
+  cmdkResults = hits;
+  cmdkActiveIndex = 0;
+
+  if (hits.length === 0) {
+    el.innerHTML = `<div class="cmdk-empty">No matches in your branch. Try a loan number or borrower last name.</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="cmdk-section-label">${hits.length} match${hits.length === 1 ? '' : 'es'}</div>
+    ${hits.map((h, i) => `
+      <a class="cmdk-result ${i === 0 ? 'active' : ''}" href="${escapeHtml(h.href)}" data-cmdk-idx="${i}">
+        <span class="cmdk-result-icon">${h.icon}</span>
+        <span class="cmdk-result-mid">
+          <span class="cmdk-result-title">${escapeHtml(h.title)}</span>
+          <span class="cmdk-result-sub">${escapeHtml(h.sub)}</span>
+        </span>
+        <span class="cmdk-result-tag">${escapeHtml(h.tag)}</span>
+      </a>
+    `).join('')}
+  `;
+  wireCmdkResults();
+}
+
+function wireCmdkResults() {
+  document.querySelectorAll('.cmdk-result').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cmdkActiveIndex = parseInt(el.dataset.cmdkIdx, 10) || 0;
+      updateCmdkActive();
+    });
+  });
+}
+
+function updateCmdkActive() {
+  document.querySelectorAll('.cmdk-result').forEach((el, i) => {
+    el.classList.toggle('active', i === cmdkActiveIndex);
+  });
+  // ensure active is in view
+  const active = document.querySelector('.cmdk-result.active');
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+function onCmdkKeydown(e) {
+  if (e.key === 'Escape') {
+    e.preventDefault(); closeCommandPalette(); return;
+  }
+  if (cmdkResults.length === 0) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    cmdkActiveIndex = Math.min(cmdkActiveIndex + 1, cmdkResults.length - 1);
+    updateCmdkActive();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    cmdkActiveIndex = Math.max(cmdkActiveIndex - 1, 0);
+    updateCmdkActive();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const r = cmdkResults[cmdkActiveIndex];
+    if (r) window.location.href = r.href;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 6 — KEYBOARD SHORTCUTS (global)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Cmd/Ctrl+K — open command palette
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      cmdkOpen ? closeCommandPalette() : openCommandPalette();
+      return;
+    }
+    // Esc — close palette
+    if (e.key === 'Escape' && cmdkOpen) {
+      e.preventDefault();
+      closeCommandPalette();
+      return;
+    }
+    // Single-key shortcuts only work when no input is focused and no modifier is held
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key === 'n' || e.key === 'N') {
+      if (me && me.role !== 'viewer') {
+        e.preventDefault();
+        window.location.href = '/loans/new.html';
+      }
+    } else if (e.key === 'd' || e.key === 'D') {
+      e.preventDefault();
+      window.location.href = '/dashboard.html';
+    } else if (e.key === '?') {
+      e.preventDefault();
+      openCommandPalette();
+    } else if (e.key === '/') {
+      e.preventDefault();
+      openCommandPalette();
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
