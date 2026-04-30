@@ -456,7 +456,7 @@ footer a:hover { color: var(--accent); }
   </a>
   <ul class="nav-center">
     <li><a href="/home.html" class="active">Home</a></li>
-    <li><a href="/pipeline.html">Pipeline</a></li>
+    <li><a href="/dashboard.html">Dashboard</a></li>
     <li><a href="#" onclick="alert('Documents view — next sprint'); return false;">Documents</a></li>
     <li><a href="#" onclick="alert('Reports view — next sprint'); return false;">Reports</a></li>
   </ul>
@@ -493,7 +493,7 @@ footer a:hover { color: var(--accent); }
     </div>
   </div>
 
-  <!-- PROFILE PENDING (signed up but not yet attached to a branch) -->
+  <!-- PROFILE PENDING -->
   <div class="state-screen" id="state-pending" style="display:none;">
     <div class="state-eyebrow">Account pending · Q2 2026 beta</div>
     <h1 class="state-heading">Your account is awaiting branch setup.</h1>
@@ -508,16 +508,15 @@ footer a:hover { color: var(--accent); }
     </div>
   </div>
 
-  <!-- ─── ACTIVE HOME (rendered once profile + branch are loaded) ─── -->
+  <!-- ─── ACTIVE HOME ─── -->
   <section class="home-content" id="home-content" style="display:none;">
 
     <header class="home-header">
       <div class="home-eyebrow" id="home-eyebrow">Branch Home</div>
       <h1 class="home-greeting" id="home-greeting">Welcome back.</h1>
-      <p class="home-sub" id="home-sub">Your role-scoped queue and team chat — the rest of the branch lives one click away in Pipeline.</p>
+      <p class="home-sub" id="home-sub">Your role-scoped queue and team chat — the rest of the branch lives one click away in the Dashboard.</p>
     </header>
 
-    <!-- Metric row (filled per-role by JS) -->
     <div class="metric-row" id="metric-row">
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
@@ -526,7 +525,6 @@ footer a:hover { color: var(--accent); }
     </div>
 
     <div class="content-grid">
-      <!-- Left: my files (role-filtered) -->
       <div class="panel">
         <div class="panel-head">
           <span class="panel-title" id="files-panel-title">Your Active Files</span>
@@ -537,7 +535,6 @@ footer a:hover { color: var(--accent); }
         </div>
       </div>
 
-      <!-- Right: action queue / role-specific list -->
       <div class="panel">
         <div class="panel-head">
           <span class="panel-title" id="queue-panel-title">Action Needed</span>
@@ -550,14 +547,14 @@ footer a:hover { color: var(--accent); }
     </div>
 
     <div class="cta-row">
-      <a href="/pipeline.html" class="btn primary">Open Full Pipeline →</a>
+      <a href="/dashboard.html" class="btn primary">Open Full Dashboard →</a>
       <a href="#" class="btn" onclick="alert('Documents view — next sprint'); return false;">Documents</a>
       <a href="#" class="btn" onclick="alert('Reports view — next sprint'); return false;">Reports</a>
     </div>
 
   </section>
 
-  <!-- ─── CHAT RAIL ─────────────────────────────────────────────── -->
+  <!-- ─── CHAT RAIL ─── -->
   <aside class="chat-rail" id="chat-rail" style="display:none;">
     <div class="chat-rail-head">
       <span class="chat-rail-label">Branch Chat</span>
@@ -583,7 +580,7 @@ footer a:hover { color: var(--accent); }
   <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
   <span>v0.2 · live data · branch-scoped</span>
   <div style="display:flex;gap:1.25rem;">
-    <a href="/dashboard.html">Public demo</a>
+    <a href="/dashboard.html">Dashboard</a>
     <a href="#">Privacy</a>
     <a href="#">Terms</a>
   </div>
@@ -592,16 +589,9 @@ footer a:hover { color: var(--accent); }
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // home.html — wiring
-// ───────────────────────────────────────────────────────────────────────────
-// On load:
-//   1. Verify session via ofGetSession() → if absent, show signed-out state.
-//   2. Load profile (joined with branch). If profile missing → pending state.
-//   3. Render the role-specific home + metrics + my-files + action queue.
-//   4. Initialize the chat rail: load default channel set, fetch initial
-//      messages for the active channel, subscribe via Realtime.
-//
-// All queries respect RLS — the database physically prevents cross-branch
-// reads, so even if this client code had a bug the borrower data stays safe.
+// All loan/condition links route to /dashboard.html (which IS your pipeline
+// view). When you build a dedicated /pipeline.html later, search/replace
+// "/dashboard.html#" → "/pipeline.html#" in this file.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (sel) => document.querySelector(sel);
@@ -653,8 +643,8 @@ function statusLabel(s) {
 // SECTION 1 — AUTH + PROFILE
 // ═══════════════════════════════════════════════════════════════════════════
 let supa  = null;
-let me    = null;        // { id, branch_id, role, full_name, email }
-let branch = null;       // { id, name, ... }
+let me    = null;
+let branch = null;
 
 function showState(id) {
   document.getElementById('main-grid').style.gridTemplateColumns = '1fr';
@@ -676,8 +666,6 @@ function showHome() {
 }
 
 async function bootstrap() {
-  // FIX: was `ofSupabase()` — that function doesn't exist in /js/config.js.
-  // Use `getSupabase()` which is the actual exported helper.
   supa = (typeof getSupabase === 'function') ? getSupabase() : null;
   if (!supa) {
     console.error('[Home] Supabase client unavailable — check /js/config.js');
@@ -694,7 +682,6 @@ async function bootstrap() {
 
   if (!session) { showState('state-signed-out'); return; }
 
-  // Load profile + branch in one round trip.
   const { data: profile, error: profErr } = await supa
     .from('profiles')
     .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
@@ -707,7 +694,6 @@ async function bootstrap() {
     return;
   }
   if (!profile || !profile.branch_id) {
-    // Signed in via auth but no profile row yet → still in early-access lead status
     $('#nav-user-name').textContent = session.user.email || 'Signed in';
     showState('state-pending');
     return;
@@ -722,7 +708,6 @@ async function bootstrap() {
   };
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
 
-  // Wire nav bar
   $('#nav-user-name').textContent  = me.full_name;
   $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
   $('#nav-user-role').style.display = 'inline-block';
@@ -730,11 +715,7 @@ async function bootstrap() {
   $('#nav-branch-pill').style.display = 'inline-flex';
 
   showHome();
-
-  // Render role-specific home
   await renderRoleHome();
-
-  // Initialize chat
   await initChat();
 }
 
@@ -745,11 +726,6 @@ function handleSignOut() {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 2 — ROLE-SCOPED HOME
-// ───────────────────────────────────────────────────────────────────────────
-// Each role gets a tailored greeting + its own metric set + its own list of
-// "my files" + an action queue. Queries hit the `loans` table filtered by
-// the matching role-id column (lo_id / processor_id / underwriter_id) so
-// performance stays cheap thanks to the indexes on those columns.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const ROLE_CONFIG = {
@@ -771,7 +747,6 @@ async function renderRoleHome() {
   $('#home-eyebrow').textContent  = cfg.label.toUpperCase() + ' · ' + branch.name.toUpperCase();
   $('#home-greeting').textContent = 'Good ' + tod + (firstName ? ', ' + firstName + '.' : '.');
 
-  // Render role-specific subcopy
   const subcopy = {
     lo:          'Your leads, your active files, and your branch chat. The full pipeline is one click away.',
     loa:         'Everything assigned to you. Process tasks, track conditions, talk to the team.',
@@ -783,13 +758,10 @@ async function renderRoleHome() {
   };
   $('#home-sub').textContent = subcopy[me.role] || subcopy.viewer;
 
-  // Files panel header
   $('#files-panel-title').textContent =
     cfg.filterCol ? 'Your Active Files' : 'Branch Active Files';
-
   $('#queue-panel-title').textContent = cfg.queueLabel;
 
-  // Kick off all the queries in parallel
   await Promise.all([
     loadMetrics(cfg),
     loadMyFiles(cfg),
@@ -798,13 +770,9 @@ async function renderRoleHome() {
 }
 
 // ─── METRICS ─────────────────────────────────────────────────────────────
-// Lightweight: a few counts + sums. For the MVP these are 4 separate queries.
-// If they get slow we move to a SQL view or a postgres function. For now,
-// indexed lookups on (branch_id, status) and (lo_id) etc. keep this <100ms.
 async function loadMetrics(cfg) {
   const row = $('#metric-row');
 
-  // Helper: count + sum for a given filter
   async function summarize(filter) {
     let q = supa.from('loans')
       .select('loan_amount_cents, status', { count: 'exact', head: false })
@@ -842,7 +810,6 @@ async function loadMetrics(cfg) {
       summarize({ ...myFilter, status: ['underwriting','conditional_approval'] }),
       summarize({ ...myFilter, status: 'clear_to_close' }),
     ]);
-    // Open conditions count (separate query, simple)
     const condQ = await supa.from('conditions')
       .select('id, loans!inner(processor_id, branch_id)', { count: 'exact', head: true })
       .eq('loans.branch_id', me.branch_id)
@@ -869,7 +836,6 @@ async function loadMetrics(cfg) {
       <div class="metric-cell"><div class="metric-label">Denied (Yours)</div><div class="metric-value">${denied.count}</div><div class="metric-sub">w/ ECOA letter</div></div>
     `;
   } else {
-    // admin / closer / viewer — branch-wide
     const [active, uw, ctc, funded] = await Promise.all([
       summarize({ status: ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'] }),
       summarize({ status: ['underwriting','conditional_approval'] }),
@@ -909,7 +875,7 @@ async function loadMyFiles(cfg) {
     return;
   }
   if (!data || data.length === 0) {
-    list.innerHTML = `<div class="panel-empty">No active files yet. Create one from Pipeline →</div>`;
+    list.innerHTML = `<div class="panel-empty">No active files yet. Create one from the Dashboard →</div>`;
     return;
   }
 
@@ -923,7 +889,7 @@ async function loadMyFiles(cfg) {
     const city = (loan.property_address && loan.property_address.city) ? loan.property_address.city.toUpperCase() : '—';
     const state = (loan.property_address && loan.property_address.state) ? loan.property_address.state.toUpperCase() : '';
     return `
-      <a class="file-row" href="/pipeline.html#${escapeHtml(loan.id)}">
+      <a class="file-row" href="/dashboard.html#${escapeHtml(loan.id)}">
         <span class="file-num">${escapeHtml(loan.loan_number)}</span>
         <span class="file-mid">
           <span class="file-name">${escapeHtml(name)}${cob}</span>
@@ -938,14 +904,13 @@ async function loadMyFiles(cfg) {
   }).join('');
 }
 
-// ─── ACTION QUEUE (role-specific) ────────────────────────────────────────
+// ─── ACTION QUEUE ────────────────────────────────────────────────────────
 async function loadQueue(cfg) {
   const list = $('#queue-list');
   $('#queue-panel-tag').textContent = '';
 
   try {
     if (me.role === 'lo' || me.role === 'loa') {
-      // Leads + application-stage files older than 24h
       const cutoff = new Date(Date.now() - 24*3600*1000).toISOString();
       const { data, error } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
@@ -963,13 +928,12 @@ async function loadQueue(cfg) {
           icon: '⚐',
           urgency: loan.status === 'lead' ? 'urgent' : '',
           text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(name)} — no activity ${timeAgo(loan.updated_at)}`,
-          href: `/pipeline.html#${loan.id}`,
+          href: `/dashboard.html#${loan.id}`,
         };
       }, 'No stale leads. Good hunting.');
       $('#queue-panel-tag').textContent = (data || []).length + ' stale';
 
     } else if (me.role === 'processor' || me.role === 'loa') {
-      // Outstanding conditions on my files (or all files for loa)
       let q = supa.from('conditions')
         .select(`
           id, title, category, created_at,
@@ -986,12 +950,11 @@ async function loadQueue(cfg) {
         icon: cond.category === 'PTD' ? '⚑' : '⚑',
         urgency: cond.category === 'PTD' ? 'urgent' : '',
         text: `<strong>${escapeHtml(cond.loans.loan_number)}</strong> · ${escapeHtml(cond.title)} <span style="color:var(--muted);">· ${escapeHtml(cond.category || 'PTD')}</span>`,
-        href: `/pipeline.html#${cond.loans.id}`,
+        href: `/dashboard.html#${cond.loans.id}`,
       }), 'All your conditions are clear. Nice.');
       $('#queue-panel-tag').textContent = (data || []).length + ' open';
 
     } else if (me.role === 'underwriter') {
-      // Files in UW or conditional assigned to me
       const { data, error } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
         .eq('branch_id', me.branch_id)
@@ -1007,13 +970,12 @@ async function loadQueue(cfg) {
           icon: loan.status === 'underwriting' ? '⚑' : '✓',
           urgency: '',
           text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(name)} — ${statusLabel(loan.status)} since ${timeAgo(loan.updated_at)}`,
-          href: `/pipeline.html#${loan.id}`,
+          href: `/dashboard.html#${loan.id}`,
         };
       }, 'UW queue is empty.');
       $('#queue-panel-tag').textContent = (data || []).length + ' files';
 
     } else {
-      // admin / closer / viewer — recent branch activity from audit_logs
       const { data, error } = await supa.from('audit_logs')
         .select('id, table_name, operation, actor_role, created_at, loan_id')
         .eq('branch_id', me.branch_id)
@@ -1027,7 +989,7 @@ async function loadQueue(cfg) {
             <strong>${escapeHtml(row.actor_role || 'system')}</strong> ${escapeHtml(row.operation)} on ${escapeHtml(row.table_name)}
             <span style="color:var(--muted);">· ${timeAgo(row.created_at)}</span>
           </span>
-          ${row.loan_id ? `<a class="action-cta" href="/pipeline.html#${row.loan_id}">View →</a>` : '<span></span>'}
+          ${row.loan_id ? `<a class="action-cta" href="/dashboard.html#${row.loan_id}">View →</a>` : '<span></span>'}
         </div>
       `).join('') || `<div class="panel-empty">No recent activity.</div>`;
       $('#queue-panel-tag').textContent = 'last 10 events';
@@ -1057,14 +1019,9 @@ function renderActionList(el, rows, mapper, emptyText) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION 3 — CHAT
-// ───────────────────────────────────────────────────────────────────────────
-// One Realtime subscription scoped to the current channel.
-// On channel switch: unsubscribe, fetch new channel's messages, re-subscribe.
-// Realtime reads still pass through RLS server-side, so a leaked client
-// can't tap into another branch's stream.
 // ═══════════════════════════════════════════════════════════════════════════
 
-let channels      = [];     // [{ id, slug, label, kind, scope_role }]
+let channels      = [];
 let activeChannel = null;
 let realtimeSub   = null;
 
@@ -1072,12 +1029,11 @@ async function initChat() {
   const tabs = $('#chat-tabs');
   const thread = $('#chat-thread');
 
-  // Load this branch's chat channels (default 5 are seeded by trigger).
   const { data, error } = await supa.from('chat_channels')
     .select('id, slug, label, kind, scope_role, loan_id')
     .eq('branch_id', me.branch_id)
     .in('kind', ['general','role'])
-    .order('kind', { ascending: false })   // general first (kind sorts: 'role'<'general' alphabetically; we want general first)
+    .order('kind', { ascending: false })
     .order('label', { ascending: true });
 
   if (error) {
@@ -1086,7 +1042,6 @@ async function initChat() {
     return;
   }
 
-  // Sort: general first, then role channels alphabetically
   channels = (data || []).sort((a, b) => {
     if (a.kind === 'general' && b.kind !== 'general') return -1;
     if (a.kind !== 'general' && b.kind === 'general') return 1;
@@ -1098,7 +1053,6 @@ async function initChat() {
     return;
   }
 
-  // Render tabs
   tabs.innerHTML = channels.map((c, i) => `
     <button class="chat-tab ${i === 0 ? 'active' : ''}" data-channel-id="${c.id}">${escapeHtml(c.label)}</button>
   `).join('');
@@ -1106,16 +1060,13 @@ async function initChat() {
     btn.addEventListener('click', () => switchChannel(btn.dataset.channelId));
   });
 
-  // Wire input
   const form = $('#chat-form');
   const inp  = $('#chat-input-box');
-  const btn  = $('#chat-send-btn');
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     await sendMessage(inp.value);
   });
 
-  // Switch to first channel — that loads messages + subscribes
   await switchChannel(channels[0].id);
 }
 
@@ -1124,12 +1075,10 @@ async function switchChannel(channelId) {
   if (!ch) return;
   activeChannel = ch;
 
-  // Update tab UI
   document.querySelectorAll('.chat-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.channelId === channelId);
   });
 
-  // Update input enabled-state based on role gate (role channels)
   const canPost = canPostInChannel(ch);
   $('#chat-input-box').disabled = !canPost;
   $('#chat-send-btn').disabled  = !canPost;
@@ -1137,13 +1086,11 @@ async function switchChannel(channelId) {
     ? `Message #${ch.label}… use @ to mention`
     : `#${ch.label} is read-only for ${me.role.toUpperCase()}s`;
 
-  // Tear down any prior subscription
   if (realtimeSub) {
     try { await supa.removeChannel(realtimeSub); } catch (_) {}
     realtimeSub = null;
   }
 
-  // Load initial messages for this channel
   const thread = $('#chat-thread');
   thread.innerHTML = `<div class="chat-empty">Loading #${escapeHtml(ch.label)}…</div>`;
 
@@ -1165,15 +1112,12 @@ async function switchChannel(channelId) {
     thread.scrollTop = thread.scrollHeight;
   }
 
-  // Subscribe to live INSERTs on this channel
   realtimeSub = supa
     .channel(`chat:${channelId}`)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `channel_id=eq.${channelId}` },
       async (payload) => {
-        // Realtime gives us the raw chat_messages row. We need author_name + role —
-        // hydrate via a quick lookup. Cheap because it's one row.
         const row = payload.new;
         const { data: prof } = await supa.from('profiles')
           .select('full_name, role')
@@ -1217,7 +1161,6 @@ function renderMsg(m, fresh) {
 
 function appendMsg(m, fresh) {
   const thread = $('#chat-thread');
-  // Clear empty-state if present
   const empty = thread.querySelector('.chat-empty');
   if (empty) thread.innerHTML = '';
   thread.insertAdjacentHTML('beforeend', renderMsg(m, fresh));
@@ -1235,7 +1178,6 @@ async function sendMessage(text) {
   const btn = $('#chat-send-btn');
   inp.disabled = true; btn.disabled = true;
 
-  // Optimistic insert — let RLS validate server-side
   const { error } = await supa.from('chat_messages').insert({
     branch_id:  me.branch_id,
     channel_id: activeChannel.id,
@@ -1252,8 +1194,6 @@ async function sendMessage(text) {
   }
   inp.value = '';
   inp.focus();
-  // Realtime subscription will deliver the message back to us with the
-  // server-assigned id + timestamp, so we don't append here to avoid dupes.
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1261,7 +1201,6 @@ async function sendMessage(text) {
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', bootstrap);
 
-// Re-flow grid on resize (chat rail collapses under 1024)
 window.addEventListener('resize', () => {
   if ($('#home-content').style.display !== 'none') {
     document.getElementById('main-grid').style.gridTemplateColumns =
