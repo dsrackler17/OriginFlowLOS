@@ -1407,20 +1407,22 @@ async function detectSchema() {
   );
 
   // Probe 5: optional auxiliary tables (stage_changes, conditions).
-  // Detect missing tables up front so we don't issue queries we know will
-  // 404. The minimum-impact probe is `select id limit 1` — even if the
-  // table is empty the call succeeds with empty data and no error.
+  // We use the same minimal `select('id').limit(1)` pattern as the column
+  // probes — it reliably surfaces 404s through `error`. (Earlier we tried
+  // `head: true, count: 'exact'` mode but Supabase JS swallowed 404s in
+  // that path, leaving the flag falsely set to true.)
   await Promise.all(
     Object.keys(SCHEMA.tables).map(async (tbl) => {
       try {
-        const { error } = await supa.from(tbl).select('*', { head: true, count: 'exact' }).limit(0);
+        const { error } = await supa.from(tbl).select('id').limit(1);
         if (error) {
-          console.info(`[reports] ${tbl} table not found — affected panels will show empty states. Error:`, error.message);
+          console.warn(`[reports] ${tbl} table not found — affected panels will show empty states. Error:`, error.message);
           SCHEMA.tables[tbl] = false;
         } else {
           SCHEMA.tables[tbl] = true;
         }
       } catch (e) {
+        console.warn(`[reports] ${tbl} probe threw:`, e.message);
         SCHEMA.tables[tbl] = false;
       }
     })
