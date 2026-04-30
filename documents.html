@@ -363,6 +363,80 @@ main {
   text-align: center; padding: 3rem 1rem; letter-spacing: 0.04em;
 }
 
+/* ─── MANUAL REVIEW (row badge + detail panel) ─────────────────────── */
+/* Tiny dot+text badge that prefixes the doc name when a doc is in any
+   manual-review state. Approved/rejected/pending each get their own color. */
+.doc-review-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--mono); font-size: 0.52rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.1rem 0.4rem; margin-right: 0.45rem;
+  border: 1px solid;
+  vertical-align: 0.1em;
+}
+.doc-review-badge.pending  { color: var(--amber);   border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.1); }
+.doc-review-badge.approved { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.07); }
+.doc-review-badge.rejected { color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.1); }
+
+/* Detail-panel review block — sits above the extraction panel and gives
+   the processor everything they need to act: status, who reviewed, AI
+   flags, and the three action buttons. */
+.review-panel {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1rem;
+  border-left: 2px solid var(--border);
+}
+.review-panel.pending  { border-left-color: var(--amber); }
+.review-panel.approved { border-left-color: var(--accent2); }
+.review-panel.rejected { border-left-color: var(--red); }
+.review-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.7rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+}
+.review-title {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text);
+}
+.review-status-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.15rem 0.5rem;
+  border: 1px solid;
+}
+.review-status-tag.pending  { color: var(--amber);   border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.1); }
+.review-status-tag.approved { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.07); }
+.review-status-tag.rejected { color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.1); }
+.review-status-tag.none     { color: var(--muted);   border-color: var(--border); }
+.review-body { padding: 0.85rem 0.95rem; }
+.review-meta {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  letter-spacing: 0.04em; line-height: 1.6;
+}
+.review-meta strong { color: var(--white); font-weight: 700; }
+
+/* AI flag chips — small amber/red pills listing whatever the extraction
+   model decided was worth flagging (low_quality, redacted, suspect_match
+   etc). Stacks horizontally and wraps. */
+.ai-flag-chips {
+  display: flex; flex-wrap: wrap; gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+.ai-flag-chip {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid rgba(245,166,35,0.5);
+  color: var(--amber);
+  background: rgba(245,166,35,0.07);
+}
+
+/* Color variants for the dh-action review buttons. */
+.dh-action.approve:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+.dh-action.reject:hover:not(:disabled)  { border-color: var(--red);     color: var(--red); }
+.dh-action.flag:hover:not(:disabled)    { border-color: var(--amber);   color: var(--amber); }
+
 /* ─── DETAIL PANE ──────────────────────────────────────────────────── */
 .detail-empty {
   font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
@@ -855,6 +929,13 @@ footer a:hover { color: var(--accent); }
         <option value="applied">Applied to loan</option>
         <option value="failed">Failed</option>
       </select>
+      <select class="filter-select" id="filter-review">
+        <option value="all">All review states</option>
+        <option value="needs_review">⚠ Needs manual review</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="not_reviewed">Not yet reviewed</option>
+      </select>
       <div class="filter-spacer"></div>
       <button class="upload-btn" id="upload-btn" type="button">+ Upload</button>
     </div>
@@ -1008,6 +1089,7 @@ let filters = {
   loan_id: 'all',
   doc_type: 'all',
   status: 'all',
+  manual_review: 'all',
 };
 
 // pending upload (when modal is open)
@@ -1292,11 +1374,25 @@ async function loadLoans() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function loadDocs() {
+  // PostgREST aliases (alias:real_column) keep all the JS code reading
+  // d.file_url, d.status, d.extraction_data etc. while actually fetching
+  // from the real column names: storage_path, extraction_status, extraction,
+  // ai_confidence, extraction_completed_at, size_bytes.
   let q = supa.from('documents')
     .select(`
-      id, branch_id, loan_id, uploaded_by, filename, file_url, file_size_bytes,
-      mime_type, doc_type, status, extraction_data, extraction_confidence,
-      uploaded_at, extracted_at, archived_at
+      id, branch_id, loan_id, borrower_id, uploaded_by, filename,
+      file_url:storage_path,
+      file_size_bytes:size_bytes,
+      page_count,
+      mime_type, doc_type,
+      status:extraction_status,
+      extraction_data:extraction,
+      extraction_confidence:ai_confidence,
+      ai_flags, ai_model,
+      manual_review_status, reviewed_by, reviewed_at,
+      uploaded_at,
+      extracted_at:extraction_completed_at,
+      archived_at
     `)
     .eq('branch_id', me.branch_id)
     .is('archived_at', null)
@@ -1330,12 +1426,30 @@ function loadMetrics() {
   const extracted = docs.filter(d => d.status === 'extracted' || d.status === 'applied').length;
   const applied = docs.filter(d => d.status === 'applied').length;
   const pending = docs.filter(d => d.status === 'extracting' || d.status === 'uploaded').length;
+  const needsReview = docs.filter(d => d.manual_review_status === 'pending').length;
 
   // Avg confidence on extracted docs (normalized 0-1)
   const confs = docs
     .map(d => _normConf(d.extraction_confidence))
     .filter(v => v != null);
   const avgConf = confs.length ? (confs.reduce((a,b) => a+b, 0) / confs.length) : null;
+
+  // 4th cell is dual-purpose: when something's pending review, that's the
+  // most actionable thing we can show, so it takes the slot. Otherwise we
+  // fall back to the avg-confidence number.
+  const fourthCell = needsReview > 0
+    ? `
+      <div class="metric-cell" style="cursor:pointer;" id="metric-needs-review" title="Click to filter">
+        <div class="metric-label">Needs Review</div>
+        <div class="metric-value amber">${needsReview}</div>
+        <div class="metric-sub">awaiting processor · click to filter</div>
+      </div>`
+    : `
+      <div class="metric-cell">
+        <div class="metric-label">Avg Confidence</div>
+        <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${confLabel(avgConf)}</div>
+        <div class="metric-sub">${pending ? pending + ' still pending' : 'across extractions'}</div>
+      </div>`;
 
   $('#metric-strip').innerHTML = `
     <div class="metric-cell">
@@ -1353,12 +1467,18 @@ function loadMetrics() {
       <div class="metric-value green">${applied}</div>
       <div class="metric-sub">data written back</div>
     </div>
-    <div class="metric-cell">
-      <div class="metric-label">Avg Confidence</div>
-      <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${confLabel(avgConf)}</div>
-      <div class="metric-sub">${pending ? pending + ' still pending' : 'across extractions'}</div>
-    </div>
+    ${fourthCell}
   `;
+
+  // Click-to-filter on the Needs Review tile (only present when count > 0)
+  const needsCell = $('#metric-needs-review');
+  if (needsCell) {
+    needsCell.addEventListener('click', () => {
+      $('#filter-review').value = 'needs_review';
+      filters.manual_review = 'needs_review';
+      renderList();
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1382,13 +1502,28 @@ function initFilters() {
     filters.status = e.target.value;
     renderList();
   });
+  $('#filter-review').addEventListener('change', e => {
+    filters.manual_review = e.target.value;
+    renderList();
+  });
 }
 
+// Treat manual_review_status as a free-form string but bucket the common
+// states. NULL means "not yet reviewed". The "needs_review" filter accepts
+// 'pending' as the canonical "flagged" state — adjust if your enum uses
+// something different (e.g. 'needs_review', 'flagged').
 function applyFilters(rows) {
   return rows.filter(d => {
     if (filters.loan_id !== 'all' && d.loan_id !== filters.loan_id) return false;
     if (filters.doc_type !== 'all' && d.doc_type !== filters.doc_type) return false;
     if (filters.status !== 'all' && d.status !== filters.status) return false;
+    if (filters.manual_review !== 'all') {
+      const r = d.manual_review_status;
+      if (filters.manual_review === 'needs_review' && r !== 'pending') return false;
+      if (filters.manual_review === 'approved'     && r !== 'approved') return false;
+      if (filters.manual_review === 'rejected'     && r !== 'rejected') return false;
+      if (filters.manual_review === 'not_reviewed' && r != null)        return false;
+    }
     if (filters.search) {
       const haystack = [
         d.filename,
@@ -1472,12 +1607,17 @@ function renderRow(d) {
   else meta.push('Branch library');
   if (d.uploader?.full_name) meta.push(escapeHtml(d.uploader.full_name));
   meta.push(bytes(d.file_size_bytes));
+  if (d.page_count) meta.push(d.page_count + ' pg');
+
+  // Review badge — only renders for non-null states. Pending uses a ⚠ glyph
+  // so it pops at a glance even on dense lists.
+  const reviewBadge = renderReviewBadge(d);
 
   return `
     <div class="doc-row ${isSelected ? 'selected' : ''}" data-doc-id="${escapeHtml(d.id)}">
       <div class="doc-icon ${extCls}">${escapeHtml(ext)}</div>
       <div class="doc-mid">
-        <div class="doc-name">${escapeHtml(d.filename)}</div>
+        <div class="doc-name">${reviewBadge}${escapeHtml(d.filename)}</div>
         <div class="doc-meta">${meta.join(' · ')}</div>
       </div>
       <div class="doc-type ${docTypeDetected ? 'detected' : ''}">${escapeHtml(docTypeLabel)}</div>
@@ -1520,9 +1660,11 @@ function renderDetail(doc) {
   const meta = [];
   meta.push(`<span>${escapeHtml(ext)} · ${bytes(doc.file_size_bytes)}</span>`);
   meta.push(`<span>${escapeHtml(docTypeLabel)}</span>`);
+  if (doc.page_count) meta.push(`<span>${doc.page_count} ${doc.page_count === 1 ? 'page' : 'pages'}</span>`);
   if (loan) meta.push(`<span><a href="/dashboard.html#${escapeHtml(doc.loan_id)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(loan.loan_number)}</a></span>`);
   else meta.push(`<span>Branch library</span>`);
   if (doc.uploader?.full_name) meta.push(`<span>by ${escapeHtml(doc.uploader.full_name)}</span>`);
+  if (doc.ai_model) meta.push(`<span>AI: ${escapeHtml(doc.ai_model)}</span>`);
   meta.push(`<span>${timeAgo(doc.uploaded_at)}</span>`);
 
   // Don't allow extraction or preview if the file is being scanned or has been
@@ -1532,6 +1674,17 @@ function renderDetail(doc) {
   const canExtract = !isQuarantined && !isInfected && (doc.status === 'uploaded' || doc.status === 'failed');
   const canDelete = me.role !== 'viewer';
   const canPreview = !isQuarantined && !isInfected && doc.file_url;
+  const canReview = me.role !== 'viewer' && !isQuarantined && !isInfected;
+
+  // Manual review buttons — Approve / Reject / Flag — only show ones that
+  // would actually change the current state, so a doc already 'approved'
+  // doesn't show "Approve" again.
+  const rs = doc.manual_review_status;
+  const reviewBtns = canReview ? `
+    ${rs !== 'approved' ? `<button class="dh-action approve" id="btn-review-approve">✓ Approve</button>` : ''}
+    ${rs !== 'rejected' ? `<button class="dh-action reject"  id="btn-review-reject">✗ Reject</button>` : ''}
+    ${rs !== 'pending'  ? `<button class="dh-action flag"    id="btn-review-flag">⚠ Flag for review</button>` : ''}
+  ` : '';
 
   $('#detail-head').innerHTML = `
     <div class="dh-name">${escapeHtml(doc.filename)}</div>
@@ -1540,6 +1693,7 @@ function renderDetail(doc) {
       ${canPreview ? `<a class="dh-action" href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">↗ Open file</a>` : ''}
       ${canExtract ? `<button class="dh-action primary" id="btn-extract">${doc.status === 'failed' ? 'Retry extraction' : 'Run AI extraction'}</button>` : ''}
       ${doc.status === 'extracted' && doc.loan_id ? `<button class="dh-action primary" id="btn-apply-all">Apply all to loan</button>` : ''}
+      ${reviewBtns}
       ${canDelete ? `<button class="dh-action danger" id="btn-archive">Archive</button>` : ''}
     </div>
   `;
@@ -1550,6 +1704,14 @@ function renderDetail(doc) {
   if (doc.status === 'extracted' && doc.loan_id) {
     $('#btn-apply-all').addEventListener('click', () => applyAllToLoan(doc.id));
   }
+  // Review handlers — guarded by element existence since each button only
+  // renders when its target state is different from the current one.
+  const onApprove = $('#btn-review-approve');
+  const onReject  = $('#btn-review-reject');
+  const onFlag    = $('#btn-review-flag');
+  if (onApprove) onApprove.addEventListener('click', () => setReviewStatus(doc.id, 'approved'));
+  if (onReject)  onReject.addEventListener('click',  () => setReviewStatus(doc.id, 'rejected'));
+  if (onFlag)    onFlag.addEventListener('click',    () => setReviewStatus(doc.id, 'pending'));
 
   // Body
   const body = $('#detail-body');
@@ -1590,6 +1752,7 @@ function renderDetail(doc) {
   }
 
   body.innerHTML = `
+    ${renderReviewPanel(doc)}
     ${renderExtractionPanel(doc)}
     ${renderPreview(doc)}
   `;
@@ -1613,6 +1776,86 @@ function renderDetail(doc) {
         OF_pdfPreviewFailed(pdfPreviewId, url);
       }
     }, 2500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MANUAL REVIEW
+//
+// `manual_review_status` is a free-form text column on the documents table.
+// We treat the canonical values as 'pending', 'approved', 'rejected'. NULL
+// means "not reviewed yet". If your enum uses different values, the
+// approve/reject/flag buttons will still work — they just write the
+// canonical strings, so keep your CHECK constraint loose or remap on the
+// server side.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderReviewBadge(d) {
+  const r = d.manual_review_status;
+  if (!r) return '';
+  const labels = { pending: '⚠ REVIEW', approved: '✓ OK', rejected: '✗ REJECTED' };
+  const cls = (r === 'pending' || r === 'approved' || r === 'rejected') ? r : 'pending';
+  const label = labels[r] || r.toUpperCase();
+  return `<span class="doc-review-badge ${cls}">${escapeHtml(label)}</span>`;
+}
+
+function renderReviewPanel(doc) {
+  const r = doc.manual_review_status;
+  const cls = (r === 'pending' || r === 'approved' || r === 'rejected') ? r : '';
+  const flags = Array.isArray(doc.ai_flags) ? doc.ai_flags : [];
+  const showPanel = r != null || flags.length > 0;
+
+  // Don't render the panel at all if there's nothing to say (no review
+  // status, no flags) — keeps the detail body clean for happy-path docs.
+  if (!showPanel) return '';
+
+  let statusTag, statusLabel;
+  if (r === 'pending')      { statusTag = 'pending';  statusLabel = 'Pending review'; }
+  else if (r === 'approved'){ statusTag = 'approved'; statusLabel = '✓ Approved'; }
+  else if (r === 'rejected'){ statusTag = 'rejected'; statusLabel = '✗ Rejected'; }
+  else if (r)               { statusTag = '';         statusLabel = r; }
+  else                      { statusTag = 'none';     statusLabel = 'Not reviewed'; }
+
+  const reviewer = doc.reviewed_by ? profilesById.get(doc.reviewed_by) : null;
+  const reviewerLine = (r && r !== 'pending' && reviewer)
+    ? `Reviewed by <strong>${escapeHtml(reviewer.full_name)}</strong> · ${timeAgo(doc.reviewed_at)}`
+    : (r === 'pending' ? 'Awaiting processor review' : 'No review recorded');
+
+  const flagChips = flags.length > 0
+    ? `<div class="ai-flag-chips">${flags.map(f => `<span class="ai-flag-chip">${escapeHtml(String(f))}</span>`).join('')}</div>`
+    : '';
+
+  return `
+    <div class="review-panel ${cls}">
+      <div class="review-head">
+        <span class="review-title">Manual Review</span>
+        <span class="review-status-tag ${statusTag}">${escapeHtml(statusLabel)}</span>
+      </div>
+      <div class="review-body">
+        <div class="review-meta">${reviewerLine}</div>
+        ${flagChips}
+      </div>
+    </div>
+  `;
+}
+
+async function setReviewStatus(docId, newStatus) {
+  // 'pending' = flagging for review. We clear reviewer + timestamp because
+  // it isn't a "review" yet — someone is asking for one. 'approved' /
+  // 'rejected' record the current user as the reviewer.
+  const update = newStatus === 'pending'
+    ? { manual_review_status: 'pending', reviewed_by: null, reviewed_at: null }
+    : { manual_review_status: newStatus, reviewed_by: me.id, reviewed_at: new Date().toISOString() };
+
+  try {
+    const { error } = await supa.from('documents').update(update).eq('id', docId);
+    if (error) throw error;
+    const labels = { approved: 'Approved', rejected: 'Rejected', pending: 'Flagged for review' };
+    showToast(labels[newStatus] || ('Review status: ' + newStatus));
+    await loadDocs();
+  } catch (err) {
+    console.error('review status err:', err);
+    showToast('Couldn\'t update review status: ' + err.message, true);
   }
 }
 
@@ -1866,7 +2109,7 @@ async function runExtraction(docId) {
   try {
     // Mark in DB so other users see it too
     await supa.from('documents')
-      .update({ status: 'extracting' })
+      .update({ extraction_status: 'extracting' })
       .eq('id', docId);
 
     // ───────────────────────────────────────────────────────────────
@@ -1897,16 +2140,16 @@ async function runExtraction(docId) {
     // Persist
     const { error } = await supa.from('documents')
       .update({
-        status: 'extracted',
-        doc_type: result.doc_type || doc.doc_type || null,
-        extraction_data: {
-          fields: result.fields || [],
+        extraction_status: 'extracted',
+        doc_type:          result.doc_type || doc.doc_type || null,
+        extraction: {
+          fields:            result.fields || [],
           suggested_actions: result.suggested_actions || [],
-          applied_actions: [],
-          extracted_at_utc: new Date().toISOString(),
+          applied_actions:   [],
+          extracted_at_utc:  new Date().toISOString(),
         },
-        extraction_confidence: result.confidence ?? null,
-        extracted_at: new Date().toISOString(),
+        ai_confidence:           result.confidence ?? null,
+        extraction_completed_at: new Date().toISOString(),
       })
       .eq('id', docId);
 
@@ -1918,8 +2161,8 @@ async function runExtraction(docId) {
     console.error('extract err:', err);
     await supa.from('documents')
       .update({
-        status: 'failed',
-        extraction_data: { error: err.message },
+        extraction_status: 'failed',
+        extraction:        { error: err.message },
       })
       .eq('id', docId);
     showToast('Extraction failed: ' + err.message, true);
@@ -1958,16 +2201,16 @@ async function applyAction(docId, actionKey, actionIdx) {
       console.warn('No window.OF_applyExtractionAction hook — recording click only.');
     }
 
-    // Mark as applied in extraction_data + bump status if all applied
+    // Mark as applied in extraction jsonb + bump extraction_status if all applied
     const applied = new Set(data.applied_actions || []);
     applied.add(actionKey);
 
     const allApplied = (data.suggested_actions || []).every(a => applied.has(a.key));
 
     const update = {
-      extraction_data: { ...data, applied_actions: [...applied] },
+      extraction: { ...data, applied_actions: [...applied] },
     };
-    if (allApplied) update.status = 'applied';
+    if (allApplied) update.extraction_status = 'applied';
 
     const { error } = await supa.from('documents')
       .update(update)
@@ -2149,12 +2392,12 @@ async function confirmUpload() {
         loan_id: loanId,
         uploaded_by: me.id,
         filename: file.name,
-        file_url: uploaded.file_url,
-        file_size_bytes: uploaded.file_size_bytes ?? file.size,
-        mime_type: uploaded.mime_type ?? file.type ?? 'application/octet-stream',
-        doc_type: docType,
-        status: initialStatus,
-        uploaded_at: new Date().toISOString(),
+        storage_path:      uploaded.file_url,
+        size_bytes:        uploaded.file_size_bytes ?? file.size,
+        mime_type:         uploaded.mime_type ?? file.type ?? 'application/octet-stream',
+        doc_type:          docType,
+        extraction_status: initialStatus,
+        uploaded_at:       new Date().toISOString(),
       })
       .select().single();
     if (error) throw error;
@@ -2168,7 +2411,10 @@ async function confirmUpload() {
     // If your OF_uploadFile returns status='quarantined', extraction will be
     // skipped here and re-attempted automatically when realtime sees the
     // status change to 'uploaded' after the scan passes.
-    if (typeof window.OF_extractDocument === 'function' && row.status === 'uploaded') {
+    //
+    // Note: .insert().select().single() returns the RAW row (no PostgREST
+    // aliasing), so the column is extraction_status, not status.
+    if (typeof window.OF_extractDocument === 'function' && row.extraction_status === 'uploaded') {
       await loadDocs();
       runExtraction(row.id).catch(err => console.warn('auto-extract failed:', err));
     } else {
@@ -2272,8 +2518,12 @@ async function handleRealtimeUpdate(row) {
   // Detect quarantined → uploaded transition (scan completed). If our hook
   // is set up, kick off extraction automatically — same UX as if the file
   // had been clean from the start.
+  //
+  // NB: realtime payloads come with RAW column names (no PostgREST aliasing),
+  // so we read row.extraction_status here. prev came from our cached docs
+  // which were aliased via the SELECT, so prev.status is correct.
   const prev = docsById.get(row.id);
-  const justCleared = prev && prev.status === 'quarantined' && row.status === 'uploaded';
+  const justCleared = prev && prev.status === 'quarantined' && row.extraction_status === 'uploaded';
 
   // Patch the row. Re-fetch with joins so uploader name etc. stays current.
   const enriched = await fetchSingleDoc(row.id);
@@ -2320,9 +2570,19 @@ function handleRealtimeDelete(row) {
 async function fetchSingleDoc(id) {
   const { data, error } = await supa.from('documents')
     .select(`
-      id, branch_id, loan_id, uploaded_by, filename, file_url, file_size_bytes,
-      mime_type, doc_type, status, extraction_data, extraction_confidence,
-      uploaded_at, extracted_at, archived_at
+      id, branch_id, loan_id, borrower_id, uploaded_by, filename,
+      file_url:storage_path,
+      file_size_bytes:size_bytes,
+      page_count,
+      mime_type, doc_type,
+      status:extraction_status,
+      extraction_data:extraction,
+      extraction_confidence:ai_confidence,
+      ai_flags, ai_model,
+      manual_review_status, reviewed_by, reviewed_at,
+      uploaded_at,
+      extracted_at:extraction_completed_at,
+      archived_at
     `)
     .eq('id', id)
     .maybeSingle();
