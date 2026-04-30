@@ -454,6 +454,11 @@ nav {
   color: var(--text); letter-spacing: 0.03em; line-height: 1.6;
 }
 .hmda-banner strong { color: var(--amber); }
+.hmda-banner.error {
+  background: rgba(255,68,68,0.06);
+  border-color: rgba(255,68,68,0.3);
+}
+.hmda-banner.error strong { color: var(--red); }
 
 /* ─── STATE SCREENS ────────────────────────────────────────────────── */
 .state-screen {
@@ -518,25 +523,8 @@ footer {
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
 
-/* ─── PRINT / PDF EXPORT ───────────────────────────────────────────────
- * When the user hits "Print PDF" or Cmd/Ctrl+P, the page transforms into
- * a paper-friendly multi-page report. Browsers' built-in "Save as PDF"
- * (every modern browser, no library required) handles the actual file.
- *
- * Strategy:
- *   1. Hide chrome (nav, footer, buttons, search, dropzones, hovers)
- *   2. Force ALL three tabs visible (no tabbed UI on paper)
- *   3. Convert dark theme → white background, dark text
- *   4. Use page-break-inside: avoid on panels so they don't split awkwardly
- *   5. Stamp the report header (branch + date range) onto every page
- *
- * iOS Safari note: @page margin support is historically inconsistent on
- * iOS — small/zero/double margins on different versions. We belt-and-
- * suspenders this by ALSO putting padding on #reports-active so even if
- * @page is ignored, content isn't flush to the paper edge.
- * ──────────────────────────────────────────────────────────────────────── */
+/* ─── PRINT / PDF EXPORT ───────────────────────────────────────────── */
 @media print {
-  /* @page rules — supported by Chrome/Firefox/Safari-desktop */
   @page {
     size: letter portrait;
     margin: 0.5in;
@@ -545,15 +533,10 @@ footer a:hover { color: var(--accent); }
   @page :left  { margin-left: 0.5in; margin-right: 0.5in; }
   @page :right { margin-left: 0.5in; margin-right: 0.5in; }
 
-  /* Belt-and-suspenders padding: ensures content has breathing room even
-     on browsers that ignore or mis-apply @page (looking at you, iOS Safari).
-     Combined with @page margin, total whitespace at the page edge is
-     ~0.5in regardless of which mechanism the browser honors. */
   #reports-active {
     padding: 0 0.25in !important;
   }
 
-  /* Force light theme for paper */
   :root, body {
     --navy: #ffffff;
     --deep: #ffffff;
@@ -570,9 +553,8 @@ footer a:hover { color: var(--accent); }
     background: white !important;
     color: #1a1a1a !important;
   }
-  body::before { display: none !important; }  /* kill the grid background */
+  body::before { display: none !important; }
 
-  /* Hide all chrome */
   nav, footer,
   .nav-search, .nav-newloan, .nav-signout, .nav-branch, .nav-user-role,
   .range-preset, .range-input, .range-divider, .range-print,
@@ -580,11 +562,10 @@ footer a:hover { color: var(--accent); }
   .toast, .modal-overlay,
   .state-screen,
   .nav-search-btn,
-  .print-only-section-header  /* Hide normally; only shown when injected for print (see Fix 3) */
+  .print-only-section-header
    {
     display: none !important;
   }
-  /* Re-show injected real <h2> headers when printing */
   h2.print-only-section-header {
     display: block !important;
     font-family: 'DM Serif Display', Georgia, serif;
@@ -595,16 +576,14 @@ footer a:hover { color: var(--accent); }
     border-bottom: 2px solid #0066cc;
   }
 
-  /* Reveal all 3 tabs at once, regardless of which is "active" */
   .tab-pane {
     display: block !important;
-    page-break-before: always;  /* Each tab starts on a fresh page */
+    page-break-before: always;
   }
   .tab-pane:first-of-type {
-    page-break-before: auto;    /* Except the first */
+    page-break-before: auto;
   }
 
-  /* Page-head: keep branch + date range on every page header */
   .page-head {
     padding: 0 0 0.2in 0 !important;
     border-bottom: 1px solid #999 !important;
@@ -621,13 +600,11 @@ footer a:hover { color: var(--accent); }
     font-style: italic;
   }
 
-  /* Force the active state to NOT inherit cyan-on-navy */
   #reports-active {
     display: block !important;
     background: white !important;
   }
 
-  /* Panels: paper card style */
   .report-panel,
   .report-grid > * {
     page-break-inside: avoid;
@@ -645,7 +622,6 @@ footer a:hover { color: var(--accent); }
   .panel-sub { color: #555 !important; font-size: 8pt !important; }
   .panel-body { padding: 0.15in !important; }
 
-  /* Metric strip */
   .metric-strip {
     background: white !important;
     border: 1px solid #ccc !important;
@@ -665,7 +641,6 @@ footer a:hover { color: var(--accent); }
   .metric-value.amber { color: #cc7700 !important; }
   .metric-value.red { color: #cc0000 !important; }
 
-  /* Bars and funnels (the visualization elements) */
   .bar-fill { background: #0066cc !important; }
   .bar-row, .funnel-row {
     color: #1a1a1a !important;
@@ -673,13 +648,12 @@ footer a:hover { color: var(--accent); }
   .bar-label, .funnel-stage { color: #555 !important; }
   .bar-value { color: #1a1a1a !important; font-weight: 700; }
 
-  /* Tables */
   table {
     border-collapse: collapse;
     width: 100%;
     page-break-inside: auto;
   }
-  thead { display: table-header-group; }  /* repeat header on each page */
+  thead { display: table-header-group; }
   th, td {
     border: 1px solid #ccc !important;
     padding: 0.05in 0.08in !important;
@@ -693,16 +667,12 @@ footer a:hover { color: var(--accent); }
   }
   tr { page-break-inside: avoid; }
 
-  /* Force grid to single column on paper */
   .report-grid {
     display: block !important;
   }
 
-  /* Range bar: hide it (data is shown in page-head) but keep range-info visible
-     in case the user wants context */
   .range-bar { display: none !important; }
 
-  /* Print footer with timestamp and branch */
   #reports-active::after {
     content: "OriginFlow LOS · Confidential";
     display: block;
@@ -715,8 +685,6 @@ footer a:hover { color: var(--accent); }
     border-top: 1px solid #ddd;
   }
 
-  /* Don't print background colors / images on most browsers by default,
-     but we want the bar fills etc. — force it */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -1025,6 +993,15 @@ footer a:hover { color: var(--accent); }
         <strong>NOTE:</strong> These reports are an internal sanity-check, not a substitute for your annual HMDA-LAR submission. Disparate-treatment metrics surface possible patterns; they do not establish discrimination. "Information not provided" is a valid HMDA category and is reported separately.
       </div>
 
+      <!-- Schema warning banner — shown when borrowers.hmda_* columns are missing -->
+      <div class="hmda-banner error" id="hmda-schema-banner" style="display:none;">
+        <strong>SCHEMA NOT READY:</strong>
+        Your <code>borrowers</code> table is missing the HMDA demographic columns
+        (<code>hmda_race</code>, <code>hmda_ethnicity</code>, <code>hmda_sex</code>).
+        These reports are showing empty until the columns are added — see the bottom of the
+        <code>/reports.html</code> source for the migration SQL.
+      </div>
+
       <div class="metric-strip" id="comp-metrics">
         <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
         <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
@@ -1127,20 +1104,45 @@ footer a:hover { color: var(--accent); }
 //   • Each panel exposes a CSV export button driven by a per-panel
 //     data extractor function.
 //
+// Schema-resilience (the v0.2 fix):
+//   The bulk fetch SELECT used to hard-code two things that aren't guaranteed
+//   to exist in every deployment:
+//     • `officer:loan_officer_id ( full_name, role )` — embeds via FK from
+//       loans.loan_officer_id to profiles.id. If that FK is missing or named
+//       differently, PostgREST returns 400 with a "could not find a
+//       relationship" error, taking the entire page down.
+//     • `borrowers.hmda_race / hmda_ethnicity / hmda_sex` — optional HMDA
+//       demographic columns. If they're not added yet, the SELECT 400s on
+//       "column does not exist" before any rendering happens.
+//
+//   We now probe both at startup (detectSchema), cache the flags, and build
+//   the SELECT string dynamically. The page works with whatever subset of
+//   schema you have — the compliance tab shows a banner if HMDA columns
+//   aren't present, the LO leaderboard falls back to a separate profiles
+//   fetch if the FK isn't registered.
+//
 // Honest flags worth reading:
 //   1. Stage-velocity and throughput depend on the `stage_changes` audit
 //      table populated by /dashboard.html drag-and-drop. Branches that did
 //      bulk imports without going through the UI will have no history;
 //      panels show "no data" rather than fabricating numbers.
-//   2. HMDA panels assume `borrowers` table has columns: `hmda_race`,
-//      `hmda_ethnicity`, `hmda_sex`, each nullable. If your schema doesn't
-//      have them yet, the panels show empty states; nothing crashes.
-//   3. "Funded" is detected by `loans.status = 'funded'` AND the period
+//   2. "Funded" is detected by `loans.status = 'funded'` AND the period
 //      either matches `funded_at` (if you have that column) or
 //      `stage_entered_at` (the timestamp used by dashboard.html).
-//   4. "Days in stage (avg)" uses stage_changes deltas only — loans
+//   3. "Days in stage (avg)" uses stage_changes deltas only — loans
 //      currently sitting in a stage are excluded from the average so
 //      one ancient stuck file doesn't skew it.
+//
+// HMDA migration SQL (run if compliance tab is showing the schema banner):
+//   ALTER TABLE borrowers
+//     ADD COLUMN IF NOT EXISTS hmda_race TEXT,
+//     ADD COLUMN IF NOT EXISTS hmda_ethnicity TEXT,
+//     ADD COLUMN IF NOT EXISTS hmda_sex TEXT;
+//
+// Officer FK (run if the LO leaderboard isn't populating):
+//   ALTER TABLE loans
+//     ADD CONSTRAINT loans_loan_officer_id_fkey
+//     FOREIGN KEY (loan_officer_id) REFERENCES profiles(id);
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (s, root) => (root || document).querySelector(s);
@@ -1152,6 +1154,14 @@ let supa = null;
 let me = null;
 let branch = null;
 
+// Schema feature flags. Each is null until detectSchema() probes the DB,
+// then true if the column/relationship is usable, false if missing.
+// Both hard-coded queries that previously 400'd are now gated on these.
+let SCHEMA = {
+  borrowers_hmda:  null,   // hmda_race, hmda_ethnicity, hmda_sex columns
+  loans_officer_fk: null,  // loans.loan_officer_id → profiles FK registered
+};
+
 // Date range
 let range = { preset: '30d', from: null, to: null };
 
@@ -1160,6 +1170,10 @@ let activeTab = 'operational';
 
 // Cached datasets for the current period
 let dataset = null;
+
+// Profile cache for officer name lookup when SCHEMA.loans_officer_fk is false.
+// Populated lazily by ensureProfilesCache().
+let profilesById = null;
 
 // Fetched once, used by stage labels everywhere
 const STAGES = [
@@ -1207,28 +1221,19 @@ function escapeHtml(s) {
 }
 
 // ─── Last-seen tracking ─────────────────────────────────────────────────
-// Updates profiles.last_seen_at so the /team.html metrics ("active in last
-// 7 days") stay honest. Fire-and-forget — never blocks the page, never
-// throws to the caller. Throttled to once per 60s per browser via
-// localStorage to avoid hammering the DB on rapid navigation between pages.
 async function touchLastSeen() {
   try {
     if (!supa || !me?.id) return;
     const KEY = 'of_last_seen_touched_at';
     const last = parseInt(localStorage.getItem(KEY) || '0', 10);
     const now = Date.now();
-    if (now - last < 60000) return;  // throttle: once per 60s
+    if (now - last < 60000) return;
     localStorage.setItem(KEY, String(now));
-    // Don't await — let the write happen in the background. Errors are
-    // logged but never propagated (RLS, network blip, missing column,
-    // whatever — the page renders normally regardless).
     supa.from('profiles')
       .update({ last_seen_at: new Date().toISOString() })
       .eq('id', me.id)
       .then(({ error }) => { if (error) console.warn('last_seen update:', error.message); });
   } catch (err) {
-    // localStorage disabled, etc. — silent failure, the throttle just
-    // becomes per-page-load instead of per-minute.
     console.warn('touchLastSeen:', err);
   }
 }
@@ -1281,6 +1286,119 @@ function endOfDayISO(date) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SCHEMA DETECTION
+//
+// Runs once before the first fetch. Probes whether optional schema features
+// exist by issuing minimal SELECTs and inspecting the error code. Both
+// flags get cached on SCHEMA — we don't re-probe on subsequent refreshes.
+//
+// Why this approach: PostgREST returns very specific error messages for
+// missing columns (PGRST204 / "column not found") and missing relationships
+// (PGRST200 / "Could not find a relationship"). We could match on those,
+// but the error CODES vary across PostgREST versions. Treating any error
+// from the probe as "feature missing" is conservative — false negatives
+// (think feature missing when it's there) just means we use the simpler
+// query, which still works.
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function detectSchema() {
+  if (SCHEMA.borrowers_hmda !== null && SCHEMA.loans_officer_fk !== null) return;
+
+  // Probe 1: borrowers.hmda_race column
+  try {
+    const { error } = await supa.from('borrowers')
+      .select('id, hmda_race')
+      .limit(1);
+    if (error) {
+      console.info('[reports] HMDA columns not detected on borrowers — compliance tab will show migration banner. Error:', error.message);
+      SCHEMA.borrowers_hmda = false;
+    } else {
+      SCHEMA.borrowers_hmda = true;
+    }
+  } catch (e) {
+    SCHEMA.borrowers_hmda = false;
+  }
+
+  // Probe 2: loans → profiles FK via loan_officer_id
+  // Try the embed; if it errors, fall back to standalone profiles fetch.
+  try {
+    const { error } = await supa.from('loans')
+      .select('id, officer:loan_officer_id ( full_name )')
+      .limit(1);
+    if (error) {
+      console.info('[reports] loans→profiles officer FK not detected — using standalone profiles fetch. Error:', error.message);
+      SCHEMA.loans_officer_fk = false;
+    } else {
+      SCHEMA.loans_officer_fk = true;
+    }
+  } catch (e) {
+    SCHEMA.loans_officer_fk = false;
+  }
+}
+
+// Build the SELECT string for the bulk loans fetch dynamically. Includes
+// only the embeds and columns that the schema actually supports. Both
+// branches return the same field NAMES for the consuming code (we
+// hand-stitch officer + hmda_* in afterward when the FK/columns are absent),
+// so renderers don't have to care which path was taken.
+function buildLoanSelect() {
+  const borrowerCols = SCHEMA.borrowers_hmda
+    ? 'id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex'
+    : 'id, first_name, last_name';
+  const officerEmbed = SCHEMA.loans_officer_fk
+    ? 'officer:loan_officer_id ( full_name, role ),'
+    : '';
+  return `
+    id, branch_id, loan_number, status, purpose, loan_amount_cents,
+    created_at, updated_at, stage_entered_at, archived_at,
+    loan_officer_id,
+    ${officerEmbed}
+    loan_borrowers ( position, borrower:borrower_id ( ${borrowerCols} ) )
+  `;
+}
+
+// When the officer FK isn't registered, fetch profiles for this branch
+// once and stitch officer.full_name + officer.role onto loans manually.
+async function ensureProfilesCache() {
+  if (profilesById) return;
+  profilesById = new Map();
+  try {
+    const { data, error } = await supa.from('profiles')
+      .select('id, full_name, role')
+      .eq('branch_id', me.branch_id);
+    if (error) {
+      console.warn('[reports] profiles fetch for officer-cache failed:', error.message);
+      return;
+    }
+    (data || []).forEach(p => profilesById.set(p.id, p));
+  } catch (e) {
+    console.warn('[reports] profiles fetch threw:', e);
+  }
+}
+
+function attachOfficerToLoan(loan) {
+  if (loan.officer) return loan;
+  if (!loan.loan_officer_id || !profilesById) {
+    loan.officer = null;
+    return loan;
+  }
+  const p = profilesById.get(loan.loan_officer_id);
+  loan.officer = p ? { full_name: p.full_name, role: p.role } : null;
+  return loan;
+}
+
+// Borrowers may be missing hmda_* fields if the columns don't exist. Make
+// sure the property is at least present (as null) so renderers' `borrower[v]`
+// reads don't blow up on undefined.
+function normalizeBorrower(b) {
+  if (!b) return b;
+  if (!('hmda_race' in b)) b.hmda_race = null;
+  if (!('hmda_ethnicity' in b)) b.hmda_ethnicity = null;
+  if (!('hmda_sex' in b)) b.hmda_sex = null;
+  return b;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // AUTH + BOOTSTRAP
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1317,8 +1435,6 @@ async function bootstrap() {
   };
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
 
-  // Update last_seen_at so the team page metrics stay honest. Throttled to
-  // once per 60s via localStorage to avoid spamming writes on rapid navigation.
   touchLastSeen();
 
   $('#nav-user-name').textContent  = me.full_name;
@@ -1351,6 +1467,16 @@ async function bootstrap() {
   }
 
   initUI();
+
+  // Probe schema BEFORE first refresh so the bulk fetch uses the correct
+  // SELECT shape. detectSchema is idempotent, so this is safe to call again.
+  await detectSchema();
+
+  // Show schema banner on compliance tab if HMDA columns are missing
+  if (SCHEMA.borrowers_hmda === false) {
+    $('#hmda-schema-banner').style.display = 'block';
+  }
+
   await refresh();
 }
 
@@ -1370,7 +1496,6 @@ function showActive() {
     document.getElementById(s).style.display = 'none';
   });
   $('#reports-active').style.display = 'flex';
-  // Sync tab state from URL
   switchTab(activeTab, false);
 }
 
@@ -1379,40 +1504,25 @@ function showActive() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function initUI() {
-  // Date range presets
   $$('.range-preset').forEach(btn => {
     btn.addEventListener('click', () => applyPreset(btn.dataset.preset, true));
   });
 
-  // Custom range inputs — fire on change (not input) so we don't refetch on every keystroke
   $('#range-from').addEventListener('change', onCustomRangeChange);
   $('#range-to').addEventListener('change', onCustomRangeChange);
 
-  // Tabs
   $$('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab, true));
   });
 
-  // Print / PDF export. Browsers handle the actual PDF generation via their
-  // built-in "Save as PDF" option in the print dialog — no library needed.
-  // Before printing we stamp the report metadata (branch + date range +
-  // timestamp) into the .page-sub via a data attribute so it appears on
-  // every printed page (see @media print rules in the stylesheet).
   $('#btn-print').addEventListener('click', () => {
     stampPrintMetadata();
-    // Defer one frame so the DOM update lands before the dialog opens
     requestAnimationFrame(() => window.print());
   });
-  // Cmd/Ctrl+P: same metadata stamp before native print
   window.addEventListener('beforeprint', stampPrintMetadata);
 
-  // Full-data CSV export — paginates Supabase to get every loan in the
-  // selected period, not just the in-memory sample (which is capped at
-  // 2000 rows per fetch). For branches that exceed that cap, the per-panel
-  // CSVs are necessarily incomplete; this button gives you the ground truth.
   $('#btn-export-full').addEventListener('click', exportFullDataset);
 
-  // Per-panel exports (delegated)
   document.addEventListener('click', e => {
     const btn = e.target.closest('.panel-export');
     if (!btn) return;
@@ -1429,9 +1539,8 @@ function initUI() {
     }
   });
 
-  // Search shortcut (matches other pages)
   $('#nav-search-btn').addEventListener('click', () => {
-    window.location.href = '/home.html';   // search lives on home for now
+    window.location.href = '/home.html';
   });
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -1480,7 +1589,6 @@ function applyPreset(preset, refetch) {
     to: to.toISOString().slice(0, 10),
   };
 
-  // UI reflect
   $$('.range-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
   $('#range-from').value = range.from;
   $('#range-to').value = range.to;
@@ -1510,18 +1618,6 @@ function updateRangeInfo() {
   $('#range-info').textContent = `(${days} day${days === 1 ? '' : 's'})`;
 }
 
-// Called right before window.print() (or the native Cmd/Ctrl+P dialog opens)
-// — does three things to make the printed output good for both eyes and
-// screen readers:
-//   1. Writes branch name + date range + timestamp into the page subtitle
-//      so it appears as the report header on every printed page (via
-//      attr() and content selectors in the print stylesheet).
-//   2. Injects REAL <h2> elements at the top of each tab pane so screen
-//      readers can announce them and PDF table-of-contents tools can
-//      detect tab boundaries. (Previously we used CSS ::before content
-//      injection, which is invisible to assistive tech.)
-//   3. Sets up an afterprint handler that restores the page to its normal
-//      interactive state — fires whether the user printed or canceled.
 function stampPrintMetadata() {
   const sub = $('.page-sub');
   if (!sub) return;
@@ -1529,13 +1625,9 @@ function stampPrintMetadata() {
   const fromFmt = new Date(range.from).toLocaleDateString();
   const toFmt = new Date(range.to).toLocaleDateString();
   const printedOn = new Date().toLocaleString();
-  // Replace the regular subtitle copy with the print-specific stamp
   sub.textContent = `${branch?.name || 'Branch'} · ${fromFmt} → ${toFmt} (${days} day${days === 1 ? '' : 's'})`;
   sub.setAttribute('data-printed-on', printedOn);
 
-  // Inject real <h2> headers at the top of each tab pane. The class is
-  // hidden via CSS in normal display mode and revealed only inside @media
-  // print, so the headers appear on paper but never on screen.
   const sectionTitles = {
     'tab-operational': 'Operational Reports',
     'tab-financial':   'Financial Reports',
@@ -1544,7 +1636,6 @@ function stampPrintMetadata() {
   Object.entries(sectionTitles).forEach(([id, title]) => {
     const pane = document.getElementById(id);
     if (!pane) return;
-    // Avoid duplicates if the user prints twice in a row
     let h = pane.querySelector('h2.print-only-section-header');
     if (!h) {
       h = document.createElement('h2');
@@ -1554,12 +1645,9 @@ function stampPrintMetadata() {
     h.textContent = title;
   });
 
-  // Schedule a restore after print completes — afterprint fires on both
-  // success and cancel, so the page returns to its normal state either way.
   const restore = () => {
     sub.textContent = 'The numbers Encompass hides three menus deep. Pipeline velocity, funded volume, fair lending — refreshed live, exportable to CSV.';
     sub.removeAttribute('data-printed-on');
-    // Pull the injected h2s back out
     document.querySelectorAll('h2.print-only-section-header').forEach(el => el.remove());
     window.removeEventListener('afterprint', restore);
   };
@@ -1593,7 +1681,6 @@ function switchTab(tab, push) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function refresh() {
-  // Show loading hint in the metric strips
   ['op','fin','comp'].forEach(prefix => {
     $('#' + prefix + '-metrics').querySelectorAll('.metric-cell').forEach(c => {
       c.querySelector('.metric-value').textContent = '…';
@@ -1602,6 +1689,8 @@ async function refresh() {
   });
 
   try {
+    // Make sure schema is probed (idempotent — no-ops if already done)
+    await detectSchema();
     dataset = await fetchDataset();
     renderAll();
     $('#footer-refreshed').textContent = new Date().toLocaleTimeString();
@@ -1618,37 +1707,27 @@ async function refresh() {
 // current period. We deliberately fetch slightly more than the period
 // (currently-active loans regardless of created_at, so the snapshot panels
 // are accurate) and then filter client-side.
+//
+// Uses buildLoanSelect() so the SELECT shape adapts to whatever the schema
+// supports. If the officer FK isn't registered, we backfill officer.full_name
+// and officer.role onto each loan from a separate profiles fetch.
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function fetchDataset() {
   const fromISO = startOfDayISO(range.from);
   const toISO = endOfDayISO(range.to);
+  const SELECT = buildLoanSelect();
 
-  // 1. Loans created in period OR currently active (status not in funded/denied/withdrawn)
-  //    — combined via two queries because OR-across-conditions in PostgREST
-  //    is awkward, then dedupe.
   const [createdRes, activeRes] = await Promise.all([
     supa.from('loans')
-      .select(`
-        id, branch_id, loan_number, status, purpose, loan_amount_cents,
-        created_at, updated_at, stage_entered_at, archived_at,
-        loan_officer_id,
-        officer:loan_officer_id ( full_name, role ),
-        loan_borrowers ( position, borrower:borrower_id ( id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex ) )
-      `)
+      .select(SELECT)
       .eq('branch_id', me.branch_id)
       .is('archived_at', null)
       .gte('created_at', fromISO)
       .lte('created_at', toISO)
       .limit(2000),
     supa.from('loans')
-      .select(`
-        id, branch_id, loan_number, status, purpose, loan_amount_cents,
-        created_at, updated_at, stage_entered_at, archived_at,
-        loan_officer_id,
-        officer:loan_officer_id ( full_name, role ),
-        loan_borrowers ( position, borrower:borrower_id ( id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex ) )
-      `)
+      .select(SELECT)
       .eq('branch_id', me.branch_id)
       .is('archived_at', null)
       .not('status', 'in', '(funded,denied,withdrawn)')
@@ -1662,17 +1741,23 @@ async function fetchDataset() {
   const loanMap = new Map();
   (createdRes.data || []).forEach(l => loanMap.set(l.id, l));
   (activeRes.data  || []).forEach(l => { if (!loanMap.has(l.id)) loanMap.set(l.id, l); });
-  const loans = [...loanMap.values()];
+  let loans = [...loanMap.values()];
+
+  // If the officer FK isn't registered, backfill officer info from a
+  // separate profiles fetch. Single round-trip per refresh (cached).
+  if (!SCHEMA.loans_officer_fk) {
+    await ensureProfilesCache();
+    loans.forEach(attachOfficerToLoan);
+  }
+
+  // Normalize borrower objects so renderers can read hmda_* unconditionally
+  loans.forEach(l => {
+    (l.loan_borrowers || []).forEach(lb => normalizeBorrower(lb.borrower));
+  });
 
   // 2. Stage changes — used for velocity, throughput, and app→CTC time.
-  //    We fetch the period PLUS a 90-day buffer back so we can see the FROM
-  //    side of transitions that started before the period. Without the
-  //    buffer, app→CTC for a 30-day window only catches loans that go from
-  //    application to CTC within 30 days, which understates the median.
-  //    Throughput (transitions IN the period) filters back down to the
-  //    period after the fetch.
   let stageChanges = [];
-  let stageChangesPeriod = [];   // strict-period subset for throughput
+  let stageChangesPeriod = [];
   try {
     const bufferStart = new Date(fromISO);
     bufferStart.setDate(bufferStart.getDate() - 90);
@@ -1684,7 +1769,7 @@ async function fetchDataset() {
       .lte('created_at', toISO)
       .order('created_at', { ascending: true })
       .limit(20000);
-    if (error && error.code !== '42P01' /* undefined_table */) throw error;
+    if (error && error.code !== '42P01') throw error;
     stageChanges = data || [];
     stageChangesPeriod = stageChanges.filter(c =>
       c.created_at >= fromISO && c.created_at <= toISO + 'T23:59:59'
@@ -1694,7 +1779,6 @@ async function fetchDataset() {
   }
 
   // 3. Conditions — used for clear-time analysis.
-  //    Filter to loans we know about (those returned above).
   let conditions = [];
   if (loans.length > 0) {
     const loanIds = loans.map(l => l.id);
@@ -1730,17 +1814,11 @@ function renderAll() {
 function renderOperational() {
   const { loans, stageChanges, stageChangesPeriod, conditions } = dataset;
 
-  // Metrics
   const newLeads = loans.filter(l => isInPeriod(l.created_at)).length;
-  // Submitted / funded counts use the strict-period subset so we don't pick
-  // up transitions from the 90-day buffer.
   const submittedTransitions = stageChangesPeriod.filter(c => c.to_status === 'submitted').length;
   const fundedTransitions = stageChangesPeriod.filter(c => c.to_status === 'funded').length;
   const conversion = newLeads > 0 ? (fundedTransitions / newLeads * 100) : null;
 
-  // App → CTC time uses the BUFFERED stage_changes (so we can find the
-  // 'application' event for a loan that hit CTC in this period but started
-  // earlier). The function further filters to loans whose CTC fell in period.
   const appToCtcDays = computeAppToCtcDays(stageChanges, dataset.range.fromISO, dataset.range.toISO);
 
   $('#op-metrics').innerHTML = `
@@ -1765,10 +1843,6 @@ function isInPeriod(iso) {
 }
 
 function computeAppToCtcDays(stageChanges, fromISO, toISO) {
-  // Use a buffered stage_changes window to find the earliest 'application'
-  // entry per loan. Only count loans whose 'clear_to_close' transition
-  // happened during the selected period — that way the metric describes
-  // "loans that closed in this period, how long did they take?"
   const byLoan = {};
   stageChanges.forEach(c => {
     if (!byLoan[c.loan_id]) byLoan[c.loan_id] = {};
@@ -1777,7 +1851,6 @@ function computeAppToCtcDays(stageChanges, fromISO, toISO) {
   });
   const days = Object.values(byLoan)
     .filter(b => b.app && b.ctc)
-    // Only count loans whose CTC happened in the selected period
     .filter(b => b.ctc >= fromISO && b.ctc <= toISO + 'T23:59:59')
     .map(b => daysBetween(b.app, b.ctc))
     .filter(d => d >= 0);
@@ -1791,36 +1864,22 @@ function computeAppToCtcDays(stageChanges, fromISO, toISO) {
 
 // ─── Funnel ──────────────────────────────────────────────────────────────
 function renderFunnel(loans, stageChanges) {
-  // True cohort funnel: among loans CREATED in this period, how many ever
-  // reached each stage? We trace each loan's history via stage_changes
-  // (whenever available) plus its current status as a fallback.
-  //
-  // Why cohort-only: if we counted every loan that "reached submitted in
-  // period" the lead count (which only includes period-created loans) would
-  // be smaller than later stages, breaking the "of every 100 leads" framing
-  // and producing an inverted funnel.
   const cohort = loans.filter(l => isInPeriod(l.created_at));
   const cohortIds = new Set(cohort.map(l => l.id));
 
   const reached = {};
   STAGES.forEach(s => reached[s.key] = new Set());
 
-  // Every cohort loan reached at least 'lead'
   cohort.forEach(l => {
     reached.lead.add(l.id);
-    // Use current status to fill in stages up to that point (works whether
-    // or not stage_changes is populated)
     const currentIdx = STAGES.findIndex(s => s.key === l.status);
     if (currentIdx >= 0) {
       for (let i = 0; i <= currentIdx; i++) {
         reached[STAGES[i].key].add(l.id);
       }
     }
-    // 'denied'/'withdrawn'/etc. don't count toward later stages — they only
-    // count as 'lead' (which we already added above)
   });
 
-  // Augment with stage_changes history, but ONLY for cohort loans
   stageChanges.forEach(c => {
     if (!cohortIds.has(c.loan_id)) return;
     const idx = STAGES.findIndex(s => s.key === c.to_status);
@@ -1881,12 +1940,6 @@ function renderFunnel(loans, stageChanges) {
 
 // ─── Velocity ────────────────────────────────────────────────────────────
 function renderVelocity(stageChanges) {
-  // For each loan, compute time spent in each stage (entered → next entry).
-  // Uses the BUFFERED stage_changes window (90-day pre-period) so we can
-  // measure transitions whose start was before the period.
-  //
-  // Reports the MEDIAN, not the mean — one outlier loan that sat in
-  // conditional for 90 days would otherwise drag the average up unfairly.
   const byLoan = {};
   stageChanges.forEach(c => {
     if (!byLoan[c.loan_id]) byLoan[c.loan_id] = [];
@@ -1936,9 +1989,6 @@ function renderVelocity(stageChanges) {
     <div class="bar-chart">
       ${rows.map(r => {
         const pct = r.median != null ? (r.median / max * 100) : 0;
-        // Threshold order matters: check the worst case FIRST, then degrade.
-        // Previous bug: "> 5 ? amber : (> 10 ? red ...)" — second branch was
-        // unreachable because anything > 10 already matched the first.
         let cls = '';
         if (r.median != null) {
           if (r.median > 10) cls = 'red';
@@ -1982,7 +2032,6 @@ function renderSnapshot(loans) {
   loans.forEach(l => {
     if (counts[l.status] != null && !TERMINAL_STATUSES.has(l.status)) counts[l.status]++;
   });
-  // Snapshot is "active loans only" — funded/denied/withdrawn excluded
   const rows = STAGES.filter(s => s.key !== 'funded').map(s => ({ key: s.key, label: s.label, count: counts[s.key] || 0 }));
   const total = rows.reduce((a, r) => a + r.count, 0);
   const max = Math.max(1, ...rows.map(r => r.count));
@@ -2030,7 +2079,6 @@ function renderConditions(conditions) {
   const median = clearTimes.length ? clearTimes[Math.floor(clearTimes.length / 2)] : null;
   const mean = clearTimes.length ? clearTimes.reduce((a,b) => a+b, 0) / clearTimes.length : null;
 
-  // Bucket: <1d, 1-3d, 3-7d, 7-14d, 14+d
   const buckets = [
     { label: '< 1 day',   match: d => d < 1 },
     { label: '1–3 days',  match: d => d >= 1 && d < 3 },
@@ -2094,7 +2142,7 @@ function renderThroughput(stageChanges) {
   });
 
   const rows = STAGES
-    .filter(s => s.key !== 'lead')  // entering 'lead' is just a creation, less interesting
+    .filter(s => s.key !== 'lead')
     .map(s => ({ key: s.key, label: '→ ' + s.label, count: counts[s.key] || 0 }));
   const max = Math.max(1, ...rows.map(r => r.count));
 
@@ -2133,23 +2181,17 @@ function renderThroughput(stageChanges) {
 function renderFinancial() {
   const { loans, stageChangesPeriod } = dataset;
 
-  // "Funded in period" = stage_changes where to_status='funded' falls in
-  // the SELECTED period (not the buffered window — we want closings in the
-  // user's chosen date range, not pre-period closings).
   const fundedTransitions = stageChangesPeriod.filter(c => c.to_status === 'funded');
   const fundedLoanIds = new Set(fundedTransitions.map(c => c.loan_id));
   const fundedLoans = loans.filter(l => fundedLoanIds.has(l.id) || (l.status === 'funded' && isInPeriod(l.stage_entered_at || l.updated_at)));
 
-  // Volume + count
   const fundedCount = fundedLoans.length;
   const fundedVolumeCents = fundedLoans.reduce((sum, l) => sum + (l.loan_amount_cents || 0), 0);
   const avgLoanSize = fundedCount > 0 ? fundedVolumeCents / fundedCount : null;
 
-  // Pipeline value (snapshot, today)
   const activeLoans = loans.filter(l => !TERMINAL_STATUSES.has(l.status));
   const pipelineValueCents = activeLoans.reduce((sum, l) => sum + (l.loan_amount_cents || 0), 0);
 
-  // Fall-out: loans created in period with status in (denied, withdrawn) — capture rough rate
   const periodLoans = loans.filter(l => isInPeriod(l.created_at));
   const denied = periodLoans.filter(l => l.status === 'denied').length;
   const withdrawn = periodLoans.filter(l => l.status === 'withdrawn').length;
@@ -2178,7 +2220,6 @@ function renderFundedVolumeStat(fundedLoans, totalCents) {
     return;
   }
 
-  // Median + range
   const amounts = fundedLoans.map(l => l.loan_amount_cents || 0).filter(a => a > 0).sort((a,b) => a-b);
   const median = amounts.length ? amounts[Math.floor(amounts.length / 2)] : 0;
   const min = amounts[0] || 0;
@@ -2424,17 +2465,22 @@ function renderCompliance() {
   const { loans } = dataset;
   const periodLoans = loans.filter(l => isInPeriod(l.created_at));
 
-  // Primary borrower per loan (position=1)
+  // If HMDA columns aren't in the schema yet, the panels render their own
+  // "schema not ready" empty states. The metric strip still works for
+  // application/decisioning counts since those don't depend on demographics.
+  const hmdaReady = SCHEMA.borrowers_hmda === true;
+
   const periodPrimary = periodLoans.map(l => {
     const lb = (l.loan_borrowers || []).find(b => b.position === 1) || (l.loan_borrowers || [])[0];
     return { loan: l, borrower: lb?.borrower || null };
   }).filter(x => x.borrower);
 
   const totalApps = periodPrimary.length;
-  const missingDemo = periodPrimary.filter(x => !x.borrower.hmda_race && !x.borrower.hmda_ethnicity && !x.borrower.hmda_sex).length;
+  const missingDemo = hmdaReady
+    ? periodPrimary.filter(x => !x.borrower.hmda_race && !x.borrower.hmda_ethnicity && !x.borrower.hmda_sex).length
+    : totalApps;
   const collected = totalApps - missingDemo;
 
-  // Approval rate overall (period)
   const fundedCount = periodLoans.filter(l => l.status === 'funded').length;
   const deniedCount = periodLoans.filter(l => l.status === 'denied').length;
   const decisioned = fundedCount + deniedCount + periodLoans.filter(l => l.status === 'withdrawn').length;
@@ -2442,10 +2488,34 @@ function renderCompliance() {
 
   $('#comp-metrics').innerHTML = `
     ${metricCell('Applications', fmtNum(totalApps), 'in selected period')}
-    ${metricCell('Demographics collected', fmtPct(totalApps > 0 ? collected / totalApps * 100 : 0, 0), collected + ' of ' + totalApps, totalApps > 0 && collected / totalApps >= 0.95 ? 'green' : 'amber')}
+    ${metricCell(
+      'Demographics collected',
+      hmdaReady ? fmtPct(totalApps > 0 ? collected / totalApps * 100 : 0, 0) : 'n/a',
+      hmdaReady ? (collected + ' of ' + totalApps) : 'schema missing',
+      hmdaReady && totalApps > 0 && collected / totalApps >= 0.95 ? 'green' : (hmdaReady ? 'amber' : 'red')
+    )}
     ${metricCell('Decisioned', fmtNum(decisioned), 'funded + denied + withdrawn')}
     ${metricCell('Approval rate', fmtPct(approvalRate), 'across decisioned apps', approvalRate != null && approvalRate >= 60 ? 'green' : '')}
   `;
+
+  if (!hmdaReady) {
+    // Render schema-not-ready empty states for all demographic panels
+    const schemaEmpty = renderEmpty(
+      'HMDA columns missing.',
+      'Add hmda_race, hmda_ethnicity, hmda_sex to the borrowers table. Migration SQL is in the source comments at the top of /reports.html.'
+    );
+    $('#comp-race-body').innerHTML = schemaEmpty;
+    $('#comp-ethnicity-body').innerHTML = schemaEmpty;
+    $('#comp-approval-body').innerHTML = schemaEmpty;
+    $('#comp-missing-body').innerHTML = schemaEmpty;
+    delete exporters['comp-race'];
+    delete exporters['comp-ethnicity'];
+    delete exporters['comp-approval'];
+    delete exporters['comp-missing'];
+    // Adverse-action panel doesn't need HMDA columns — render normally
+    renderAdverseAction(periodLoans);
+    return;
+  }
 
   renderRaceBreakdown(periodPrimary);
   renderEthnicityBreakdown(periodPrimary);
@@ -2471,11 +2541,10 @@ function renderDemographicChart(bodyId, primaryArr, fieldName, labels, exportKey
     const v = borrower[fieldName];
     if (!v) { unset++; return; }
     if (counts[v] != null) counts[v]++;
-    else if (counts.declined != null) counts.declined++;  // bucket unrecognized as "info not provided" if that's a known label
-    else unrecognized++;  // otherwise track separately so they don't disappear silently
+    else if (counts.declined != null) counts.declined++;
+    else unrecognized++;
   });
 
-  // Add "not collected" if any
   const rows = [
     ...Object.entries(counts).map(([k, v]) => ({ key: k, label: labels[k], count: v })),
   ];
@@ -2524,21 +2593,15 @@ function renderApprovalByDemo(periodPrimary, periodLoans) {
     return;
   }
 
-  // Build approval breakdown for race AND ethnicity in same table
-  const loanById = {};
-  periodLoans.forEach(l => loanById[l.id] = l);
-
   function bucketize(field, labels) {
     const buckets = {};
     Object.keys(labels).forEach(k => buckets[k] = { funded: 0, denied: 0, withdrawn: 0, total: 0 });
-    // Capture unrecognized DB values into a separate bucket so they don't
-    // pollute the table with raw enum strings or NULL-as-key entries.
     const unrecognized = { funded: 0, denied: 0, withdrawn: 0, total: 0 };
     periodPrimary.forEach(({ loan, borrower }) => {
       const v = borrower[field];
       let b;
       if (v && buckets[v]) b = buckets[v];
-      else if (buckets.declined) b = buckets.declined;   // missing or unknown → "info not provided"
+      else if (buckets.declined) b = buckets.declined;
       else b = unrecognized;
       b.total++;
       if (loan.status === 'funded') b.funded++;
@@ -2572,8 +2635,6 @@ function renderApprovalByDemo(periodPrimary, periodLoans) {
     `;
   }
 
-  // Helper to get a display label: _unrecognized is our internal bucket for
-  // raw DB values not in the labels constant, so it gets a friendlier name.
   const labelFor = (k, labels) => k === '_unrecognized' ? 'Other / unrecognized' : (labels[k] || k);
 
   body.innerHTML = `
@@ -2626,8 +2687,6 @@ function renderApprovalByDemo(periodPrimary, periodLoans) {
 
 function renderAdverseAction(periodLoans) {
   const body = $('#comp-adverse-body');
-  // Adverse action timing requires application_received_at and adverse_action_at columns,
-  // which aren't part of the v0.2 schema. Render an honest empty state with an explanation.
   const denied = periodLoans.filter(l => l.status === 'denied');
 
   if (denied.length === 0) {
@@ -2636,7 +2695,6 @@ function renderAdverseAction(periodLoans) {
     return;
   }
 
-  // Best-effort: use created_at → updated_at delta as a proxy
   const days = denied.map(l => {
     const start = l.created_at;
     const end = l.updated_at || todayISO();
@@ -2762,12 +2820,10 @@ function exportCSV(filename, rows) {
   }
   const csv = rows.map(row => row.map(cell => {
     const s = String(cell ?? '');
-    // Quote if contains comma, quote, newline; double internal quotes
     if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }).join(',')).join('\n');
 
-  // BOM helps Excel detect UTF-8
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2783,16 +2839,10 @@ function exportCSV(filename, rows) {
 // ═══════════════════════════════════════════════════════════════════════════
 // FULL DATASET EXPORT (paginated)
 //
-// Per-panel CSVs only export what's currently rendered, which is capped by
-// the in-memory loans fetch (.limit(2000)). For branches with thousands of
-// loans in a period, that's a real ceiling. This export bypasses the cap
-// by paginating through Supabase explicitly — it returns one comprehensive
-// CSV with every loan in the period and every audit column, so you can
-// pivot in Excel however you want.
-//
-// Page size: 1000 rows per request (Supabase's default max). 10,000-row
-// stop-loss to prevent runaway exports — if you ever need more than that,
-// either narrow the date range or add a server-side endpoint.
+// Uses the same dynamic SELECT shape as the bulk fetch — adapts to whatever
+// schema features are present. Officer name is backfilled from the profile
+// cache when the FK isn't registered. HMDA columns export as empty strings
+// when the columns don't exist yet.
 // ═══════════════════════════════════════════════════════════════════════════
 async function exportFullDataset() {
   const btn = $('#btn-export-full');
@@ -2800,22 +2850,34 @@ async function exportFullDataset() {
   btn.disabled = true;
   btn.innerHTML = '<span style="margin-right:0.35rem;">⏳</span>Exporting…';
   try {
+    // Make sure schema + profile cache are ready
+    await detectSchema();
+    if (!SCHEMA.loans_officer_fk) await ensureProfilesCache();
+
     const fromISO = range.from;
     const toISO = range.to;
     const PAGE = 1000;
     const HARD_CAP = 10000;
     const all = [];
     let from = 0;
+
+    // Build a slimmer SELECT for the export (we don't need every column)
+    const borrowerCols = SCHEMA.borrowers_hmda
+      ? 'first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex'
+      : 'first_name, last_name';
+    const officerEmbed = SCHEMA.loans_officer_fk
+      ? 'officer:loan_officer_id ( full_name ),'
+      : '';
+    const SELECT = `
+      id, loan_number, status, purpose, loan_amount_cents,
+      loan_officer_id, ${officerEmbed}
+      property_address, created_at, updated_at, stage_entered_at,
+      loan_borrowers ( position, borrower:borrower_id ( ${borrowerCols} ) )
+    `;
+
     while (from < HARD_CAP) {
       const { data, error } = await supa.from('loans')
-        .select(`
-          id, loan_number, status, purpose, loan_amount_cents,
-          loan_officer_id, officer:loan_officer_id ( full_name ),
-          property_address, created_at, updated_at, stage_entered_at,
-          loan_borrowers ( position, borrower:borrower_id (
-            first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex
-          ) )
-        `)
+        .select(SELECT)
         .eq('branch_id', me.branch_id)
         .is('archived_at', null)
         .gte('created_at', fromISO)
@@ -2824,10 +2886,13 @@ async function exportFullDataset() {
         .range(from, from + PAGE - 1);
       if (error) throw error;
       if (!data || data.length === 0) break;
+      // Backfill officer if the FK isn't registered
+      if (!SCHEMA.loans_officer_fk) data.forEach(attachOfficerToLoan);
+      // Normalize borrowers so HMDA columns are at least null
+      data.forEach(l => (l.loan_borrowers || []).forEach(lb => normalizeBorrower(lb.borrower)));
       all.push(...data);
-      // Update progress so the user knows we're working
       btn.innerHTML = `<span style="margin-right:0.35rem;">⏳</span>Exporting… ${all.length} rows`;
-      if (data.length < PAGE) break;  // last page
+      if (data.length < PAGE) break;
       from += PAGE;
     }
 
@@ -2839,7 +2904,6 @@ async function exportFullDataset() {
       showToast(`Hit ${HARD_CAP}-row cap. Narrow the date range to export the rest.`, true);
     }
 
-    // Flatten to one row per loan with primary borrower's data
     const rows = [
       [
         'loan_number', 'status', 'purpose', 'loan_amount_dollars',
