@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>New Loan · OriginFlow LOS</title>
+<meta name="description" content="Start a new loan application. Full URLA 1003.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+/* ─── NAV (matches home.html) ──────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
+.sonar-icon { width: 26px; height: 26px; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-crumb {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  padding-left: 1rem; border-left: 1px solid var(--border);
+  margin-left: 0.5rem;
+}
+.nav-crumb span { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-status {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); display: flex; align-items: center; gap: 0.4rem;
+}
+.nav-status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted);
+}
+.nav-status.saving .nav-status-dot { background: var(--amber); animation: dot 0.8s ease infinite; }
+.nav-status.saved  .nav-status-dot { background: var(--accent2); }
+.nav-status.error  .nav-status-dot { background: var(--red); }
+@keyframes dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.nav-cancel {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.4rem 0.85rem;
+  transition: all 0.15s; cursor: pointer; background: none;
+}
+.nav-cancel:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── MAIN LAYOUT ──────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1px;
+  background: var(--border);
+  min-height: 0;
+}
+
+/* ─── PROGRESS RAIL ────────────────────────────────────────────────── */
+.rail {
+  background: var(--deep);
+  padding: 1.75rem 1.5rem;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.rail-eyebrow {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;
+}
+.rail-title {
+  font-family: var(--serif); font-size: 1.5rem; color: var(--white);
+  line-height: 1.15; margin-bottom: 0.4rem;
+}
+.rail-sub {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-bottom: 1.5rem;
+}
+.rail-progress-bar {
+  height: 3px; background: var(--border); margin-bottom: 1.5rem;
+  position: relative; overflow: hidden;
+}
+.rail-progress-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transition: width 0.3s ease;
+  width: 0;
+}
+.rail-progress-pct {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  color: var(--muted); margin-top: 0.4rem; text-align: right;
+}
+
+.rail-steps { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+.rail-step {
+  display: grid; grid-template-columns: 28px 1fr;
+  gap: 0.75rem; align-items: center;
+  padding: 0.65rem 0.7rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-left: 2px solid var(--border);
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  color: var(--text);
+}
+.rail-step:hover { background: var(--surface); }
+.rail-step.active {
+  background: var(--surface);
+  border-color: rgba(0,212,255,0.3);
+  border-left-color: var(--accent);
+}
+.rail-step.done {
+  border-left-color: var(--accent2);
+}
+.rail-step.touched {
+  border-left-color: var(--amber);
+}
+.rail-step-num {
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 700;
+  color: var(--muted);
+  width: 28px; height: 28px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+.rail-step.active .rail-step-num {
+  color: var(--accent); border-color: var(--accent);
+  background: rgba(0,212,255,0.08);
+}
+.rail-step.done .rail-step-num {
+  color: var(--navy); border-color: var(--accent2);
+  background: var(--accent2);
+}
+.rail-step-mid { display: flex; flex-direction: column; gap: 0.1rem; }
+.rail-step-label {
+  font-size: 0.85rem; color: var(--white); font-weight: 500;
+}
+.rail-step-meta {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
+  color: var(--muted); text-transform: uppercase;
+}
+
+.rail-foot {
+  margin-top: auto; padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.rail-foot-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
+}
+.rail-foot-shortcuts {
+  display: flex; flex-direction: column; gap: 0.35rem;
+  font-family: var(--mono); font-size: 0.6rem;
+  color: var(--muted);
+}
+.rail-foot-shortcuts kbd {
+  font-family: var(--mono); font-size: 0.55rem;
+  color: var(--text); border: 1px solid var(--border);
+  padding: 0.05rem 0.3rem; border-radius: 2px;
+  margin-right: 0.3rem;
+}
+
+/* ─── FORM AREA ────────────────────────────────────────────────────── */
+.form-area {
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  min-height: 0;
+}
+.form-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 2.5rem 3rem;
+}
+.form-scroll-inner { max-width: 880px; margin: 0 auto; }
+
+.step-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;
+}
+.step-title {
+  font-family: var(--serif); font-size: 2.1rem; color: var(--white);
+  line-height: 1.1; margin-bottom: 0.5rem;
+}
+.step-intro {
+  color: var(--muted); margin-bottom: 2rem; max-width: 620px;
+}
+
+.section {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1.25rem;
+}
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+}
+.section-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text);
+}
+.section-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.1rem 0.45rem;
+}
+.section-body { padding: 1.25rem 1.15rem; }
+
+/* ─── FIELDS ───────────────────────────────────────────────────────── */
+.row {
+  display: grid; gap: 1rem;
+  margin-bottom: 1rem;
+}
+.row.cols-2 { grid-template-columns: 1fr 1fr; }
+.row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.row.cols-2-1 { grid-template-columns: 2fr 1fr; }
+.row.cols-1-2 { grid-template-columns: 1fr 2fr; }
+
+.field { display: flex; flex-direction: column; gap: 0.35rem; }
+.field-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.field-label.req::after {
+  content: ' *'; color: var(--accent);
+}
+.field-hint {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+.field-error {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--red);
+  letter-spacing: 0.04em; margin-top: 0.15rem; display: none;
+}
+.field.invalid .field-error { display: block; }
+.field.invalid input,
+.field.invalid select,
+.field.invalid textarea { border-color: var(--red); }
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="number"],
+input[type="date"], input[type="password"], select, textarea {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  color: var(--white);
+  font-family: var(--sans); font-size: 0.95rem;
+  padding: 0.65rem 0.8rem;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 80px; font-family: var(--sans); }
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%),
+                    linear-gradient(135deg, var(--accent) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 14px, calc(100% - 13px) 14px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+/* radio / checkbox groups */
+.choice-group {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+}
+.choice {
+  position: relative;
+  flex: 1; min-width: 120px;
+}
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice label {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--deep);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+}
+.choice label:hover { color: var(--text); border-color: rgba(0,212,255,0.4); }
+.choice input:checked + label {
+  color: var(--accent); border-color: var(--accent);
+  background: rgba(0,212,255,0.08);
+}
+.choice input:focus-visible + label {
+  outline: 1px solid var(--accent); outline-offset: 2px;
+}
+
+/* yes/no toggle inline */
+.yn-group {
+  display: inline-flex; gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+}
+.yn-group .choice { flex: 0 0 auto; min-width: 60px; }
+.yn-group .choice label { border: none; padding: 0.5rem 1rem; }
+
+/* prefix input (for $ and %) */
+.input-prefix {
+  position: relative;
+}
+.input-prefix::before {
+  content: attr(data-prefix);
+  position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 0.85rem; color: var(--muted);
+  pointer-events: none;
+}
+.input-prefix input { padding-left: 1.8rem; }
+.input-suffix {
+  position: relative;
+}
+.input-suffix::after {
+  content: attr(data-suffix);
+  position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 0.85rem; color: var(--muted);
+  pointer-events: none;
+}
+.input-suffix input { padding-right: 2.2rem; }
+
+/* repeater (employment, income, assets, liabilities, REO) */
+.repeater {
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.repeater-item {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 1rem 1.1rem;
+  position: relative;
+}
+.repeater-item-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+.repeater-item-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent);
+}
+.repeater-remove {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  background: none; border: 1px solid var(--border);
+  padding: 0.25rem 0.55rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.repeater-remove:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+.repeater-add {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent);
+  background: transparent; border: 1px dashed rgba(0,212,255,0.4);
+  padding: 0.7rem 1rem; cursor: pointer; width: 100%;
+  transition: all 0.15s;
+}
+.repeater-add:hover { background: rgba(0,212,255,0.06); border-style: solid; }
+
+/* coborrower toggle banner */
+.cob-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1.25rem;
+}
+.cob-banner-text { color: var(--text); font-size: 0.9rem; }
+.cob-banner-text strong { color: var(--white); font-weight: 500; }
+.cob-banner-text small {
+  display: block; font-family: var(--mono); font-size: 0.6rem;
+  color: var(--muted); margin-top: 0.2rem; letter-spacing: 0.04em;
+}
+.cob-toggle-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--accent); background: rgba(0,212,255,0.08);
+  color: var(--accent); transition: all 0.15s;
+}
+.cob-toggle-btn:hover { background: var(--accent); color: var(--navy); }
+.cob-toggle-btn.active {
+  background: var(--accent); color: var(--navy); font-weight: 700;
+}
+
+.borrower-block {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1.25rem;
+}
+.borrower-block-head {
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.borrower-block-label {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent);
+}
+.borrower-block-body { padding: 1.25rem 1.15rem; }
+
+/* ─── FORM FOOTER (sticky nav) ─────────────────────────────────────── */
+.form-foot {
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  padding: 1rem 3rem;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.form-foot-left {
+  display: flex; align-items: center; gap: 0.75rem;
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.form-foot-right { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.7rem 1.25rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--border); color: var(--text); }
+.btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent);
+  font-weight: 700;
+}
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.btn.success {
+  background: var(--accent2); color: var(--navy); border-color: var(--accent2);
+  font-weight: 700;
+}
+
+/* ─── TOAST ────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none;
+  animation: toastIn 0.2s ease both;
+}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ─── STATE SCREENS ────────────────────────────────────────────────── */
+.state-screen {
+  grid-column: 1 / -1;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── MOBILE ───────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  main { grid-template-columns: 1fr; }
+  .rail {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+  }
+  .rail-foot { display: none; }
+  .form-scroll { padding: 1.5rem 1.25rem; }
+  .form-foot { padding: 1rem 1.25rem; }
+}
+@media (max-width: 720px) {
+  .row.cols-2, .row.cols-3, .row.cols-4, .row.cols-2-1, .row.cols-1-2 {
+    grid-template-columns: 1fr;
+  }
+  .step-title { font-size: 1.5rem; }
+  .nav-crumb { display: none; }
+  nav { padding: 0.85rem 1rem; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+    <span class="nav-crumb">Home / <span>New Loan</span></span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-status" id="nav-status">
+      <span class="nav-status-dot"></span>
+      <span id="nav-status-text">Draft autosaves locally</span>
+    </span>
+    <a href="/home.html" class="nav-cancel">Cancel</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<main id="main-grid">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Preparing application…</div>
+  </div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">You need to be signed in to start a loan.</h1>
+    <p class="state-text">Loans are written to your branch — we need to know who you are first.</p>
+    <a href="/login.html" class="btn primary">Sign in →</a>
+  </div>
+
+  <!-- VIEWER (read-only role can't create) -->
+  <div class="state-screen" id="state-readonly" style="display:none;">
+    <div class="state-eyebrow">Read-only access</div>
+    <h1 class="state-heading">Viewers can't create loans.</h1>
+    <p class="state-text">Your role is set to <strong>Viewer</strong>, which is read-only. Ask your branch admin to upgrade your role if you need to start applications.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <!-- ─── PROGRESS RAIL ─── -->
+  <aside class="rail" id="rail" style="display:none;">
+    <div class="rail-eyebrow">URLA · Form 1003</div>
+    <h2 class="rail-title">New Loan File</h2>
+    <div class="rail-sub" id="rail-loan-num">— · draft</div>
+
+    <div class="rail-progress-bar"><div class="rail-progress-fill" id="rail-progress-fill"></div></div>
+    <div class="rail-progress-pct" id="rail-progress-pct">0% complete</div>
+
+    <ol class="rail-steps" id="rail-steps">
+      <!-- populated by renderRail() -->
+    </ol>
+
+    <div class="rail-foot">
+      <div class="rail-foot-label">Shortcuts</div>
+      <div class="rail-foot-shortcuts">
+        <span><kbd id="kbd-save">⌘S</kbd> save draft</span>
+        <span><kbd>⌘</kbd><kbd>→</kbd> next step</span>
+        <span><kbd>⌘</kbd><kbd>←</kbd> previous step</span>
+        <span><kbd>Esc</kbd> back to home</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── FORM AREA ─── -->
+  <section class="form-area" id="form-area" style="display:none;">
+    <div class="form-scroll" id="form-scroll">
+      <div class="form-scroll-inner" id="form-content">
+        <!-- step content rendered here -->
+      </div>
+    </div>
+
+    <div class="form-foot">
+      <div class="form-foot-left" id="form-foot-status">Step 1 of 6 · Loan Terms</div>
+      <div class="form-foot-right">
+        <button class="btn" id="btn-prev" type="button">← Previous</button>
+        <button class="btn" id="btn-save-draft" type="button">Save Draft</button>
+        <button class="btn primary" id="btn-next" type="button">Next →</button>
+        <button class="btn success" id="btn-submit" type="button" style="display:none;">Submit Application →</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- toast -->
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// /loans/new.html — Full URLA 1003 wizard
+// 6 steps · co-borrower toggle · localStorage autosave · Supabase save
+//
+// Saves to:
+//   loans            (status='lead' on draft, 'application' on submit)
+//   borrowers        (one row per borrower)
+//   loan_borrowers   (junction with position)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (s) => document.querySelector(s);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+// ─── Auth state ──────────────────────────────────────────────────────────
+let supa = null;
+let me = null;
+let branch = null;
+
+// ─── Form state ──────────────────────────────────────────────────────────
+let currentStep = 0;
+let touchedSteps = new Set();   // steps user has visited
+let validSteps = new Set();     // steps that pass validation
+let hasCoborrower = false;
+let createdLoanId = null;       // becomes set on first draft save
+let autosaveTimer = null;
+const DRAFT_KEY = 'of_new_loan_draft_v1';
+
+// formData mirrors the URLA 1003 schema — flat object, no nesting
+const formData = {
+  // Step 1: Loan Terms
+  purpose: '',                  // purchase, refinance, cash_out_refi, construction, other
+  loan_amount: '',              // dollars (we convert to cents on save)
+  loan_program: '',             // conventional, fha, va, usda, jumbo, other
+  amortization_type: '',        // fixed, arm, other
+  loan_term_months: '',         // 360, 240, 180, 120, etc
+  interest_rate: '',
+  occupancy: '',                // primary, secondary, investment
+  property_type: '',            // sfr, condo, pud, manufactured, multi_2_4
+  down_payment: '',
+  estimated_closing_date: '',
+
+  // Step 2: Property
+  property_address_street: '',
+  property_address_unit: '',
+  property_address_city: '',
+  property_address_state: '',
+  property_address_zip: '',
+  property_address_county: '',
+  property_year_built: '',
+  property_value: '',
+  property_units: '1',
+  project_type: '',             // none, condominium, pud, cooperative
+  mixed_use: 'no',
+  manufactured_home: 'no',
+
+  // Step 3: Borrowers (b1 = primary, b2 = co-borrower if hasCoborrower)
+  b1_first_name: '', b1_middle: '', b1_last_name: '', b1_suffix: '',
+  b1_ssn: '', b1_dob: '',
+  b1_email: '', b1_phone: '', b1_phone_alt: '',
+  b1_marital: '',               // married, separated, unmarried
+  b1_dependents: '0',
+  b1_dependent_ages: '',
+  b1_citizenship: '',           // us_citizen, permanent_resident, non_permanent
+  b1_current_address: '',
+  b1_current_city: '', b1_current_state: '', b1_current_zip: '',
+  b1_current_years: '', b1_current_months: '',
+  b1_housing: '',               // own, rent, no_primary
+  b1_monthly_rent: '',
+  b1_mailing_same: 'yes',
+  b1_mailing_address: '', b1_mailing_city: '', b1_mailing_state: '', b1_mailing_zip: '',
+
+  b2_first_name: '', b2_middle: '', b2_last_name: '', b2_suffix: '',
+  b2_ssn: '', b2_dob: '',
+  b2_email: '', b2_phone: '',
+  b2_marital: '', b2_dependents: '0', b2_dependent_ages: '',
+  b2_citizenship: '',
+  b2_same_address: 'yes',
+  b2_current_address: '',
+  b2_current_city: '', b2_current_state: '', b2_current_zip: '',
+  b2_current_years: '', b2_current_months: '',
+  b2_housing: '',
+  b2_monthly_rent: '',
+
+  // Step 4: Employment & Income (per borrower, repeating)
+  b1_employment: [],
+  b1_other_income: [],
+  b2_employment: [],
+  b2_other_income: [],
+
+  // Step 5: Assets & Liabilities
+  assets: [],                   // {kind, institution, account, balance, owner}
+  liabilities: [],              // {kind, creditor, balance, monthly, months_left, payoff_at_close, owner}
+  reo: [],                      // {address, city, state, zip, type, status, value, mortgage_balance, monthly_payment, rental_income, owner}
+
+  // Step 6: Declarations + Demographics + Government Monitoring
+  // Declarations (yes/no for each, b1 + b2)
+  decl_a: 'no',  // primary residence?
+  decl_b: 'no',  // ownership in last 3 yrs?
+  decl_c: 'no',  // family/business affiliation with seller?
+  decl_d1: 'no', // borrowing for down payment?
+  decl_d2: 'no', // applying for any other mortgage?
+  decl_d3: 'no', // applying for new credit?
+  decl_d4: 'no', // subject to lien priority?
+  decl_e: 'no',  // co-signer on debt?
+  decl_f: 'no',  // outstanding judgments?
+  decl_g: 'no',  // currently delinquent on federal debt?
+  decl_h: 'no',  // party to lawsuit?
+  decl_i: 'no',  // conveyed title in lieu in last 7 yrs?
+  decl_j: 'no',  // pre-foreclosure / short sale in last 7?
+  decl_k: 'no',  // foreclosure in last 7?
+  decl_l: 'no',  // bankruptcy in last 7? (which type)
+  decl_l_chapter: '',  // 7, 11, 12, 13
+
+  // Demographics (b1)
+  b1_demo_decline: 'no',
+  b1_ethnicity: '',             // hispanic, not_hispanic, no_provide
+  b1_race: [],                  // multi-select
+  b1_sex: '',                   // male, female, no_provide
+  b1_demo_method: '',           // face_to_face, phone, fax_mail, email_internet
+
+  b2_demo_decline: 'no',
+  b2_ethnicity: '',
+  b2_race: [],
+  b2_sex: '',
+  b2_demo_method: '',
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const STEPS = [
+  {
+    id: 'terms',
+    label: 'Loan Terms',
+    meta: 'Section L1 · loan basics',
+    eyebrow: 'Step 1 of 6 · Section L1',
+    title: 'What kind of loan?',
+    intro: 'The basics: purpose, amount, program, and how it amortizes. You can change everything later.',
+    render: renderStepTerms,
+    validate: validateStepTerms,
+    requiredFields: ['purpose', 'loan_amount', 'loan_program', 'amortization_type', 'occupancy', 'property_type'],
+  },
+  {
+    id: 'property',
+    label: 'Property',
+    meta: 'Section L2 · subject property',
+    eyebrow: 'Step 2 of 6 · Section L2',
+    title: 'Where\'s the property?',
+    intro: 'Subject property address and characteristics. Required for AUS and disclosures.',
+    render: renderStepProperty,
+    validate: validateStepProperty,
+    requiredFields: ['property_address_street', 'property_address_city', 'property_address_state', 'property_address_zip'],
+  },
+  {
+    id: 'borrowers',
+    label: 'Borrower(s)',
+    meta: 'Section 1 · personal info',
+    eyebrow: 'Step 3 of 6 · Section 1',
+    title: 'Who\'s on the loan?',
+    intro: 'Personal information for the primary borrower, plus co-borrower if applicable. SSN and DOB are needed before we can pull credit.',
+    render: renderStepBorrowers,
+    validate: validateStepBorrowers,
+    requiredFields: ['b1_first_name', 'b1_last_name', 'b1_ssn', 'b1_dob', 'b1_email', 'b1_phone'],
+  },
+  {
+    id: 'employment',
+    label: 'Employment & Income',
+    meta: 'Section 1c · income',
+    eyebrow: 'Step 4 of 6 · Section 1c',
+    title: 'How do they get paid?',
+    intro: 'Current employment, prior employment if needed for two-year history, and any non-employment income.',
+    render: renderStepEmployment,
+    validate: validateStepEmployment,
+    requiredFields: [],
+  },
+  {
+    id: 'assets',
+    label: 'Assets & Liabilities',
+    meta: 'Section 2 · financial',
+    eyebrow: 'Step 5 of 6 · Section 2',
+    title: 'Assets, debts, and properties owned.',
+    intro: 'You can leave most of this empty for now — we\'ll auto-populate liabilities from credit when it\'s pulled. Add cash-on-hand assets and any properties owned.',
+    render: renderStepAssets,
+    validate: validateStepAssets,
+    requiredFields: [],
+  },
+  {
+    id: 'declarations',
+    label: 'Declarations',
+    meta: 'Sections 5 + 7 · disclosures',
+    eyebrow: 'Step 6 of 6 · Sections 5 + 7',
+    title: 'Last bit: declarations and demographics.',
+    intro: 'Required by federal law (URLA + HMDA). Borrowers can decline to provide demographic information — but we still need to record the question was asked.',
+    render: renderStepDeclarations,
+    validate: validateStepDeclarations,
+    requiredFields: [],
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function showToast(msg, isError) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function setSaveStatus(state, text) {
+  const el = $('#nav-status');
+  el.classList.remove('saving', 'saved', 'error');
+  if (state) el.classList.add(state);
+  $('#nav-status-text').textContent = text;
+}
+
+function dollarsToCents(v) {
+  if (v == null || v === '') return null;
+  const n = Number(String(v).replace(/[$,\s]/g, ''));
+  if (!isFinite(n)) return null;
+  return Math.round(n * 100);
+}
+
+function digits(v) { return String(v || '').replace(/\D/g, ''); }
+
+function formatSSN(v) {
+  const d = digits(v).slice(0, 9);
+  if (d.length <= 3) return d;
+  if (d.length <= 5) return d.slice(0,3) + '-' + d.slice(3);
+  return d.slice(0,3) + '-' + d.slice(3,5) + '-' + d.slice(5);
+}
+function formatPhone(v) {
+  const d = digits(v).slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return '(' + d.slice(0,3) + ') ' + d.slice(3);
+  return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+}
+function formatZip(v) {
+  return digits(v).slice(0, 5);
+}
+
+const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#kbd-save').textContent = isMac ? '⌘S' : 'Ctrl+S';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile || !profile.branch_id) {
+    console.error('profile load error:', profErr);
+    showState('state-signed-out');
+    return;
+  }
+  if (profile.role === 'viewer') { showState('state-readonly'); return; }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  // Try to restore a draft from localStorage
+  restoreDraft();
+
+  showWizard();
+  renderRail();
+  renderStep();
+  initShortcuts();
+  startAutosave();
+}
+
+function showState(id) {
+  document.getElementById('main-grid').style.gridTemplateColumns = '1fr';
+  ['state-loading','state-signed-out','state-readonly'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#rail').style.display = 'none';
+  $('#form-area').style.display = 'none';
+}
+
+function showWizard() {
+  ['state-loading','state-signed-out','state-readonly'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById('main-grid').style.gridTemplateColumns =
+    window.innerWidth > 1100 ? '280px 1fr' : '1fr';
+  $('#rail').style.display = 'flex';
+  $('#form-area').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOCAL DRAFT (autosave)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function startAutosave() {
+  // Save to localStorage every 1.5s after a change
+  document.addEventListener('input', () => {
+    syncFormToData();
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          formData, hasCoborrower, currentStep, savedAt: Date.now(),
+        }));
+        setSaveStatus('saved', 'Draft saved locally · ' + new Date().toLocaleTimeString());
+      } catch (e) {
+        console.warn('localStorage write failed', e);
+      }
+    }, 1500);
+  });
+  document.addEventListener('change', () => {
+    syncFormToData();
+  });
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed.formData || !parsed.savedAt) return;
+    // Skip drafts older than 7 days
+    if (Date.now() - parsed.savedAt > 7 * 24 * 3600 * 1000) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    Object.assign(formData, parsed.formData);
+    hasCoborrower = !!parsed.hasCoborrower;
+    currentStep = parsed.currentStep || 0;
+    setSaveStatus('saved', 'Draft restored from ' + new Date(parsed.savedAt).toLocaleString());
+  } catch (e) {
+    console.warn('draft restore failed', e);
+  }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RAIL
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderRail() {
+  const ol = $('#rail-steps');
+  ol.innerHTML = STEPS.map((s, i) => {
+    const cls = i === currentStep ? 'active'
+              : validSteps.has(i)  ? 'done'
+              : touchedSteps.has(i) ? 'touched'
+              : '';
+    const num = validSteps.has(i) ? '✓' : (i + 1);
+    return `
+      <li>
+        <button class="rail-step ${cls}" data-step="${i}">
+          <span class="rail-step-num">${num}</span>
+          <span class="rail-step-mid">
+            <span class="rail-step-label">${escapeHtml(s.label)}</span>
+            <span class="rail-step-meta">${escapeHtml(s.meta)}</span>
+          </span>
+        </button>
+      </li>
+    `;
+  }).join('');
+  ol.querySelectorAll('.rail-step').forEach(b => {
+    b.addEventListener('click', () => goToStep(parseInt(b.dataset.step, 10)));
+  });
+
+  // Progress bar
+  const total = STEPS.length;
+  const pct = Math.round((validSteps.size / total) * 100);
+  $('#rail-progress-fill').style.width = pct + '%';
+  $('#rail-progress-pct').textContent = pct + '% complete';
+
+  // Loan number pill
+  $('#rail-loan-num').textContent = createdLoanId
+    ? 'Loan saved · ' + branch.name
+    : 'Unsaved draft · ' + branch.name;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP RENDERING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStep() {
+  const step = STEPS[currentStep];
+  touchedSteps.add(currentStep);
+
+  const el = $('#form-content');
+  el.innerHTML = `
+    <div class="step-eyebrow">${escapeHtml(step.eyebrow)}</div>
+    <h1 class="step-title">${escapeHtml(step.title)}</h1>
+    <p class="step-intro">${escapeHtml(step.intro)}</p>
+    <div id="step-body"></div>
+  `;
+  step.render($('#step-body'));
+  populateForm();
+
+  // Footer state
+  $('#form-foot-status').textContent = `Step ${currentStep + 1} of ${STEPS.length} · ${step.label}`;
+  $('#btn-prev').disabled = currentStep === 0;
+  $('#btn-next').style.display    = (currentStep === STEPS.length - 1) ? 'none' : 'inline-flex';
+  $('#btn-submit').style.display  = (currentStep === STEPS.length - 1) ? 'inline-flex' : 'none';
+
+  $('#form-scroll').scrollTop = 0;
+  renderRail();
+}
+
+function goToStep(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  syncFormToData();
+  currentStep = i;
+  renderStep();
+}
+
+function nextStep() {
+  syncFormToData();
+  const step = STEPS[currentStep];
+  const valid = step.validate();
+  if (valid) validSteps.add(currentStep);
+  else       validSteps.delete(currentStep);
+  if (!valid) {
+    showToast('Fix the highlighted fields before continuing.', true);
+    return;
+  }
+  if (currentStep < STEPS.length - 1) goToStep(currentStep + 1);
+}
+
+function prevStep() {
+  syncFormToData();
+  if (currentStep > 0) goToStep(currentStep - 1);
+}
+
+// Sync DOM inputs back into formData
+function syncFormToData() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const f = el.dataset.field;
+    if (el.type === 'radio') {
+      if (el.checked) formData[f] = el.value;
+    } else if (el.type === 'checkbox') {
+      // multi-checkbox arrays
+      const isMulti = el.dataset.multi === 'true';
+      if (isMulti) {
+        const arr = Array.isArray(formData[f]) ? formData[f] : [];
+        const has = arr.includes(el.value);
+        if (el.checked && !has) arr.push(el.value);
+        else if (!el.checked && has) arr.splice(arr.indexOf(el.value), 1);
+        formData[f] = arr;
+      } else {
+        formData[f] = el.checked ? 'yes' : 'no';
+      }
+    } else {
+      formData[f] = el.value;
+    }
+  });
+}
+
+// Populate DOM inputs from formData (after render)
+function populateForm() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const f = el.dataset.field;
+    const v = formData[f];
+    if (el.type === 'radio') {
+      el.checked = (el.value === v);
+    } else if (el.type === 'checkbox') {
+      const isMulti = el.dataset.multi === 'true';
+      if (isMulti) {
+        el.checked = Array.isArray(v) && v.includes(el.value);
+      } else {
+        el.checked = (v === 'yes' || v === true);
+      }
+    } else if (v != null) {
+      el.value = v;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FIELD HELPERS (HTML builders)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function f_text(field, label, opts = {}) {
+  return `
+    <div class="field${opts.required ? ' is-required' : ''}" data-field-wrap="${field}">
+      <label class="field-label${opts.required ? ' req' : ''}">${escapeHtml(label)}</label>
+      <input type="${opts.type || 'text'}" data-field="${field}"
+        ${opts.placeholder ? `placeholder="${escapeHtml(opts.placeholder)}"` : ''}
+        ${opts.maxlength ? `maxlength="${opts.maxlength}"` : ''}
+        ${opts.format ? `data-format="${opts.format}"` : ''}>
+      ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
+      <div class="field-error">Required</div>
+    </div>
+  `;
+}
+function f_money(field, label, opts = {}) {
+  return `
+    <div class="field${opts.required ? ' is-required' : ''}" data-field-wrap="${field}">
+      <label class="field-label${opts.required ? ' req' : ''}">${escapeHtml(label)}</label>
+      <div class="input-prefix" data-prefix="$">
+        <input type="text" inputmode="decimal" data-field="${field}" data-format="money"
+          ${opts.placeholder ? `placeholder="${escapeHtml(opts.placeholder)}"` : 'placeholder="0"'}>
+      </div>
+      ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
+      <div class="field-error">Required</div>
+    </div>
+  `;
+}
+function f_pct(field, label, opts = {}) {
+  return `
+    <div class="field" data-field-wrap="${field}">
+      <label class="field-label">${escapeHtml(label)}</label>
+      <div class="input-suffix" data-suffix="%">
+        <input type="text" inputmode="decimal" data-field="${field}" data-format="pct" placeholder="0.000">
+      </div>
+      ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
+    </div>
+  `;
+}
+function f_select(field, label, options, opts = {}) {
+  const opts_html = options.map(o => {
+    const [v, l] = Array.isArray(o) ? o : [o, o];
+    return `<option value="${escapeHtml(v)}">${escapeHtml(l)}</option>`;
+  }).join('');
+  return `
+    <div class="field${opts.required ? ' is-required' : ''}" data-field-wrap="${field}">
+      <label class="field-label${opts.required ? ' req' : ''}">${escapeHtml(label)}</label>
+      <select data-field="${field}">
+        <option value="">— select —</option>
+        ${opts_html}
+      </select>
+      ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
+      <div class="field-error">Required</div>
+    </div>
+  `;
+}
+function f_state(field, label, opts = {}) {
+  return f_select(field, label, US_STATES.map(s => [s, s]), opts);
+}
+function f_choice(field, label, options, opts = {}) {
+  const opts_html = options.map(o => {
+    const [v, l] = Array.isArray(o) ? o : [o, o];
+    const id = `${field}_${v}`;
+    return `
+      <div class="choice">
+        <input type="radio" name="${field}" id="${id}" value="${escapeHtml(v)}" data-field="${field}">
+        <label for="${id}">${escapeHtml(l)}</label>
+      </div>
+    `;
+  }).join('');
+  return `
+    <div class="field${opts.required ? ' is-required' : ''}" data-field-wrap="${field}">
+      <label class="field-label${opts.required ? ' req' : ''}">${escapeHtml(label)}</label>
+      <div class="choice-group">${opts_html}</div>
+      ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
+      <div class="field-error">Required</div>
+    </div>
+  `;
+}
+function f_yn(field, label, opts = {}) {
+  return f_choice(field, label, [['yes','Yes'],['no','No']], opts);
+}
+function f_textarea(field, label, opts = {}) {
+  return `
+    <div class="field" data-field-wrap="${field}">
+      <label class="field-label">${escapeHtml(label)}</label>
+      <textarea data-field="${field}" ${opts.rows ? `rows="${opts.rows}"` : ''}
+        ${opts.placeholder ? `placeholder="${escapeHtml(opts.placeholder)}"` : ''}></textarea>
+      ${opts.hint ? `<div class="field-hint">${escapeHtml(opts.hint)}</div>` : ''}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP 1 — LOAN TERMS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStepTerms(el) {
+  el.innerHTML = `
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Loan Purpose & Amount</span>
+        <span class="section-tag">L1</span>
+      </div>
+      <div class="section-body">
+        ${f_choice('purpose', 'Purpose of Loan', [
+          ['purchase','Purchase'],
+          ['refinance','Refinance'],
+          ['cash_out_refi','Cash-Out Refi'],
+          ['construction','Construction'],
+          ['other','Other'],
+        ], { required: true })}
+        <div class="row cols-2">
+          ${f_money('loan_amount', 'Loan Amount', { required: true, placeholder: '350,000' })}
+          ${f_money('down_payment', 'Down Payment / Equity', { hint: 'Cash to close from borrower' })}
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Program & Terms</span>
+        <span class="section-tag">L1</span>
+      </div>
+      <div class="section-body">
+        <div class="row cols-2">
+          ${f_select('loan_program', 'Loan Program', [
+            ['conventional','Conventional'],
+            ['fha','FHA'],
+            ['va','VA'],
+            ['usda','USDA Rural'],
+            ['jumbo','Jumbo'],
+            ['non_qm','Non-QM'],
+            ['other','Other'],
+          ], { required: true })}
+          ${f_select('amortization_type', 'Amortization', [
+            ['fixed','Fixed Rate'],
+            ['arm_5_1','ARM 5/1'],
+            ['arm_7_1','ARM 7/1'],
+            ['arm_10_1','ARM 10/1'],
+            ['other','Other'],
+          ], { required: true })}
+        </div>
+        <div class="row cols-3">
+          ${f_select('loan_term_months', 'Term', [
+            ['360','30 yrs (360 mo)'],
+            ['240','20 yrs (240 mo)'],
+            ['180','15 yrs (180 mo)'],
+            ['120','10 yrs (120 mo)'],
+            ['other','Other'],
+          ])}
+          ${f_pct('interest_rate', 'Note Rate (if known)', { hint: 'Locked or estimate' })}
+          <div class="field" data-field-wrap="estimated_closing_date">
+            <label class="field-label">Estimated Close Date</label>
+            <input type="date" data-field="estimated_closing_date">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Property Use & Type</span>
+        <span class="section-tag">L1 / L2</span>
+      </div>
+      <div class="section-body">
+        ${f_choice('occupancy', 'Occupancy', [
+          ['primary','Primary Residence'],
+          ['secondary','Second Home'],
+          ['investment','Investment'],
+        ], { required: true })}
+        ${f_choice('property_type', 'Property Type', [
+          ['sfr','Single Family'],
+          ['condo','Condo'],
+          ['pud','PUD'],
+          ['multi_2_4','2-4 Unit'],
+          ['manufactured','Manufactured'],
+        ], { required: true })}
+      </div>
+    </div>
+  `;
+}
+
+function validateStepTerms() {
+  return validateRequired(STEPS[0].requiredFields);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP 2 — PROPERTY
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStepProperty(el) {
+  el.innerHTML = `
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Subject Property Address</span>
+        <span class="section-tag">L2</span>
+      </div>
+      <div class="section-body">
+        <div class="row cols-2-1">
+          ${f_text('property_address_street', 'Street Address', { required: true, placeholder: '1234 Main St' })}
+          ${f_text('property_address_unit', 'Unit / Apt')}
+        </div>
+        <div class="row cols-3">
+          ${f_text('property_address_city', 'City', { required: true })}
+          ${f_state('property_address_state', 'State', { required: true })}
+          ${f_text('property_address_zip', 'ZIP', { required: true, format: 'zip', maxlength: 5 })}
+        </div>
+        ${f_text('property_address_county', 'County', { hint: 'Required for title; can be filled in later' })}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Property Details</span>
+        <span class="section-tag">L2</span>
+      </div>
+      <div class="section-body">
+        <div class="row cols-3">
+          ${f_text('property_year_built', 'Year Built', { format: 'year', maxlength: 4 })}
+          ${f_money('property_value', 'Estimated Value', { hint: 'Purchase price or current value' })}
+          ${f_select('property_units', 'Units', [['1','1'],['2','2'],['3','3'],['4','4']])}
+        </div>
+        ${f_select('project_type', 'Project Type (if any)', [
+          ['none','None / Detached'],
+          ['condominium','Condominium'],
+          ['pud','Planned Unit Development'],
+          ['cooperative','Cooperative'],
+        ])}
+        <div class="row cols-2">
+          ${f_yn('mixed_use', 'Mixed-Use Property?')}
+          ${f_yn('manufactured_home', 'Manufactured Home?')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function validateStepProperty() {
+  return validateRequired(STEPS[1].requiredFields);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP 3 — BORROWERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStepBorrowers(el) {
+  el.innerHTML = `
+    ${renderBorrowerBlock('1', 'Primary Borrower')}
+
+    <div class="cob-banner">
+      <div class="cob-banner-text">
+        <strong>${hasCoborrower ? 'Co-borrower included' : 'Adding a co-borrower?'}</strong>
+        <small>${hasCoborrower ? 'Toggle off to remove their info from this application.' : 'Spouse, partner, or co-applicant on the same loan.'}</small>
+      </div>
+      <button type="button" class="cob-toggle-btn ${hasCoborrower ? 'active' : ''}" id="cob-toggle">
+        ${hasCoborrower ? '✓ Co-borrower On' : '+ Add Co-borrower'}
+      </button>
+    </div>
+
+    <div id="cob-block" style="display: ${hasCoborrower ? 'block' : 'none'};">
+      ${renderBorrowerBlock('2', 'Co-borrower')}
+    </div>
+  `;
+
+  $('#cob-toggle').addEventListener('click', () => {
+    syncFormToData();
+    hasCoborrower = !hasCoborrower;
+    renderStep();  // re-render this step
+  });
+}
+
+function renderBorrowerBlock(idx, label) {
+  const p = `b${idx}_`;
+  return `
+    <div class="borrower-block">
+      <div class="borrower-block-head">
+        <span class="borrower-block-label">${escapeHtml(label)}</span>
+      </div>
+      <div class="borrower-block-body">
+
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">Identity</span>
+            <span class="section-tag">§1a</span>
+          </div>
+          <div class="section-body">
+            <div class="row cols-4">
+              ${f_text(p+'first_name', 'First Name', { required: true })}
+              ${f_text(p+'middle', 'Middle')}
+              ${f_text(p+'last_name', 'Last Name', { required: true })}
+              ${f_text(p+'suffix', 'Suffix')}
+            </div>
+            <div class="row cols-2">
+              ${f_text(p+'ssn', 'SSN', { required: true, format: 'ssn', placeholder: '123-45-6789', maxlength: 11 })}
+              <div class="field" data-field-wrap="${p}dob">
+                <label class="field-label req">Date of Birth</label>
+                <input type="date" data-field="${p}dob">
+                <div class="field-error">Required</div>
+              </div>
+            </div>
+            ${f_choice(p+'citizenship', 'Citizenship', [
+              ['us_citizen','U.S. Citizen'],
+              ['permanent_resident','Permanent Resident'],
+              ['non_permanent','Non-Permanent Resident'],
+            ])}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">Contact</span>
+            <span class="section-tag">§1a</span>
+          </div>
+          <div class="section-body">
+            <div class="row cols-2">
+              ${f_text(p+'email', 'Email', { type: 'email', required: idx==='1' })}
+              ${f_text(p+'phone', 'Mobile Phone', { type: 'tel', format: 'phone', required: idx==='1', placeholder: '(555) 555-5555' })}
+            </div>
+            ${idx === '1' ? f_text(p+'phone_alt', 'Alternate Phone', { type: 'tel', format: 'phone' }) : ''}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">Marital Status & Dependents</span>
+            <span class="section-tag">§1b</span>
+          </div>
+          <div class="section-body">
+            ${f_choice(p+'marital', 'Marital Status', [
+              ['married','Married'],
+              ['separated','Separated'],
+              ['unmarried','Unmarried'],
+            ])}
+            <div class="row cols-2">
+              ${f_text(p+'dependents', 'Dependents', { type: 'number', placeholder: '0' })}
+              ${f_text(p+'dependent_ages', 'Ages (comma separated)', { placeholder: '8, 12, 15' })}
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">Current Address</span>
+            <span class="section-tag">§1d</span>
+          </div>
+          <div class="section-body">
+            ${idx === '2' ? `
+              <div style="margin-bottom: 1rem;">
+                ${f_yn(p+'same_address', 'Same address as primary borrower?')}
+              </div>
+            ` : ''}
+            ${f_text(p+'current_address', 'Street Address')}
+            <div class="row cols-3">
+              ${f_text(p+'current_city', 'City')}
+              ${f_state(p+'current_state', 'State')}
+              ${f_text(p+'current_zip', 'ZIP', { format: 'zip', maxlength: 5 })}
+            </div>
+            <div class="row cols-3">
+              ${f_text(p+'current_years', 'Years at Address', { type: 'number' })}
+              ${f_text(p+'current_months', 'Months', { type: 'number' })}
+              ${f_select(p+'housing', 'Housing', [['own','Own'],['rent','Rent'],['no_primary','No Primary Housing']])}
+            </div>
+            ${f_money(p+'monthly_rent', 'Monthly Rent (if renting)')}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function validateStepBorrowers() {
+  let ok = validateRequired(STEPS[2].requiredFields);
+  if (hasCoborrower) {
+    ok = validateRequired(['b2_first_name', 'b2_last_name']) && ok;
+  }
+  // SSN format check
+  if (formData.b1_ssn && digits(formData.b1_ssn).length !== 9) {
+    markInvalid('b1_ssn'); ok = false;
+  }
+  if (hasCoborrower && formData.b2_ssn && digits(formData.b2_ssn).length !== 9) {
+    markInvalid('b2_ssn'); ok = false;
+  }
+  return ok;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP 4 — EMPLOYMENT & INCOME
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStepEmployment(el) {
+  el.innerHTML = `
+    ${renderEmploymentSection('1', 'Primary Borrower')}
+    ${hasCoborrower ? renderEmploymentSection('2', 'Co-borrower') : ''}
+  `;
+  wireEmploymentRepeaters();
+}
+
+function renderEmploymentSection(idx, label) {
+  const empKey = `b${idx}_employment`;
+  const incKey = `b${idx}_other_income`;
+  const empItems = formData[empKey] || [];
+  const incItems = formData[incKey] || [];
+
+  return `
+    <div class="borrower-block">
+      <div class="borrower-block-head">
+        <span class="borrower-block-label">${escapeHtml(label)} · Employment & Income</span>
+      </div>
+      <div class="borrower-block-body">
+
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">Employment History</span>
+            <span class="section-tag">§1c</span>
+          </div>
+          <div class="section-body">
+            <div class="repeater" data-repeater="${empKey}">
+              ${empItems.length === 0
+                ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No employment added.</div>`
+                : empItems.map((e, i) => renderEmploymentItem(empKey, i, e)).join('')}
+            </div>
+            <button type="button" class="repeater-add" data-add="${empKey}" style="margin-top: 0.75rem;">
+              + Add Employment
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">Other Income</span>
+            <span class="section-tag">§1e</span>
+          </div>
+          <div class="section-body">
+            <div class="repeater" data-repeater="${incKey}">
+              ${incItems.length === 0
+                ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No other income added. (Skip if W-2 only.)</div>`
+                : incItems.map((e, i) => renderIncomeItem(incKey, i, e)).join('')}
+            </div>
+            <button type="button" class="repeater-add" data-add="${incKey}" style="margin-top: 0.75rem;">
+              + Add Other Income
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function renderEmploymentItem(key, i, e) {
+  return `
+    <div class="repeater-item" data-key="${key}" data-idx="${i}">
+      <div class="repeater-item-head">
+        <span class="repeater-item-label">Employment ${i + 1}</span>
+        <button type="button" class="repeater-remove" data-remove="${key}" data-idx="${i}">Remove</button>
+      </div>
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label">Employer</label>
+          <input type="text" data-rep-field="employer" value="${escapeHtml(e.employer || '')}">
+        </div>
+        <div class="field">
+          <label class="field-label">Position / Title</label>
+          <input type="text" data-rep-field="position" value="${escapeHtml(e.position || '')}">
+        </div>
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label class="field-label">Start Date</label>
+          <input type="date" data-rep-field="start_date" value="${escapeHtml(e.start_date || '')}">
+        </div>
+        <div class="field">
+          <label class="field-label">End Date</label>
+          <input type="date" data-rep-field="end_date" value="${escapeHtml(e.end_date || '')}">
+        </div>
+        <div class="field">
+          <label class="field-label">Status</label>
+          <select data-rep-field="status">
+            <option value="">— select —</option>
+            <option value="current"  ${e.status==='current'?'selected':''}>Current</option>
+            <option value="previous" ${e.status==='previous'?'selected':''}>Previous</option>
+          </select>
+        </div>
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label class="field-label">Monthly Income (Base)</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="monthly_base" data-format="money" value="${escapeHtml(e.monthly_base || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Overtime / Bonus / mo</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="monthly_other" data-format="money" value="${escapeHtml(e.monthly_other || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Self-Employed?</label>
+          <select data-rep-field="self_employed">
+            <option value="no"  ${e.self_employed==='no'  ? 'selected':''}>No</option>
+            <option value="yes" ${e.self_employed==='yes' ? 'selected':''}>Yes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderIncomeItem(key, i, e) {
+  return `
+    <div class="repeater-item" data-key="${key}" data-idx="${i}">
+      <div class="repeater-item-head">
+        <span class="repeater-item-label">Income Source ${i + 1}</span>
+        <button type="button" class="repeater-remove" data-remove="${key}" data-idx="${i}">Remove</button>
+      </div>
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label">Source</label>
+          <select data-rep-field="kind">
+            <option value="">— select —</option>
+            <option value="alimony"      ${e.kind==='alimony'?'selected':''}>Alimony / Child Support</option>
+            <option value="ssa"          ${e.kind==='ssa'?'selected':''}>Social Security / Disability</option>
+            <option value="pension"      ${e.kind==='pension'?'selected':''}>Pension / Retirement</option>
+            <option value="rental"       ${e.kind==='rental'?'selected':''}>Rental Income</option>
+            <option value="dividends"    ${e.kind==='dividends'?'selected':''}>Dividends / Interest</option>
+            <option value="va_benefits"  ${e.kind==='va_benefits'?'selected':''}>VA Benefits</option>
+            <option value="other"        ${e.kind==='other'?'selected':''}>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Monthly Amount</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="monthly_amount" data-format="money" value="${escapeHtml(e.monthly_amount || '')}">
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Description / Notes</label>
+        <input type="text" data-rep-field="description" value="${escapeHtml(e.description || '')}">
+      </div>
+    </div>
+  `;
+}
+
+function wireEmploymentRepeaters() {
+  // Add buttons
+  document.querySelectorAll('[data-add]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      syncRepeatersToData();
+      const key = btn.dataset.add;
+      if (!Array.isArray(formData[key])) formData[key] = [];
+      const empty = key.endsWith('_employment')
+        ? { employer:'', position:'', start_date:'', end_date:'', status:'current', monthly_base:'', monthly_other:'', self_employed:'no' }
+        : key.endsWith('_other_income')
+        ? { kind:'', monthly_amount:'', description:'' }
+        : key === 'assets'
+        ? { kind:'', institution:'', account:'', balance:'', owner:'b1' }
+        : key === 'liabilities'
+        ? { kind:'', creditor:'', balance:'', monthly:'', months_left:'', payoff_at_close:'no', owner:'b1' }
+        : { address:'', city:'', state:'', zip:'', type:'', status:'', value:'', mortgage_balance:'', monthly_payment:'', rental_income:'', owner:'b1' };
+      formData[key].push(empty);
+      renderStep();
+    });
+  });
+  // Remove buttons
+  document.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      syncRepeatersToData();
+      const key = btn.dataset.remove;
+      const idx = parseInt(btn.dataset.idx, 10);
+      if (Array.isArray(formData[key])) {
+        formData[key].splice(idx, 1);
+        renderStep();
+      }
+    });
+  });
+  // Live sync from repeater fields
+  document.querySelectorAll('.repeater-item').forEach(item => {
+    item.addEventListener('input', () => syncRepeatersToData());
+    item.addEventListener('change', () => syncRepeatersToData());
+  });
+}
+
+function syncRepeatersToData() {
+  document.querySelectorAll('[data-repeater]').forEach(rep => {
+    const key = rep.dataset.repeater;
+    const items = rep.querySelectorAll('.repeater-item');
+    if (!Array.isArray(formData[key])) formData[key] = [];
+    items.forEach((item, i) => {
+      if (!formData[key][i]) formData[key][i] = {};
+      item.querySelectorAll('[data-rep-field]').forEach(input => {
+        formData[key][i][input.dataset.repField] = input.value;
+      });
+    });
+    formData[key] = formData[key].slice(0, items.length);
+  });
+}
+
+function validateStepEmployment() {
+  syncRepeatersToData();
+  return true; // employment optional at intake; UW will require during processing
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP 5 — ASSETS & LIABILITIES & REO
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStepAssets(el) {
+  el.innerHTML = `
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Assets</span>
+        <span class="section-tag">§2a</span>
+      </div>
+      <div class="section-body">
+        <div class="repeater" data-repeater="assets">
+          ${(formData.assets || []).length === 0
+            ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No assets added.</div>`
+            : (formData.assets || []).map((e, i) => renderAssetItem(i, e)).join('')}
+        </div>
+        <button type="button" class="repeater-add" data-add="assets" style="margin-top: 0.75rem;">
+          + Add Asset
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Liabilities</span>
+        <span class="section-tag">§2c</span>
+      </div>
+      <div class="section-body">
+        <div class="field-hint" style="margin-bottom: 0.75rem;">Most liabilities will auto-populate from credit. Add anything you know about now (private loans, recent debts, etc).</div>
+        <div class="repeater" data-repeater="liabilities">
+          ${(formData.liabilities || []).length === 0
+            ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No liabilities added.</div>`
+            : (formData.liabilities || []).map((e, i) => renderLiabilityItem(i, e)).join('')}
+        </div>
+        <button type="button" class="repeater-add" data-add="liabilities" style="margin-top: 0.75rem;">
+          + Add Liability
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Real Estate Owned</span>
+        <span class="section-tag">§3</span>
+      </div>
+      <div class="section-body">
+        <div class="repeater" data-repeater="reo">
+          ${(formData.reo || []).length === 0
+            ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No real estate owned added. (Skip for first-time buyers.)</div>`
+            : (formData.reo || []).map((e, i) => renderReoItem(i, e)).join('')}
+        </div>
+        <button type="button" class="repeater-add" data-add="reo" style="margin-top: 0.75rem;">
+          + Add Property Owned
+        </button>
+      </div>
+    </div>
+  `;
+  wireEmploymentRepeaters();
+}
+
+function renderAssetItem(i, e) {
+  return `
+    <div class="repeater-item" data-key="assets" data-idx="${i}">
+      <div class="repeater-item-head">
+        <span class="repeater-item-label">Asset ${i + 1}</span>
+        <button type="button" class="repeater-remove" data-remove="assets" data-idx="${i}">Remove</button>
+      </div>
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label">Type</label>
+          <select data-rep-field="kind">
+            <option value="">— select —</option>
+            <option value="checking"   ${e.kind==='checking'?'selected':''}>Checking</option>
+            <option value="savings"    ${e.kind==='savings'?'selected':''}>Savings</option>
+            <option value="money_mkt"  ${e.kind==='money_mkt'?'selected':''}>Money Market</option>
+            <option value="cd"         ${e.kind==='cd'?'selected':''}>Certificate of Deposit</option>
+            <option value="stock"      ${e.kind==='stock'?'selected':''}>Stocks / Bonds / Mutual Funds</option>
+            <option value="retirement" ${e.kind==='retirement'?'selected':''}>Retirement (401k, IRA)</option>
+            <option value="gift"       ${e.kind==='gift'?'selected':''}>Gift Funds</option>
+            <option value="other"      ${e.kind==='other'?'selected':''}>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Institution</label>
+          <input type="text" data-rep-field="institution" value="${escapeHtml(e.institution || '')}">
+        </div>
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label class="field-label">Account # (last 4)</label>
+          <input type="text" data-rep-field="account" maxlength="4" value="${escapeHtml(e.account || '')}">
+        </div>
+        <div class="field">
+          <label class="field-label">Balance</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="balance" data-format="money" value="${escapeHtml(e.balance || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Owner</label>
+          <select data-rep-field="owner">
+            <option value="b1" ${e.owner==='b1'?'selected':''}>Borrower</option>
+            ${hasCoborrower ? `<option value="b2" ${e.owner==='b2'?'selected':''}>Co-borrower</option><option value="joint" ${e.owner==='joint'?'selected':''}>Joint</option>` : ''}
+          </select>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderLiabilityItem(i, e) {
+  return `
+    <div class="repeater-item" data-key="liabilities" data-idx="${i}">
+      <div class="repeater-item-head">
+        <span class="repeater-item-label">Liability ${i + 1}</span>
+        <button type="button" class="repeater-remove" data-remove="liabilities" data-idx="${i}">Remove</button>
+      </div>
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label">Type</label>
+          <select data-rep-field="kind">
+            <option value="">— select —</option>
+            <option value="auto"        ${e.kind==='auto'?'selected':''}>Auto Loan</option>
+            <option value="student"     ${e.kind==='student'?'selected':''}>Student Loan</option>
+            <option value="credit_card" ${e.kind==='credit_card'?'selected':''}>Credit Card</option>
+            <option value="installment" ${e.kind==='installment'?'selected':''}>Installment</option>
+            <option value="mortgage"    ${e.kind==='mortgage'?'selected':''}>Mortgage / HELOC</option>
+            <option value="alimony"     ${e.kind==='alimony'?'selected':''}>Alimony / Child Support</option>
+            <option value="other"       ${e.kind==='other'?'selected':''}>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Creditor</label>
+          <input type="text" data-rep-field="creditor" value="${escapeHtml(e.creditor || '')}">
+        </div>
+      </div>
+      <div class="row cols-4">
+        <div class="field">
+          <label class="field-label">Balance</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="balance" data-format="money" value="${escapeHtml(e.balance || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Monthly</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="monthly" data-format="money" value="${escapeHtml(e.monthly || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Months Left</label>
+          <input type="text" inputmode="numeric" data-rep-field="months_left" value="${escapeHtml(e.months_left || '')}">
+        </div>
+        <div class="field">
+          <label class="field-label">Payoff at Close?</label>
+          <select data-rep-field="payoff_at_close">
+            <option value="no"  ${e.payoff_at_close==='no'?'selected':''}>No</option>
+            <option value="yes" ${e.payoff_at_close==='yes'?'selected':''}>Yes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderReoItem(i, e) {
+  return `
+    <div class="repeater-item" data-key="reo" data-idx="${i}">
+      <div class="repeater-item-head">
+        <span class="repeater-item-label">Property ${i + 1}</span>
+        <button type="button" class="repeater-remove" data-remove="reo" data-idx="${i}">Remove</button>
+      </div>
+      <div class="field">
+        <label class="field-label">Address</label>
+        <input type="text" data-rep-field="address" value="${escapeHtml(e.address || '')}">
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label class="field-label">City</label>
+          <input type="text" data-rep-field="city" value="${escapeHtml(e.city || '')}">
+        </div>
+        <div class="field">
+          <label class="field-label">State</label>
+          <select data-rep-field="state">
+            <option value="">—</option>
+            ${US_STATES.map(s => `<option value="${s}" ${e.state===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">ZIP</label>
+          <input type="text" data-rep-field="zip" maxlength="5" value="${escapeHtml(e.zip || '')}">
+        </div>
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label class="field-label">Status</label>
+          <select data-rep-field="status">
+            <option value="">— select —</option>
+            <option value="sold"         ${e.status==='sold'?'selected':''}>Sold</option>
+            <option value="pending_sale" ${e.status==='pending_sale'?'selected':''}>Pending Sale</option>
+            <option value="retained"     ${e.status==='retained'?'selected':''}>Retained</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Type</label>
+          <select data-rep-field="type">
+            <option value="">— select —</option>
+            <option value="primary"    ${e.type==='primary'?'selected':''}>Primary</option>
+            <option value="secondary"  ${e.type==='secondary'?'selected':''}>Second Home</option>
+            <option value="investment" ${e.type==='investment'?'selected':''}>Investment</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Value</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="value" data-format="money" value="${escapeHtml(e.value || '')}">
+          </div>
+        </div>
+      </div>
+      <div class="row cols-3">
+        <div class="field">
+          <label class="field-label">Mortgage Balance</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="mortgage_balance" data-format="money" value="${escapeHtml(e.mortgage_balance || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Monthly Payment</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="monthly_payment" data-format="money" value="${escapeHtml(e.monthly_payment || '')}">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Rental Income / mo</label>
+          <div class="input-prefix" data-prefix="$">
+            <input type="text" inputmode="decimal" data-rep-field="rental_income" data-format="money" value="${escapeHtml(e.rental_income || '')}">
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function validateStepAssets() {
+  syncRepeatersToData();
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STEP 6 — DECLARATIONS + DEMOGRAPHICS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderStepDeclarations(el) {
+  el.innerHTML = `
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Declarations</span>
+        <span class="section-tag">Section 5</span>
+      </div>
+      <div class="section-body">
+        <div class="field-hint" style="margin-bottom: 1rem;">Required by URLA. Each "yes" creates a follow-up condition for processing.</div>
+        ${f_yn('decl_a', 'a. Will you occupy the property as your primary residence?')}
+        ${f_yn('decl_b', 'b. Have you had ownership interest in another property in the last 3 years?')}
+        ${f_yn('decl_c', 'c. Family or business affiliation with the seller of the property?')}
+        ${f_yn('decl_d1', 'd1. Are you borrowing any money for this transaction (other than the loan applied for)?')}
+        ${f_yn('decl_d2', 'd2. Have you applied for any other mortgage on another property?')}
+        ${f_yn('decl_d3', 'd3. Have you applied for any new credit not yet disclosed?')}
+        ${f_yn('decl_d4', 'd4. Will this property be subject to a lien with priority over the first mortgage lien?')}
+        ${f_yn('decl_e', 'e. Are you a co-signer or guarantor on any debt or loan not disclosed?')}
+        ${f_yn('decl_f', 'f. Are there any outstanding judgments against you?')}
+        ${f_yn('decl_g', 'g. Are you currently delinquent or in default on a federal debt?')}
+        ${f_yn('decl_h', 'h. Are you a party to a lawsuit in which you may have monetary liability?')}
+        ${f_yn('decl_i', 'i. Have you conveyed title to a property in lieu of foreclosure in the last 7 years?')}
+        ${f_yn('decl_j', 'j. Within last 7 years, have you completed a pre-foreclosure sale or short sale?')}
+        ${f_yn('decl_k', 'k. Within last 7 years, have you had property foreclosed upon?')}
+        ${f_yn('decl_l', 'l. Within last 7 years, have you declared bankruptcy?')}
+        ${formData.decl_l === 'yes' ? f_choice('decl_l_chapter', 'Chapter (if Yes)', [
+          ['7','Chapter 7'],['11','Chapter 11'],['12','Chapter 12'],['13','Chapter 13'],
+        ]) : ''}
+      </div>
+    </div>
+
+    ${renderDemoBlock('1', 'Primary Borrower')}
+    ${hasCoborrower ? renderDemoBlock('2', 'Co-borrower') : ''}
+  `;
+
+  // Re-render bankruptcy chapter on toggle
+  document.querySelectorAll('input[name="decl_l"]').forEach(r => {
+    r.addEventListener('change', () => {
+      formData.decl_l = r.checked ? r.value : formData.decl_l;
+      renderStep();
+    });
+  });
+}
+
+function renderDemoBlock(idx, label) {
+  const p = `b${idx}_`;
+  return `
+    <div class="borrower-block">
+      <div class="borrower-block-head">
+        <span class="borrower-block-label">${escapeHtml(label)} · Demographics</span>
+      </div>
+      <div class="borrower-block-body">
+        <div class="section">
+          <div class="section-head">
+            <span class="section-title">HMDA Demographics</span>
+            <span class="section-tag">Section 7</span>
+          </div>
+          <div class="section-body">
+            <div class="field-hint" style="margin-bottom: 1rem;">
+              Borrowers may decline to provide ethnicity, race, and sex. We must record that the question was asked regardless.
+            </div>
+            ${f_yn(p+'demo_decline', 'Borrower declined to provide demographic information?')}
+            ${f_choice(p+'ethnicity', 'Ethnicity', [
+              ['hispanic','Hispanic or Latino'],
+              ['not_hispanic','Not Hispanic or Latino'],
+              ['no_provide','Do Not Wish to Provide'],
+            ])}
+            <div class="field" data-field-wrap="${p}race">
+              <label class="field-label">Race (select all that apply)</label>
+              <div class="choice-group">
+                ${['american_indian','asian','black','pacific_islander','white','no_provide'].map(v => {
+                  const labels = {
+                    american_indian:'American Indian / Alaska Native',
+                    asian:'Asian',
+                    black:'Black or African American',
+                    pacific_islander:'Native Hawaiian / Pacific Islander',
+                    white:'White',
+                    no_provide:'Do Not Wish to Provide',
+                  };
+                  const id = `${p}race_${v}`;
+                  return `
+                    <div class="choice">
+                      <input type="checkbox" name="${p}race" id="${id}" value="${v}" data-field="${p}race" data-multi="true">
+                      <label for="${id}">${labels[v]}</label>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+            ${f_choice(p+'sex', 'Sex', [
+              ['male','Male'],
+              ['female','Female'],
+              ['no_provide','Do Not Wish to Provide'],
+            ])}
+            ${f_choice(p+'demo_method', 'How was this information collected?', [
+              ['face_to_face','Face-to-Face'],
+              ['phone','Phone'],
+              ['fax_mail','Fax / Mail'],
+              ['email_internet','Email / Internet'],
+            ])}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function validateStepDeclarations() {
+  return true; // declarations are all toggles, no required validation beyond the form
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+function validateRequired(fields) {
+  let ok = true;
+  // clear prior invalid
+  document.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
+  for (const f of fields) {
+    const v = formData[f];
+    if (v == null || String(v).trim() === '') {
+      markInvalid(f);
+      ok = false;
+    }
+  }
+  return ok;
+}
+
+function markInvalid(field) {
+  const el = document.querySelector(`[data-field-wrap="${field}"]`);
+  if (el) el.classList.add('invalid');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FIELD FORMATTERS (live)
+// ═══════════════════════════════════════════════════════════════════════════
+
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  const fmt = t.dataset && t.dataset.format;
+  if (!fmt) return;
+  if (fmt === 'ssn')   t.value = formatSSN(t.value);
+  if (fmt === 'phone') t.value = formatPhone(t.value);
+  if (fmt === 'zip')   t.value = formatZip(t.value);
+  if (fmt === 'year')  t.value = digits(t.value).slice(0,4);
+  if (fmt === 'money') {
+    const d = String(t.value).replace(/[^\d.]/g, '');
+    const parts = d.split('.');
+    let out = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (parts.length > 1) out += '.' + parts[1].slice(0,2);
+    t.value = out;
+  }
+  if (fmt === 'pct') {
+    t.value = String(t.value).replace(/[^\d.]/g, '');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAVE — DRAFT & SUBMIT
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function saveDraft() {
+  syncFormToData();
+  syncRepeatersToData();
+  setSaveStatus('saving', 'Saving draft to server…');
+
+  try {
+    if (!createdLoanId) {
+      const loanRow = buildLoanRow('lead');
+      const { data: loan, error } = await supa.from('loans').insert(loanRow).select().single();
+      if (error) throw error;
+      createdLoanId = loan.id;
+      // also save primary borrower if name is set
+      if (formData.b1_first_name && formData.b1_last_name) {
+        await saveBorrowers(createdLoanId);
+      }
+    } else {
+      const { error } = await supa.from('loans').update(buildLoanRow('lead')).eq('id', createdLoanId);
+      if (error) throw error;
+      if (formData.b1_first_name && formData.b1_last_name) {
+        await saveBorrowers(createdLoanId);
+      }
+    }
+
+    setSaveStatus('saved', 'Saved · ' + new Date().toLocaleTimeString());
+    showToast('Draft saved.');
+    renderRail();
+  } catch (err) {
+    console.error('saveDraft error:', err);
+    setSaveStatus('error', 'Save failed');
+    showToast('Save failed: ' + err.message, true);
+  }
+}
+
+async function submitApplication() {
+  syncFormToData();
+  syncRepeatersToData();
+
+  // Validate all steps
+  let firstInvalid = -1;
+  for (let i = 0; i < STEPS.length; i++) {
+    const valid = STEPS[i].validate();
+    if (valid) validSteps.add(i);
+    else { validSteps.delete(i); if (firstInvalid === -1) firstInvalid = i; }
+  }
+  if (firstInvalid !== -1) {
+    showToast(`Step ${firstInvalid + 1} (${STEPS[firstInvalid].label}) has missing required fields.`, true);
+    goToStep(firstInvalid);
+    return;
+  }
+
+  setSaveStatus('saving', 'Submitting application…');
+  try {
+    const loanRow = buildLoanRow('application');
+    let loanId = createdLoanId;
+    if (!loanId) {
+      const { data: loan, error } = await supa.from('loans').insert(loanRow).select().single();
+      if (error) throw error;
+      loanId = loan.id;
+      createdLoanId = loanId;
+    } else {
+      const { error } = await supa.from('loans').update(loanRow).eq('id', loanId);
+      if (error) throw error;
+    }
+    await saveBorrowers(loanId);
+
+    clearDraft();
+    setSaveStatus('saved', 'Submitted · ' + new Date().toLocaleTimeString());
+    showToast('Application submitted! Routing to loan file…');
+    setTimeout(() => {
+      window.location.href = '/dashboard.html#' + loanId;
+    }, 800);
+  } catch (err) {
+    console.error('submit error:', err);
+    setSaveStatus('error', 'Submit failed');
+    showToast('Submit failed: ' + err.message, true);
+  }
+}
+
+function buildLoanRow(status) {
+  return {
+    branch_id: me.branch_id,
+    lo_id: me.role === 'lo' || me.role === 'loa' ? me.id : null,
+    status,
+    purpose: formData.purpose || null,
+    loan_amount_cents: dollarsToCents(formData.loan_amount),
+    loan_program: formData.loan_program || null,
+    amortization_type: formData.amortization_type || null,
+    loan_term_months: formData.loan_term_months ? parseInt(formData.loan_term_months, 10) : null,
+    interest_rate_pct: formData.interest_rate ? Number(formData.interest_rate) : null,
+    occupancy: formData.occupancy || null,
+    property_type: formData.property_type || null,
+    estimated_closing_date: formData.estimated_closing_date || null,
+    property_value_cents: dollarsToCents(formData.property_value),
+    property_address: {
+      street: formData.property_address_street || null,
+      unit:   formData.property_address_unit || null,
+      city:   formData.property_address_city || null,
+      state:  formData.property_address_state || null,
+      zip:    formData.property_address_zip || null,
+      county: formData.property_address_county || null,
+    },
+    property_year_built: formData.property_year_built ? parseInt(formData.property_year_built, 10) : null,
+    property_units: formData.property_units ? parseInt(formData.property_units, 10) : 1,
+    application_data: { ...formData, hasCoborrower },  // store full URLA snapshot as JSONB
+  };
+}
+
+async function saveBorrowers(loanId) {
+  // Upsert borrowers: clear existing junction, insert primary (and co if present)
+  // (Simpler than diffing — and since this is creation flow it's fine.)
+  await supa.from('loan_borrowers').delete().eq('loan_id', loanId);
+
+  const borrowers = [];
+  if (formData.b1_first_name && formData.b1_last_name) {
+    borrowers.push({ pos: 1, data: extractBorrower('1') });
+  }
+  if (hasCoborrower && formData.b2_first_name && formData.b2_last_name) {
+    borrowers.push({ pos: 2, data: extractBorrower('2') });
+  }
+
+  for (const b of borrowers) {
+    const { data: bRow, error: bErr } = await supa.from('borrowers')
+      .insert({ branch_id: me.branch_id, ...b.data })
+      .select().single();
+    if (bErr) throw bErr;
+    const { error: lbErr } = await supa.from('loan_borrowers').insert({
+      loan_id: loanId, borrower_id: bRow.id, position: b.pos,
+    });
+    if (lbErr) throw lbErr;
+  }
+}
+
+function extractBorrower(idx) {
+  const p = `b${idx}_`;
+  return {
+    first_name: formData[p+'first_name'] || null,
+    middle:     formData[p+'middle'] || null,
+    last_name:  formData[p+'last_name'] || null,
+    suffix:     formData[p+'suffix'] || null,
+    ssn_last4:  digits(formData[p+'ssn']).slice(-4) || null,
+    ssn_full:   digits(formData[p+'ssn']) || null,  // RLS should restrict access
+    dob:        formData[p+'dob'] || null,
+    email:      formData[p+'email'] || null,
+    phone:      formData[p+'phone'] || null,
+    marital:    formData[p+'marital'] || null,
+    citizenship: formData[p+'citizenship'] || null,
+    dependents: formData[p+'dependents'] ? parseInt(formData[p+'dependents'], 10) : 0,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHORTCUTS & BUTTON WIRING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initShortcuts() {
+  $('#btn-prev').addEventListener('click', prevStep);
+  $('#btn-next').addEventListener('click', nextStep);
+  $('#btn-save-draft').addEventListener('click', saveDraft);
+  $('#btn-submit').addEventListener('click', submitApplication);
+
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    const isInput = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+
+    // Cmd/Ctrl+S — save draft (works even in inputs)
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      saveDraft();
+      return;
+    }
+    // Cmd/Ctrl+Arrow — step nav (works even in inputs)
+    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') {
+      e.preventDefault(); nextStep(); return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') {
+      e.preventDefault(); prevStep(); return;
+    }
+    // Esc — back home (only outside inputs)
+    if (e.key === 'Escape' && !isInput) {
+      e.preventDefault();
+      if (confirm('Leave this application? Your draft is saved locally and will be here when you come back.')) {
+        window.location.href = '/home.html';
+      }
+    }
+  });
+
+  // Warn on tab close if there's unsaved data
+  window.addEventListener('beforeunload', (e) => {
+    const hasData = formData.b1_first_name || formData.loan_amount || formData.property_address_street;
+    if (hasData && !createdLoanId) {
+      e.preventDefault();
+      e.returnValue = 'You have an unsaved draft. Are you sure?';
+      return e.returnValue;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+window.addEventListener('resize', () => {
+  if ($('#form-area').style.display !== 'none') {
+    document.getElementById('main-grid').style.gridTemplateColumns =
+      window.innerWidth > 1100 ? '280px 1fr' : '1fr';
+  }
+});
+</script>
+
+</body>
+</html>
