@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reports · OriginFlow LOS — Live Demo</title>
-<meta name="description" content="Branch performance reports for OriginFlow LOS. Pipeline volume, AI performance, days-to-close.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Reports · OriginFlow LOS</title>
+<meta name="description" content="Pipeline velocity, funded volume, fair lending — the metrics Encompass hides three menus deep.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,44 +29,40 @@
   --sans:    'DM Sans', system-ui, sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 body {
-  background: var(--navy); color: var(--text);
-  font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 body::before {
-  content: ''; position: fixed; inset: 0;
+  content: '';
+  position: fixed; inset: 0;
   background-image:
     linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
   background-size: 40px 40px;
   pointer-events: none; z-index: 0;
 }
-nav, .demo-banner, .reports-grid, footer, .metric-strip, .page-head, .filter-bar { position: relative; z-index: 1; }
-
-/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
-.demo-banner {
-  background: rgba(245,166,35,0.08);
-  border-bottom: 1px solid rgba(245,166,35,0.25);
-  padding: 0.55rem 2rem;
-  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
-  color: var(--amber); flex-wrap: wrap;
-}
-.demo-banner strong { color: var(--white); font-weight: 700; }
-.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+nav, main, footer { position: relative; z-index: 1; }
 
 /* ─── NAV ──────────────────────────────────────────────────────────── */
 nav {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 2rem;
   border-bottom: 1px solid var(--border);
-  background: rgba(4,13,26,0.92); backdrop-filter: blur(12px);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
   position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
 }
-.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; }
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
 .sonar-icon { width: 26px; height: 26px; }
-.sonar-icon svg { width: 100%; height: 100%; }
 .nav-wordmark {
   font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
   color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
@@ -79,10 +75,38 @@ nav {
   transition: color 0.2s;
 }
 .nav-center a:hover, .nav-center a.active { color: var(--accent); }
+
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 .nav-branch {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
-  color: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
 }
 .nav-branch strong { color: var(--accent2); }
 .nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
@@ -99,262 +123,646 @@ nav {
 }
 .nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
 
+/* ─── PAGE HEADER ──────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.75rem 2rem 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+}
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+}
+.page-title {
+  font-family: var(--serif); font-size: 1.85rem; color: var(--white);
+  line-height: 1.15;
+}
+.page-sub {
+  color: var(--muted); margin-top: 0.35rem; max-width: 720px;
+  font-size: 0.92rem;
+}
+
+/* ─── DATE RANGE BAR ───────────────────────────────────────────────── */
+.range-bar {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 1.25rem; padding-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.range-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+  margin-right: 0.5rem;
+}
+.range-preset {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); padding: 0.4rem 0.8rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.range-preset:hover { color: var(--text); border-color: rgba(0,212,255,0.4); }
+.range-preset.active {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.range-divider {
+  color: var(--muted); font-family: var(--mono); font-size: 0.65rem;
+  margin: 0 0.25rem;
+}
+.range-input {
+  font-family: var(--mono); font-size: 0.62rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.4rem 0.6rem; outline: none;
+  transition: border-color 0.15s;
+  color-scheme: dark;
+}
+.range-input:focus { border-color: var(--accent); }
+.range-info {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-left: 0.5rem;
+}
+.range-print {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.4rem 0.8rem;
+  cursor: pointer; transition: all 0.15s;
+  display: inline-flex; align-items: center;
+}
+.range-print:hover { color: var(--accent); border-color: var(--accent); }
+.range-print:active { background: var(--accent); color: var(--navy); }
+
+/* ─── TABS ─────────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin: 0 -2rem; padding: 0 2rem;
+  background: var(--deep);
+}
+.tab-btn {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+  text-transform: uppercase; font-weight: 700;
+  background: none; border: none;
+  color: var(--muted); padding: 0.95rem 1.25rem;
+  cursor: pointer; transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.tab-btn-sub {
+  display: block;
+  font-family: var(--sans); font-size: 0.6rem; font-weight: 400;
+  color: var(--muted); text-transform: none; letter-spacing: 0;
+  margin-top: 0.2rem; line-height: 1.2;
+}
+.tab-btn.active .tab-btn-sub { color: var(--text); }
+
 /* ─── METRIC STRIP ─────────────────────────────────────────────────── */
 .metric-strip {
-  display: grid; grid-template-columns: repeat(6, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 1px; background: var(--border);
   border-bottom: 1px solid var(--border);
 }
-.metric-cell { background: var(--surface); padding: 1.1rem 1.3rem; }
+.metric-cell { background: var(--surface); padding: 1.1rem 1.25rem; }
 .metric-label {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
-}
-.metric-value { font-family: var(--serif); font-size: 1.55rem; line-height: 1.1; }
-.metric-value.cyan { color: var(--accent); }
-.metric-value.green { color: var(--accent2); }
-.metric-value.amber { color: var(--amber); }
-.metric-value.white { color: var(--white); }
-.metric-sub {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.05em;
-  color: var(--muted); margin-top: 0.25rem;
-}
-.metric-trend {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--accent2); margin-top: 0.2rem;
-}
-.metric-trend.down { color: var(--red); }
-
-/* ─── PAGE HEAD ────────────────────────────────────────────────────── */
-.page-head {
-  padding: 1.75rem 2rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: flex-end; justify-content: space-between;
-  flex-wrap: wrap; gap: 1.5rem;
-  background: var(--deep);
-}
-.page-head-left .crumb {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
 }
-.page-head-left .crumb span { color: var(--accent); }
-.page-head-left h1 {
-  font-family: var(--serif); font-size: 2rem; font-weight: 400;
-  color: var(--white); line-height: 1.1; margin-bottom: 0.4rem;
+.metric-value { font-family: var(--serif); font-size: 1.7rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.3rem;
 }
-.page-head-left p {
-  font-size: 0.85rem; color: var(--text); max-width: 56ch; line-height: 1.55;
-}
-.page-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
-.btn {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
-  text-transform: uppercase; padding: 0.55rem 1rem;
-  border: 1px solid var(--border); background: var(--surface);
-  color: var(--text); cursor: pointer; transition: all 0.15s;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
-}
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn.primary {
-  background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700;
-}
+.metric-sub .delta-up   { color: var(--accent2); }
+.metric-sub .delta-down { color: var(--red); }
 
-/* ─── FILTER BAR ───────────────────────────────────────────────────── */
-.filter-bar {
-  background: var(--deep); border-bottom: 1px solid var(--border);
-  padding: 0.85rem 2rem;
-  display: flex; gap: 0.7rem; flex-wrap: wrap; align-items: center;
-}
-.filter-bar select {
-  font-family: var(--mono); font-size: 0.7rem;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 0.5rem 0.8rem; outline: none;
-}
-.range-tab {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
-  color: var(--muted); padding: 0.5rem 0.85rem;
-  border: 1px solid var(--border); background: rgba(0,212,255,0.04);
-  cursor: pointer; transition: all 0.15s; text-transform: uppercase;
-}
-.range-tab.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.1); }
-.range-tab:hover { color: var(--white); }
+/* ─── REPORT GRID ──────────────────────────────────────────────────── */
+.tab-pane { display: none; flex: 1; flex-direction: column; }
+.tab-pane.active { display: flex; }
 
-/* ─── REPORTS GRID ─────────────────────────────────────────────────── */
-.reports-grid {
-  padding: 1.5rem 2rem;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--border);
+  flex: 1;
 }
-.reports-grid > .full { grid-column: 1 / -1; }
-
-/* ─── CHART CARDS ──────────────────────────────────────────────────── */
-.chart-card {
-  background: var(--deep);
-  border: 1px solid var(--border);
+.report-panel {
+  background: var(--surface);
+  display: flex; flex-direction: column;
+  min-height: 280px;
+}
+.panel-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title-block { flex: 1; min-width: 0; }
+.panel-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text);
+  margin-bottom: 0.25rem;
+}
+.panel-sub {
+  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
+  line-height: 1.4;
+}
+.panel-export {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); padding: 0.3rem 0.6rem;
+  cursor: pointer; transition: all 0.15s;
+  margin-left: 0.75rem; flex-shrink: 0;
+}
+.panel-export:hover { color: var(--accent); border-color: var(--accent); }
+.panel-export:disabled { opacity: 0.3; cursor: not-allowed; }
+.panel-body {
+  flex: 1; padding: 1.25rem;
+  overflow-x: auto;
   display: flex; flex-direction: column;
 }
-.chart-head {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 0.5rem;
-  background: var(--surface);
-}
-.chart-title {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--text);
-}
-.chart-title small {
-  display: block; font-family: var(--sans); font-size: 0.7rem;
-  color: var(--muted); margin-top: 0.15rem;
-  letter-spacing: 0.02em; text-transform: none;
-}
-.chart-meta {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  letter-spacing: 0.06em;
-}
-.chart-meta b.up   { color: var(--accent2); }
-.chart-meta b.down { color: var(--red); }
-.chart-body { padding: 1.25rem; flex: 1; }
-.chart-body svg { display: block; width: 100%; height: auto; }
 
-.chart-legend {
-  padding: 0.5rem 1.25rem 1rem;
-  display: flex; gap: 1rem; flex-wrap: wrap;
-  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
-  letter-spacing: 0.04em;
-}
-.chart-legend span {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-}
-.chart-legend i {
-  width: 10px; height: 10px; display: inline-block;
-}
-.chart-legend i.cyan  { background: var(--accent); }
-.chart-legend i.green { background: var(--accent2); }
-.chart-legend i.amber { background: var(--amber); }
-.chart-legend i.muted { background: var(--muted); }
+/* Wide / full-width panels */
+.report-panel.wide { grid-column: 1 / -1; }
 
-/* ─── LEADERBOARD ──────────────────────────────────────────────────── */
-.lb-row {
-  display: grid; grid-template-columns: auto 1fr auto auto;
-  gap: 0.85rem; align-items: center;
-  padding: 0.65rem 0;
-  border-bottom: 1px dashed var(--border);
+/* ─── BAR CHARTS (HTML/CSS) ────────────────────────────────────────── */
+.bar-chart { display: flex; flex-direction: column; gap: 0.55rem; }
+.bar-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 90px;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.78rem;
 }
-.lb-row:last-child { border-bottom: none; }
-.lb-rank {
-  font-family: var(--serif); font-size: 1.1rem; color: var(--accent);
-  width: 1.4rem; text-align: center;
+.bar-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em;
+  color: var(--text); text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.lb-rank.gold   { color: var(--accent2); }
-.lb-rank.silver { color: var(--white); }
-.lb-rank.bronze { color: var(--amber); }
-.lb-name { color: var(--text); font-size: 0.84rem; font-weight: 500; }
-.lb-name small {
-  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
-  margin-left: 0.4rem; letter-spacing: 0.04em; text-transform: uppercase;
+.bar-track {
+  height: 22px;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  position: relative; overflow: hidden;
 }
-.lb-bar {
-  width: 100%; height: 6px; background: var(--border);
-  position: relative; grid-column: 1 / -1; margin-top: 0.3rem;
+.bar-fill {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--accent), rgba(0,212,255,0.5));
+  transition: width 0.4s ease-out;
 }
-.lb-bar::after {
-  content: ''; position: absolute; left: 0; top: 0; height: 100%;
-  background: var(--accent); width: var(--p, 0%);
+.bar-fill.green { background: linear-gradient(90deg, var(--accent2), rgba(0,255,157,0.5)); }
+.bar-fill.amber { background: linear-gradient(90deg, var(--amber), rgba(245,166,35,0.5)); }
+.bar-fill.red   { background: linear-gradient(90deg, var(--red), rgba(255,68,68,0.5)); }
+.bar-value {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--white);
+  text-align: right;
 }
-.lb-vol {
-  font-family: var(--mono); font-size: 0.78rem; color: var(--white); font-weight: 700;
-}
-.lb-meta {
-  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
-  letter-spacing: 0.06em;
+.bar-value-sub {
+  display: block;
+  font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.1rem;
 }
 
 /* ─── FUNNEL ───────────────────────────────────────────────────────── */
-.funnel {
-  display: flex; flex-direction: column; gap: 0.5rem;
-}
+.funnel { display: flex; flex-direction: column; gap: 0.4rem; }
 .funnel-row {
-  display: grid; grid-template-columns: 100px 1fr auto;
-  gap: 0.85rem; align-items: center;
-  font-family: var(--mono); font-size: 0.7rem;
+  display: grid;
+  grid-template-columns: 130px 1fr 130px;
+  align-items: center;
+  gap: 0.85rem;
 }
 .funnel-stage {
-  color: var(--muted); letter-spacing: 0.1em;
-  text-transform: uppercase; font-size: 0.62rem;
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text);
+}
+.funnel-bar-wrap {
+  height: 32px; background: var(--deep);
+  border: 1px solid var(--border); position: relative;
+  display: flex; align-items: center;
 }
 .funnel-bar {
-  height: 28px; background: var(--surface);
-  border: 1px solid var(--border); position: relative;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), rgba(0,212,255,0.4));
+  display: flex; align-items: center;
+  padding-left: 0.65rem;
+  font-family: var(--mono); font-size: 0.7rem; color: var(--navy);
+  font-weight: 700;
+  transition: width 0.4s ease-out;
 }
-.funnel-bar::after {
-  content: ''; position: absolute; left: 0; top: 0; height: 100%;
-  width: var(--p, 0%);
-  background: linear-gradient(90deg, rgba(0,212,255,0.6), var(--accent));
-  border-right: 1px solid var(--accent);
-}
-.funnel-bar.warm::after { background: linear-gradient(90deg, rgba(245,166,35,0.5), var(--amber)); border-right-color: var(--amber); }
-.funnel-bar.cool::after { background: linear-gradient(90deg, rgba(0,255,157,0.5), var(--accent2)); border-right-color: var(--accent2); }
-.funnel-count { color: var(--white); font-weight: 700; }
-.funnel-count small {
-  display: block; color: var(--muted); font-size: 0.55rem;
-  margin-top: 0.1rem; letter-spacing: 0.04em; font-weight: 400;
+.funnel-meta {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
   text-align: right;
+  letter-spacing: 0.04em;
+}
+.funnel-meta strong { color: var(--white); font-weight: 700; }
+.funnel-meta .drop { color: var(--red); }
+
+/* ─── TABLE ────────────────────────────────────────────────────────── */
+.report-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.report-table th, .report-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.report-table th {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  font-weight: 400;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+.report-table th:hover { color: var(--text); }
+.report-table th.sorted-asc::after  { content: ' ↑'; color: var(--accent); }
+.report-table th.sorted-desc::after { content: ' ↓'; color: var(--accent); }
+.report-table td {
+  color: var(--text);
+  font-family: var(--sans);
+}
+.report-table td.num {
+  font-family: var(--mono); font-size: 0.75rem;
+  text-align: right;
+  color: var(--white);
+}
+.report-table td.num.green { color: var(--accent2); }
+.report-table td.num.amber { color: var(--amber); }
+.report-table td.num.red   { color: var(--red); }
+.report-table tr:last-child td { border-bottom: none; }
+.report-table tr:hover td { background: rgba(0,212,255,0.03); }
+
+/* ─── BIG STAT ─────────────────────────────────────────────────────── */
+.big-stat {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; flex: 1; padding: 1rem;
+}
+.big-stat-value {
+  font-family: var(--serif); font-size: 3rem; line-height: 1;
+  color: var(--white); margin-bottom: 0.5rem;
+}
+.big-stat-value.cyan { color: var(--accent); }
+.big-stat-value.green { color: var(--accent2); }
+.big-stat-value.amber { color: var(--amber); }
+.big-stat-value.red { color: var(--red); }
+.big-stat-label {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+}
+.big-stat-sub {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  margin-top: 0.5rem; text-align: center; letter-spacing: 0.04em;
 }
 
-/* ─── EXCEPTIONS ───────────────────────────────────────────────────── */
-.exc-list { display: flex; flex-direction: column; gap: 0.6rem; }
-.exc-row {
-  display: grid; grid-template-columns: auto 1fr auto;
-  gap: 0.85rem; align-items: center;
-  padding: 0.7rem 0.9rem;
+/* ─── EMPTY ────────────────────────────────────────────────────────── */
+.panel-empty {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2rem 1rem; text-align: center;
+}
+.panel-empty-icon {
+  font-family: var(--mono); font-size: 1.6rem; color: var(--border);
+  margin-bottom: 0.5rem;
+}
+.panel-empty-text {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.panel-empty-sub {
+  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
+  margin-top: 0.4rem; max-width: 320px;
+}
+
+/* ─── HMDA NOTE ────────────────────────────────────────────────────── */
+.hmda-banner {
+  background: rgba(245,166,35,0.06);
+  border: 1px solid rgba(245,166,35,0.3);
+  border-left-width: 3px;
+  padding: 0.85rem 1rem;
+  margin: 1rem 2rem 0;
+  font-family: var(--mono); font-size: 0.66rem;
+  color: var(--text); letter-spacing: 0.03em; line-height: 1.6;
+}
+.hmda-banner strong { color: var(--amber); }
+
+/* ─── STATE SCREENS ────────────────────────────────────────────────── */
+.state-screen {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+
+/* ─── TOAST ────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
   background: var(--surface); border: 1px solid var(--border);
-  font-size: 0.78rem;
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none;
+  max-width: 400px;
 }
-.exc-row.warn  { border-left: 3px solid var(--amber); }
-.exc-row.crit  { border-left: 3px solid var(--red); }
-.exc-row.info  { border-left: 3px solid var(--accent); }
-.exc-loan {
-  font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
-  color: var(--accent); letter-spacing: 0.06em;
-}
-.exc-msg { color: var(--text); line-height: 1.4; }
-.exc-msg small {
-  display: block; font-family: var(--mono); font-size: 0.58rem;
-  color: var(--muted); margin-top: 0.15rem; letter-spacing: 0.04em;
-}
-.exc-when {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  letter-spacing: 0.06em; flex-shrink: 0;
-}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.show { display: block; animation: toastIn 0.2s ease both; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 1.25rem 2rem;
+  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
   display: flex; align-items: center; justify-content: space-between;
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
   color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
 
-@media (max-width: 1280px) {
-  .metric-strip { grid-template-columns: repeat(3, 1fr); }
-  .reports-grid { grid-template-columns: 1fr; }
+/* ─── PRINT / PDF EXPORT ───────────────────────────────────────────────
+ * When the user hits "Print PDF" or Cmd/Ctrl+P, the page transforms into
+ * a paper-friendly multi-page report. Browsers' built-in "Save as PDF"
+ * (every modern browser, no library required) handles the actual file.
+ *
+ * Strategy:
+ *   1. Hide chrome (nav, footer, buttons, search, dropzones, hovers)
+ *   2. Force ALL three tabs visible (no tabbed UI on paper)
+ *   3. Convert dark theme → white background, dark text
+ *   4. Use page-break-inside: avoid on panels so they don't split awkwardly
+ *   5. Stamp the report header (branch + date range) onto every page
+ *
+ * iOS Safari note: @page margin support is historically inconsistent on
+ * iOS — small/zero/double margins on different versions. We belt-and-
+ * suspenders this by ALSO putting padding on #reports-active so even if
+ * @page is ignored, content isn't flush to the paper edge.
+ * ──────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* @page rules — supported by Chrome/Firefox/Safari-desktop */
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+  @page :first { margin-top: 0.5in; }
+  @page :left  { margin-left: 0.5in; margin-right: 0.5in; }
+  @page :right { margin-left: 0.5in; margin-right: 0.5in; }
+
+  /* Belt-and-suspenders padding: ensures content has breathing room even
+     on browsers that ignore or mis-apply @page (looking at you, iOS Safari).
+     Combined with @page margin, total whitespace at the page edge is
+     ~0.5in regardless of which mechanism the browser honors. */
+  #reports-active {
+    padding: 0 0.25in !important;
+  }
+
+  /* Force light theme for paper */
+  :root, body {
+    --navy: #ffffff;
+    --deep: #ffffff;
+    --surface: #ffffff;
+    --panel: #ffffff;
+    --border: #cccccc;
+    --text: #1a1a1a;
+    --muted: #555555;
+    --white: #000000;
+    --accent: #0066cc;
+    --accent2: #008844;
+    --amber: #cc7700;
+    --red: #cc0000;
+    background: white !important;
+    color: #1a1a1a !important;
+  }
+  body::before { display: none !important; }  /* kill the grid background */
+
+  /* Hide all chrome */
+  nav, footer,
+  .nav-search, .nav-newloan, .nav-signout, .nav-branch, .nav-user-role,
+  .range-preset, .range-input, .range-divider, .range-print,
+  .panel-export, .tab-btn, .tab-bar,
+  .toast, .modal-overlay,
+  .state-screen,
+  .nav-search-btn,
+  .print-only-section-header  /* Hide normally; only shown when injected for print (see Fix 3) */
+   {
+    display: none !important;
+  }
+  /* Re-show injected real <h2> headers when printing */
+  h2.print-only-section-header {
+    display: block !important;
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 18pt;
+    color: #1a1a1a;
+    margin: 0 0 0.25in 0;
+    padding-bottom: 0.1in;
+    border-bottom: 2px solid #0066cc;
+  }
+
+  /* Reveal all 3 tabs at once, regardless of which is "active" */
+  .tab-pane {
+    display: block !important;
+    page-break-before: always;  /* Each tab starts on a fresh page */
+  }
+  .tab-pane:first-of-type {
+    page-break-before: auto;    /* Except the first */
+  }
+
+  /* Page-head: keep branch + date range on every page header */
+  .page-head {
+    padding: 0 0 0.2in 0 !important;
+    border-bottom: 1px solid #999 !important;
+    background: white !important;
+    margin-bottom: 0.25in;
+  }
+  .page-eyebrow { color: #0066cc !important; font-size: 8pt !important; }
+  .page-title { color: #1a1a1a !important; font-size: 22pt !important; }
+  .page-sub {
+    color: #555 !important; font-size: 9pt !important;
+  }
+  .page-sub::after {
+    content: " · Printed " attr(data-printed-on);
+    font-style: italic;
+  }
+
+  /* Force the active state to NOT inherit cyan-on-navy */
+  #reports-active {
+    display: block !important;
+    background: white !important;
+  }
+
+  /* Panels: paper card style */
+  .report-panel,
+  .report-grid > * {
+    page-break-inside: avoid;
+    background: white !important;
+    border: 1px solid #ccc !important;
+    margin-bottom: 0.2in !important;
+    box-shadow: none !important;
+  }
+  .panel-head {
+    background: #f4f4f4 !important;
+    border-bottom: 1px solid #ccc !important;
+    padding: 0.1in 0.15in !important;
+  }
+  .panel-title { color: #1a1a1a !important; font-size: 11pt !important; }
+  .panel-sub { color: #555 !important; font-size: 8pt !important; }
+  .panel-body { padding: 0.15in !important; }
+
+  /* Metric strip */
+  .metric-strip {
+    background: white !important;
+    border: 1px solid #ccc !important;
+    border-bottom: none !important;
+    page-break-inside: avoid;
+    margin-bottom: 0.15in;
+  }
+  .metric-cell {
+    background: white !important;
+    border-right: 1px solid #ccc;
+  }
+  .metric-cell:last-child { border-right: none; }
+  .metric-label { color: #555 !important; }
+  .metric-value { color: #1a1a1a !important; }
+  .metric-value.cyan { color: #0066cc !important; }
+  .metric-value.green { color: #008844 !important; }
+  .metric-value.amber { color: #cc7700 !important; }
+  .metric-value.red { color: #cc0000 !important; }
+
+  /* Bars and funnels (the visualization elements) */
+  .bar-fill { background: #0066cc !important; }
+  .bar-row, .funnel-row {
+    color: #1a1a1a !important;
+  }
+  .bar-label, .funnel-stage { color: #555 !important; }
+  .bar-value { color: #1a1a1a !important; font-weight: 700; }
+
+  /* Tables */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }  /* repeat header on each page */
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 0.05in 0.08in !important;
+    color: #1a1a1a !important;
+    background: white !important;
+    font-size: 9pt !important;
+  }
+  th {
+    background: #f4f4f4 !important;
+    font-weight: 700;
+  }
+  tr { page-break-inside: avoid; }
+
+  /* Force grid to single column on paper */
+  .report-grid {
+    display: block !important;
+  }
+
+  /* Range bar: hide it (data is shown in page-head) but keep range-info visible
+     in case the user wants context */
+  .range-bar { display: none !important; }
+
+  /* Print footer with timestamp and branch */
+  #reports-active::after {
+    content: "OriginFlow LOS · Confidential";
+    display: block;
+    text-align: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 7pt;
+    color: #999;
+    margin-top: 0.3in;
+    padding-top: 0.1in;
+    border-top: 1px solid #ddd;
+  }
+
+  /* Don't print background colors / images on most browsers by default,
+     but we want the bar fills etc. — force it */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
 }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .nav-center { display: none; }
+  .nav-search { display: none; }
+  .report-grid { grid-template-columns: 1fr; }
   .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .bar-row { grid-template-columns: 100px 1fr 70px; gap: 0.5rem; }
+  .funnel-row { grid-template-columns: 100px 1fr 90px; gap: 0.5rem; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .page-head { padding: 1.25rem 1rem 0; }
+  .page-title { font-size: 1.4rem; }
+  .tab-bar { margin: 0 -1rem; padding: 0 1rem; overflow-x: auto; flex-wrap: nowrap; }
+  .tab-btn { white-space: nowrap; }
+  .tab-btn-sub { display: none; }
+  .panel-body { padding: 1rem; }
+  .bar-row { grid-template-columns: 70px 1fr 60px; gap: 0.4rem; font-size: 0.7rem; }
+  .bar-label { font-size: 0.55rem; }
+  .bar-value { font-size: 0.65rem; }
+  .funnel-row { grid-template-columns: 70px 1fr 80px; gap: 0.4rem; }
+  .funnel-stage { font-size: 0.55rem; }
+  .hmda-banner { margin: 0.75rem 1rem 0; }
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
 </head>
 <body>
 
-<div class="demo-banner">
-  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
-  <a href="index.html">← Back to landing page</a>
-</div>
-
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <nav>
-  <a href="index.html" class="nav-logo">
+  <a href="/home.html" class="nav-logo">
     <div class="sonar-icon">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
@@ -370,652 +778,2080 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
-    <li><a href="dashboard.html">Pipeline</a></li>
-    <li><a href="documents.html">Documents</a></li>
-    <li><a href="conditions.html">Conditions</a></li>
-    <li><a href="reports.html" class="active">Reports</a></li>
-    <li><a href="audit.html">Audit Log</a></li>
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html" class="active">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
   </ul>
   <div class="nav-right">
-    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; Submarine Catalyst</span>
+    <button class="nav-search" id="nav-search-btn" type="button">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
-      <span class="nav-user-name">Davis Rackler</span>
-      <span class="nav-user-role">OWNER</span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
     </span>
-    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- METRIC STRIP                                                         -->
+<!-- MAIN                                                                 -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="metric-strip">
-  <div class="metric-cell">
-    <div class="metric-label">YTD Funded Volume</div>
-    <div class="metric-value cyan">$28.4M</div>
-    <div class="metric-sub">94 funded loans · $302K avg</div>
-    <div class="metric-trend">▲ 31% YoY</div>
+<main id="main">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading reports…</div>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Avg Days · App→Fund</div>
-    <div class="metric-value green">21.4</div>
-    <div class="metric-sub">vs Encompass benchmark 47</div>
-    <div class="metric-trend">▼ 4.2 days vs Q1</div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">Reports are branch-scoped.</h1>
+    <p class="state-text">Sign in to see your branch's analytics.</p>
+    <a href="/login.html" class="btn primary">Sign in →</a>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Pull-Through Rate</div>
-    <div class="metric-value white">87.2%</div>
-    <div class="metric-sub">app → fund · industry 75%</div>
-    <div class="metric-trend">▲ 2.1 pts vs Q1</div>
+
+  <!-- PROFILE PENDING -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending</div>
+    <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
+    <p class="state-text">You'll get an email from <strong>davis@originflowlos.com</strong> when it's live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">AI Auto-Clear Rate</div>
-    <div class="metric-value green">68%</div>
-    <div class="metric-sub">conditions cleared by AI</div>
-    <div class="metric-trend">▲ 4 pts vs March</div>
+
+  <!-- ─── ACTIVE ─── -->
+  <div id="reports-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+
+    <!-- PAGE HEADER -->
+    <header class="page-head">
+      <div class="page-eyebrow">BRANCH ANALYTICS</div>
+      <h1 class="page-title">Reports</h1>
+      <p class="page-sub">The numbers Encompass hides three menus deep. Pipeline velocity, funded volume, fair lending — refreshed live, exportable to CSV.</p>
+
+      <!-- DATE RANGE BAR -->
+      <div class="range-bar">
+        <span class="range-label">Period</span>
+        <button class="range-preset" data-preset="today">Today</button>
+        <button class="range-preset" data-preset="7d">7 days</button>
+        <button class="range-preset active" data-preset="30d">30 days</button>
+        <button class="range-preset" data-preset="qtd">QTD</button>
+        <button class="range-preset" data-preset="ytd">YTD</button>
+        <button class="range-preset" data-preset="all">All time</button>
+        <span class="range-divider">|</span>
+        <input type="date" class="range-input" id="range-from" aria-label="From date">
+        <span class="range-divider">→</span>
+        <input type="date" class="range-input" id="range-to" aria-label="To date">
+        <span class="range-info" id="range-info">—</span>
+        <span class="range-spacer" style="flex:1;"></span>
+        <button class="range-print" id="btn-export-full" type="button" title="Export every loan in period as one comprehensive CSV (paginates through the database, not just the in-memory sample)">
+          <span style="margin-right:0.35rem;">⇣</span>Full data CSV
+        </button>
+        <button class="range-print" id="btn-print" type="button" title="Print or save as PDF (⌘P)">
+          <span style="margin-right:0.35rem;">⎙</span>Print PDF
+        </button>
+      </div>
+
+      <!-- TABS -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="operational">
+          Operational
+          <span class="tab-btn-sub">velocity, funnel, conditions</span>
+        </button>
+        <button class="tab-btn" data-tab="financial">
+          Financial
+          <span class="tab-btn-sub">funded volume, per-LO, fall-out</span>
+        </button>
+        <button class="tab-btn" data-tab="compliance">
+          Compliance · HMDA
+          <span class="tab-btn-sub">fair lending, declination, ECOA</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ─── TAB: OPERATIONAL ─── -->
+    <section class="tab-pane active" id="tab-operational">
+
+      <div class="metric-strip" id="op-metrics">
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      </div>
+
+      <div class="report-grid">
+
+        <div class="report-panel wide" data-panel="op-funnel">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Conversion funnel</div>
+              <div class="panel-sub">Of every 100 leads, how many made it to each stage during the period?</div>
+            </div>
+            <button class="panel-export" data-export="op-funnel">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="op-funnel-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="op-velocity">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Days in stage (avg)</div>
+              <div class="panel-sub">How long files sit at each step. Anything over 5 days deserves attention.</div>
+            </div>
+            <button class="panel-export" data-export="op-velocity">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="op-velocity-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="op-snapshot">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Pipeline snapshot · today</div>
+              <div class="panel-sub">Where every active loan currently sits. Independent of date range.</div>
+            </div>
+            <button class="panel-export" data-export="op-snapshot">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="op-snapshot-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="op-conditions">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Conditions · clear time</div>
+              <div class="panel-sub">From condition added to cleared. Faster = fewer days in conditional.</div>
+            </div>
+            <button class="panel-export" data-export="op-conditions">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="op-conditions-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="op-throughput">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Throughput</div>
+              <div class="panel-sub">Stage transitions in this period. Where the work actually happened.</div>
+            </div>
+            <button class="panel-export" data-export="op-throughput">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="op-throughput-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── TAB: FINANCIAL ─── -->
+    <section class="tab-pane" id="tab-financial">
+
+      <div class="metric-strip" id="fin-metrics">
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      </div>
+
+      <div class="report-grid">
+
+        <div class="report-panel" data-panel="fin-volume">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Funded volume</div>
+              <div class="panel-sub">Total $ funded in period.</div>
+            </div>
+            <button class="panel-export" data-export="fin-volume">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="fin-volume-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="fin-purpose">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Funded by purpose</div>
+              <div class="panel-sub">Purchase vs refinance vs cash-out, by count and dollars.</div>
+            </div>
+            <button class="panel-export" data-export="fin-purpose">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="fin-purpose-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel wide" data-panel="fin-leaderboard">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Per-LO leaderboard</div>
+              <div class="panel-sub">Funded loans by loan officer in period. Click a column to sort.</div>
+            </div>
+            <button class="panel-export" data-export="fin-leaderboard">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="fin-leaderboard-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="fin-fallout">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Fall-out · denial · withdrawal</div>
+              <div class="panel-sub">Loans that entered the pipeline in the period and didn't fund.</div>
+            </div>
+            <button class="panel-export" data-export="fin-fallout">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="fin-fallout-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="fin-pipeline-value">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Pipeline value · today</div>
+              <div class="panel-sub">$ in active pipeline right now, by stage.</div>
+            </div>
+            <button class="panel-export" data-export="fin-pipeline-value">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="fin-pipeline-value-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── TAB: COMPLIANCE / HMDA ─── -->
+    <section class="tab-pane" id="tab-compliance">
+
+      <div class="hmda-banner">
+        <strong>NOTE:</strong> These reports are an internal sanity-check, not a substitute for your annual HMDA-LAR submission. Disparate-treatment metrics surface possible patterns; they do not establish discrimination. "Information not provided" is a valid HMDA category and is reported separately.
+      </div>
+
+      <div class="metric-strip" id="comp-metrics">
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      </div>
+
+      <div class="report-grid">
+
+        <div class="report-panel" data-panel="comp-race">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Applications by race</div>
+              <div class="panel-sub">URLA Section 7 demographic breakdown of borrowers in period.</div>
+            </div>
+            <button class="panel-export" data-export="comp-race">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="comp-race-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="comp-ethnicity">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Applications by ethnicity</div>
+              <div class="panel-sub">Hispanic / Not Hispanic / Information not provided.</div>
+            </div>
+            <button class="panel-export" data-export="comp-ethnicity">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="comp-ethnicity-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel wide" data-panel="comp-approval">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Approval rate by demographic</div>
+              <div class="panel-sub">Funded ÷ (funded + denied + withdrawn). Disparities &gt; 20% warrant fair-lending review.</div>
+            </div>
+            <button class="panel-export" data-export="comp-approval">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="comp-approval-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="comp-adverse">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Adverse action timing</div>
+              <div class="panel-sub">ECOA requires notice within 30 days. Anything over 25 is a flag.</div>
+            </div>
+            <button class="panel-export" data-export="comp-adverse">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="comp-adverse-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+        <div class="report-panel" data-panel="comp-missing">
+          <div class="panel-head">
+            <div class="panel-title-block">
+              <div class="panel-title">Missing demographic data</div>
+              <div class="panel-sub">Applications where Section 7 was not collected at all. HMDA requires you ask, even if borrower declines.</div>
+            </div>
+            <button class="panel-export" data-export="comp-missing">CSV ↓</button>
+          </div>
+          <div class="panel-body" id="comp-missing-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+        </div>
+
+      </div>
+    </section>
+
   </div>
-  <div class="metric-cell">
-    <div class="metric-label">Cost per Loan</div>
-    <div class="metric-value white">$1,847</div>
-    <div class="metric-sub">all-in fulfillment cost</div>
-    <div class="metric-trend">▼ $312 vs Encompass</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Locks Expiring · 7d</div>
-    <div class="metric-value amber">4</div>
-    <div class="metric-sub">$1.34M at risk</div>
-    <div class="metric-trend down">2 need extension</div>
-  </div>
-</section>
+
+</main>
+
+<!-- toast -->
+<div class="toast" id="toast" role="status"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- PAGE HEAD                                                            -->
+<!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="page-head">
-  <div class="page-head-left">
-    <div class="crumb">DASHBOARD <span>›</span> REPORTS</div>
-    <h1>Branch Reports</h1>
-    <p>Pipeline volume, AI performance, time-to-close, and team productivity for Submarine Catalyst. Drill any chart into a CSV export.</p>
-  </div>
-  <div class="page-actions">
-    <select>
-      <option>Submarine Catalyst (your branch)</option>
-      <option>All branches (owner view)</option>
-    </select>
-    <a class="btn" href="#">⤓ Export PDF</a>
-    <a class="btn primary" href="#">+ Schedule Email</a>
-  </div>
-</section>
-
-<div class="filter-bar">
-  <select>
-    <option>Loan type · all</option>
-    <option>Purchase</option>
-    <option>Refinance</option>
-  </select>
-  <select>
-    <option>Loan officer · all (3)</option>
-    <option>Corbin Matisse</option>
-    <option>Davis Rackler</option>
-  </select>
-  <select>
-    <option>Investor · all</option>
-    <option>FNMA</option>
-    <option>FHLMC</option>
-    <option>Ginnie</option>
-  </select>
-  <span class="range-tab">7D</span>
-  <span class="range-tab active">30D</span>
-  <span class="range-tab">QTD</span>
-  <span class="range-tab">YTD</span>
-  <span class="range-tab">12M</span>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- REPORTS GRID                                                         -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="reports-grid">
-
-  <!-- ─── FUNDED VOLUME · 12 MONTH ─────────────────────────────── -->
-  <div class="chart-card full">
-    <div class="chart-head">
-      <div class="chart-title">Funded Volume · Trailing 12 Months
-        <small>Locked + funded loans by month, in millions</small>
-      </div>
-      <div class="chart-meta"><b class="up">▲ 31%</b> YoY · <b class="up">▲ $620K</b> vs March 2026</div>
-    </div>
-    <div class="chart-body">
-      <svg viewBox="0 0 1000 280" preserveAspectRatio="none">
-        <!-- Grid lines -->
-        <g stroke="#1a3a5c" stroke-width="0.75" stroke-dasharray="2,4">
-          <line x1="50" y1="40"  x2="980" y2="40"/>
-          <line x1="50" y1="100" x2="980" y2="100"/>
-          <line x1="50" y1="160" x2="980" y2="160"/>
-          <line x1="50" y1="220" x2="980" y2="220"/>
-        </g>
-        <!-- Y-axis labels -->
-        <g font-family="Space Mono" font-size="9" fill="#5a7a99">
-          <text x="42" y="44"  text-anchor="end">$4M</text>
-          <text x="42" y="104" text-anchor="end">$3M</text>
-          <text x="42" y="164" text-anchor="end">$2M</text>
-          <text x="42" y="224" text-anchor="end">$1M</text>
-          <text x="42" y="244" text-anchor="end">$0</text>
-        </g>
-        <!-- Bars -->
-        <!-- 12 months, x positions: 70 to 940, step ~73 -->
-        <g>
-          <!-- May 2025 -->
-          <rect x="70"  y="180" width="48" height="60"  fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="70"  y="200" width="48" height="40"  fill="#00d4ff" opacity="0.4"/>
-          <!-- Jun -->
-          <rect x="143" y="172" width="48" height="68"  fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="143" y="190" width="48" height="50"  fill="#00d4ff" opacity="0.45"/>
-          <!-- Jul -->
-          <rect x="216" y="158" width="48" height="82"  fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="216" y="178" width="48" height="62"  fill="#00d4ff" opacity="0.5"/>
-          <!-- Aug -->
-          <rect x="289" y="148" width="48" height="92"  fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="289" y="166" width="48" height="74"  fill="#00d4ff" opacity="0.55"/>
-          <!-- Sep -->
-          <rect x="362" y="155" width="48" height="85"  fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="362" y="172" width="48" height="68"  fill="#00d4ff" opacity="0.6"/>
-          <!-- Oct -->
-          <rect x="435" y="135" width="48" height="105" fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="435" y="152" width="48" height="88"  fill="#00d4ff" opacity="0.65"/>
-          <!-- Nov -->
-          <rect x="508" y="118" width="48" height="122" fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="508" y="138" width="48" height="102" fill="#00d4ff" opacity="0.7"/>
-          <!-- Dec -->
-          <rect x="581" y="105" width="48" height="135" fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="581" y="125" width="48" height="115" fill="#00d4ff" opacity="0.75"/>
-          <!-- Jan 2026 -->
-          <rect x="654" y="95"  width="48" height="145" fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="654" y="115" width="48" height="125" fill="#00d4ff" opacity="0.8"/>
-          <!-- Feb -->
-          <rect x="727" y="82"  width="48" height="158" fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="727" y="105" width="48" height="135" fill="#00d4ff" opacity="0.85"/>
-          <!-- Mar -->
-          <rect x="800" y="70"  width="48" height="170" fill="#0f2647" stroke="#1a3a5c"/>
-          <rect x="800" y="92"  width="48" height="148" fill="#00d4ff" opacity="0.9"/>
-          <!-- Apr (current) -->
-          <rect x="873" y="55"  width="48" height="185" fill="#0f2647" stroke="#00d4ff"/>
-          <rect x="873" y="78"  width="48" height="162" fill="#00d4ff"/>
-          <text x="897" y="48" text-anchor="middle" font-family="Space Mono" font-size="10" fill="#00ff9d">$3.42M</text>
-        </g>
-        <!-- Trend line -->
-        <polyline
-          fill="none" stroke="#00ff9d" stroke-width="1.5" stroke-dasharray="3,3"
-          points="94,210 167,202 240,190 313,180 386,184 459,170 532,160 605,148 678,138 751,125 824,115 897,98"
-        />
-        <!-- X-axis labels -->
-        <g font-family="Space Mono" font-size="9" fill="#5a7a99" text-anchor="middle" letter-spacing="0.05em">
-          <text x="94"  y="262">MAY</text>
-          <text x="167" y="262">JUN</text>
-          <text x="240" y="262">JUL</text>
-          <text x="313" y="262">AUG</text>
-          <text x="386" y="262">SEP</text>
-          <text x="459" y="262">OCT</text>
-          <text x="532" y="262">NOV</text>
-          <text x="605" y="262">DEC</text>
-          <text x="678" y="262">JAN</text>
-          <text x="751" y="262">FEB</text>
-          <text x="824" y="262">MAR</text>
-          <text x="897" y="262" fill="#00d4ff">APR</text>
-        </g>
-      </svg>
-    </div>
-    <div class="chart-legend">
-      <span><i class="cyan"></i>Funded volume</span>
-      <span><i class="muted"></i>Locked but not funded</span>
-      <span><i style="background:transparent;border-top:1px dashed var(--accent2);"></i>Trend</span>
-    </div>
-  </div>
-
-  <!-- ─── PIPELINE FUNNEL ──────────────────────────────────────── -->
-  <div class="chart-card">
-    <div class="chart-head">
-      <div class="chart-title">Pipeline Funnel · 30D
-        <small>Conversion rate stage-to-stage, last 30 days</small>
-      </div>
-      <div class="chart-meta">App → Fund <b class="up">87.2%</b></div>
-    </div>
-    <div class="chart-body">
-      <div class="funnel">
-        <div class="funnel-row">
-          <span class="funnel-stage">Lead</span>
-          <div class="funnel-bar" style="--p:100%"></div>
-          <span class="funnel-count">38<small>baseline</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Application</span>
-          <div class="funnel-bar" style="--p:84%"></div>
-          <span class="funnel-count">32<small>84.2%</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Submitted</span>
-          <div class="funnel-bar" style="--p:79%"></div>
-          <span class="funnel-count">30<small>78.9%</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Processing</span>
-          <div class="funnel-bar" style="--p:76%"></div>
-          <span class="funnel-count">29<small>76.3%</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Underwriting</span>
-          <div class="funnel-bar warm" style="--p:71%"></div>
-          <span class="funnel-count">27<small>71.1%</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Conditional</span>
-          <div class="funnel-bar warm" style="--p:71%"></div>
-          <span class="funnel-count">27<small>71.1%</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Clear-to-Close</span>
-          <div class="funnel-bar cool" style="--p:68%"></div>
-          <span class="funnel-count">26<small>68.4%</small></span>
-        </div>
-        <div class="funnel-row">
-          <span class="funnel-stage">Funded</span>
-          <div class="funnel-bar cool" style="--p:66%"></div>
-          <span class="funnel-count">25<small>65.8%</small></span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── DAYS TO CLOSE ────────────────────────────────────────── -->
-  <div class="chart-card">
-    <div class="chart-head">
-      <div class="chart-title">Days · App → Clear-to-Close
-        <small>Rolling 30-day average vs industry benchmark</small>
-      </div>
-      <div class="chart-meta">OF: <b class="up">18.2d</b> · Encompass: <b class="down">47d</b></div>
-    </div>
-    <div class="chart-body">
-      <svg viewBox="0 0 480 240" preserveAspectRatio="none">
-        <!-- Grid -->
-        <g stroke="#1a3a5c" stroke-width="0.75" stroke-dasharray="2,4">
-          <line x1="40" y1="40"  x2="470" y2="40"/>
-          <line x1="40" y1="90"  x2="470" y2="90"/>
-          <line x1="40" y1="140" x2="470" y2="140"/>
-          <line x1="40" y1="190" x2="470" y2="190"/>
-        </g>
-        <g font-family="Space Mono" font-size="9" fill="#5a7a99">
-          <text x="34" y="44"  text-anchor="end">60</text>
-          <text x="34" y="94"  text-anchor="end">45</text>
-          <text x="34" y="144" text-anchor="end">30</text>
-          <text x="34" y="194" text-anchor="end">15</text>
-          <text x="34" y="214" text-anchor="end">0</text>
-        </g>
-        <!-- Encompass benchmark area (red flat line ~47d) -->
-        <line x1="40" y1="84" x2="470" y2="84" stroke="#ff4444" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
-        <text x="465" y="78" text-anchor="end" font-family="Space Mono" font-size="9" fill="#ff4444">ENCOMPASS · 47d</text>
-        <!-- OriginFlow line (descending) -->
-        <polyline
-          fill="none" stroke="#00ff9d" stroke-width="2"
-          points="55,160 115,158 175,150 235,142 295,135 355,128 415,122 460,118"
-        />
-        <!-- Fill under -->
-        <polygon fill="#00ff9d" opacity="0.08"
-          points="55,160 115,158 175,150 235,142 295,135 355,128 415,122 460,118 460,210 55,210"
-        />
-        <!-- Points -->
-        <g fill="#00ff9d">
-          <circle cx="55"  cy="160" r="3"/>
-          <circle cx="115" cy="158" r="3"/>
-          <circle cx="175" cy="150" r="3"/>
-          <circle cx="235" cy="142" r="3"/>
-          <circle cx="295" cy="135" r="3"/>
-          <circle cx="355" cy="128" r="3"/>
-          <circle cx="415" cy="122" r="3"/>
-          <circle cx="460" cy="118" r="4" stroke="#040d1a" stroke-width="1.5"/>
-        </g>
-        <text x="460" y="108" text-anchor="end" font-family="Space Mono" font-size="9" fill="#00ff9d" font-weight="700">18.2d</text>
-        <!-- X labels -->
-        <g font-family="Space Mono" font-size="8" fill="#5a7a99" text-anchor="middle" letter-spacing="0.05em">
-          <text x="55"  y="225">W1</text>
-          <text x="115" y="225">W2</text>
-          <text x="175" y="225">W3</text>
-          <text x="235" y="225">W4</text>
-          <text x="295" y="225">W5</text>
-          <text x="355" y="225">W6</text>
-          <text x="415" y="225">W7</text>
-          <text x="460" y="225">W8</text>
-        </g>
-      </svg>
-    </div>
-    <div class="chart-legend">
-      <span><i class="green"></i>OriginFlow LOS · weekly avg</span>
-      <span><i style="background:transparent;border-top:1px dashed var(--red);"></i>Encompass benchmark</span>
-    </div>
-  </div>
-
-  <!-- ─── AI AUTO-CLEAR RATE ───────────────────────────────────── -->
-  <div class="chart-card">
-    <div class="chart-head">
-      <div class="chart-title">AI Auto-Clear Rate · 12W
-        <small>% of conditions cleared by AI vs manual processor work</small>
-      </div>
-      <div class="chart-meta">Current: <b class="up">68%</b></div>
-    </div>
-    <div class="chart-body">
-      <svg viewBox="0 0 480 240" preserveAspectRatio="none">
-        <g stroke="#1a3a5c" stroke-width="0.75" stroke-dasharray="2,4">
-          <line x1="40" y1="40"  x2="470" y2="40"/>
-          <line x1="40" y1="90"  x2="470" y2="90"/>
-          <line x1="40" y1="140" x2="470" y2="140"/>
-          <line x1="40" y1="190" x2="470" y2="190"/>
-        </g>
-        <g font-family="Space Mono" font-size="9" fill="#5a7a99">
-          <text x="34" y="44" text-anchor="end">100%</text>
-          <text x="34" y="94" text-anchor="end">75%</text>
-          <text x="34" y="144" text-anchor="end">50%</text>
-          <text x="34" y="194" text-anchor="end">25%</text>
-        </g>
-        <!-- Stacked area: AI cleared (cyan) bottom, manual (muted) on top  -->
-        <!-- Define 12 weeks -->
-        <polygon fill="#00d4ff" opacity="0.85"
-          points="55,160 90,154 125,148 160,140 195,132 230,124 265,118 300,114 335,108 370,102 405,98 460,92
-                  460,210 55,210"
-        />
-        <polygon fill="#5a7a99" opacity="0.35"
-          points="55,80 90,82 125,84 160,82 195,80 230,78 265,76 300,75 335,73 370,72 405,70 460,68
-                  460,92 405,98 370,102 335,108 300,114 265,118 230,124 195,132 160,140 125,148 90,154 55,160"
-        />
-        <!-- AI line -->
-        <polyline fill="none" stroke="#00d4ff" stroke-width="2"
-          points="55,160 90,154 125,148 160,140 195,132 230,124 265,118 300,114 335,108 370,102 405,98 460,92"/>
-        <!-- Total line  -->
-        <polyline fill="none" stroke="#5a7a99" stroke-width="1.5" stroke-dasharray="3,3"
-          points="55,80 90,82 125,84 160,82 195,80 230,78 265,76 300,75 335,73 370,72 405,70 460,68"/>
-        <text x="464" y="89" text-anchor="end" font-family="Space Mono" font-size="9" fill="#00ff9d" font-weight="700">68%</text>
-        <g font-family="Space Mono" font-size="8" fill="#5a7a99" text-anchor="middle" letter-spacing="0.05em">
-          <text x="55"  y="225">FEB</text>
-          <text x="195" y="225">MAR</text>
-          <text x="335" y="225">APR</text>
-          <text x="460" y="225">NOW</text>
-        </g>
-      </svg>
-    </div>
-    <div class="chart-legend">
-      <span><i class="cyan"></i>AI auto-cleared</span>
-      <span><i class="muted"></i>Cleared by humans</span>
-    </div>
-  </div>
-
-  <!-- ─── TEAM LEADERBOARD ─────────────────────────────────────── -->
-  <div class="chart-card">
-    <div class="chart-head">
-      <div class="chart-title">LO Production · April
-        <small>Originated volume by loan officer</small>
-      </div>
-      <div class="chart-meta">3 active LOs · $4.72M total</div>
-    </div>
-    <div class="chart-body">
-      <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
-        <span class="lb-rank gold">1</span>
-        <div>
-          <div class="lb-name">Davis Rackler <small>OWNER · LO</small></div>
-          <div class="lb-bar" style="--p:100%"></div>
-        </div>
-        <div>
-          <div class="lb-vol">$2.18M</div>
-          <div class="lb-meta">7 files · 38.6% AI</div>
-        </div>
-      </div>
-      <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
-        <span class="lb-rank silver">2</span>
-        <div>
-          <div class="lb-name">Corbin Matisse <small>LO</small></div>
-          <div class="lb-bar" style="--p:74%"></div>
-        </div>
-        <div>
-          <div class="lb-vol">$1.62M</div>
-          <div class="lb-meta">5 files · 41.2% AI</div>
-        </div>
-      </div>
-      <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
-        <span class="lb-rank bronze">3</span>
-        <div>
-          <div class="lb-name">Ana Whitfield <small>LO · pt-time</small></div>
-          <div class="lb-bar" style="--p:42%"></div>
-        </div>
-        <div>
-          <div class="lb-vol">$0.92M</div>
-          <div class="lb-meta">2 files · 35.0% AI</div>
-        </div>
-      </div>
-      <div style="margin-top:1.25rem; padding-top:1rem; border-top: 1px dashed var(--border);">
-        <div class="chart-title" style="margin-bottom:0.6rem;">Processor &amp; UW Throughput</div>
-        <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
-          <span class="lb-rank">·</span>
-          <div>
-            <div class="lb-name">Sarah Hayes <small>PROCESSOR</small></div>
-            <div class="lb-bar" style="--p:100%"></div>
-          </div>
-          <div>
-            <div class="lb-vol">9 files</div>
-            <div class="lb-meta">avg 14 cond/day</div>
-          </div>
-        </div>
-        <div class="lb-row" style="grid-template-columns: auto 1fr auto;">
-          <span class="lb-rank">·</span>
-          <div>
-            <div class="lb-name">Diana Mendez <small>UNDERWRITER</small></div>
-            <div class="lb-bar" style="--p:78%"></div>
-          </div>
-          <div>
-            <div class="lb-vol">5 files</div>
-            <div class="lb-meta">avg 6.4h/file</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── EXCEPTIONS / ATTENTION ───────────────────────────────── -->
-  <div class="chart-card">
-    <div class="chart-head">
-      <div class="chart-title">Needs Attention · This Week
-        <small>Files at risk · sorted by urgency</small>
-      </div>
-      <div class="chart-meta"><b class="down">7 items</b> · 3 critical</div>
-    </div>
-    <div class="chart-body">
-      <div class="exc-list">
-
-        <div class="exc-row crit">
-          <span class="exc-loan">OF-1042</span>
-          <div class="exc-msg">Rate lock expires in 4 days · CD pending borrower signature
-            <small>Chen, S+M · $425K · CTC · auto-extend recommended</small>
-          </div>
-          <span class="exc-when">4d</span>
-        </div>
-
-        <div class="exc-row crit">
-          <span class="exc-loan">OF-1045</span>
-          <div class="exc-msg">DTI exception 44.8% blocking UW review · 2 days stale
-            <small>Thompson, K. · $465K · Diana awaiting LOX from borrower</small>
-          </div>
-          <span class="exc-when">2d</span>
-        </div>
-
-        <div class="exc-row crit">
-          <span class="exc-loan">OF-1041</span>
-          <div class="exc-msg">Tax return rescan requested · borrower silent 4 days
-            <small>Anderson, P. · $280K · Corbin to call today</small>
-          </div>
-          <span class="exc-when">4d</span>
-        </div>
-
-        <div class="exc-row warn">
-          <span class="exc-loan">OF-1037</span>
-          <div class="exc-msg">Rate lock expires in 6 days · all conditions cleared
-            <small>Singh, A. · $425K · scheduling docs ASAP</small>
-          </div>
-          <span class="exc-when">6d</span>
-        </div>
-
-        <div class="exc-row warn">
-          <span class="exc-loan">OF-1043</span>
-          <div class="exc-msg">$3,200 deposit LOX outstanding · UW blocking
-            <small>Rodriguez, J. · $310K · LOX requested 2m ago</small>
-          </div>
-          <span class="exc-when">today</span>
-        </div>
-
-        <div class="exc-row info">
-          <span class="exc-loan">OF-1048</span>
-          <div class="exc-msg">3-day TRID waiting · Loan Estimate sent
-            <small>Williams, T. · $310K · earliest CTC eligible Friday</small>
-          </div>
-          <span class="exc-when">2d</span>
-        </div>
-
-        <div class="exc-row info">
-          <span class="exc-loan">OF-1052</span>
-          <div class="exc-msg">New lead · LE clock starts at app submission
-            <small>Patel, R. · $255K refi · awaiting initial app</small>
-          </div>
-          <span class="exc-when">new</span>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── RATE LOCK PIPELINE ───────────────────────────────────── -->
-  <div class="chart-card full">
-    <div class="chart-head">
-      <div class="chart-title">Rate Lock Calendar · Next 30 Days
-        <small>Locked loans by expiration date · click to extend</small>
-      </div>
-      <div class="chart-meta"><b class="down">4</b> expiring within 7 days · <b>$1.34M</b> at risk</div>
-    </div>
-    <div class="chart-body">
-      <svg viewBox="0 0 1000 200" preserveAspectRatio="none">
-        <!-- Timeline axis -->
-        <line x1="40" y1="100" x2="980" y2="100" stroke="#1a3a5c" stroke-width="1"/>
-        <!-- Today marker -->
-        <line x1="60" y1="40" x2="60" y2="160" stroke="#00d4ff" stroke-width="1.5" stroke-dasharray="3,3"/>
-        <text x="60" y="32" text-anchor="middle" font-family="Space Mono" font-size="10" fill="#00d4ff" font-weight="700">TODAY</text>
-
-        <!-- Day ticks · 30 days, x = 60 + day*30.6 -->
-        <g stroke="#1a3a5c" stroke-width="0.5">
-          <line x1="60"   y1="96" x2="60"   y2="104"/>
-          <line x1="274"  y1="96" x2="274"  y2="104"/>
-          <line x1="488"  y1="96" x2="488"  y2="104"/>
-          <line x1="702"  y1="96" x2="702"  y2="104"/>
-          <line x1="916"  y1="96" x2="916"  y2="104"/>
-        </g>
-        <g font-family="Space Mono" font-size="9" fill="#5a7a99" text-anchor="middle">
-          <text x="60"  y="120">APR 29</text>
-          <text x="274" y="120">MAY 06</text>
-          <text x="488" y="120">MAY 13</text>
-          <text x="702" y="120">MAY 20</text>
-          <text x="916" y="120">MAY 27</text>
-        </g>
-
-        <!-- Loan locks (4 in critical 0-7d zone, 2 in 7-14d, etc) -->
-        <!-- Critical · OF-1042 in 4 days = x ~183 -->
-        <g>
-          <line x1="183" y1="85" x2="183" y2="100" stroke="#ff4444" stroke-width="2"/>
-          <circle cx="183" cy="85" r="6" fill="#ff4444"/>
-          <text x="183" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#ff4444" font-weight="700">OF-1042</text>
-          <text x="183" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$425K · 4d</text>
-        </g>
-
-        <!-- Warn · OF-1037 in 6 days = x 244 -->
-        <g>
-          <line x1="244" y1="115" x2="244" y2="100" stroke="#f5a623" stroke-width="2"/>
-          <circle cx="244" cy="115" r="6" fill="#f5a623"/>
-          <text x="244" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#f5a623" font-weight="700">OF-1037</text>
-          <text x="244" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$425K · 6d</text>
-        </g>
-
-        <!-- OF-1035 in 9 days (Docs Out) x 335 -->
-        <g>
-          <line x1="335" y1="85" x2="335" y2="100" stroke="#f5a623" stroke-width="2"/>
-          <circle cx="335" cy="85" r="6" fill="#f5a623"/>
-          <text x="335" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#f5a623" font-weight="700">OF-1035</text>
-          <text x="335" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$245K · 9d</text>
-        </g>
-
-        <!-- OF-1038 in 12 days x 427 -->
-        <g>
-          <line x1="427" y1="115" x2="427" y2="100" stroke="#00d4ff" stroke-width="2"/>
-          <circle cx="427" cy="115" r="6" fill="#00d4ff"/>
-          <text x="427" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1038</text>
-          <text x="427" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$415K · 12d</text>
-        </g>
-
-        <!-- OF-1043 in 15 days x 519 -->
-        <g>
-          <line x1="519" y1="85" x2="519" y2="100" stroke="#00d4ff" stroke-width="2"/>
-          <circle cx="519" cy="85" r="6" fill="#00d4ff"/>
-          <text x="519" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1043</text>
-          <text x="519" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$310K · 15d</text>
-        </g>
-
-        <!-- OF-1041 in 18 days x 610 -->
-        <g>
-          <line x1="610" y1="115" x2="610" y2="100" stroke="#00d4ff" stroke-width="2"/>
-          <circle cx="610" cy="115" r="6" fill="#00d4ff"/>
-          <text x="610" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1041</text>
-          <text x="610" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$280K · 18d</text>
-        </g>
-
-        <!-- OF-1040 in 22 days x 733 -->
-        <g>
-          <line x1="733" y1="85" x2="733" y2="100" stroke="#00d4ff" stroke-width="2"/>
-          <circle cx="733" cy="85" r="6" fill="#00d4ff"/>
-          <text x="733" y="73" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1040</text>
-          <text x="733" y="62" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$335K · 22d</text>
-        </g>
-
-        <!-- OF-1047 in 25 days x 825 -->
-        <g>
-          <line x1="825" y1="115" x2="825" y2="100" stroke="#00d4ff" stroke-width="2"/>
-          <circle cx="825" cy="115" r="6" fill="#00d4ff"/>
-          <text x="825" y="138" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#00d4ff" font-weight="700">OF-1047</text>
-          <text x="825" y="150" text-anchor="middle" font-family="Space Mono" font-size="8" fill="#5a7a99">$395K · 25d</text>
-        </g>
-
-        <!-- Critical zone shading -->
-        <rect x="60" y="40" width="214" height="120" fill="#ff4444" opacity="0.04"/>
-        <text x="167" y="178" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#ff4444" letter-spacing="0.1em">CRITICAL · &lt; 7 DAYS</text>
-      </svg>
-    </div>
-    <div class="chart-legend">
-      <span><i style="background:#ff4444;"></i>Lock expiring &lt; 7 days · extend or close</span>
-      <span><i class="amber"></i>7–10 days · monitor</span>
-      <span><i class="cyan"></i>10+ days · safe</span>
-    </div>
-  </div>
-
-</div>
-
 <footer>
-  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · Reports · Refreshed at <span id="footer-refreshed">—</span></span>
   <div style="display:flex;gap:1.25rem;">
-    <a href="index.html">← Landing page</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
-    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+    <a href="/home.html">Home</a>
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/documents.html">Documents</a>
   </div>
 </footer>
 
 <script>
-  // Range tab toggle
-  document.querySelectorAll('.range-tab').forEach(t => {
-    t.addEventListener('click', () => {
-      document.querySelectorAll('.range-tab').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
+// ═══════════════════════════════════════════════════════════════════════════
+// /reports.html — Branch analytics: operational, financial, compliance/HMDA
+//
+// Architecture:
+//   • One bulk fetch per date-range change (loans + stage_changes + conditions
+//     + borrowers, all branch-scoped). Computed metrics are derived
+//     client-side. A branch with even 5,000 loans/year is well under any
+//     practical limit for in-browser aggregation.
+//   • Three tabs (operational/financial/compliance) read from the same
+//     dataset — switching tabs is free, no refetch.
+//   • Each panel exposes a CSV export button driven by a per-panel
+//     data extractor function.
+//
+// Honest flags worth reading:
+//   1. Stage-velocity and throughput depend on the `stage_changes` audit
+//      table populated by /dashboard.html drag-and-drop. Branches that did
+//      bulk imports without going through the UI will have no history;
+//      panels show "no data" rather than fabricating numbers.
+//   2. HMDA panels assume `borrowers` table has columns: `hmda_race`,
+//      `hmda_ethnicity`, `hmda_sex`, each nullable. If your schema doesn't
+//      have them yet, the panels show empty states; nothing crashes.
+//   3. "Funded" is detected by `loans.status = 'funded'` AND the period
+//      either matches `funded_at` (if you have that column) or
+//      `stage_entered_at` (the timestamp used by dashboard.html).
+//   4. "Days in stage (avg)" uses stage_changes deltas only — loans
+//      currently sitting in a stage are excluded from the average so
+//      one ancient stuck file doesn't skew it.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (s, root) => (root || document).querySelector(s);
+const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+// ─── State ───────────────────────────────────────────────────────────────
+let supa = null;
+let me = null;
+let branch = null;
+
+// Date range
+let range = { preset: '30d', from: null, to: null };
+
+// Active tab
+let activeTab = 'operational';
+
+// Cached datasets for the current period
+let dataset = null;
+
+// Fetched once, used by stage labels everywhere
+const STAGES = [
+  { key: 'lead',           label: 'Lead' },
+  { key: 'application',    label: 'Application' },
+  { key: 'submitted',      label: 'Submitted' },
+  { key: 'processing',     label: 'Processing' },
+  { key: 'underwriting',   label: 'Underwriting' },
+  { key: 'conditional',    label: 'Conditional' },
+  { key: 'clear_to_close', label: 'Clear-to-close' },
+  { key: 'docs_out',       label: 'Docs out' },
+  { key: 'funded',         label: 'Funded' },
+];
+const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+
+const TERMINAL_STATUSES = new Set(['funded', 'denied', 'withdrawn']);
+
+// HMDA category labels
+const RACE_LABELS = {
+  amerindian: 'American Indian / Alaska Native',
+  asian:      'Asian',
+  black:      'Black or African American',
+  pacific:    'Native Hawaiian / Other Pacific Islander',
+  white:      'White',
+  multiple:   'Two or more races',
+  declined:   'Information not provided',
+};
+const ETHNICITY_LABELS = {
+  hispanic:     'Hispanic or Latino',
+  not_hispanic: 'Not Hispanic or Latino',
+  declined:     'Information not provided',
+};
+
+// Per-panel CSV export functions (registered as we render panels)
+const exporters = {};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function fmtMoney(cents, opts) {
+  if (cents == null) return '—';
+  const dollars = Number(cents) / 100;
+  if (opts && opts.compact) {
+    if (dollars >= 1e9) return '$' + (dollars / 1e9).toFixed(2) + 'B';
+    if (dollars >= 1e6) return '$' + (dollars / 1e6).toFixed(2) + 'M';
+    if (dollars >= 1e3) return '$' + (dollars / 1e3).toFixed(0) + 'K';
+  }
+  return '$' + dollars.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+function fmtNum(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('en-US');
+}
+function fmtPct(n, dp) {
+  if (n == null || !isFinite(n)) return '—';
+  return Number(n).toFixed(dp != null ? dp : 1) + '%';
+}
+function fmtDays(n) {
+  if (n == null || !isFinite(n)) return '—';
+  if (n < 1) return '<1 d';
+  return Math.round(n) + ' d';
+}
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+function daysBetween(a, b) {
+  return (new Date(b) - new Date(a)) / 86400000;
+}
+function showToast(msg, isError) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+function startOfDayISO(date) {
+  const d = (date instanceof Date) ? date : new Date(date);
+  d.setHours(0,0,0,0);
+  return d.toISOString();
+}
+function endOfDayISO(date) {
+  const d = (date instanceof Date) ? date : new Date(date);
+  d.setHours(23,59,59,999);
+  return d.toISOString();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH + BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile) { showState('state-pending'); return; }
+  if (!profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  showActive();
+
+  // Initial state from URL
+  const url = new URL(window.location);
+  const urlPreset = url.searchParams.get('range');
+  const urlFrom = url.searchParams.get('from');
+  const urlTo = url.searchParams.get('to');
+  const urlTab = (window.location.hash || '').replace('#', '');
+
+  if (urlPreset) {
+    applyPreset(urlPreset, false);
+  } else if (urlFrom && urlTo) {
+    range = { preset: 'custom', from: urlFrom, to: urlTo };
+  } else {
+    applyPreset('30d', false);
+  }
+
+  if (['operational','financial','compliance'].includes(urlTab)) {
+    activeTab = urlTab;
+  }
+
+  initUI();
+  await refresh();
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#reports-active').style.display = 'none';
+}
+function showActive() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#reports-active').style.display = 'flex';
+  // Sync tab state from URL
+  switchTab(activeTab, false);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UI WIRING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initUI() {
+  // Date range presets
+  $$('.range-preset').forEach(btn => {
+    btn.addEventListener('click', () => applyPreset(btn.dataset.preset, true));
+  });
+
+  // Custom range inputs — fire on change (not input) so we don't refetch on every keystroke
+  $('#range-from').addEventListener('change', onCustomRangeChange);
+  $('#range-to').addEventListener('change', onCustomRangeChange);
+
+  // Tabs
+  $$('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab, true));
+  });
+
+  // Print / PDF export. Browsers handle the actual PDF generation via their
+  // built-in "Save as PDF" option in the print dialog — no library needed.
+  // Before printing we stamp the report metadata (branch + date range +
+  // timestamp) into the .page-sub via a data attribute so it appears on
+  // every printed page (see @media print rules in the stylesheet).
+  $('#btn-print').addEventListener('click', () => {
+    stampPrintMetadata();
+    // Defer one frame so the DOM update lands before the dialog opens
+    requestAnimationFrame(() => window.print());
+  });
+  // Cmd/Ctrl+P: same metadata stamp before native print
+  window.addEventListener('beforeprint', stampPrintMetadata);
+
+  // Full-data CSV export — paginates Supabase to get every loan in the
+  // selected period, not just the in-memory sample (which is capped at
+  // 2000 rows per fetch). For branches that exceed that cap, the per-panel
+  // CSVs are necessarily incomplete; this button gives you the ground truth.
+  $('#btn-export-full').addEventListener('click', exportFullDataset);
+
+  // Per-panel exports (delegated)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.panel-export');
+    if (!btn) return;
+    const key = btn.dataset.export;
+    if (exporters[key]) {
+      try {
+        exporters[key]();
+      } catch (err) {
+        console.error('export err:', err);
+        showToast('Export failed: ' + err.message, true);
+      }
+    } else {
+      showToast('Nothing to export yet.', true);
+    }
+  });
+
+  // Search shortcut (matches other pages)
+  $('#nav-search-btn').addEventListener('click', () => {
+    window.location.href = '/home.html';   // search lives on home for now
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      window.location.href = '/home.html';
+    }
+  });
+}
+
+function applyPreset(preset, refetch) {
+  const today = new Date();
+  let from, to;
+  switch (preset) {
+    case 'today':
+      from = new Date(today);
+      to = new Date(today);
+      break;
+    case '7d':
+      from = new Date(today); from.setDate(from.getDate() - 7);
+      to = today;
+      break;
+    case '30d':
+      from = new Date(today); from.setDate(from.getDate() - 30);
+      to = today;
+      break;
+    case 'qtd': {
+      const q = Math.floor(today.getMonth() / 3);
+      from = new Date(today.getFullYear(), q * 3, 1);
+      to = today;
+      break;
+    }
+    case 'ytd':
+      from = new Date(today.getFullYear(), 0, 1);
+      to = today;
+      break;
+    case 'all':
+      from = new Date(2000, 0, 1);
+      to = today;
+      break;
+    default:
+      return;
+  }
+  range = {
+    preset,
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+  };
+
+  // UI reflect
+  $$('.range-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+  $('#range-from').value = range.from;
+  $('#range-to').value = range.to;
+  updateRangeInfo();
+  syncURL();
+
+  if (refetch) refresh();
+}
+
+function onCustomRangeChange() {
+  const from = $('#range-from').value;
+  const to = $('#range-to').value;
+  if (!from || !to) return;
+  if (new Date(from) > new Date(to)) {
+    showToast('From date is after To date.', true);
+    return;
+  }
+  range = { preset: 'custom', from, to };
+  $$('.range-preset').forEach(b => b.classList.remove('active'));
+  updateRangeInfo();
+  syncURL();
+  refresh();
+}
+
+function updateRangeInfo() {
+  const days = Math.round(daysBetween(range.from, range.to)) + 1;
+  $('#range-info').textContent = `(${days} day${days === 1 ? '' : 's'})`;
+}
+
+// Called right before window.print() (or the native Cmd/Ctrl+P dialog opens)
+// — does three things to make the printed output good for both eyes and
+// screen readers:
+//   1. Writes branch name + date range + timestamp into the page subtitle
+//      so it appears as the report header on every printed page (via
+//      attr() and content selectors in the print stylesheet).
+//   2. Injects REAL <h2> elements at the top of each tab pane so screen
+//      readers can announce them and PDF table-of-contents tools can
+//      detect tab boundaries. (Previously we used CSS ::before content
+//      injection, which is invisible to assistive tech.)
+//   3. Sets up an afterprint handler that restores the page to its normal
+//      interactive state — fires whether the user printed or canceled.
+function stampPrintMetadata() {
+  const sub = $('.page-sub');
+  if (!sub) return;
+  const days = Math.round(daysBetween(range.from, range.to)) + 1;
+  const fromFmt = new Date(range.from).toLocaleDateString();
+  const toFmt = new Date(range.to).toLocaleDateString();
+  const printedOn = new Date().toLocaleString();
+  // Replace the regular subtitle copy with the print-specific stamp
+  sub.textContent = `${branch?.name || 'Branch'} · ${fromFmt} → ${toFmt} (${days} day${days === 1 ? '' : 's'})`;
+  sub.setAttribute('data-printed-on', printedOn);
+
+  // Inject real <h2> headers at the top of each tab pane. The class is
+  // hidden via CSS in normal display mode and revealed only inside @media
+  // print, so the headers appear on paper but never on screen.
+  const sectionTitles = {
+    'tab-operational': 'Operational Reports',
+    'tab-financial':   'Financial Reports',
+    'tab-compliance':  'Compliance & HMDA',
+  };
+  Object.entries(sectionTitles).forEach(([id, title]) => {
+    const pane = document.getElementById(id);
+    if (!pane) return;
+    // Avoid duplicates if the user prints twice in a row
+    let h = pane.querySelector('h2.print-only-section-header');
+    if (!h) {
+      h = document.createElement('h2');
+      h.className = 'print-only-section-header';
+      pane.insertBefore(h, pane.firstChild);
+    }
+    h.textContent = title;
+  });
+
+  // Schedule a restore after print completes — afterprint fires on both
+  // success and cancel, so the page returns to its normal state either way.
+  const restore = () => {
+    sub.textContent = 'The numbers Encompass hides three menus deep. Pipeline velocity, funded volume, fair lending — refreshed live, exportable to CSV.';
+    sub.removeAttribute('data-printed-on');
+    // Pull the injected h2s back out
+    document.querySelectorAll('h2.print-only-section-header').forEach(el => el.remove());
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+}
+
+function syncURL() {
+  const url = new URL(window.location);
+  if (range.preset !== 'custom') {
+    url.searchParams.set('range', range.preset);
+    url.searchParams.delete('from');
+    url.searchParams.delete('to');
+  } else {
+    url.searchParams.set('from', range.from);
+    url.searchParams.set('to', range.to);
+    url.searchParams.delete('range');
+  }
+  url.hash = activeTab;
+  history.replaceState({}, '', url);
+}
+
+function switchTab(tab, push) {
+  activeTab = tab;
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+  if (push) syncURL();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REFRESH = FETCH + RENDER
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function refresh() {
+  // Show loading hint in the metric strips
+  ['op','fin','comp'].forEach(prefix => {
+    $('#' + prefix + '-metrics').querySelectorAll('.metric-cell').forEach(c => {
+      c.querySelector('.metric-value').textContent = '…';
+      c.querySelector('.metric-sub').textContent = 'computing';
     });
   });
+
+  try {
+    dataset = await fetchDataset();
+    renderAll();
+    $('#footer-refreshed').textContent = new Date().toLocaleTimeString();
+  } catch (err) {
+    console.error('refresh err:', err);
+    showToast('Couldn\'t load data: ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FETCH
+//
+// One bulk fetch returning everything we need to compute every panel for the
+// current period. We deliberately fetch slightly more than the period
+// (currently-active loans regardless of created_at, so the snapshot panels
+// are accurate) and then filter client-side.
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function fetchDataset() {
+  const fromISO = startOfDayISO(range.from);
+  const toISO = endOfDayISO(range.to);
+
+  // 1. Loans created in period OR currently active (status not in funded/denied/withdrawn)
+  //    — combined via two queries because OR-across-conditions in PostgREST
+  //    is awkward, then dedupe.
+  const [createdRes, activeRes] = await Promise.all([
+    supa.from('loans')
+      .select(`
+        id, branch_id, loan_number, status, purpose, loan_amount_cents,
+        created_at, updated_at, stage_entered_at, archived_at,
+        loan_officer_id,
+        officer:loan_officer_id ( full_name, role ),
+        loan_borrowers ( position, borrower:borrower_id ( id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex ) )
+      `)
+      .eq('branch_id', me.branch_id)
+      .is('archived_at', null)
+      .gte('created_at', fromISO)
+      .lte('created_at', toISO)
+      .limit(2000),
+    supa.from('loans')
+      .select(`
+        id, branch_id, loan_number, status, purpose, loan_amount_cents,
+        created_at, updated_at, stage_entered_at, archived_at,
+        loan_officer_id,
+        officer:loan_officer_id ( full_name, role ),
+        loan_borrowers ( position, borrower:borrower_id ( id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex ) )
+      `)
+      .eq('branch_id', me.branch_id)
+      .is('archived_at', null)
+      .not('status', 'in', '(funded,denied,withdrawn)')
+      .limit(2000),
+  ]);
+
+  if (createdRes.error) throw createdRes.error;
+  if (activeRes.error)  throw activeRes.error;
+
+  // Merge unique
+  const loanMap = new Map();
+  (createdRes.data || []).forEach(l => loanMap.set(l.id, l));
+  (activeRes.data  || []).forEach(l => { if (!loanMap.has(l.id)) loanMap.set(l.id, l); });
+  const loans = [...loanMap.values()];
+
+  // 2. Stage changes — used for velocity, throughput, and app→CTC time.
+  //    We fetch the period PLUS a 90-day buffer back so we can see the FROM
+  //    side of transitions that started before the period. Without the
+  //    buffer, app→CTC for a 30-day window only catches loans that go from
+  //    application to CTC within 30 days, which understates the median.
+  //    Throughput (transitions IN the period) filters back down to the
+  //    period after the fetch.
+  let stageChanges = [];
+  let stageChangesPeriod = [];   // strict-period subset for throughput
+  try {
+    const bufferStart = new Date(fromISO);
+    bufferStart.setDate(bufferStart.getDate() - 90);
+    const bufferStartISO = bufferStart.toISOString().slice(0, 10);
+    const { data, error } = await supa.from('stage_changes')
+      .select('id, loan_id, from_status, to_status, changed_by, actor_role, created_at')
+      .eq('branch_id', me.branch_id)
+      .gte('created_at', bufferStartISO)
+      .lte('created_at', toISO)
+      .order('created_at', { ascending: true })
+      .limit(20000);
+    if (error && error.code !== '42P01' /* undefined_table */) throw error;
+    stageChanges = data || [];
+    stageChangesPeriod = stageChanges.filter(c =>
+      c.created_at >= fromISO && c.created_at <= toISO + 'T23:59:59'
+    );
+  } catch (err) {
+    console.warn('stage_changes unavailable:', err.message);
+  }
+
+  // 3. Conditions — used for clear-time analysis.
+  //    Filter to loans we know about (those returned above).
+  let conditions = [];
+  if (loans.length > 0) {
+    const loanIds = loans.map(l => l.id);
+    try {
+      const { data, error } = await supa.from('conditions')
+        .select('id, loan_id, status, created_at, cleared_at, title')
+        .in('loan_id', loanIds)
+        .limit(10000);
+      if (error && error.code !== '42P01') throw error;
+      conditions = data || [];
+    } catch (err) {
+      console.warn('conditions unavailable:', err.message);
+    }
+  }
+
+  return { loans, stageChanges, stageChangesPeriod, conditions, range: { ...range, fromISO, toISO } };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER ALL TABS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderAll() {
+  renderOperational();
+  renderFinancial();
+  renderCompliance();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// OPERATIONAL TAB
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderOperational() {
+  const { loans, stageChanges, stageChangesPeriod, conditions } = dataset;
+
+  // Metrics
+  const newLeads = loans.filter(l => isInPeriod(l.created_at)).length;
+  // Submitted / funded counts use the strict-period subset so we don't pick
+  // up transitions from the 90-day buffer.
+  const submittedTransitions = stageChangesPeriod.filter(c => c.to_status === 'submitted').length;
+  const fundedTransitions = stageChangesPeriod.filter(c => c.to_status === 'funded').length;
+  const conversion = newLeads > 0 ? (fundedTransitions / newLeads * 100) : null;
+
+  // App → CTC time uses the BUFFERED stage_changes (so we can find the
+  // 'application' event for a loan that hit CTC in this period but started
+  // earlier). The function further filters to loans whose CTC fell in period.
+  const appToCtcDays = computeAppToCtcDays(stageChanges, dataset.range.fromISO, dataset.range.toISO);
+
+  $('#op-metrics').innerHTML = `
+    ${metricCell('New leads', fmtNum(newLeads), 'in selected period')}
+    ${metricCell('Submitted', fmtNum(submittedTransitions), 'app → submitted', 'cyan')}
+    ${metricCell('Funded', fmtNum(fundedTransitions), 'closings recorded', 'green')}
+    ${metricCell('App → CTC', fmtDays(appToCtcDays.median), appToCtcDays.n + ' loans · median', appToCtcDays.median != null && appToCtcDays.median < 21 ? 'green' : 'amber')}
+  `;
+
+  renderFunnel(loans, stageChanges);
+  renderVelocity(stageChanges);
+  renderSnapshot(loans);
+  renderConditions(conditions);
+  renderThroughput(stageChangesPeriod);
+}
+
+function isInPeriod(iso) {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  return t >= new Date(dataset.range.fromISO).getTime() &&
+         t <= new Date(dataset.range.toISO).getTime();
+}
+
+function computeAppToCtcDays(stageChanges, fromISO, toISO) {
+  // Use a buffered stage_changes window to find the earliest 'application'
+  // entry per loan. Only count loans whose 'clear_to_close' transition
+  // happened during the selected period — that way the metric describes
+  // "loans that closed in this period, how long did they take?"
+  const byLoan = {};
+  stageChanges.forEach(c => {
+    if (!byLoan[c.loan_id]) byLoan[c.loan_id] = {};
+    if (c.to_status === 'application' && !byLoan[c.loan_id].app) byLoan[c.loan_id].app = c.created_at;
+    if (c.to_status === 'clear_to_close' && !byLoan[c.loan_id].ctc) byLoan[c.loan_id].ctc = c.created_at;
+  });
+  const days = Object.values(byLoan)
+    .filter(b => b.app && b.ctc)
+    // Only count loans whose CTC happened in the selected period
+    .filter(b => b.ctc >= fromISO && b.ctc <= toISO + 'T23:59:59')
+    .map(b => daysBetween(b.app, b.ctc))
+    .filter(d => d >= 0);
+
+  if (days.length === 0) return { median: null, mean: null, n: 0 };
+  days.sort((a,b) => a-b);
+  const median = days[Math.floor(days.length / 2)];
+  const mean = days.reduce((a,b) => a+b, 0) / days.length;
+  return { median, mean, n: days.length };
+}
+
+// ─── Funnel ──────────────────────────────────────────────────────────────
+function renderFunnel(loans, stageChanges) {
+  // True cohort funnel: among loans CREATED in this period, how many ever
+  // reached each stage? We trace each loan's history via stage_changes
+  // (whenever available) plus its current status as a fallback.
+  //
+  // Why cohort-only: if we counted every loan that "reached submitted in
+  // period" the lead count (which only includes period-created loans) would
+  // be smaller than later stages, breaking the "of every 100 leads" framing
+  // and producing an inverted funnel.
+  const cohort = loans.filter(l => isInPeriod(l.created_at));
+  const cohortIds = new Set(cohort.map(l => l.id));
+
+  const reached = {};
+  STAGES.forEach(s => reached[s.key] = new Set());
+
+  // Every cohort loan reached at least 'lead'
+  cohort.forEach(l => {
+    reached.lead.add(l.id);
+    // Use current status to fill in stages up to that point (works whether
+    // or not stage_changes is populated)
+    const currentIdx = STAGES.findIndex(s => s.key === l.status);
+    if (currentIdx >= 0) {
+      for (let i = 0; i <= currentIdx; i++) {
+        reached[STAGES[i].key].add(l.id);
+      }
+    }
+    // 'denied'/'withdrawn'/etc. don't count toward later stages — they only
+    // count as 'lead' (which we already added above)
+  });
+
+  // Augment with stage_changes history, but ONLY for cohort loans
+  stageChanges.forEach(c => {
+    if (!cohortIds.has(c.loan_id)) return;
+    const idx = STAGES.findIndex(s => s.key === c.to_status);
+    if (idx >= 0) {
+      for (let i = 0; i <= idx; i++) {
+        reached[STAGES[i].key].add(c.loan_id);
+      }
+    }
+  });
+
+  const counts = STAGES.map(s => ({ key: s.key, label: s.label, count: reached[s.key].size }));
+  const top = counts[0].count;
+
+  const body = $('#op-funnel-body');
+  if (top === 0) {
+    body.innerHTML = renderEmpty('No applications in this period.', 'Try expanding the date range or check back tomorrow.');
+    delete exporters['op-funnel'];
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="funnel">
+      ${counts.map((c, i) => {
+        const pct = top > 0 ? (c.count / top * 100) : 0;
+        const prev = i > 0 ? counts[i-1].count : c.count;
+        const drop = (prev > 0 && i > 0) ? ((prev - c.count) / prev * 100) : 0;
+        return `
+          <div class="funnel-row">
+            <div class="funnel-stage">${escapeHtml(c.label)}</div>
+            <div class="funnel-bar-wrap">
+              <div class="funnel-bar" style="width: ${pct.toFixed(1)}%;">
+                ${c.count > 0 ? c.count : ''}
+              </div>
+            </div>
+            <div class="funnel-meta">
+              <strong>${fmtPct(pct, 0)}</strong>
+              ${i > 0 && drop > 0 ? `<br><span class="drop">−${fmtPct(drop, 0)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="margin-top: 1rem; font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em;">
+      Cohort: ${cohort.length} loan${cohort.length === 1 ? '' : 's'} created in period · stages reflect each loan's progress to date
+    </div>
+  `;
+
+  exporters['op-funnel'] = () => exportCSV('funnel-' + range.preset, [
+    ['stage', 'count', 'percent_of_leads', 'drop_from_prev_pct'],
+    ...counts.map((c, i) => [
+      c.label,
+      c.count,
+      top > 0 ? (c.count / top * 100).toFixed(2) : '',
+      i > 0 && counts[i-1].count > 0 ? ((counts[i-1].count - c.count) / counts[i-1].count * 100).toFixed(2) : '',
+    ]),
+  ]);
+}
+
+// ─── Velocity ────────────────────────────────────────────────────────────
+function renderVelocity(stageChanges) {
+  // For each loan, compute time spent in each stage (entered → next entry).
+  // Uses the BUFFERED stage_changes window (90-day pre-period) so we can
+  // measure transitions whose start was before the period.
+  //
+  // Reports the MEDIAN, not the mean — one outlier loan that sat in
+  // conditional for 90 days would otherwise drag the average up unfairly.
+  const byLoan = {};
+  stageChanges.forEach(c => {
+    if (!byLoan[c.loan_id]) byLoan[c.loan_id] = [];
+    byLoan[c.loan_id].push(c);
+  });
+
+  const stageDurations = {};
+  STAGES.forEach(s => stageDurations[s.key] = []);
+
+  Object.values(byLoan).forEach(events => {
+    events.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    for (let i = 0; i < events.length - 1; i++) {
+      const stage = events[i].to_status;
+      const days = daysBetween(events[i].created_at, events[i+1].created_at);
+      if (stageDurations[stage] && days >= 0) {
+        stageDurations[stage].push(days);
+      }
+    }
+  });
+
+  const rows = STAGES
+    .filter(s => s.key !== 'funded')
+    .map(s => {
+      const arr = stageDurations[s.key].slice().sort((a, b) => a - b);
+      if (arr.length === 0) {
+        return { key: s.key, label: s.label, median: null, p90: null, n: 0 };
+      }
+      const median = arr[Math.floor(arr.length / 2)];
+      const p90 = arr[Math.floor(arr.length * 0.9)];
+      return { key: s.key, label: s.label, median, p90, n: arr.length };
+    });
+
+  const max = Math.max(1, ...rows.map(r => r.median || 0));
+
+  const body = $('#op-velocity-body');
+  const anyData = rows.some(r => r.median != null);
+  if (!anyData) {
+    body.innerHTML = renderEmpty(
+      'No stage transitions yet.',
+      'Velocity needs the stage_changes audit table populated. It fills in automatically as files move through the pipeline.'
+    );
+    delete exporters['op-velocity'];
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = r.median != null ? (r.median / max * 100) : 0;
+        // Threshold order matters: check the worst case FIRST, then degrade.
+        // Previous bug: "> 5 ? amber : (> 10 ? red ...)" — second branch was
+        // unreachable because anything > 10 already matched the first.
+        let cls = '';
+        if (r.median != null) {
+          if (r.median > 10) cls = 'red';
+          else if (r.median > 5) cls = 'amber';
+          else cls = 'green';
+        }
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(r.label)}</div>
+            <div class="bar-track">
+              ${r.median != null ? `<div class="bar-fill ${cls}" style="width: ${pct.toFixed(1)}%;"></div>` : ''}
+            </div>
+            <div class="bar-value">
+              ${fmtDays(r.median)}
+              <span class="bar-value-sub">${r.n} sample${r.n === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="margin-top: 0.85rem; font-family: var(--mono); font-size: 0.55rem; color: var(--muted); letter-spacing: 0.04em;">
+      Median days per stage · sample window includes 90 days before the selected period for accuracy
+    </div>
+  `;
+
+  exporters['op-velocity'] = () => exportCSV('velocity-' + range.preset, [
+    ['stage', 'median_days', 'p90_days', 'sample_size'],
+    ...rows.map(r => [
+      r.label,
+      r.median != null ? r.median.toFixed(2) : '',
+      r.p90 != null ? r.p90.toFixed(2) : '',
+      r.n
+    ]),
+  ]);
+}
+
+// ─── Snapshot ────────────────────────────────────────────────────────────
+function renderSnapshot(loans) {
+  const counts = {};
+  STAGES.forEach(s => counts[s.key] = 0);
+  loans.forEach(l => {
+    if (counts[l.status] != null && !TERMINAL_STATUSES.has(l.status)) counts[l.status]++;
+  });
+  // Snapshot is "active loans only" — funded/denied/withdrawn excluded
+  const rows = STAGES.filter(s => s.key !== 'funded').map(s => ({ key: s.key, label: s.label, count: counts[s.key] || 0 }));
+  const total = rows.reduce((a, r) => a + r.count, 0);
+  const max = Math.max(1, ...rows.map(r => r.count));
+
+  const body = $('#op-snapshot-body');
+  if (total === 0) {
+    body.innerHTML = renderEmpty('Pipeline is empty right now.', 'No active loans on the board. Start a new file to populate this view.');
+    delete exporters['op-snapshot'];
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = (r.count / max * 100);
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(r.label)}</div>
+            <div class="bar-track">
+              ${r.count > 0 ? `<div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>` : ''}
+            </div>
+            <div class="bar-value">${r.count}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="margin-top: 1rem; font-family: var(--mono); font-size: 0.62rem; color: var(--muted); letter-spacing: 0.04em;">
+      ${total} active · funded loans excluded
+    </div>
+  `;
+
+  exporters['op-snapshot'] = () => exportCSV('snapshot-today', [
+    ['stage', 'active_count'],
+    ...rows.map(r => [r.label, r.count]),
+  ]);
+}
+
+// ─── Conditions ──────────────────────────────────────────────────────────
+function renderConditions(conditions) {
+  const cleared = conditions.filter(c => c.cleared_at && c.created_at);
+  const open = conditions.filter(c => c.status === 'open' || (!c.cleared_at && c.status !== 'waived'));
+
+  const clearTimes = cleared.map(c => daysBetween(c.created_at, c.cleared_at)).filter(d => d >= 0);
+  clearTimes.sort((a,b) => a-b);
+  const median = clearTimes.length ? clearTimes[Math.floor(clearTimes.length / 2)] : null;
+  const mean = clearTimes.length ? clearTimes.reduce((a,b) => a+b, 0) / clearTimes.length : null;
+
+  // Bucket: <1d, 1-3d, 3-7d, 7-14d, 14+d
+  const buckets = [
+    { label: '< 1 day',   match: d => d < 1 },
+    { label: '1–3 days',  match: d => d >= 1 && d < 3 },
+    { label: '3–7 days',  match: d => d >= 3 && d < 7 },
+    { label: '7–14 days', match: d => d >= 7 && d < 14 },
+    { label: '14+ days',  match: d => d >= 14 },
+  ];
+  buckets.forEach(b => b.count = clearTimes.filter(b.match).length);
+  const max = Math.max(1, ...buckets.map(b => b.count));
+
+  const body = $('#op-conditions-body');
+  if (clearTimes.length === 0 && open.length === 0) {
+    body.innerHTML = renderEmpty('No conditions in the pipeline.', 'Conditions appear when underwriting flags missing items on a file.');
+    delete exporters['op-conditions'];
+    return;
+  }
+
+  body.innerHTML = `
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
+        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Median clear time</div>
+        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${median != null && median < 2 ? 'var(--accent2)' : 'var(--white)'};">${fmtDays(median)}</div>
+        <div style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); margin-top: 0.2rem;">${clearTimes.length} cleared</div>
+      </div>
+      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
+        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Open right now</div>
+        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${open.length > 10 ? 'var(--amber)' : 'var(--white)'};">${open.length}</div>
+        <div style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); margin-top: 0.2rem;">across all loans</div>
+      </div>
+    </div>
+    ${clearTimes.length > 0 ? `
+      <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;">Clear time distribution</div>
+      <div class="bar-chart">
+        ${buckets.map(b => `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(b.label)}</div>
+            <div class="bar-track">${b.count > 0 ? `<div class="bar-fill green" style="width: ${(b.count / max * 100).toFixed(1)}%;"></div>` : ''}</div>
+            <div class="bar-value">${b.count}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+  `;
+
+  exporters['op-conditions'] = () => exportCSV('conditions-' + range.preset, [
+    ['metric', 'value'],
+    ['median_clear_days', median != null ? median.toFixed(2) : ''],
+    ['mean_clear_days', mean != null ? mean.toFixed(2) : ''],
+    ['cleared_count', clearTimes.length],
+    ['open_count', open.length],
+    ...buckets.map(b => ['cleared_' + b.label.replace(/[^a-z0-9]+/gi, '_'), b.count]),
+  ]);
+}
+
+// ─── Throughput ──────────────────────────────────────────────────────────
+function renderThroughput(stageChanges) {
+  const counts = {};
+  STAGES.forEach(s => counts[s.key] = 0);
+  stageChanges.forEach(c => {
+    if (counts[c.to_status] != null) counts[c.to_status]++;
+  });
+
+  const rows = STAGES
+    .filter(s => s.key !== 'lead')  // entering 'lead' is just a creation, less interesting
+    .map(s => ({ key: s.key, label: '→ ' + s.label, count: counts[s.key] || 0 }));
+  const max = Math.max(1, ...rows.map(r => r.count));
+
+  const body = $('#op-throughput-body');
+  if (rows.every(r => r.count === 0)) {
+    body.innerHTML = renderEmpty('No stage transitions in this period.', 'Transitions are recorded when files are dragged between columns on the pipeline board.');
+    delete exporters['op-throughput'];
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = r.count > 0 ? (r.count / max * 100) : 0;
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(r.label)}</div>
+            <div class="bar-track">${r.count > 0 ? `<div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
+            <div class="bar-value">${r.count}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  exporters['op-throughput'] = () => exportCSV('throughput-' + range.preset, [
+    ['transition', 'count'],
+    ...rows.map(r => [r.label, r.count]),
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FINANCIAL TAB
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderFinancial() {
+  const { loans, stageChangesPeriod } = dataset;
+
+  // "Funded in period" = stage_changes where to_status='funded' falls in
+  // the SELECTED period (not the buffered window — we want closings in the
+  // user's chosen date range, not pre-period closings).
+  const fundedTransitions = stageChangesPeriod.filter(c => c.to_status === 'funded');
+  const fundedLoanIds = new Set(fundedTransitions.map(c => c.loan_id));
+  const fundedLoans = loans.filter(l => fundedLoanIds.has(l.id) || (l.status === 'funded' && isInPeriod(l.stage_entered_at || l.updated_at)));
+
+  // Volume + count
+  const fundedCount = fundedLoans.length;
+  const fundedVolumeCents = fundedLoans.reduce((sum, l) => sum + (l.loan_amount_cents || 0), 0);
+  const avgLoanSize = fundedCount > 0 ? fundedVolumeCents / fundedCount : null;
+
+  // Pipeline value (snapshot, today)
+  const activeLoans = loans.filter(l => !TERMINAL_STATUSES.has(l.status));
+  const pipelineValueCents = activeLoans.reduce((sum, l) => sum + (l.loan_amount_cents || 0), 0);
+
+  // Fall-out: loans created in period with status in (denied, withdrawn) — capture rough rate
+  const periodLoans = loans.filter(l => isInPeriod(l.created_at));
+  const denied = periodLoans.filter(l => l.status === 'denied').length;
+  const withdrawn = periodLoans.filter(l => l.status === 'withdrawn').length;
+  const totalEntered = periodLoans.length;
+  const fallOutRate = totalEntered > 0 ? ((denied + withdrawn) / totalEntered * 100) : null;
+
+  $('#fin-metrics').innerHTML = `
+    ${metricCell('Funded volume', fmtMoney(fundedVolumeCents, { compact: true }), fundedCount + ' loans', 'green')}
+    ${metricCell('Avg loan size', fmtMoney(avgLoanSize, { compact: true }), 'per funded loan', 'cyan')}
+    ${metricCell('Pipeline value', fmtMoney(pipelineValueCents, { compact: true }), activeLoans.length + ' active', 'cyan')}
+    ${metricCell('Fall-out rate', fmtPct(fallOutRate), denied + ' denied · ' + withdrawn + ' withdrawn', fallOutRate != null && fallOutRate > 20 ? 'amber' : '')}
+  `;
+
+  renderFundedVolumeStat(fundedLoans, fundedVolumeCents);
+  renderFundedByPurpose(fundedLoans);
+  renderLOLeaderboard(fundedLoans);
+  renderFallOut(periodLoans);
+  renderPipelineValue(activeLoans);
+}
+
+function renderFundedVolumeStat(fundedLoans, totalCents) {
+  const body = $('#fin-volume-body');
+  if (fundedLoans.length === 0) {
+    body.innerHTML = renderEmpty('No closings in this period.', 'When loans hit "funded", they show up here.');
+    delete exporters['fin-volume'];
+    return;
+  }
+
+  // Median + range
+  const amounts = fundedLoans.map(l => l.loan_amount_cents || 0).filter(a => a > 0).sort((a,b) => a-b);
+  const median = amounts.length ? amounts[Math.floor(amounts.length / 2)] : 0;
+  const min = amounts[0] || 0;
+  const max = amounts[amounts.length - 1] || 0;
+
+  body.innerHTML = `
+    <div class="big-stat">
+      <div class="big-stat-value green">${fmtMoney(totalCents, { compact: true })}</div>
+      <div class="big-stat-label">${fundedLoans.length} loans funded</div>
+      <div class="big-stat-sub">
+        Median ${fmtMoney(median, { compact: true })} ·
+        Range ${fmtMoney(min, { compact: true })}–${fmtMoney(max, { compact: true })}
+      </div>
+    </div>
+  `;
+
+  exporters['fin-volume'] = () => exportCSV('funded-volume-' + range.preset, [
+    ['metric', 'value'],
+    ['funded_count', fundedLoans.length],
+    ['funded_volume_dollars', (totalCents / 100).toFixed(2)],
+    ['avg_loan_dollars', (totalCents / fundedLoans.length / 100).toFixed(2)],
+    ['median_loan_dollars', (median / 100).toFixed(2)],
+    ['min_loan_dollars', (min / 100).toFixed(2)],
+    ['max_loan_dollars', (max / 100).toFixed(2)],
+  ]);
+}
+
+function renderFundedByPurpose(fundedLoans) {
+  const body = $('#fin-purpose-body');
+  if (fundedLoans.length === 0) {
+    body.innerHTML = renderEmpty('No funded loans yet.');
+    delete exporters['fin-purpose'];
+    return;
+  }
+
+  const byPurpose = {};
+  fundedLoans.forEach(l => {
+    const p = l.purpose || 'unknown';
+    if (!byPurpose[p]) byPurpose[p] = { count: 0, volume: 0 };
+    byPurpose[p].count++;
+    byPurpose[p].volume += (l.loan_amount_cents || 0);
+  });
+
+  const rows = Object.entries(byPurpose)
+    .map(([k, v]) => ({ purpose: k, ...v }))
+    .sort((a, b) => b.volume - a.volume);
+  const maxVol = Math.max(1, ...rows.map(r => r.volume));
+
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = (r.volume / maxVol * 100);
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(formatPurpose(r.purpose))}</div>
+            <div class="bar-track">${r.volume > 0 ? `<div class="bar-fill green" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
+            <div class="bar-value">
+              ${fmtMoney(r.volume, { compact: true })}
+              <span class="bar-value-sub">${r.count} loan${r.count === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  exporters['fin-purpose'] = () => exportCSV('funded-by-purpose-' + range.preset, [
+    ['purpose', 'count', 'volume_dollars'],
+    ...rows.map(r => [formatPurpose(r.purpose), r.count, (r.volume / 100).toFixed(2)]),
+  ]);
+}
+
+function formatPurpose(p) {
+  return ({
+    purchase: 'Purchase',
+    refinance: 'Refinance',
+    rate_term_refi: 'Rate/term refi',
+    cash_out_refi: 'Cash-out refi',
+    construction: 'Construction',
+    home_equity: 'Home equity',
+    unknown: 'Unspecified',
+  }[p] || p);
+}
+
+function renderLOLeaderboard(fundedLoans) {
+  const body = $('#fin-leaderboard-body');
+  if (fundedLoans.length === 0) {
+    body.innerHTML = renderEmpty('No closings in this period.', 'The leaderboard fills in as loan officers hit "funded".');
+    delete exporters['fin-leaderboard'];
+    return;
+  }
+
+  const byLO = {};
+  fundedLoans.forEach(l => {
+    const id = l.loan_officer_id || 'unassigned';
+    const name = l.officer?.full_name || 'Unassigned';
+    if (!byLO[id]) byLO[id] = { id, name, count: 0, volume: 0 };
+    byLO[id].count++;
+    byLO[id].volume += (l.loan_amount_cents || 0);
+  });
+
+  const rows = Object.values(byLO).sort((a, b) => b.volume - a.volume);
+  const totalVol = rows.reduce((a, x) => a + x.volume, 0);
+
+  body.innerHTML = `
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Loan officer</th>
+          <th class="num" style="text-align:right;">Funded</th>
+          <th class="num" style="text-align:right;">Volume</th>
+          <th class="num" style="text-align:right;">Avg loan</th>
+          <th class="num" style="text-align:right;">% of total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => {
+          const pct = totalVol > 0 ? (r.volume / totalVol * 100) : 0;
+          const avg = r.count > 0 ? r.volume / r.count : 0;
+          return `
+            <tr>
+              <td>${escapeHtml(r.name)}</td>
+              <td class="num">${r.count}</td>
+              <td class="num green">${fmtMoney(r.volume, { compact: true })}</td>
+              <td class="num">${fmtMoney(avg, { compact: true })}</td>
+              <td class="num">${fmtPct(pct, 0)}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  exporters['fin-leaderboard'] = () => exportCSV('lo-leaderboard-' + range.preset, [
+    ['loan_officer', 'funded_count', 'volume_dollars', 'avg_loan_dollars'],
+    ...rows.map(r => [
+      r.name,
+      r.count,
+      (r.volume / 100).toFixed(2),
+      r.count > 0 ? (r.volume / r.count / 100).toFixed(2) : '0',
+    ]),
+  ]);
+}
+
+function renderFallOut(periodLoans) {
+  const body = $('#fin-fallout-body');
+  if (periodLoans.length === 0) {
+    body.innerHTML = renderEmpty('No applications in this period.');
+    delete exporters['fin-fallout'];
+    return;
+  }
+
+  const denied = periodLoans.filter(l => l.status === 'denied');
+  const withdrawn = periodLoans.filter(l => l.status === 'withdrawn');
+  const funded = periodLoans.filter(l => l.status === 'funded');
+  const inProgress = periodLoans.filter(l => !TERMINAL_STATUSES.has(l.status));
+
+  const total = periodLoans.length;
+  const rows = [
+    { label: 'Funded',      count: funded.length,    cls: 'green' },
+    { label: 'In progress', count: inProgress.length, cls: 'cyan' },
+    { label: 'Denied',      count: denied.length,    cls: 'red' },
+    { label: 'Withdrawn',   count: withdrawn.length, cls: 'amber' },
+  ];
+  const max = Math.max(1, ...rows.map(r => r.count));
+
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = (r.count / max * 100);
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(r.label)}</div>
+            <div class="bar-track">${r.count > 0 ? `<div class="bar-fill ${r.cls}" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
+            <div class="bar-value">
+              ${r.count}
+              <span class="bar-value-sub">${total > 0 ? fmtPct(r.count / total * 100, 0) : '—'}</span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  exporters['fin-fallout'] = () => exportCSV('fallout-' + range.preset, [
+    ['outcome', 'count', 'pct_of_period_total'],
+    ...rows.map(r => [r.label, r.count, total > 0 ? (r.count / total * 100).toFixed(2) : '0']),
+  ]);
+}
+
+function renderPipelineValue(activeLoans) {
+  const body = $('#fin-pipeline-value-body');
+  if (activeLoans.length === 0) {
+    body.innerHTML = renderEmpty('Pipeline is empty.', 'Once you have active loans, this shows the dollar value at each stage.');
+    delete exporters['fin-pipeline-value'];
+    return;
+  }
+
+  const byStage = {};
+  STAGES.forEach(s => byStage[s.key] = 0);
+  activeLoans.forEach(l => {
+    if (byStage[l.status] != null) byStage[l.status] += (l.loan_amount_cents || 0);
+  });
+
+  const rows = STAGES
+    .filter(s => s.key !== 'funded')
+    .map(s => ({ key: s.key, label: s.label, volume: byStage[s.key] || 0 }))
+    .filter(r => r.volume > 0);
+  const max = Math.max(1, ...rows.map(r => r.volume));
+
+  if (rows.length === 0) {
+    body.innerHTML = renderEmpty('Pipeline value is zero.', 'Active loans don\'t have loan amounts set yet.');
+    delete exporters['fin-pipeline-value'];
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = (r.volume / max * 100);
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(r.label)}</div>
+            <div class="bar-track">${r.volume > 0 ? `<div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
+            <div class="bar-value">${fmtMoney(r.volume, { compact: true })}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  exporters['fin-pipeline-value'] = () => exportCSV('pipeline-value-today', [
+    ['stage', 'volume_dollars'],
+    ...rows.map(r => [r.label, (r.volume / 100).toFixed(2)]),
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPLIANCE / HMDA TAB
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderCompliance() {
+  const { loans } = dataset;
+  const periodLoans = loans.filter(l => isInPeriod(l.created_at));
+
+  // Primary borrower per loan (position=1)
+  const periodPrimary = periodLoans.map(l => {
+    const lb = (l.loan_borrowers || []).find(b => b.position === 1) || (l.loan_borrowers || [])[0];
+    return { loan: l, borrower: lb?.borrower || null };
+  }).filter(x => x.borrower);
+
+  const totalApps = periodPrimary.length;
+  const missingDemo = periodPrimary.filter(x => !x.borrower.hmda_race && !x.borrower.hmda_ethnicity && !x.borrower.hmda_sex).length;
+  const collected = totalApps - missingDemo;
+
+  // Approval rate overall (period)
+  const fundedCount = periodLoans.filter(l => l.status === 'funded').length;
+  const deniedCount = periodLoans.filter(l => l.status === 'denied').length;
+  const decisioned = fundedCount + deniedCount + periodLoans.filter(l => l.status === 'withdrawn').length;
+  const approvalRate = decisioned > 0 ? (fundedCount / decisioned * 100) : null;
+
+  $('#comp-metrics').innerHTML = `
+    ${metricCell('Applications', fmtNum(totalApps), 'in selected period')}
+    ${metricCell('Demographics collected', fmtPct(totalApps > 0 ? collected / totalApps * 100 : 0, 0), collected + ' of ' + totalApps, totalApps > 0 && collected / totalApps >= 0.95 ? 'green' : 'amber')}
+    ${metricCell('Decisioned', fmtNum(decisioned), 'funded + denied + withdrawn')}
+    ${metricCell('Approval rate', fmtPct(approvalRate), 'across decisioned apps', approvalRate != null && approvalRate >= 60 ? 'green' : '')}
+  `;
+
+  renderRaceBreakdown(periodPrimary);
+  renderEthnicityBreakdown(periodPrimary);
+  renderApprovalByDemo(periodPrimary, periodLoans);
+  renderAdverseAction(periodLoans);
+  renderMissingDemo(periodPrimary);
+}
+
+function renderDemographicChart(bodyId, primaryArr, fieldName, labels, exportKey) {
+  const body = $(bodyId);
+  const total = primaryArr.length;
+  if (total === 0) {
+    body.innerHTML = renderEmpty('No applications in this period.');
+    delete exporters[exportKey];
+    return;
+  }
+
+  const counts = {};
+  Object.keys(labels).forEach(k => counts[k] = 0);
+  let unset = 0;
+  let unrecognized = 0;
+  primaryArr.forEach(({ borrower }) => {
+    const v = borrower[fieldName];
+    if (!v) { unset++; return; }
+    if (counts[v] != null) counts[v]++;
+    else if (counts.declined != null) counts.declined++;  // bucket unrecognized as "info not provided" if that's a known label
+    else unrecognized++;  // otherwise track separately so they don't disappear silently
+  });
+
+  // Add "not collected" if any
+  const rows = [
+    ...Object.entries(counts).map(([k, v]) => ({ key: k, label: labels[k], count: v })),
+  ];
+  if (unset > 0) rows.push({ key: 'unset', label: 'Demographic not collected', count: unset });
+  if (unrecognized > 0) rows.push({ key: 'unrecognized', label: 'Other / unrecognized value', count: unrecognized });
+
+  const max = Math.max(1, ...rows.map(r => r.count));
+  body.innerHTML = `
+    <div class="bar-chart">
+      ${rows.map(r => {
+        const pct = total > 0 ? (r.count / total * 100) : 0;
+        const barPct = (r.count / max * 100);
+        const cls = r.key === 'unset' ? 'amber' : '';
+        return `
+          <div class="bar-row">
+            <div class="bar-label">${escapeHtml(r.label)}</div>
+            <div class="bar-track">${r.count > 0 ? `<div class="bar-fill ${cls}" style="width: ${barPct.toFixed(1)}%;"></div>` : ''}</div>
+            <div class="bar-value">
+              ${r.count}
+              <span class="bar-value-sub">${fmtPct(pct, 0)}</span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  exporters[exportKey] = () => exportCSV(exportKey + '-' + range.preset, [
+    ['category', 'count', 'pct_of_period_apps'],
+    ...rows.map(r => [r.label, r.count, total > 0 ? (r.count / total * 100).toFixed(2) : '0']),
+  ]);
+}
+
+function renderRaceBreakdown(primaryArr) {
+  renderDemographicChart('#comp-race-body', primaryArr, 'hmda_race', RACE_LABELS, 'comp-race');
+}
+function renderEthnicityBreakdown(primaryArr) {
+  renderDemographicChart('#comp-ethnicity-body', primaryArr, 'hmda_ethnicity', ETHNICITY_LABELS, 'comp-ethnicity');
+}
+
+function renderApprovalByDemo(periodPrimary, periodLoans) {
+  const body = $('#comp-approval-body');
+  if (periodPrimary.length === 0) {
+    body.innerHTML = renderEmpty('No applications in this period.');
+    delete exporters['comp-approval'];
+    return;
+  }
+
+  // Build approval breakdown for race AND ethnicity in same table
+  const loanById = {};
+  periodLoans.forEach(l => loanById[l.id] = l);
+
+  function bucketize(field, labels) {
+    const buckets = {};
+    Object.keys(labels).forEach(k => buckets[k] = { funded: 0, denied: 0, withdrawn: 0, total: 0 });
+    // Capture unrecognized DB values into a separate bucket so they don't
+    // pollute the table with raw enum strings or NULL-as-key entries.
+    const unrecognized = { funded: 0, denied: 0, withdrawn: 0, total: 0 };
+    periodPrimary.forEach(({ loan, borrower }) => {
+      const v = borrower[field];
+      let b;
+      if (v && buckets[v]) b = buckets[v];
+      else if (buckets.declined) b = buckets.declined;   // missing or unknown → "info not provided"
+      else b = unrecognized;
+      b.total++;
+      if (loan.status === 'funded') b.funded++;
+      else if (loan.status === 'denied') b.denied++;
+      else if (loan.status === 'withdrawn') b.withdrawn++;
+    });
+    if (unrecognized.total > 0) buckets._unrecognized = unrecognized;
+    return buckets;
+  }
+
+  const raceBuckets = bucketize('hmda_race', RACE_LABELS);
+  const ethBuckets  = bucketize('hmda_ethnicity', ETHNICITY_LABELS);
+
+  function rateRow(label, b) {
+    const decisioned = b.funded + b.denied + b.withdrawn;
+    const rate = decisioned > 0 ? (b.funded / decisioned * 100) : null;
+    let cls = '';
+    if (rate != null) {
+      if (rate >= 70) cls = 'green';
+      else if (rate < 50) cls = 'amber';
+    }
+    return `
+      <tr>
+        <td>${escapeHtml(label)}</td>
+        <td class="num">${b.total}</td>
+        <td class="num green">${b.funded}</td>
+        <td class="num red">${b.denied}</td>
+        <td class="num amber">${b.withdrawn}</td>
+        <td class="num ${cls}">${fmtPct(rate, 0)}</td>
+      </tr>
+    `;
+  }
+
+  // Helper to get a display label: _unrecognized is our internal bucket for
+  // raw DB values not in the labels constant, so it gets a friendlier name.
+  const labelFor = (k, labels) => k === '_unrecognized' ? 'Other / unrecognized' : (labels[k] || k);
+
+  body.innerHTML = `
+    <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;">By race</div>
+    <table class="report-table" style="margin-bottom: 1.2rem;">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th class="num" style="text-align:right;">Apps</th>
+          <th class="num" style="text-align:right;">Funded</th>
+          <th class="num" style="text-align:right;">Denied</th>
+          <th class="num" style="text-align:right;">Withdrawn</th>
+          <th class="num" style="text-align:right;">Approval rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Object.entries(raceBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => rateRow(labelFor(k, RACE_LABELS), b)).join('')}
+      </tbody>
+    </table>
+    <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;">By ethnicity</div>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th class="num" style="text-align:right;">Apps</th>
+          <th class="num" style="text-align:right;">Funded</th>
+          <th class="num" style="text-align:right;">Denied</th>
+          <th class="num" style="text-align:right;">Withdrawn</th>
+          <th class="num" style="text-align:right;">Approval rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Object.entries(ethBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => rateRow(labelFor(k, ETHNICITY_LABELS), b)).join('')}
+      </tbody>
+    </table>
+  `;
+
+  exporters['comp-approval'] = () => exportCSV('approval-by-demo-' + range.preset, [
+    ['dimension', 'category', 'apps', 'funded', 'denied', 'withdrawn', 'approval_rate_pct'],
+    ...Object.entries(raceBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => {
+      const dec = b.funded + b.denied + b.withdrawn;
+      return ['race', labelFor(k, RACE_LABELS), b.total, b.funded, b.denied, b.withdrawn, dec > 0 ? (b.funded/dec*100).toFixed(2) : ''];
+    }),
+    ...Object.entries(ethBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => {
+      const dec = b.funded + b.denied + b.withdrawn;
+      return ['ethnicity', labelFor(k, ETHNICITY_LABELS), b.total, b.funded, b.denied, b.withdrawn, dec > 0 ? (b.funded/dec*100).toFixed(2) : ''];
+    }),
+  ]);
+}
+
+function renderAdverseAction(periodLoans) {
+  const body = $('#comp-adverse-body');
+  // Adverse action timing requires application_received_at and adverse_action_at columns,
+  // which aren't part of the v0.2 schema. Render an honest empty state with an explanation.
+  const denied = periodLoans.filter(l => l.status === 'denied');
+
+  if (denied.length === 0) {
+    body.innerHTML = renderEmpty('No adverse-action loans in this period.', 'When loans hit "denied", this measures days from application to denial notice. ECOA cap is 30 days.');
+    delete exporters['comp-adverse'];
+    return;
+  }
+
+  // Best-effort: use created_at → updated_at delta as a proxy
+  const days = denied.map(l => {
+    const start = l.created_at;
+    const end = l.updated_at || todayISO();
+    return { id: l.id, num: l.loan_number, days: daysBetween(start, end) };
+  });
+  const overCap = days.filter(d => d.days > 30).length;
+  const median = days.map(d => d.days).sort((a,b) => a-b)[Math.floor(days.length / 2)];
+
+  body.innerHTML = `
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
+        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Median days · app to denial</div>
+        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${median > 25 ? 'var(--amber)' : 'var(--white)'};">${fmtDays(median)}</div>
+      </div>
+      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
+        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Over 30-day ECOA cap</div>
+        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${overCap > 0 ? 'var(--red)' : 'var(--accent2)'};">${overCap}</div>
+        <div style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); margin-top: 0.2rem;">of ${denied.length} denials</div>
+      </div>
+    </div>
+    <div style="font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em; line-height: 1.5;">
+      <strong style="color: var(--amber);">Approximation:</strong>
+      Uses created_at → updated_at as proxy for application → adverse-action notice.
+      For audit-grade precision, add <code>application_received_at</code> and
+      <code>adverse_action_sent_at</code> columns to the loans table.
+    </div>
+  `;
+
+  exporters['comp-adverse'] = () => exportCSV('adverse-action-' + range.preset, [
+    ['loan_number', 'days_app_to_denial_proxy', 'over_30_day_cap'],
+    ...days.map(d => [d.num, d.days.toFixed(1), d.days > 30 ? 'YES' : 'no']),
+  ]);
+}
+
+function renderMissingDemo(primaryArr) {
+  const body = $('#comp-missing-body');
+  const missing = primaryArr.filter(({ borrower }) =>
+    !borrower.hmda_race && !borrower.hmda_ethnicity && !borrower.hmda_sex
+  );
+
+  if (primaryArr.length === 0) {
+    body.innerHTML = renderEmpty('No applications in this period.');
+    delete exporters['comp-missing'];
+    return;
+  }
+
+  if (missing.length === 0) {
+    body.innerHTML = `
+      <div class="big-stat">
+        <div class="big-stat-value green">0</div>
+        <div class="big-stat-label">All apps have demographics</div>
+        <div class="big-stat-sub">Section 7 collected on every borrower in period.</div>
+      </div>
+    `;
+    exporters['comp-missing'] = () => exportCSV('missing-demo-' + range.preset, [['loan_number','borrower'], ['(none)','']]);
+    return;
+  }
+
+  body.innerHTML = `
+    <div style="margin-bottom: 0.85rem;">
+      <span style="font-family: var(--serif); font-size: 1.5rem; color: var(--amber);">${missing.length}</span>
+      <span style="font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-left: 0.5rem;">of ${primaryArr.length} apps</span>
+    </div>
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th>Loan #</th>
+          <th>Borrower</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${missing.slice(0, 50).map(({ loan, borrower }) => `
+          <tr>
+            <td><a href="/dashboard.html#${escapeHtml(loan.id)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(loan.loan_number)}</a></td>
+            <td>${escapeHtml(borrower.last_name + ', ' + borrower.first_name)}</td>
+            <td style="font-family: var(--mono); font-size: 0.65rem; color: var(--muted);">${escapeHtml(loan.status)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    ${missing.length > 50 ? `<div style="margin-top: 0.5rem; font-family: var(--mono); font-size: 0.6rem; color: var(--muted);">… and ${missing.length - 50} more (export for full list)</div>` : ''}
+  `;
+
+  exporters['comp-missing'] = () => exportCSV('missing-demo-' + range.preset, [
+    ['loan_number', 'borrower', 'status'],
+    ...missing.map(({ loan, borrower }) => [loan.loan_number, borrower.last_name + ', ' + borrower.first_name, loan.status]),
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SHARED RENDER HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function metricCell(label, value, sub, cls) {
+  return `
+    <div class="metric-cell">
+      <div class="metric-label">${escapeHtml(label)}</div>
+      <div class="metric-value ${cls || ''}">${value}</div>
+      <div class="metric-sub">${escapeHtml(sub || '')}</div>
+    </div>
+  `;
+}
+
+function renderEmpty(text, sub) {
+  return `
+    <div class="panel-empty">
+      <div class="panel-empty-icon">⌬</div>
+      <div class="panel-empty-text">${escapeHtml(text)}</div>
+      ${sub ? `<div class="panel-empty-sub">${escapeHtml(sub)}</div>` : ''}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function exportCSV(filename, rows) {
+  if (!rows || rows.length === 0) {
+    showToast('Nothing to export.');
+    return;
+  }
+  const csv = rows.map(row => row.map(cell => {
+    const s = String(cell ?? '');
+    // Quote if contains comma, quote, newline; double internal quotes
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }).join(',')).join('\n');
+
+  // BOM helps Excel detect UTF-8
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${branch.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${filename}-${todayISO()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Exported ' + a.download);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FULL DATASET EXPORT (paginated)
+//
+// Per-panel CSVs only export what's currently rendered, which is capped by
+// the in-memory loans fetch (.limit(2000)). For branches with thousands of
+// loans in a period, that's a real ceiling. This export bypasses the cap
+// by paginating through Supabase explicitly — it returns one comprehensive
+// CSV with every loan in the period and every audit column, so you can
+// pivot in Excel however you want.
+//
+// Page size: 1000 rows per request (Supabase's default max). 10,000-row
+// stop-loss to prevent runaway exports — if you ever need more than that,
+// either narrow the date range or add a server-side endpoint.
+// ═══════════════════════════════════════════════════════════════════════════
+async function exportFullDataset() {
+  const btn = $('#btn-export-full');
+  const originalLabel = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span style="margin-right:0.35rem;">⏳</span>Exporting…';
+  try {
+    const fromISO = range.from;
+    const toISO = range.to;
+    const PAGE = 1000;
+    const HARD_CAP = 10000;
+    const all = [];
+    let from = 0;
+    while (from < HARD_CAP) {
+      const { data, error } = await supa.from('loans')
+        .select(`
+          id, loan_number, status, purpose, loan_amount_cents,
+          loan_officer_id, officer:loan_officer_id ( full_name ),
+          property_address, created_at, updated_at, stage_entered_at,
+          loan_borrowers ( position, borrower:borrower_id (
+            first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex
+          ) )
+        `)
+        .eq('branch_id', me.branch_id)
+        .is('archived_at', null)
+        .gte('created_at', fromISO)
+        .lte('created_at', toISO + 'T23:59:59')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all.push(...data);
+      // Update progress so the user knows we're working
+      btn.innerHTML = `<span style="margin-right:0.35rem;">⏳</span>Exporting… ${all.length} rows`;
+      if (data.length < PAGE) break;  // last page
+      from += PAGE;
+    }
+
+    if (all.length === 0) {
+      showToast('No loans found in the selected period.', true);
+      return;
+    }
+    if (from + PAGE >= HARD_CAP) {
+      showToast(`Hit ${HARD_CAP}-row cap. Narrow the date range to export the rest.`, true);
+    }
+
+    // Flatten to one row per loan with primary borrower's data
+    const rows = [
+      [
+        'loan_number', 'status', 'purpose', 'loan_amount_dollars',
+        'loan_officer', 'property_address',
+        'borrower_first', 'borrower_last',
+        'hmda_race', 'hmda_ethnicity', 'hmda_sex',
+        'created_at', 'updated_at', 'stage_entered_at',
+      ],
+      ...all.map(l => {
+        const lb = (l.loan_borrowers || []).find(b => b.position === 1) || (l.loan_borrowers || [])[0];
+        const b = lb?.borrower || {};
+        return [
+          l.loan_number || '',
+          l.status || '',
+          l.purpose || '',
+          l.loan_amount_cents != null ? (l.loan_amount_cents / 100).toFixed(2) : '',
+          l.officer?.full_name || '',
+          l.property_address || '',
+          b.first_name || '',
+          b.last_name || '',
+          b.hmda_race || '',
+          b.hmda_ethnicity || '',
+          b.hmda_sex || '',
+          l.created_at || '',
+          l.updated_at || '',
+          l.stage_entered_at || '',
+        ];
+      }),
+    ];
+
+    exportCSV('full-dataset-' + range.preset, rows);
+    showToast(`Exported ${all.length} loans (full dataset).`);
+  } catch (err) {
+    console.error('full export err:', err);
+    showToast('Export failed: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
 </script>
 
 </body>
