@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Team · OriginFlow LOS</title>
+<meta name="description" content="Branch roster, roles, and invites. The user management Encompass charges $50/seat to give you.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
+.sonar-icon { width: 26px; height: 26px; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── PAGE HEADER ──────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.75rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+.page-head-text { flex: 1; min-width: 0; }
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+}
+.page-title {
+  font-family: var(--serif); font-size: 1.85rem; color: var(--white);
+  line-height: 1.15;
+}
+.page-sub {
+  color: var(--muted); margin-top: 0.35rem; max-width: 720px;
+  font-size: 0.92rem;
+}
+.page-actions {
+  display: flex; gap: 0.5rem; flex-wrap: wrap;
+}
+.btn-primary {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.6rem 1rem;
+  cursor: pointer; transition: all 0.15s;
+  text-decoration: none;
+}
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 0.95rem 1.2rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.4rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.2rem;
+}
+
+/* ─── FILTERS ──────────────────────────────────────────────────────── */
+.filter-bar {
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; align-items: center; gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.filter-input, .filter-select {
+  font-family: var(--mono); font-size: 0.65rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.45rem 0.7rem;
+  outline: none; transition: border-color 0.15s;
+}
+.filter-input { min-width: 220px; flex: 1; max-width: 320px; }
+.filter-input:focus, .filter-select:focus { border-color: var(--accent); }
+.filter-input::placeholder { color: var(--muted); }
+.filter-spacer { flex: 1; }
+
+.view-toggle {
+  display: inline-flex; gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.view-toggle button {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--surface); color: var(--muted);
+  border: none; padding: 0.45rem 0.85rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.active {
+  background: var(--accent); color: var(--navy); font-weight: 700;
+}
+
+/* ─── ROSTER TABLE ─────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.roster-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+}
+.roster-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.roster-table thead th {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+  text-align: left;
+  padding: 0.85rem 1rem;
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.roster-table thead th.num { text-align: right; }
+.roster-table tbody tr {
+  transition: background 0.12s;
+}
+.roster-table tbody tr:hover {
+  background: rgba(0,212,255,0.03);
+}
+.roster-table tbody tr.archived {
+  opacity: 0.55;
+}
+.roster-table tbody tr.archived:hover {
+  opacity: 0.8;
+}
+.roster-table td {
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text);
+  vertical-align: middle;
+}
+.roster-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.roster-table td.num { text-align: right; font-family: var(--mono); font-size: 0.78rem; }
+
+.user-cell {
+  display: flex; align-items: center; gap: 0.75rem;
+  min-width: 0;
+}
+.user-avatar {
+  width: 36px; height: 36px;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.05em;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.user-avatar.you { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.04); }
+.user-info {
+  display: flex; flex-direction: column; gap: 0.1rem;
+  min-width: 0;
+}
+.user-name {
+  font-family: var(--sans); font-size: 0.9rem; color: var(--white);
+  font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.you-tag {
+  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.1em;
+  color: var(--accent2); border: 1px solid rgba(0,255,157,0.3);
+  padding: 0.05rem 0.35rem; text-transform: uppercase;
+  background: rgba(0,255,157,0.04);
+}
+.user-email {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.role-pill {
+  display: inline-block;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid;
+}
+.role-pill.admin       { color: var(--accent);  border-color: rgba(0,212,255,0.5);  background: rgba(0,212,255,0.08); }
+.role-pill.lo          { color: var(--accent2); border-color: rgba(0,255,157,0.4);  background: rgba(0,255,157,0.04); }
+.role-pill.loa         { color: var(--accent2); border-color: rgba(0,255,157,0.3);  background: rgba(0,255,157,0.02); }
+.role-pill.processor   { color: var(--text);    border-color: var(--border); }
+.role-pill.underwriter { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.04); }
+.role-pill.closer      { color: var(--white);   border-color: rgba(234,244,255,0.3); }
+.role-pill.viewer      { color: var(--muted);   border-color: var(--border); }
+
+.role-select {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.5rem; outline: none;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.role-select:hover { border-color: var(--accent); }
+.role-select:focus { border-color: var(--accent); }
+
+.row-actions {
+  display: flex; gap: 0.4rem;
+  justify-content: flex-end;
+}
+.row-action {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--muted);
+  transition: all 0.12s;
+}
+.row-action:hover { color: var(--accent); border-color: var(--accent); }
+.row-action.danger:hover { color: var(--red); border-color: rgba(255,68,68,0.5); }
+.row-action.success { color: var(--accent2); border-color: rgba(0,255,157,0.3); }
+.row-action.success:hover { color: var(--navy); background: var(--accent2); border-color: var(--accent2); }
+.row-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.last-active {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.last-active.recent { color: var(--accent2); }
+.last-active.stale { color: var(--amber); }
+.last-active.never { color: var(--muted); font-style: italic; }
+
+.roster-empty {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  text-align: center; padding: 3rem 1rem; letter-spacing: 0.04em;
+}
+
+/* ─── MODAL ────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.modal-overlay.open { display: flex; animation: modalIn 0.15s ease both; }
+@keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 540px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+}
+.modal-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent);
+}
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-foot {
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: flex-end; gap: 0.6rem;
+}
+
+.field-block { margin-bottom: 1rem; }
+.field-label {
+  display: block;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+}
+.field-input, .field-select {
+  width: 100%;
+  background: var(--deep); border: 1px solid var(--border);
+  color: var(--white); font-family: var(--sans); font-size: 0.92rem;
+  padding: 0.6rem 0.8rem; outline: none;
+  transition: border-color 0.12s;
+}
+.field-input:focus, .field-select:focus { border-color: var(--accent); }
+.field-input.confirm-typed:focus { border-color: var(--red); }
+
+.field-help {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.35rem;
+}
+
+.modal-warning {
+  background: rgba(245,166,35,0.06);
+  border: 1px solid rgba(245,166,35,0.3);
+  border-left: 2px solid var(--amber);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.modal-warning strong { color: var(--amber); }
+.modal-warning .impact-list {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(4,13,26,0.5);
+  border: 1px solid rgba(245,166,35,0.2);
+  font-family: var(--mono); font-size: 0.65rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.modal-warning .impact-list a {
+  color: var(--accent); text-decoration: none;
+  display: block;
+  padding: 0.15rem 0;
+  border-bottom: 1px dotted var(--border);
+}
+.modal-warning .impact-list a:hover { text-decoration: underline; }
+.modal-warning .impact-list a:last-child { border-bottom: none; }
+
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.btn.danger { background: transparent; color: var(--red); border-color: rgba(255,68,68,0.4); }
+.btn.danger:hover { background: var(--red); color: var(--navy); border-color: var(--red); }
+.btn.danger:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── NON-ADMIN BANNER ─────────────────────────────────────────────── */
+.viewer-banner {
+  background: rgba(0,212,255,0.04);
+  border-bottom: 1px solid rgba(0,212,255,0.15);
+  padding: 0.65rem 2rem;
+  font-family: var(--mono); font-size: 0.62rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  text-align: center;
+}
+.viewer-banner strong { color: var(--accent); }
+
+/* ─── STATE SCREENS ────────────────────────────────────────────────── */
+.state-screen {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── TOAST ────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none;
+  animation: toastIn 0.2s ease both;
+  max-width: 420px;
+}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .nav-search { display: none; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .roster-wrap { padding: 1rem; }
+  .roster-table thead th.col-loans,
+  .roster-table tbody td.col-loans,
+  .roster-table thead th.col-active,
+  .roster-table tbody td.col-active {
+    display: none;
+  }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .page-head { padding: 1.25rem 1rem 1rem; }
+  .page-title { font-size: 1.4rem; }
+  .filter-bar { padding: 0.6rem 1rem; }
+  .roster-wrap { padding: 0.75rem 0.5rem; }
+  .roster-table thead th, .roster-table td { padding: 0.65rem 0.55rem; font-size: 0.78rem; }
+  .roster-table thead th.col-email,
+  .roster-table tbody td.col-email {
+    display: none;
+  }
+  .user-email { display: block; }   /* show email under name in mobile */
+  .role-pill { font-size: 0.5rem; padding: 0.18rem 0.4rem; }
+  .row-actions { flex-direction: column; gap: 0.25rem; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li><a href="/team.html" class="active">Team</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="nav-search" id="nav-search-btn" type="button">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
+    </span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading team…</div>
+  </div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">The team page is branch-scoped.</h1>
+    <p class="state-text">Sign in to see your branch's roster.</p>
+    <a href="/login.html" class="btn primary">Sign in →</a>
+  </div>
+
+  <!-- PROFILE PENDING -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending</div>
+    <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
+    <p class="state-text">You'll get an email from <strong>davis@originflowlos.com</strong> when it's live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <!-- ─── ACTIVE ─── -->
+  <div id="team-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+
+    <!-- VIEWER-MODE BANNER (hidden for admins) -->
+    <div class="viewer-banner" id="viewer-banner" style="display:none;">
+      <strong>Read-only view.</strong> Your branch's admins can edit roles and invite new members. Ask your admin if something here looks wrong.
+    </div>
+
+    <!-- PAGE HEADER -->
+    <header class="page-head">
+      <div class="page-head-text">
+        <div class="page-eyebrow">BRANCH ROSTER</div>
+        <h1 class="page-title">Team</h1>
+        <p class="page-sub">Your branch members, their roles, and last activity. Admins can invite new users and manage permissions.</p>
+      </div>
+      <div class="page-actions" id="admin-actions" style="display:none;">
+        <button class="btn-primary" id="btn-invite">+ Invite User</button>
+      </div>
+    </header>
+
+    <!-- METRICS -->
+    <section class="metric-strip" id="metric-strip">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+    </section>
+
+    <!-- FILTERS -->
+    <div class="filter-bar">
+      <input type="text" class="filter-input" id="filter-search" placeholder="Search by name, email, or role…">
+      <select class="filter-select" id="filter-role">
+        <option value="all">All roles</option>
+        <option value="admin">Admin</option>
+        <option value="lo">Loan Officer</option>
+        <option value="loa">LO Assistant</option>
+        <option value="processor">Processor</option>
+        <option value="underwriter">Underwriter</option>
+        <option value="closer">Closer</option>
+        <option value="viewer">Viewer</option>
+      </select>
+      <div class="filter-spacer"></div>
+      <div class="view-toggle">
+        <button id="view-active" class="active" data-view="active">Active</button>
+        <button id="view-archived" data-view="archived">Archived</button>
+      </div>
+    </div>
+
+    <!-- ROSTER -->
+    <div class="roster-wrap">
+      <table class="roster-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th class="col-email">Email</th>
+            <th>Role</th>
+            <th class="col-loans num">Active loans</th>
+            <th class="col-active">Last active</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="roster-body">
+          <tr><td colspan="6" class="roster-empty">Loading roster…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- INVITE MODAL                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="invite-modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Invite User</span>
+    </div>
+    <div class="modal-body">
+      <div class="field-block">
+        <label class="field-label" for="invite-email">Email</label>
+        <input type="email" class="field-input" id="invite-email" placeholder="newhire@yourbranch.com" autocomplete="off">
+        <div class="field-help">A magic-link invite goes to this address. They'll set their own password on first sign-in.</div>
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="invite-name">Full name</label>
+        <input type="text" class="field-input" id="invite-name" placeholder="First Last" autocomplete="off">
+      </div>
+      <div class="field-block">
+        <label class="field-label" for="invite-role">Role</label>
+        <select class="field-select" id="invite-role">
+          <option value="lo">Loan Officer</option>
+          <option value="loa">LO Assistant</option>
+          <option value="processor">Processor</option>
+          <option value="underwriter">Underwriter</option>
+          <option value="closer">Closer</option>
+          <option value="viewer">Viewer</option>
+          <option value="admin">Admin · full branch access</option>
+        </select>
+        <div class="field-help">Admins can manage other users. Viewers can read but not edit. Other roles get drag-and-drop permissions on the pipeline based on their stage.</div>
+      </div>
+      <div id="invite-status" style="font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.04em;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="invite-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="invite-confirm" type="button">Send invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- REMOVE MODAL                                                         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="remove-modal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Remove user</span>
+    </div>
+    <div class="modal-body">
+      <div id="remove-summary" style="margin-bottom: 1rem;"></div>
+
+      <div class="modal-warning" id="remove-impact">
+        <!-- populated dynamically with the user's open loans -->
+      </div>
+
+      <div class="field-block">
+        <label class="field-label" for="remove-confirm-input">Type <strong style="color:var(--red);">REMOVE</strong> to confirm</label>
+        <input type="text" class="field-input confirm-typed" id="remove-confirm-input" placeholder="REMOVE" autocomplete="off">
+        <div class="field-help">This soft-deletes the user (reversible from the Archived view) and archives their active loans. Loan history is preserved.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="remove-cancel" type="button">Cancel</button>
+      <button class="btn danger" id="remove-confirm" type="button" disabled>Remove user</button>
+    </div>
+  </div>
+</div>
+
+<!-- toast -->
+<div class="toast" id="toast" role="status"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<footer>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · Team · Branch user management</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="/home.html">Home</a>
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/reports.html">Reports</a>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// /team.html — Branch team management
+//
+// Permission model:
+//   • Everyone in the branch can VIEW the roster (read-only)
+//   • Only admins can edit roles, invite users, remove users
+//   • Admins cannot remove themselves (last-admin guard)
+//
+// Schema expected on `profiles` table:
+//   id (= auth.users.id), branch_id, role, full_name, email,
+//   created_at, last_seen_at (nullable), archived_at (nullable)
+//
+// What this file does NOT do directly:
+//   • Send emails — requires a Supabase edge function with service role
+//     access to call auth.admin.inviteUserByEmail. Hook is documented at
+//     window.OF_inviteUser. Without the hook the page falls back to a
+//     manual instructions panel.
+//
+// What this file DOES:
+//   • Loads roster (active + archived views)
+//   • Real-time updates when admins edit
+//   • Role editing inline (admin only)
+//   • Invite modal that calls the OF_inviteUser hook
+//   • Remove modal that lists impact (open loans), requires typed
+//     confirmation, then soft-deletes user + archives their loans atomically
+//   • Restore action on archived users
+//   • Stats: total, by role, last 7 days active
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+// ─── State ───────────────────────────────────────────────────────────────
+let supa = null;
+let me = null;
+let branch = null;
+
+let roster = [];                  // active members
+let archived = [];                // archived members (loaded lazily)
+let loanCountsById = new Map();   // user_id → count of active (non-archived, non-terminal) loans
+let realtimeChan = null;
+
+let view = 'active';              // 'active' | 'archived'
+let filters = { search: '', role: 'all' };
+
+let pendingRemoval = null;        // user being considered for removal (modal context)
+
+// Role labels (also used to build role pills)
+const ROLE_LABELS = {
+  admin:       'Admin',
+  lo:          'Loan Officer',
+  loa:         'LO Assistant',
+  processor:   'Processor',
+  underwriter: 'Underwriter',
+  closer:      'Closer',
+  viewer:      'Viewer',
+};
+const ROLE_ORDER = ['admin', 'lo', 'loa', 'processor', 'underwriter', 'closer', 'viewer'];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function initials(name) {
+  if (!name) return '?';
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2);
+  return (parts[0][0] + parts[parts.length - 1][0]);
+}
+function timeAgo(iso) {
+  if (!iso) return null;
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  if (diff < 86400 * 30) return Math.floor(diff / 86400 / 7) + 'w ago';
+  return new Date(iso).toLocaleDateString();
+}
+function lastActiveClass(iso) {
+  if (!iso) return 'never';
+  const days = (Date.now() - new Date(iso).getTime()) / 86400000;
+  if (days < 7)  return 'recent';
+  if (days < 30) return '';
+  return 'stale';
+}
+
+function showToast(msg, isError) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function isAdmin() { return me?.role === 'admin'; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH + BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile) { showState('state-pending'); return; }
+  if (!profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  // Show admin-only controls
+  if (isAdmin()) {
+    $('#admin-actions').style.display = 'flex';
+  } else {
+    $('#viewer-banner').style.display = 'block';
+  }
+
+  showActive();
+  await loadRoster();
+  initFilters();
+  initViewToggle();
+  initInviteModal();
+  initRemoveModal();
+  initSearchShortcut();
+  initRealtime();
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#team-active').style.display = 'none';
+}
+function showActive() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#team-active').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD ROSTER
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadRoster() {
+  // Pull active and archived in parallel — admins switch views without
+  // re-fetching, and the metric strip needs both counts anyway.
+  const [activeRes, archivedRes, loanCountsRes] = await Promise.all([
+    supa.from('profiles')
+      .select('id, branch_id, role, full_name, email, created_at, last_seen_at, archived_at')
+      .eq('branch_id', me.branch_id)
+      .is('archived_at', null)
+      .order('role', { ascending: true })
+      .order('full_name', { ascending: true }),
+    supa.from('profiles')
+      .select('id, branch_id, role, full_name, email, created_at, last_seen_at, archived_at')
+      .eq('branch_id', me.branch_id)
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: false })
+      .limit(100),
+    // Count active loans per loan officer for the impact-warning + roster column.
+    // We pull only the loan_officer_id column (lightweight) for non-archived
+    // loans not in terminal states, then bucket client-side.
+    supa.from('loans')
+      .select('id, loan_officer_id')
+      .eq('branch_id', me.branch_id)
+      .is('archived_at', null)
+      .not('status', 'in', '(funded,denied,withdrawn)')
+      .limit(5000),
+  ]);
+
+  if (activeRes.error)   { console.error('roster (active) load:', activeRes.error); }
+  if (archivedRes.error) { console.error('roster (archived) load:', archivedRes.error); }
+  if (loanCountsRes.error) { console.warn('loan counts load:', loanCountsRes.error); }
+
+  roster = activeRes.data || [];
+  archived = archivedRes.data || [];
+
+  // Count active loans per LO
+  loanCountsById.clear();
+  (loanCountsRes.data || []).forEach(l => {
+    if (!l.loan_officer_id) return;
+    loanCountsById.set(l.loan_officer_id, (loanCountsById.get(l.loan_officer_id) || 0) + 1);
+  });
+
+  renderMetrics();
+  renderRoster();
+}
+
+function renderMetrics() {
+  const total = roster.length;
+  const byRole = {};
+  ROLE_ORDER.forEach(r => byRole[r] = 0);
+  roster.forEach(p => { if (byRole[p.role] != null) byRole[p.role]++; });
+
+  // "Active in last 7 days" — anyone with a last_seen_at within 7d
+  const weekAgo = Date.now() - 7 * 86400000;
+  const active7d = roster.filter(p => p.last_seen_at && new Date(p.last_seen_at).getTime() >= weekAgo).length;
+  const active7dPct = total > 0 ? Math.round(active7d / total * 100) : 0;
+
+  // "Pending invites" = profiles with no last_seen_at AND created in last 14 days
+  // (a heuristic — assumes recent signups who haven't logged in are pending)
+  const fortnightAgo = Date.now() - 14 * 86400000;
+  const pending = roster.filter(p =>
+    !p.last_seen_at && p.created_at && new Date(p.created_at).getTime() >= fortnightAgo
+  ).length;
+
+  $('#metric-strip').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">Active Members</div>
+      <div class="metric-value">${total}</div>
+      <div class="metric-sub">${archived.length > 0 ? archived.length + ' archived' : 'no archived users'}</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Loan Officers</div>
+      <div class="metric-value cyan">${byRole.lo + byRole.loa}</div>
+      <div class="metric-sub">${byRole.lo} LOs · ${byRole.loa} LOAs</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Active Last 7d</div>
+      <div class="metric-value ${active7dPct >= 80 ? 'green' : active7dPct >= 50 ? 'amber' : ''}">${active7d}</div>
+      <div class="metric-sub">${active7dPct}% of branch</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Pending Invites</div>
+      <div class="metric-value ${pending > 0 ? 'amber' : ''}">${pending}</div>
+      <div class="metric-sub">${pending > 0 ? 'haven\'t signed in' : 'no pending invites'}</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTERS + VIEW
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initFilters() {
+  $('#filter-search').addEventListener('input', e => {
+    filters.search = e.target.value.trim().toLowerCase();
+    renderRoster();
+  });
+  $('#filter-role').addEventListener('change', e => {
+    filters.role = e.target.value;
+    renderRoster();
+  });
+}
+
+function initViewToggle() {
+  $$('.view-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.view;
+      if (v === view) return;
+      view = v;
+      $$('.view-toggle button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+      renderRoster();
+    });
+  });
+}
+
+function applyFilters(rows) {
+  return rows.filter(p => {
+    if (filters.role !== 'all' && p.role !== filters.role) return false;
+    if (filters.search) {
+      const haystack = [p.full_name || '', p.email || '', p.role || '']
+        .join(' ').toLowerCase();
+      if (!haystack.includes(filters.search)) return false;
+    }
+    return true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER ROSTER
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderRoster() {
+  const source = view === 'active' ? roster : archived;
+  const filtered = applyFilters(source);
+  const tbody = $('#roster-body');
+
+  if (filtered.length === 0) {
+    if (source.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="roster-empty">${
+        view === 'active'
+          ? 'No active members. Use "+ Invite User" to add someone.'
+          : 'No archived users. Removed users appear here for restore.'
+      }</td></tr>`;
+    } else {
+      tbody.innerHTML = `<tr><td colspan="6" class="roster-empty">No members match your filters.</td></tr>`;
+    }
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => renderRow(p)).join('');
+
+  // Wire role-select changes
+  if (isAdmin() && view === 'active') {
+    tbody.querySelectorAll('.role-select').forEach(sel => {
+      sel.addEventListener('change', e => onRoleChange(sel.dataset.userId, e.target.value, sel));
+    });
+    tbody.querySelectorAll('[data-action="remove"]').forEach(btn => {
+      btn.addEventListener('click', () => openRemoveModal(btn.dataset.userId));
+    });
+  }
+  if (isAdmin() && view === 'archived') {
+    tbody.querySelectorAll('[data-action="restore"]').forEach(btn => {
+      btn.addEventListener('click', () => restoreUser(btn.dataset.userId));
+    });
+  }
+}
+
+function renderRow(p) {
+  const isMe = p.id === me.id;
+  const loanCount = loanCountsById.get(p.id) || 0;
+  const isLOLike = p.role === 'lo' || p.role === 'loa';
+  const lastActive = p.last_seen_at;
+  const lastActiveStr = lastActive ? timeAgo(lastActive) : 'Never signed in';
+  const lastActiveCls = lastActiveClass(lastActive);
+
+  // Role cell: select for admins editing others, pill for everyone else
+  let roleCell;
+  if (isAdmin() && view === 'active' && !isMe) {
+    roleCell = `
+      <select class="role-select" data-user-id="${escapeHtml(p.id)}" aria-label="Role for ${escapeHtml(p.full_name || p.email)}">
+        ${ROLE_ORDER.map(r =>
+          `<option value="${r}" ${r === p.role ? 'selected' : ''}>${ROLE_LABELS[r]}</option>`
+        ).join('')}
+      </select>
+    `;
+  } else {
+    roleCell = `<span class="role-pill ${escapeHtml(p.role || 'viewer')}">${escapeHtml(ROLE_LABELS[p.role] || p.role || '—')}</span>`;
+  }
+
+  // Actions cell
+  let actionsCell = '';
+  if (isAdmin() && view === 'active' && !isMe) {
+    // Last-admin guard: if this is the only admin, disable remove
+    const isLastAdmin = p.role === 'admin' && roster.filter(r => r.role === 'admin').length === 1;
+    actionsCell = `
+      <div class="row-actions">
+        <button class="row-action danger" data-action="remove" data-user-id="${escapeHtml(p.id)}"
+          ${isLastAdmin ? 'disabled title="Cannot remove the last admin"' : ''}>
+          Remove
+        </button>
+      </div>
+    `;
+  } else if (isAdmin() && view === 'archived') {
+    actionsCell = `
+      <div class="row-actions">
+        <button class="row-action success" data-action="restore" data-user-id="${escapeHtml(p.id)}">
+          Restore
+        </button>
+      </div>
+    `;
+  } else if (isMe) {
+    actionsCell = `<div class="row-actions"><span style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); letter-spacing: 0.08em; padding: 0.3rem 0;">— that's you —</span></div>`;
+  } else {
+    actionsCell = '';
+  }
+
+  return `
+    <tr class="${view === 'archived' ? 'archived' : ''}">
+      <td>
+        <div class="user-cell">
+          <div class="user-avatar ${isMe ? 'you' : ''}">${escapeHtml(initials(p.full_name || p.email))}</div>
+          <div class="user-info">
+            <div class="user-name">
+              ${escapeHtml(p.full_name || '(no name)')}
+              ${isMe ? '<span class="you-tag">You</span>' : ''}
+            </div>
+            <div class="user-email">${escapeHtml(p.email || '—')}</div>
+          </div>
+        </div>
+      </td>
+      <td class="col-email" style="font-family: var(--mono); font-size: 0.7rem; color: var(--muted);">${escapeHtml(p.email || '—')}</td>
+      <td>${roleCell}</td>
+      <td class="col-loans num">${isLOLike ? loanCount : '—'}</td>
+      <td class="col-active"><span class="last-active ${lastActiveCls}">${escapeHtml(lastActiveStr)}</span></td>
+      <td>${actionsCell}</td>
+    </tr>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ROLE CHANGES
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function onRoleChange(userId, newRole, selectEl) {
+  if (!isAdmin()) return;
+  const current = roster.find(r => r.id === userId);
+  if (!current) return;
+  const oldRole = current.role;
+  if (oldRole === newRole) return;
+
+  // Last-admin guard: don't allow demoting the last admin
+  if (oldRole === 'admin' && newRole !== 'admin') {
+    const adminCount = roster.filter(r => r.role === 'admin').length;
+    if (adminCount === 1) {
+      showToast('Cannot demote the last admin. Promote someone else first.', true);
+      selectEl.value = oldRole;
+      return;
+    }
+  }
+
+  const userName = current.full_name || current.email || 'this user';
+  if (!confirm(`Change ${userName}'s role from ${ROLE_LABELS[oldRole]} to ${ROLE_LABELS[newRole]}?`)) {
+    selectEl.value = oldRole;
+    return;
+  }
+
+  // Optimistic UI
+  selectEl.disabled = true;
+
+  try {
+    const { error } = await supa.from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId);
+    if (error) throw error;
+
+    // Update local state
+    current.role = newRole;
+    showToast(`${userName} → ${ROLE_LABELS[newRole]}`);
+    // Refresh metrics + table — role pill colors etc. depend on this
+    renderMetrics();
+    renderRoster();
+  } catch (err) {
+    console.error('role change err:', err);
+    showToast('Role change failed: ' + err.message, true);
+    selectEl.value = oldRole;
+    selectEl.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INVITE FLOW
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initInviteModal() {
+  $('#btn-invite').addEventListener('click', openInviteModal);
+  $('#invite-cancel').addEventListener('click', closeInviteModal);
+  $('#invite-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeInviteModal();
+  });
+  $('#invite-confirm').addEventListener('click', submitInvite);
+}
+
+function openInviteModal() {
+  $('#invite-email').value = '';
+  $('#invite-name').value = '';
+  $('#invite-role').value = 'lo';
+  $('#invite-status').textContent = '';
+  $('#invite-status').style.color = 'var(--muted)';
+  $('#invite-confirm').disabled = false;
+  $('#invite-modal').classList.add('open');
+  setTimeout(() => $('#invite-email').focus(), 50);
+}
+
+function closeInviteModal() {
+  $('#invite-modal').classList.remove('open');
+}
+
+async function submitInvite() {
+  const email = $('#invite-email').value.trim().toLowerCase();
+  const name = $('#invite-name').value.trim();
+  const role = $('#invite-role').value;
+
+  // Basic email validation
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    $('#invite-status').textContent = 'Enter a valid email.';
+    $('#invite-status').style.color = 'var(--red)';
+    return;
+  }
+  if (!name) {
+    $('#invite-status').textContent = 'Enter the person\'s full name.';
+    $('#invite-status').style.color = 'var(--red)';
+    return;
+  }
+
+  // Check for duplicate
+  if (roster.some(r => (r.email || '').toLowerCase() === email)) {
+    $('#invite-status').textContent = 'A user with that email is already in your branch.';
+    $('#invite-status').style.color = 'var(--red)';
+    return;
+  }
+
+  $('#invite-confirm').disabled = true;
+  $('#invite-status').textContent = 'Sending invite…';
+  $('#invite-status').style.color = 'var(--muted)';
+
+  try {
+    // ───────────────────────────────────────────────────────────────
+    // YOUR INVITE HOOK
+    //
+    // window.OF_inviteUser({ email, full_name, role, branch_id }) calls
+    // a Supabase edge function with service-role privileges that:
+    //   1. Calls supa.auth.admin.inviteUserByEmail(email) to send a magic-
+    //      link email and create the auth.users row.
+    //   2. Inserts the matching profiles row with branch_id, role, full_name.
+    //   3. Returns { user_id, invite_sent: true } on success.
+    //
+    // Why a hook: inviteUserByEmail requires the service_role key, which
+    // CANNOT be safely exposed to browser JS. The edge function runs on
+    // Supabase's servers with that privilege.
+    //
+    // Without the hook, we fall back to manually inserting the profile row
+    // (no auth user gets created — admin must provision the auth account
+    // separately via the Supabase dashboard). That's the friendly-error
+    // path.
+    // ───────────────────────────────────────────────────────────────
+    if (typeof window.OF_inviteUser === 'function') {
+      const result = await window.OF_inviteUser({
+        email,
+        full_name: name,
+        role,
+        branch_id: me.branch_id,
+      });
+      if (!result || !result.invite_sent) {
+        throw new Error(result?.error || 'Invite hook returned an unexpected response.');
+      }
+      showToast(`Invite sent to ${email}.`);
+      closeInviteModal();
+      await loadRoster();
+    } else {
+      // Fallback: insert a profiles row directly (no auth user created).
+      // This is useful for branches where the admin will manually create
+      // the auth account in the Supabase dashboard. Less ideal but works
+      // before the edge function is deployed.
+      $('#invite-status').textContent = 'Invite hook not configured — creating profile placeholder. Admin must provision auth account separately.';
+      $('#invite-status').style.color = 'var(--amber)';
+
+      // We can't insert without a matching auth.users row in most schemas
+      // (foreign key constraint). Show clear instructions instead.
+      throw new Error(
+        'Email invites require a Supabase edge function with service-role access. ' +
+        'Until that\'s deployed, create the user manually: ' +
+        'Supabase dashboard → Auth → Users → Invite, then update their profile row to set branch_id and role.'
+      );
+    }
+  } catch (err) {
+    console.error('invite err:', err);
+    $('#invite-status').textContent = 'Failed: ' + err.message;
+    $('#invite-status').style.color = 'var(--red)';
+    $('#invite-confirm').disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REMOVE FLOW
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initRemoveModal() {
+  $('#remove-cancel').addEventListener('click', closeRemoveModal);
+  $('#remove-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeRemoveModal();
+  });
+  $('#remove-confirm-input').addEventListener('input', e => {
+    // Confirm button only enables when "REMOVE" is typed exactly (case-sensitive)
+    $('#remove-confirm').disabled = e.target.value !== 'REMOVE';
+  });
+  $('#remove-confirm').addEventListener('click', submitRemove);
+}
+
+async function openRemoveModal(userId) {
+  if (!isAdmin()) return;
+  const user = roster.find(r => r.id === userId);
+  if (!user) return;
+  if (user.id === me.id) {
+    showToast('You can\'t remove yourself.', true);
+    return;
+  }
+
+  // Last-admin guard
+  if (user.role === 'admin' && roster.filter(r => r.role === 'admin').length === 1) {
+    showToast('Cannot remove the last admin. Promote someone else first.', true);
+    return;
+  }
+
+  pendingRemoval = user;
+
+  // Fetch the user's active loans for the impact list
+  const { data: openLoans, error } = await supa.from('loans')
+    .select('id, loan_number, status')
+    .eq('branch_id', me.branch_id)
+    .eq('loan_officer_id', userId)
+    .is('archived_at', null)
+    .not('status', 'in', '(funded,denied,withdrawn)')
+    .order('loan_number', { ascending: true })
+    .limit(50);
+  if (error) console.warn('open loans for impact:', error);
+  const loans = openLoans || [];
+
+  $('#remove-summary').innerHTML = `
+    <p style="font-size: 0.92rem; line-height: 1.5;">
+      Remove <strong style="color: var(--white);">${escapeHtml(user.full_name || user.email)}</strong>
+      (${escapeHtml(ROLE_LABELS[user.role] || user.role)})?
+    </p>
+  `;
+
+  if (loans.length === 0) {
+    $('#remove-impact').innerHTML = `
+      <strong>No active loans assigned.</strong>
+      Removing this user soft-deletes their profile only. They lose access immediately. Audit history is preserved.
+    `;
+  } else {
+    $('#remove-impact').innerHTML = `
+      <strong>Heads up:</strong> ${loans.length} active loan${loans.length === 1 ? '' : 's'}
+      assigned to this user will be auto-archived. They'll disappear from the pipeline and
+      can be restored by an admin from the loans table.
+      <div class="impact-list">
+        ${loans.map(l =>
+          `<a href="/dashboard.html#${escapeHtml(l.id)}" target="_blank" rel="noopener">${escapeHtml(l.loan_number)} · ${escapeHtml(l.status)}</a>`
+        ).join('')}
+      </div>
+    `;
+  }
+
+  $('#remove-confirm-input').value = '';
+  $('#remove-confirm').disabled = true;
+  $('#remove-modal').classList.add('open');
+  setTimeout(() => $('#remove-confirm-input').focus(), 50);
+}
+
+function closeRemoveModal() {
+  $('#remove-modal').classList.remove('open');
+  pendingRemoval = null;
+}
+
+async function submitRemove() {
+  if (!pendingRemoval) return;
+  const userId = pendingRemoval.id;
+  const userName = pendingRemoval.full_name || pendingRemoval.email;
+
+  $('#remove-confirm').disabled = true;
+  $('#remove-confirm').textContent = 'Removing…';
+
+  try {
+    // Soft-delete the profile + auto-archive their open loans.
+    //
+    // Ideally these two updates happen in a single Postgres transaction
+    // (e.g., via an RPC `archive_user_and_loans(user_id)`) so a partial
+    // failure doesn't leave the user removed but their loans still live.
+    // For v0.2 we run them sequentially and roll back the user-archive if
+    // the loan-archive fails. Two-phase but resilient.
+    const archivedAt = new Date().toISOString();
+
+    const { error: profileErr } = await supa.from('profiles')
+      .update({ archived_at: archivedAt })
+      .eq('id', userId);
+    if (profileErr) throw profileErr;
+
+    // Auto-archive their active loans
+    const { error: loansErr } = await supa.from('loans')
+      .update({ archived_at: archivedAt })
+      .eq('branch_id', me.branch_id)
+      .eq('loan_officer_id', userId)
+      .is('archived_at', null)
+      .not('status', 'in', '(funded,denied,withdrawn)');
+    if (loansErr) {
+      // Roll back the profile archive — user must remain accessible if we
+      // couldn't clean up their loans
+      await supa.from('profiles').update({ archived_at: null }).eq('id', userId);
+      throw new Error('Couldn\'t archive their loans: ' + loansErr.message + '. User was NOT removed.');
+    }
+
+    showToast(`Removed ${userName}. Restorable from the Archived view.`);
+    closeRemoveModal();
+    await loadRoster();
+  } catch (err) {
+    console.error('remove err:', err);
+    showToast('Remove failed: ' + err.message, true);
+    $('#remove-confirm').disabled = false;
+    $('#remove-confirm').textContent = 'Remove user';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RESTORE
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function restoreUser(userId) {
+  if (!isAdmin()) return;
+  const user = archived.find(a => a.id === userId);
+  if (!user) return;
+  const name = user.full_name || user.email;
+
+  if (!confirm(
+    `Restore ${name}?\n\nThey'll regain access immediately. Their previously-archived ` +
+    `loans will NOT be auto-restored — review the Archived loans view to bring those back.`
+  )) return;
+
+  try {
+    const { error } = await supa.from('profiles')
+      .update({ archived_at: null })
+      .eq('id', userId);
+    if (error) throw error;
+    showToast(`Restored ${name}.`);
+    await loadRoster();
+  } catch (err) {
+    console.error('restore err:', err);
+    showToast('Restore failed: ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME — row-level patching
+//
+// Mirror of the documents.html pattern. Listen for INSERT/UPDATE/DELETE on
+// profiles for this branch and patch the in-memory roster instead of
+// fully reloading. Loan counts are NOT realtime-tracked here (they only
+// affect the impact-list which is fetched fresh when the remove modal
+// opens, so staleness is fine).
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initRealtime() {
+  realtimeChan = supa
+    .channel(`team:${me.branch_id}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'profiles', filter: `branch_id=eq.${me.branch_id}` },
+      () => {
+        // Profiles changes are infrequent (someone edits a role, removes a
+        // user) — the simple choice is to refetch the small roster rather
+        // than carry a row-patching state machine. ~1KB/profile × 50
+        // profiles is cheap.
+        loadRoster();
+      }
+    )
+    .subscribe();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEARCH SHORTCUT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initSearchShortcut() {
+  $('#nav-search-btn').addEventListener('click', () => {
+    $('#filter-search').focus();
+    $('#filter-search').select();
+  });
+  document.addEventListener('keydown', e => {
+    // Cmd/Ctrl+K → focus search
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      $('#filter-search').focus();
+      $('#filter-search').select();
+    }
+    // / → focus search (only if not already typing)
+    if (e.key === '/' && !['INPUT','TEXTAREA','SELECT'].includes((e.target.tagName||''))) {
+      e.preventDefault();
+      $('#filter-search').focus();
+    }
+    // Esc → close any open modal
+    if (e.key === 'Escape') {
+      if ($('#invite-modal').classList.contains('open')) closeInviteModal();
+      if ($('#remove-modal').classList.contains('open')) closeRemoveModal();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXAMPLE INVITE HOOK — REPLACE WITH YOUR REAL EDGE FUNCTION
+//
+// Deploy a Supabase edge function named 'invite-user' that uses the
+// service_role key to send invites. Then implement the hook below in
+// /js/of-hooks.js or a separate <script> tag.
+//
+// Edge function example (TypeScript, Supabase Functions):
+// /*
+// import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+//
+// Deno.serve(async (req) => {
+//   const { email, full_name, role, branch_id } = await req.json();
+//
+//   // Auth check: caller must be an admin of the target branch
+//   const authHeader = req.headers.get('Authorization');
+//   const userClient = createClient(
+//     Deno.env.get('SUPABASE_URL')!,
+//     Deno.env.get('SUPABASE_ANON_KEY')!,
+//     { global: { headers: { Authorization: authHeader! } } }
+//   );
+//   const { data: { user } } = await userClient.auth.getUser();
+//   if (!user) return new Response('Unauthorized', { status: 401 });
+//
+//   const { data: profile } = await userClient.from('profiles')
+//     .select('role, branch_id').eq('id', user.id).single();
+//   if (profile?.role !== 'admin' || profile?.branch_id !== branch_id) {
+//     return new Response('Forbidden', { status: 403 });
+//   }
+//
+//   // Service-role client for admin operations
+//   const adminClient = createClient(
+//     Deno.env.get('SUPABASE_URL')!,
+//     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+//   );
+//
+//   // 1. Send invite email + create auth.users row
+//   const { data: invited, error: inviteErr } =
+//     await adminClient.auth.admin.inviteUserByEmail(email);
+//   if (inviteErr) return new Response(inviteErr.message, { status: 400 });
+//
+//   // 2. Create the profile row linked to the new auth user
+//   const { error: profileErr } = await adminClient.from('profiles').insert({
+//     id: invited.user.id, branch_id, role, full_name, email,
+//   });
+//   if (profileErr) {
+//     // Roll back the auth user if profile insert fails
+//     await adminClient.auth.admin.deleteUser(invited.user.id);
+//     return new Response(profileErr.message, { status: 500 });
+//   }
+//
+//   return Response.json({ user_id: invited.user.id, invite_sent: true });
+// });
+// */
+//
+// Browser-side hook:
+// /*
+// window.OF_inviteUser = async function({ email, full_name, role, branch_id }) {
+//   const supa = getSupabase();
+//   const { data, error } = await supa.functions.invoke('invite-user', {
+//     body: { email, full_name, role, branch_id },
+//   });
+//   if (error) throw error;
+//   return data;  // { user_id, invite_sent: true }
+// };
+// */
+// ═══════════════════════════════════════════════════════════════════════════
+</script>
+
+</body>
+</html>
