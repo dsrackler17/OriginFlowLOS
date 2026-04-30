@@ -760,7 +760,7 @@ footer a:hover { color: var(--accent); }
     <li><a href="/dashboard.html">Pipeline</a></li>
     <li><a href="/documents.html" class="active">Documents</a></li>
     <li><a href="/reports.html">Reports</a></li>
-    <li id="nav-team-li"><a href="/team.html">Team</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
   </ul>
   <div class="nav-right">
     <button class="nav-search" id="nav-search-btn" type="button">
@@ -802,7 +802,7 @@ footer a:hover { color: var(--accent); }
   <div class="state-screen" id="state-pending" style="display:none;">
     <div class="state-eyebrow">Account pending</div>
     <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
-    <p class="state-text">You'll get an email from <strong>dsrackler@gmail.com</strong> when it's live.</p>
+    <p class="state-text">You'll get an email from <strong>davis@originflowlos.com</strong> when it's live.</p>
     <a href="/home.html" class="btn">Back to Home</a>
   </div>
 
@@ -996,6 +996,7 @@ let docs = [];
 let docsById = new Map();
 let loans = [];          // for the loan filter dropdown
 let loansById = new Map();
+let profilesById = new Map();  // uploader profiles cached at boot
 let selectedDocId = null;
 let realtimeChan = null;
 
@@ -1047,33 +1048,6 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
-}
-
-// ─── Last-seen tracking ─────────────────────────────────────────────────
-// Updates profiles.last_seen_at so the /team.html metrics ("active in last
-// 7 days") stay honest. Fire-and-forget — never blocks the page, never
-// throws to the caller. Throttled to once per 60s per browser via
-// localStorage to avoid hammering the DB on rapid navigation between pages.
-async function touchLastSeen() {
-  try {
-    if (!supa || !me?.id) return;
-    const KEY = 'of_last_seen_touched_at';
-    const last = parseInt(localStorage.getItem(KEY) || '0', 10);
-    const now = Date.now();
-    if (now - last < 60000) return;  // throttle: once per 60s
-    localStorage.setItem(KEY, String(now));
-    // Don't await — let the write happen in the background. Errors are
-    // logged but never propagated (RLS, network blip, missing column,
-    // whatever — the page renders normally regardless).
-    supa.from('profiles')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', me.id)
-      .then(({ error }) => { if (error) console.warn('last_seen update:', error.message); });
-  } catch (err) {
-    // localStorage disabled, etc. — silent failure, the throttle just
-    // becomes per-page-load instead of per-minute.
-    console.warn('touchLastSeen:', err);
-  }
 }
 function bytes(n) {
   if (n == null) return '—';
@@ -1178,10 +1152,6 @@ async function bootstrap() {
   };
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
 
-  // Update last_seen_at so the team page metrics stay honest. Throttled to
-  // once per 60s via localStorage to avoid spamming writes on rapid navigation.
-  touchLastSeen();
-
   $('#nav-user-name').textContent  = me.full_name;
   $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
   $('#nav-user-role').style.display = 'inline-block';
@@ -1199,7 +1169,10 @@ async function bootstrap() {
   }
 
   showActive();
-  await loadLoans();        // populate filter dropdown + scoped-loan info
+  // Load loans + uploader profiles in parallel — both are independent of docs
+  // and we want them both ready before loadDocs() so the list can render
+  // uploader names and loan numbers without flicker.
+  await Promise.all([loadLoans(), loadProfiles()]);
   await loadDocs();
   initFilters();
   initUpload();
@@ -1231,6 +1204,41 @@ function showActive() {
     document.getElementById(s).style.display = 'none';
   });
   $('#docs-active').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD PROFILES (uploader cache)
+//
+// The previous implementation embedded uploader info into the documents
+// query via `uploader:uploaded_by(full_name, role)`. PostgREST returned 400
+// because there's no FK constraint from documents.uploaded_by directly to
+// profiles.id (the FK actually points at auth.users.id, which PostgREST
+// can't traverse to profiles automatically). Instead we fetch every profile
+// in the branch once at boot and stitch the uploader info onto each doc
+// in JS via attachUploader().
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadProfiles() {
+  const { data, error } = await supa.from('profiles')
+    .select('id, full_name, role')
+    .eq('branch_id', me.branch_id);
+  if (error) {
+    console.warn('profiles load error:', error.message);
+    return;
+  }
+  profilesById.clear();
+  (data || []).forEach(p => profilesById.set(p.id, p));
+}
+
+// Attach { full_name, role } to doc.uploader so render code can keep using
+// d.uploader.full_name. If the uploader isn't in our cache (e.g. they've
+// since left the branch), we leave it null and renderers fall back to
+// hiding the name.
+function attachUploader(doc) {
+  if (doc && doc.uploaded_by) {
+    doc.uploader = profilesById.get(doc.uploaded_by) || null;
+  }
+  return doc;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1288,8 +1296,7 @@ async function loadDocs() {
     .select(`
       id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
       mime_type, doc_type, status, extraction_data, extraction_confidence,
-      uploaded_at, extracted_at, archived_at,
-      uploader:uploaded_by ( full_name, role )
+      uploaded_at, extracted_at, archived_at
     `)
     .eq('branch_id', me.branch_id)
     .is('archived_at', null)
@@ -1306,7 +1313,7 @@ async function loadDocs() {
     $('#docs-list').innerHTML = `<div class="docs-empty" style="color:var(--red);">Couldn't load: ${escapeHtml(error.message)}</div>`;
     return;
   }
-  docs = data || [];
+  docs = (data || []).map(attachUploader);
   docsById.clear();
   docs.forEach(d => docsById.set(d.id, d));
 
@@ -1593,8 +1600,9 @@ function renderDetail(doc) {
   });
 
   // Schedule the PDF preview watchdog (only fires if a PDF iframe is in the
-  // panel and never reports load within 2.5s — meaning CORS / X-Frame-Options
-  // / Content-Disposition is blocking it). See renderPreview() for context.
+  // panel and never reports load within 2.5s — meaning CORS, X-Frame-Options,
+  // or Content-Disposition is blocking it). renderPreview() stashed the URL
+  // in window._pdfPreviewWatchdogs keyed by previewId.
   const pdfPreviewId = 'pdf-preview-' + doc.id;
   if (window._pdfPreviewWatchdogs && window._pdfPreviewWatchdogs[pdfPreviewId]) {
     const url = window._pdfPreviewWatchdogs[pdfPreviewId];
@@ -1758,12 +1766,11 @@ function renderPreview(doc) {
     // doing so caused a closing tag sequence (less-than slash s c r i p t
     // greater-than) to appear in the page source, which terminates the
     // OUTER script block at parse time and leaks all subsequent JS into
-    // the document body. The watchdog is now scheduled in renderDetail()
-    // right after innerHTML.
+    // the document body. (Also, scripts injected via innerHTML don't
+    // execute anyway.) The watchdog is now scheduled in renderDetail()
+    // right after innerHTML is set.
     const previewId = 'pdf-preview-' + doc.id;
-    // Stash the URL so the watchdog can find it when it fires (we can't
-    // pass it through innerHTML cleanly without re-introducing the script
-    // tag escape problem).
+    // Stash the URL so the watchdog can find it when it fires
     window._pdfPreviewWatchdogs = window._pdfPreviewWatchdogs || {};
     window._pdfPreviewWatchdogs[previewId] = doc.file_url;
     return `
@@ -2315,8 +2322,7 @@ async function fetchSingleDoc(id) {
     .select(`
       id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
       mime_type, doc_type, status, extraction_data, extraction_confidence,
-      uploaded_at, extracted_at, archived_at,
-      uploader:uploaded_by ( full_name, role )
+      uploaded_at, extracted_at, archived_at
     `)
     .eq('id', id)
     .maybeSingle();
@@ -2324,7 +2330,7 @@ async function fetchSingleDoc(id) {
     console.warn('realtime row fetch failed:', error);
     return null;
   }
-  return data;
+  return attachUploader(data);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
