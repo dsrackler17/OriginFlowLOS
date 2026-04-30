@@ -1178,7 +1178,7 @@ async function loadAllLoans() {
   const { data, error } = await supa.from('loans')
     .select(`
       id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
-      interest_rate_pct, property_address, purpose, updated_at, created_at,
+      property_address, purpose, updated_at, created_at,
       stage_entered_at,
       lo_id, loa_id, processor_id, underwriter_id,
       lo:profiles!lo_id ( id, full_name, role ),
@@ -1677,7 +1677,7 @@ async function refreshDetailFacts() {
     const { data, error } = await supa.from('loans')
       .select(`
         id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
-        interest_rate_pct, property_address, purpose, updated_at, created_at,
+        property_address, purpose, updated_at, created_at,
         stage_entered_at, loan_program, occupancy, property_type,
         property_value_cents, loan_term_months, estimated_closing_date,
         lo:profiles!lo_id ( full_name, role ),
