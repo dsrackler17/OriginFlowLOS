@@ -1162,6 +1162,17 @@ function showActive() {
 // ═══════════════════════════════════════════════════════════════════════════
 // LOAD DATA
 // ═══════════════════════════════════════════════════════════════════════════
+//
+// PostgREST embedding gotcha: `loans` has FOUR foreign keys to `profiles`
+// (lo_id, loa_id, processor_id, underwriter_id). The shorthand
+// `lo:lo_id(...)` form 400s in that situation because the planner can't
+// disambiguate which constraint to use. The explicit form is:
+//   <alias>:<target_table>!<fk_column>(<columns>)
+// e.g. `lo:profiles!lo_id ( id, full_name, role )`.
+//
+// Same problem applies inside `loan_borrowers` for the `borrower_id` link
+// to `borrowers` — disambiguating proactively avoids future grief if a
+// second FK ever gets added (e.g. co-borrower link).
 
 async function loadAllLoans() {
   const { data, error } = await supa.from('loans')
@@ -1170,11 +1181,11 @@ async function loadAllLoans() {
       interest_rate_pct, property_address, purpose, updated_at, created_at,
       stage_entered_at,
       lo_id, loa_id, processor_id, underwriter_id,
-      lo:lo_id ( id, full_name, role ),
-      loa:loa_id ( id, full_name, role ),
-      processor:processor_id ( id, full_name, role ),
-      underwriter:underwriter_id ( id, full_name, role ),
-      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) ),
+      lo:profiles!lo_id ( id, full_name, role ),
+      loa:profiles!loa_id ( id, full_name, role ),
+      processor:profiles!processor_id ( id, full_name, role ),
+      underwriter:profiles!underwriter_id ( id, full_name, role ),
+      borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) ),
       conditions ( id, status, category )
     `)
     .eq('branch_id', me.branch_id)
@@ -1661,17 +1672,18 @@ async function refreshDetailFacts() {
   if (!selectedLoanId) return;
   const loan = loansById.get(selectedLoanId);
   if (!loan) {
-    // Maybe it's a deep-link to something we filtered out — fetch directly
+    // Maybe it's a deep-link to something we filtered out — fetch directly.
+    // Same FK-disambiguation rules apply: explicit `profiles!<fk>` form.
     const { data, error } = await supa.from('loans')
       .select(`
         id, loan_number, status, loan_amount_cents, dti_back_pct, ltv_pct,
         interest_rate_pct, property_address, purpose, updated_at, created_at,
         stage_entered_at, loan_program, occupancy, property_type,
         property_value_cents, loan_term_months, estimated_closing_date,
-        lo:lo_id ( full_name, role ),
-        processor:processor_id ( full_name, role ),
-        underwriter:underwriter_id ( full_name, role ),
-        borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name, email, phone ) )
+        lo:profiles!lo_id ( full_name, role ),
+        processor:profiles!processor_id ( full_name, role ),
+        underwriter:profiles!underwriter_id ( full_name, role ),
+        borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name, email, phone ) )
       `)
       .eq('id', selectedLoanId)
       .eq('branch_id', me.branch_id)
@@ -1785,6 +1797,17 @@ async function loadDetailConditions(loanId) {
   `).join('');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// FILE CHAT
+//
+// We used to select from a `chat_messages_enriched` view. That made this
+// page hard-depend on a view that not every environment has. Switched to a
+// direct join on `chat_messages` with `author:profiles!author_id(...)` so
+// the page works against the base tables alone. The realtime INSERT
+// listener still has to enrich the author profile separately because
+// Supabase realtime payloads don't include joins.
+// ═══════════════════════════════════════════════════════════════════════════
+
 async function loadDetailChat(loanId) {
   // Find or expect a per-loan channel. Channels with kind='loan' and loan_id matching.
   const { data: chs, error: chErr } = await supa.from('chat_channels')
@@ -1808,9 +1831,13 @@ async function loadDetailChat(loanId) {
     return;
   }
 
-  // Load last 100 messages
-  const { data: msgs, error: mErr } = await supa.from('chat_messages_enriched')
-    .select('*')
+  // Load last 100 messages with author embedded directly. Keeps us off
+  // the chat_messages_enriched view dependency.
+  const { data: rawMsgs, error: mErr } = await supa.from('chat_messages')
+    .select(`
+      id, channel_id, author_id, body, is_system, created_at,
+      author:profiles!author_id ( full_name, role )
+    `)
     .eq('channel_id', chs.id)
     .order('created_at', { ascending: true })
     .limit(100);
@@ -1820,8 +1847,15 @@ async function loadDetailChat(loanId) {
     return;
   }
 
-  $('#dp-tag-chat').textContent = `${(msgs || []).length} msg`;
-  $('#detail-chat').innerHTML = (msgs || []).length === 0
+  // Flatten to the shape renderChatMsg expects (author_name / author_role).
+  const msgs = (rawMsgs || []).map(m => ({
+    ...m,
+    author_name: m.author?.full_name || 'Teammate',
+    author_role: m.author?.role || 'viewer',
+  }));
+
+  $('#dp-tag-chat').textContent = `${msgs.length} msg`;
+  $('#detail-chat').innerHTML = msgs.length === 0
     ? `<div class="dp-empty">No messages yet — start the conversation.</div>`
     : msgs.map(renderChatMsg).join('');
   $('#detail-chat').scrollTop = $('#detail-chat').scrollHeight;
