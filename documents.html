@@ -1591,6 +1591,21 @@ function renderDetail(doc) {
   body.querySelectorAll('[data-action-key]').forEach(btn => {
     btn.addEventListener('click', () => applyAction(doc.id, btn.dataset.actionKey, btn.dataset.actionIdx));
   });
+
+  // Schedule the PDF preview watchdog (only fires if a PDF iframe is in the
+  // panel and never reports load within 2.5s — meaning CORS / X-Frame-Options
+  // / Content-Disposition is blocking it). See renderPreview() for context.
+  const pdfPreviewId = 'pdf-preview-' + doc.id;
+  if (window._pdfPreviewWatchdogs && window._pdfPreviewWatchdogs[pdfPreviewId]) {
+    const url = window._pdfPreviewWatchdogs[pdfPreviewId];
+    setTimeout(() => {
+      const loading = document.getElementById(pdfPreviewId + '-loading');
+      if (loading && loading.parentElement) {
+        // iframe never fired its onload handler — treat as blocked
+        OF_pdfPreviewFailed(pdfPreviewId, url);
+      }
+    }, 2500);
+  }
 }
 
 function renderExtractionPanel(doc) {
@@ -1738,7 +1753,19 @@ function renderPreview(doc) {
     //   Content-Disposition: inline   (NOT attachment)
     //   X-Frame-Options: SAMEORIGIN or omitted entirely
     //   Content-Security-Policy: frame-ancestors ... must allow your domain
+    //
+    // NOTE: We do NOT embed a <script> tag in this template literal —
+    // doing so caused a closing tag sequence (less-than slash s c r i p t
+    // greater-than) to appear in the page source, which terminates the
+    // OUTER script block at parse time and leaks all subsequent JS into
+    // the document body. The watchdog is now scheduled in renderDetail()
+    // right after innerHTML.
     const previewId = 'pdf-preview-' + doc.id;
+    // Stash the URL so the watchdog can find it when it fires (we can't
+    // pass it through innerHTML cleanly without re-introducing the script
+    // tag escape problem).
+    window._pdfPreviewWatchdogs = window._pdfPreviewWatchdogs || {};
+    window._pdfPreviewWatchdogs[previewId] = doc.file_url;
     return `
       <div class="preview-box">
         <div class="preview-head">Preview · PDF</div>
@@ -1757,20 +1784,6 @@ function renderPreview(doc) {
                   onerror="OF_pdfPreviewFailed('${previewId}', '${escapeHtml(doc.file_url)}')"></iframe>
         </div>
       </div>
-      <script>
-        // 2.5s watchdog — if onload never fires, assume blocked
-        (function() {
-          var id = '${previewId}';
-          setTimeout(function() {
-            var wrap = document.getElementById(id + '-wrap');
-            var loading = document.getElementById(id + '-loading');
-            if (loading && loading.parentElement) {
-              // Still in DOM == iframe never fired load
-              OF_pdfPreviewFailed(id, ${JSON.stringify(doc.file_url)});
-            }
-          }, 2500);
-        })();
-      </script>
     `;
   }
   return `
