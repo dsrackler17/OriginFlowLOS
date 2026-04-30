@@ -1581,7 +1581,15 @@ function applyFilters(rows) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function initViewToggle() {
-  $('#view-branch').addEventListener('click', () => switchView('branch'));
+  $('#view-branch').addEventListener('click', () => {
+    // When not scoped to a loan, "Branch Library" is a destination,
+    // not a view toggle — send them to the library landing page.
+    if (!scopedLoanId) {
+      window.location.href = '/branch-library.html';
+      return;
+    }
+    switchView('branch');
+  });
   $('#view-loan').addEventListener('click', () => switchView('loan'));
 }
 
