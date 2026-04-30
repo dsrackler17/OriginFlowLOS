@@ -832,6 +832,7 @@ footer a:hover { color: var(--accent); }
   <ul class="nav-center">
     <li><a href="/home.html">Home</a></li>
     <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/branch-library.html">Library</a></li>
     <li><a href="/documents.html" class="active">Documents</a></li>
     <li><a href="/reports.html">Reports</a></li>
     <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
@@ -919,6 +920,7 @@ footer a:hover { color: var(--accent); }
         <option value="title">Title</option>
         <option value="insurance">Insurance binder</option>
         <option value="other">Other</option>
+        <option value="__unset">— Unclassified —</option>
       </select>
       <select class="filter-select" id="filter-status">
         <option value="all">All statuses</option>
@@ -1033,6 +1035,7 @@ footer a:hover { color: var(--accent); }
   <div style="display:flex;gap:1.25rem;">
     <a href="/home.html">Home</a>
     <a href="/dashboard.html">Pipeline</a>
+    <a href="/branch-library.html">Library</a>
     <a href="/reports.html">Reports</a>
   </div>
 </footer>
@@ -1242,9 +1245,18 @@ async function bootstrap() {
   if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
   if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
 
-  // Read URL params: ?loan_id=<id>
+  // Read URL params:
+  //   ?loan_id=<id>     - scope to a single loan (per-loan view)
+  //   ?doc_type=<type>  - prefilter the doc-type dropdown (deep link from library category tile)
+  //   ?status=<status>  - prefilter the status dropdown
+  //   ?review=<state>   - prefilter the manual-review dropdown ('needs_review' etc.)
+  // Filter prefills are applied AFTER initFilters() runs since they need the
+  // listeners already wired so the dropdowns reflect state correctly.
   const params = new URLSearchParams(window.location.search);
   const urlLoanId = params.get('loan_id');
+  const urlDocType = params.get('doc_type');
+  const urlStatus = params.get('status');
+  const urlReview = params.get('review');
   if (urlLoanId) {
     scopedLoanId = urlLoanId;
     view = 'loan';
@@ -1262,6 +1274,27 @@ async function bootstrap() {
   initRealtime();
   initViewToggle();
   initSearchShortcut();
+
+  // Apply URL-driven filter prefills after listeners are wired so the
+  // dropdowns visually reflect the deep-linked state.
+  if (urlDocType) {
+    filters.doc_type = urlDocType;
+    const sel = $('#filter-doctype');
+    if (sel) sel.value = urlDocType;
+    renderList();
+  }
+  if (urlStatus) {
+    filters.status = urlStatus;
+    const sel = $('#filter-status');
+    if (sel) sel.value = urlStatus;
+    renderList();
+  }
+  if (urlReview) {
+    filters.manual_review = urlReview;
+    const sel = $('#filter-review');
+    if (sel) sel.value = urlReview;
+    renderList();
+  }
 
   // Deep-link to a specific doc: #<doc_id>
   if (window.location.hash) {
@@ -1515,7 +1548,13 @@ function initFilters() {
 function applyFilters(rows) {
   return rows.filter(d => {
     if (filters.loan_id !== 'all' && d.loan_id !== filters.loan_id) return false;
-    if (filters.doc_type !== 'all' && d.doc_type !== filters.doc_type) return false;
+    // Special value '__unset' (used by the library's "Unclassified" tile)
+    // matches docs that haven't been classified yet — null or empty string.
+    if (filters.doc_type === '__unset') {
+      if (d.doc_type) return false;
+    } else if (filters.doc_type !== 'all' && d.doc_type !== filters.doc_type) {
+      return false;
+    }
     if (filters.status !== 'all' && d.status !== filters.status) return false;
     if (filters.manual_review !== 'all') {
       const r = d.manual_review_status;

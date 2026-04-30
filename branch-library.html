@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Branch Library · OriginFlow LOS</title>
+<meta name="description" content="Every document across every loan in the branch — browse by type, see recent activity, drill into any loan.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   /branch-library.html — branch-wide document library landing page.
+
+   Shares the OriginFlow LOS aesthetic with documents.html (same vars, nav,
+   metric strip, fonts) but uses a "browse and discover" structural layout
+   instead of a chronological list:
+     1. Hero header
+     2. Metric strip (total / loans w/ docs / needs review / avg confidence)
+     3. Category grid — clickable tiles per doc_type → documents.html?doc_type=X
+     4. Two-column feed — recent uploads + loans-with-docs
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
+.sonar-icon { width: 26px; height: 26px; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── PAGE HEADER ──────────────────────────────────────────────────── */
+.page-head {
+  padding: 2rem 2rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle radial accent at top-right of hero — adds depth without being noisy */
+.page-head::after {
+  content: '';
+  position: absolute; top: -120px; right: -120px;
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+}
+.page-title {
+  font-family: var(--serif); font-size: 2.4rem; color: var(--white);
+  line-height: 1.05;
+}
+.page-sub {
+  color: var(--muted); margin-top: 0.5rem; max-width: 720px;
+  font-size: 0.95rem;
+}
+.page-quick-actions {
+  display: flex; gap: 0.5rem; margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+.qa-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); padding: 0.5rem 0.85rem;
+  cursor: pointer; text-decoration: none;
+  transition: all 0.15s;
+}
+.qa-btn:hover { border-color: var(--accent); color: var(--accent); }
+.qa-btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent);
+  font-weight: 700;
+}
+.qa-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.metric-cell { background: var(--surface); padding: 1.1rem 1.4rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.65rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.25rem;
+}
+
+/* ─── MAIN ─────────────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ─── CATEGORIES ───────────────────────────────────────────────────── */
+.section {
+  padding: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+.section-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap; gap: 0.5rem;
+}
+.section-title {
+  font-family: var(--serif); font-size: 1.2rem; color: var(--white);
+}
+.section-title-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  color: var(--muted); text-transform: uppercase;
+}
+.section-link {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); text-decoration: none;
+  border-bottom: 1px solid transparent; transition: border-color 0.15s;
+}
+.section-link:hover { border-bottom-color: var(--accent); }
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.category-card {
+  background: var(--surface);
+  padding: 1.2rem 1.25rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 140px;
+  position: relative;
+  transition: background 0.15s;
+  /* Each card gets a thin top accent line that grows on hover. */
+  border-top: 2px solid transparent;
+}
+.category-card:hover {
+  background: var(--panel);
+  border-top-color: var(--accent);
+}
+.category-card.empty:hover { border-top-color: var(--border); }
+.cat-icon {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 0.45rem;
+}
+.cat-count {
+  font-family: var(--serif); font-size: 2.2rem; line-height: 1;
+  color: var(--white);
+  margin-bottom: 0.5rem;
+}
+.category-card.empty .cat-count { color: var(--muted); }
+.cat-name {
+  font-family: var(--mono); font-size: 0.78rem;
+  color: var(--accent); letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 700;
+}
+.category-card.empty .cat-name { color: var(--muted); font-weight: 400; }
+.cat-last {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  margin-top: 0.4rem;
+}
+.cat-arrow {
+  position: absolute; top: 1.2rem; right: 1.25rem;
+  font-family: var(--mono); font-size: 1rem;
+  color: var(--border);
+  transition: color 0.15s, transform 0.15s;
+}
+.category-card:hover .cat-arrow {
+  color: var(--accent);
+  transform: translate(2px, -2px);
+}
+
+/* ─── TWO-COL FEED ─────────────────────────────────────────────────── */
+.feed-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border-top: 1px solid var(--border);
+}
+.feed-col {
+  background: var(--navy);
+  padding: 1.5rem 2rem;
+  min-width: 0;
+}
+.feed-list {
+  display: flex; flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
+}
+
+/* Recent uploads — file icon + name + meta line */
+.recent-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 0.75rem; align-items: center;
+  padding: 0.65rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.recent-item:hover { border-color: rgba(0,212,255,0.4); }
+.recent-icon {
+  width: 32px; height: 32px;
+  background: var(--deep); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.6rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.04em;
+}
+.recent-icon.PDF { color: var(--red); border-color: rgba(255,68,68,0.3); }
+.recent-icon.IMG { color: var(--accent2); border-color: rgba(0,255,157,0.3); }
+.recent-mid { min-width: 0; }
+.recent-name {
+  font-family: var(--sans); font-size: 0.83rem; color: var(--white);
+  font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.recent-meta {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.recent-tag {
+  font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 0.15rem 0.45rem;
+  border: 1px solid;
+}
+.recent-tag.extracted { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.recent-tag.applied   { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.1); font-weight: 700; }
+.recent-tag.uploaded  { color: var(--muted);   border-color: var(--border); }
+.recent-tag.extracting{ color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.recent-tag.failed    { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.recent-tag.quarantined{ color: var(--amber);  border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.recent-tag.review    { color: var(--amber);   border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.08); font-weight: 700; }
+
+/* Loans with docs — loan number + borrower + count + last-activity */
+.loan-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.loan-item:hover { border-color: rgba(0,212,255,0.4); }
+.loan-mid { min-width: 0; }
+.loan-num {
+  font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.06em;
+}
+.loan-name {
+  font-family: var(--sans); font-size: 0.82rem; color: var(--white);
+  font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.loan-count {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: var(--text); letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+}
+.loan-count strong { color: var(--accent); font-weight: 700; }
+.loan-time {
+  font-family: var(--mono); font-size: 0.55rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.feed-empty {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  text-align: center; padding: 2rem 1rem; letter-spacing: 0.04em;
+  border: 1px dashed var(--border);
+  background: rgba(0,212,255,0.02);
+}
+
+/* ─── STATE SCREENS ────────────────────────────────────────────────── */
+.state-screen {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .nav-search { display: none; }
+  .feed-grid { grid-template-columns: 1fr; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .page-title { font-size: 1.85rem; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .page-head { padding: 1.5rem 1rem 1.25rem; }
+  .page-title { font-size: 1.5rem; }
+  .section { padding: 1.5rem 1rem; }
+  .feed-col { padding: 1.25rem 1rem; }
+  .category-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/branch-library.html" class="active">Library</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="/documents.html" class="nav-search" id="nav-search-btn">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </a>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
+    </span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading branch library…</div>
+  </div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">The branch library is private.</h1>
+    <p class="state-text">Sign in to see every document across every loan in your branch.</p>
+    <a href="/login.html" class="btn primary">Sign in →</a>
+  </div>
+
+  <!-- PROFILE PENDING -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending</div>
+    <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
+    <p class="state-text">You'll get an email from <strong>davis@originflowlos.com</strong> when it's live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <!-- ─── ACTIVE ─── -->
+  <div id="lib-active" style="display:none;">
+
+    <!-- HERO -->
+    <header class="page-head">
+      <div class="page-eyebrow" id="page-eyebrow">BRANCH</div>
+      <h1 class="page-title">Library</h1>
+      <p class="page-sub" id="page-sub">Every document across every loan in your branch.
+        Browse by type, see what's been uploaded recently, and drill into any loan.</p>
+      <div class="page-quick-actions">
+        <a href="/documents.html" class="qa-btn primary">▤ Open all documents</a>
+        <a href="/dashboard.html" class="qa-btn">⇲ Pipeline</a>
+        <a href="/documents.html#upload" class="qa-btn" id="qa-upload">+ Upload to branch</a>
+      </div>
+    </header>
+
+    <!-- METRICS -->
+    <section class="metric-strip" id="metric-strip">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <div class="section-title-sub">Browse by type</div>
+          <div class="section-title">Document categories</div>
+        </div>
+        <a href="/documents.html" class="section-link">View all →</a>
+      </div>
+      <div class="category-grid" id="category-grid">
+        <!-- categories rendered by JS -->
+      </div>
+    </section>
+
+    <!-- TWO-COL FEED -->
+    <section class="feed-grid">
+      <div class="feed-col">
+        <div class="section-head">
+          <div>
+            <div class="section-title-sub">Latest activity</div>
+            <div class="section-title">Recent uploads</div>
+          </div>
+          <a href="/documents.html" class="section-link">All →</a>
+        </div>
+        <ul class="feed-list" id="recent-list">
+          <li class="feed-empty">Loading…</li>
+        </ul>
+      </div>
+      <div class="feed-col">
+        <div class="section-head">
+          <div>
+            <div class="section-title-sub">By loan file</div>
+            <div class="section-title">Loans with documents</div>
+          </div>
+          <a href="/dashboard.html" class="section-link">Pipeline →</a>
+        </div>
+        <ul class="feed-list" id="loans-list">
+          <li class="feed-empty">Loading…</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<footer>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · Branch Library</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="/home.html">Home</a>
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/documents.html">Documents</a>
+    <a href="/reports.html">Reports</a>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// /branch-library.html
+//
+// Branch-wide document library landing page. Reuses the same Supabase
+// queries as documents.html (same column aliases, same RLS scoping by
+// branch_id) but presents the data as a *browsing* UI rather than a list:
+//
+//   - Categories grid: counts per doc_type, click → documents.html?doc_type=X
+//   - Recent uploads: top 8 newest non-archived docs, click → docs#<id>
+//   - Loans with docs: every loan that has at least one doc, sorted by
+//     most-recent activity, click → documents.html?loan_id=X
+//
+// State screens (loading / signed-out / pending) match documents.html so
+// users moving between them don't experience a layout flash.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (s) => document.querySelector(s);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+let supa = null;
+let me = null;
+let branch = null;
+let docs = [];
+let loans = [];
+let loansById = new Map();
+let profilesById = new Map();
+
+// Same labels as documents.html — keep in sync if you ever add a doc type.
+const DOC_TYPES = {
+  paystub:        'Paystub',
+  w2:             'W-2',
+  bank_statement: 'Bank Statement',
+  tax_return:     'Tax Return',
+  id:             "Driver's License / ID",
+  appraisal:      'Appraisal',
+  title:          'Title',
+  insurance:      'Insurance Binder',
+  other:          'Other',
+};
+// Display order — most-frequent doc types first so they're scanned faster.
+const DOC_TYPE_ORDER = [
+  'paystub', 'w2', 'bank_statement', 'tax_return',
+  'id', 'appraisal', 'title', 'insurance', 'other',
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function fileExtClass(mimeType, filename) {
+  if ((mimeType || '').startsWith('image/')) return 'IMG';
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  if (ext === 'pdf' || mimeType === 'application/pdf') return 'PDF';
+  return 'DOC';
+}
+function fileExt(filename) {
+  return (filename || '').split('.').pop().toUpperCase().slice(0, 4) || 'DOC';
+}
+// Confidence is expected to be 0-1; any value > 1 is auto-treated as a
+// percentage. Same auto-normalization pattern as documents.html.
+function _normConf(c) {
+  if (c == null) return null;
+  const n = Number(c);
+  if (!isFinite(n) || n < 0) return null;
+  return n > 1 ? Math.min(n / 100, 1) : n;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH + BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile) { showState('state-pending'); return; }
+  if (!profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  $('#page-eyebrow').textContent = `${branch.name.toUpperCase()} · LIBRARY`;
+
+  showActive();
+
+  // Load all three data sources in parallel — docs and loans are both
+  // independent and we want both before rendering.
+  await Promise.all([loadProfiles(), loadLoans(), loadDocs()]);
+
+  renderMetrics();
+  renderCategories();
+  renderRecentUploads();
+  renderLoansWithDocs();
+
+  initRealtime();
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#lib-active').style.display = 'none';
+}
+function showActive() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#lib-active').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadProfiles() {
+  const { data, error } = await supa.from('profiles')
+    .select('id, full_name, role')
+    .eq('branch_id', me.branch_id);
+  if (error) { console.warn('profiles load error:', error.message); return; }
+  profilesById.clear();
+  (data || []).forEach(p => profilesById.set(p.id, p));
+}
+
+async function loadLoans() {
+  const { data, error } = await supa.from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, property_address, updated_at,
+      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null);
+  if (error) { console.error('loans load error:', error); return; }
+  loans = data || [];
+  loansById.clear();
+  loans.forEach(l => loansById.set(l.id, l));
+}
+
+// Same SELECT alias scheme as documents.html so the JS can read d.status,
+// d.file_url, d.extraction_data etc. while the underlying columns are the
+// real schema names (extraction_status, storage_path, extraction, ...).
+async function loadDocs() {
+  const { data, error } = await supa.from('documents')
+    .select(`
+      id, branch_id, loan_id, borrower_id, uploaded_by, filename,
+      file_url:storage_path,
+      file_size_bytes:size_bytes,
+      page_count,
+      mime_type, doc_type,
+      status:extraction_status,
+      extraction_data:extraction,
+      extraction_confidence:ai_confidence,
+      ai_flags, ai_model,
+      manual_review_status, reviewed_by, reviewed_at,
+      uploaded_at,
+      extracted_at:extraction_completed_at,
+      archived_at
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .order('uploaded_at', { ascending: false })
+    .limit(500);  // Library view shows aggregates, so a wider window is fine.
+  if (error) {
+    console.error('docs load error:', error);
+    docs = [];
+    return;
+  }
+  // Stitch uploader info from the profile cache, same pattern as documents.html
+  docs = (data || []).map(d => {
+    if (d.uploaded_by) d.uploader = profilesById.get(d.uploaded_by) || null;
+    return d;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderMetrics() {
+  const total = docs.length;
+  const loansWithDocs = new Set(docs.map(d => d.loan_id).filter(Boolean)).size;
+  const needsReview = docs.filter(d => d.manual_review_status === 'pending').length;
+  const confs = docs
+    .map(d => _normConf(d.extraction_confidence))
+    .filter(v => v != null);
+  const avgConf = confs.length ? (confs.reduce((a,b) => a+b, 0) / confs.length) : null;
+
+  $('#metric-strip').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">Branch Library</div>
+      <div class="metric-value">${total}</div>
+      <div class="metric-sub">documents total</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Loans with Docs</div>
+      <div class="metric-value cyan">${loansWithDocs}</div>
+      <div class="metric-sub">${loans.length} loans in branch</div>
+    </div>
+    <div class="metric-cell" ${needsReview > 0 ? 'style="cursor:pointer;" id="metric-review"' : ''}>
+      <div class="metric-label">Needs Review</div>
+      <div class="metric-value ${needsReview > 0 ? 'amber' : ''}">${needsReview}</div>
+      <div class="metric-sub">${needsReview > 0 ? 'awaiting processor · click to filter' : 'all clear'}</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Avg Confidence</div>
+      <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${avgConf != null ? Math.round(avgConf * 100) + '%' : '—'}</div>
+      <div class="metric-sub">across ${confs.length} extractions</div>
+    </div>
+  `;
+
+  const reviewCell = $('#metric-review');
+  if (reviewCell) {
+    reviewCell.addEventListener('click', () => {
+      window.location.href = '/documents.html?review=needs_review';
+    });
+  }
+}
+
+function renderCategories() {
+  // Group docs by doc_type. We use DOC_TYPE_ORDER for display order rather
+  // than alphabetical — most-frequent types first reads better.
+  const counts = {};
+  const lastUpload = {};
+  docs.forEach(d => {
+    const t = d.doc_type || '__unset';
+    counts[t] = (counts[t] || 0) + 1;
+    if (!lastUpload[t] || new Date(d.uploaded_at) > new Date(lastUpload[t])) {
+      lastUpload[t] = d.uploaded_at;
+    }
+  });
+
+  const tiles = DOC_TYPE_ORDER.map(t => {
+    const count = counts[t] || 0;
+    const last = lastUpload[t];
+    const empty = count === 0;
+    const label = DOC_TYPES[t] || t;
+    // Empty categories still render (greyed-out) so a new processor can see
+    // the full menu of doc types the system supports.
+    return `
+      <a class="category-card ${empty ? 'empty' : ''}"
+         href="${empty ? 'javascript:void(0)' : '/documents.html?doc_type=' + encodeURIComponent(t)}"
+         ${empty ? '' : `title="View all ${escapeHtml(label.toLowerCase())}s"`}>
+        <div>
+          <div class="cat-icon">// type</div>
+          <div class="cat-count">${count}</div>
+        </div>
+        <div>
+          <div class="cat-name">${escapeHtml(label)}</div>
+          <div class="cat-last">${last ? 'Last upload ' + timeAgo(last) : 'No uploads yet'}</div>
+        </div>
+        ${empty ? '' : '<div class="cat-arrow">→</div>'}
+      </a>
+    `;
+  });
+
+  // If there are docs with no doc_type set yet (status='uploaded' before AI
+  // extraction), show them as "Unclassified" at the end so they don't get
+  // lost.
+  const unsetCount = counts.__unset || 0;
+  if (unsetCount > 0) {
+    tiles.push(`
+      <a class="category-card"
+         href="/documents.html?doc_type=__unset"
+         title="Documents that haven't been classified yet">
+        <div>
+          <div class="cat-icon">// pending</div>
+          <div class="cat-count">${unsetCount}</div>
+        </div>
+        <div>
+          <div class="cat-name">Unclassified</div>
+          <div class="cat-last">Awaiting AI classification</div>
+        </div>
+        <div class="cat-arrow">→</div>
+      </a>
+    `);
+  }
+
+  $('#category-grid').innerHTML = tiles.join('');
+}
+
+function renderRecentUploads() {
+  const list = $('#recent-list');
+  const recent = docs.slice(0, 8);  // already ordered by uploaded_at desc
+
+  if (recent.length === 0) {
+    list.innerHTML = `<li class="feed-empty">No documents uploaded yet. Drop a file in the documents page to start.</li>`;
+    return;
+  }
+
+  list.innerHTML = recent.map(d => {
+    const ext = fileExt(d.filename);
+    const extCls = fileExtClass(d.mime_type, d.filename);
+    const loan = d.loan_id ? loansById.get(d.loan_id) : null;
+    const loanNum = loan?.loan_number || (d.loan_id ? d.loan_id.slice(0,6) : 'Branch');
+
+    // Tag picks the most actionable status — "needs review" wins over
+    // extraction status because it's what the processor must do next.
+    let tagCls, tagLabel;
+    if (d.manual_review_status === 'pending') { tagCls = 'review'; tagLabel = '⚠ Review'; }
+    else if (d.status === 'applied')          { tagCls = 'applied'; tagLabel = 'Applied'; }
+    else if (d.status === 'extracted')        { tagCls = 'extracted'; tagLabel = 'Extracted'; }
+    else if (d.status === 'extracting')       { tagCls = 'extracting'; tagLabel = 'Extracting'; }
+    else if (d.status === 'failed')           { tagCls = 'failed'; tagLabel = 'Failed'; }
+    else if (d.status === 'quarantined')      { tagCls = 'quarantined'; tagLabel = 'Scanning'; }
+    else                                      { tagCls = 'uploaded'; tagLabel = d.status || 'Uploaded'; }
+
+    const meta = [];
+    meta.push(escapeHtml(loanNum));
+    if (d.uploader?.full_name) meta.push(escapeHtml(d.uploader.full_name));
+    meta.push(timeAgo(d.uploaded_at));
+
+    return `
+      <a class="recent-item" href="/documents.html#${escapeHtml(d.id)}">
+        <div class="recent-icon ${extCls}">${escapeHtml(ext)}</div>
+        <div class="recent-mid">
+          <div class="recent-name">${escapeHtml(d.filename)}</div>
+          <div class="recent-meta">${meta.join(' · ')}</div>
+        </div>
+        <div class="recent-tag ${tagCls}">${escapeHtml(tagLabel)}</div>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderLoansWithDocs() {
+  const list = $('#loans-list');
+
+  // Build doc count + last activity per loan
+  const loanStats = new Map();
+  docs.forEach(d => {
+    if (!d.loan_id) return;
+    const stat = loanStats.get(d.loan_id) || { count: 0, lastAt: null };
+    stat.count++;
+    if (!stat.lastAt || new Date(d.uploaded_at) > new Date(stat.lastAt)) {
+      stat.lastAt = d.uploaded_at;
+    }
+    loanStats.set(d.loan_id, stat);
+  });
+
+  if (loanStats.size === 0) {
+    list.innerHTML = `<li class="feed-empty">No loan files have documents yet.<br><a href="/dashboard.html" style="color:var(--accent); text-decoration:none;">Open the pipeline →</a></li>`;
+    return;
+  }
+
+  // Sort by most-recent activity descending — feels like a chat-app feed,
+  // most-active loans bubble up.
+  const sorted = [...loanStats.entries()]
+    .map(([loanId, stat]) => ({ loanId, loan: loansById.get(loanId), ...stat }))
+    .filter(x => x.loan)  // skip orphaned loan_ids (loan archived/deleted)
+    .sort((a, b) => new Date(b.lastAt) - new Date(a.lastAt))
+    .slice(0, 12);  // cap at 12 for readability
+
+  list.innerHTML = sorted.map(({ loanId, loan, count, lastAt }) => {
+    const b = (loan.borrowers || [])[0]?.borrower;
+    const name = b ? `${b.last_name}, ${b.first_name}` : 'Borrower TBD';
+    return `
+      <a class="loan-item" href="/documents.html?loan_id=${encodeURIComponent(loanId)}">
+        <div class="loan-mid">
+          <div class="loan-num">${escapeHtml(loan.loan_number)}</div>
+          <div class="loan-name">${escapeHtml(name)}</div>
+        </div>
+        <div class="loan-count"><strong>${count}</strong> doc${count === 1 ? '' : 's'}</div>
+        <div class="loan-time">${timeAgo(lastAt)}</div>
+      </a>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME — re-fetch docs and re-render on any change in the branch
+//
+// The library is aggregate-heavy (counts, recents, per-loan stats) so a
+// surgical row-level patch like documents.html does isn't worth the code.
+// We just re-fetch and re-render. The whole load is ~200ms even on a
+// 500-doc branch, and changes are infrequent enough that this is fine.
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _realtimeRefreshTimer = null;
+function _scheduleRefresh() {
+  // Debounce so a burst of inserts (10 files dragged at once) only triggers
+  // one re-render after the last one settles.
+  clearTimeout(_realtimeRefreshTimer);
+  _realtimeRefreshTimer = setTimeout(async () => {
+    await loadDocs();
+    renderMetrics();
+    renderCategories();
+    renderRecentUploads();
+    renderLoansWithDocs();
+  }, 400);
+}
+
+function initRealtime() {
+  supa.channel(`library:${me.branch_id}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'documents', filter: `branch_id=eq.${me.branch_id}` },
+      _scheduleRefresh)
+    .subscribe();
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+
+</body>
+</html>
