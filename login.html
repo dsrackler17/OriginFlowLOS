@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign In — OriginFlow LOS</title>
-<meta name="description" content="Sign in to OriginFlow LOS. Access your pipeline, conditions, AI document extraction, and team chat.">
+<meta name="description" content="Sign in to OriginFlow LOS.">
 <meta name="twitter:site" content="@DRackler">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,75 +13,64 @@
 <script src="/js/config.js"></script>
 <style>
   :root {
-    --navy:    #040d1a;
-    --deep:    #07152b;
-    --surface: #0b1f3a;
-    --panel:   #0f2647;
-    --border:  #1a3a5c;
-    --accent:  #00d4ff;
-    --accent2: #00ff9d;
-    --amber:   #f5a623;
-    --red:     #ff4444;
-    --text:    #c8dff0;
-    --muted:   #5a7a99;
-    --white:   #eaf4ff;
-    --mono:    'Space Mono', monospace;
-    --serif:   'DM Serif Display', serif;
-    --sans:    'DM Sans', sans-serif;
+    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
+    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
+    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
+    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body { background: var(--navy); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
-  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
-  nav, main, footer { position: relative; z-index: 1; }
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 3rem; border-bottom: 1px solid var(--border); background: rgba(4,13,26,0.85); backdrop-filter: blur(12px); }
-  .nav-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
-  .sonar-icon { width: 32px; height: 32px; }
-  .sonar-icon svg { width: 100%; height: 100%; }
-  .nav-wordmark { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; color: var(--white); letter-spacing: 0.12em; text-transform: uppercase; }
-  .nav-wordmark span { color: var(--accent); }
-  .nav-right { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--muted); }
-  .nav-right a { color: var(--accent); text-decoration: none; }
-  .nav-right a:hover { text-decoration: underline; }
-  main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
-  .auth-container { width: 100%; max-width: 420px; animation: fadeUp 0.6s ease both; }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-  .auth-eyebrow { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
-  .auth-eyebrow::before { content: ''; display: block; width: 1.5rem; height: 1px; background: var(--accent); }
-  .auth-heading { font-family: var(--serif); font-size: 2.2rem; color: var(--white); margin-bottom: 0.4rem; line-height: 1.15; }
-  .auth-sub { font-size: 0.9rem; color: var(--muted); font-weight: 300; margin-bottom: 2.5rem; }
-  .auth-card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; position: relative; overflow: hidden; }
-  .auth-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
-  .form-group { margin-bottom: 1.25rem; }
-  .form-label { display: block; font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
-  .form-input { width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--white); font-family: var(--mono); font-size: 0.85rem; padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
-  .form-input::placeholder { color: var(--muted); }
-  .form-input:focus { border-color: var(--accent); }
-  .form-footer { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-  .form-forgot { font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em; color: var(--muted); text-decoration: none; transition: color 0.2s; }
-  .form-forgot:hover { color: var(--accent); }
-  .btn-submit { display: block; width: 100%; font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; background: var(--accent); color: var(--navy); border: none; padding: 0.9rem; cursor: pointer; font-weight: 700; transition: opacity 0.2s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
-  .btn-submit:hover { opacity: 0.85; }
-  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-  .auth-divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
-  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .auth-divider span { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
-  .auth-switch { text-align: center; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; color: var(--muted); }
-  .auth-switch a { color: var(--accent); text-decoration: none; }
-  .auth-switch a:hover { text-decoration: underline; }
-  .error-box { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); color: var(--red); font-family: var(--mono); font-size: 0.72rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; }
-  .error-box.visible { display: block; }
-  .info-box { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.25); color: var(--accent); font-family: var(--mono); font-size: 0.72rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; }
-  .info-box.visible { display: block; }
-  .success-box { background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.3); color: var(--accent2); font-family: var(--mono); font-size: 0.72rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; }
-  .success-box.visible { display: block; }
-  footer { border-top: 1px solid var(--border); padding: 1.25rem 3rem; display: flex; align-items: center; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em; color: var(--muted); background: var(--deep); }
-  footer a { color: var(--muted); text-decoration: none; }
-  footer a:hover { color: var(--accent); }
-  .footer-links { display: flex; gap: 1.5rem; }
+  *,*::before,*::after { box-sizing:border-box;margin:0;padding:0; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--navy); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.6; min-height:100vh; display:flex; flex-direction:column; }
+  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+  nav,main,footer { position:relative; z-index:1; }
+  nav { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 3rem; border-bottom:1px solid var(--border); background:rgba(4,13,26,0.85); backdrop-filter:blur(12px); }
+  .nav-logo { display:flex; align-items:center; gap:0.75rem; text-decoration:none; }
+  .sonar-icon { width:32px; height:32px; }
+  .sonar-icon svg { width:100%; height:100%; }
+  .nav-wordmark { font-family:var(--mono); font-size:0.85rem; font-weight:700; color:var(--white); letter-spacing:0.12em; text-transform:uppercase; }
+  .nav-wordmark span { color:var(--accent); }
+  .nav-right { font-family:var(--mono); font-size:0.72rem; letter-spacing:0.08em; color:var(--muted); }
+  .nav-right a { color:var(--accent); text-decoration:none; }
+  .nav-right a:hover { text-decoration:underline; }
+  main { flex:1; display:flex; align-items:center; justify-content:center; padding:4rem 2rem; }
+  .auth-container { width:100%; max-width:420px; animation:fadeUp 0.6s ease both; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  .auth-eyebrow { font-family:var(--mono); font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.75rem; }
+  .auth-eyebrow::before { content:''; display:block; width:1.5rem; height:1px; background:var(--accent); }
+  .auth-heading { font-family:var(--serif); font-size:2.2rem; color:var(--white); margin-bottom:0.4rem; line-height:1.15; }
+  .auth-sub { font-size:0.9rem; color:var(--muted); font-weight:300; margin-bottom:2.5rem; }
+  .auth-card { background:var(--surface); border:1px solid var(--border); padding:2rem; position:relative; overflow:hidden; }
+  .auth-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+  .form-group { margin-bottom:1.25rem; }
+  .form-label { display:block; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; }
+  .form-input { width:100%; background:var(--panel); border:1px solid var(--border); color:var(--white); font-family:var(--mono); font-size:0.85rem; padding:0.75rem 1rem; outline:none; transition:border-color 0.2s; -webkit-appearance:none; }
+  .form-input::placeholder { color:var(--muted); }
+  .form-input:focus { border-color:var(--accent); }
+  .form-footer { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+  .form-forgot { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.06em; color:var(--muted); text-decoration:none; transition:color 0.2s; }
+  .form-forgot:hover { color:var(--accent); }
+  .btn-submit { display:block; width:100%; font-family:var(--mono); font-size:0.8rem; letter-spacing:0.12em; text-transform:uppercase; background:var(--accent); color:var(--navy); border:none; padding:0.9rem; cursor:pointer; font-weight:700; transition:opacity 0.2s; clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px)); }
+  .btn-submit:hover { opacity:0.85; }
+  .btn-submit:disabled { opacity:0.6; cursor:not-allowed; }
+  .auth-divider { display:flex; align-items:center; gap:1rem; margin:1.5rem 0; }
+  .auth-divider::before,.auth-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .auth-divider span { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; }
+  .auth-switch { text-align:center; font-family:var(--mono); font-size:0.7rem; letter-spacing:0.06em; color:var(--muted); }
+  .auth-switch a { color:var(--accent); text-decoration:none; }
+  .auth-switch a:hover { text-decoration:underline; }
+  .error-box { background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3); color:var(--red); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; }
+  .error-box.visible { display:block; }
+  .info-box { background:rgba(0,212,255,0.05); border:1px solid rgba(0,212,255,0.25); color:var(--accent); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; }
+  .info-box.visible { display:block; }
+  .success-box { background:rgba(0,255,157,0.06); border:1px solid rgba(0,255,157,0.3); color:var(--accent2); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; }
+  .success-box.visible { display:block; }
+  footer { border-top:1px solid var(--border); padding:1.25rem 3rem; display:flex; align-items:center; justify-content:space-between; font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; color:var(--muted); background:var(--deep); }
+  footer a { color:var(--muted); text-decoration:none; }
+  footer a:hover { color:var(--accent); }
+  .footer-links { display:flex; gap:1.5rem; }
   @media (max-width: 640px) {
-    nav { padding: 1rem 1.25rem; }
-    footer { padding: 1rem 1.25rem; flex-direction: column; gap: 0.75rem; text-align: center; }
+    nav { padding:1rem 1.25rem; }
+    footer { padding:1rem 1.25rem; flex-direction:column; gap:0.75rem; text-align:center; }
   }
 </style>
 </head>
@@ -154,9 +143,27 @@
 </footer>
 
 <script>
-  // After a successful sign-in we send the user to their authenticated branch
-  // home, NOT to /dashboard.html (which is the public marketing demo).
-  const POST_LOGIN_DEST = '/home.html';
+  // ─── Post-login routing ───────────────────────────────────────────────
+  // We pick the destination dynamically based on:
+  //   1. ?next= query param (set by signup verification flow → /checkout.html)
+  //   2. Otherwise: check subscription status. Active = home. Inactive = checkout.
+  const SUB_OK = ['active','trialing'];
+
+  async function pickDestination(sb, userId, fallbackParam) {
+    if (fallbackParam) return fallbackParam;
+    try {
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('branches:branch_id ( subscription_status )')
+        .eq('id', userId)
+        .maybeSingle();
+      const status = profile?.branches?.subscription_status;
+      return SUB_OK.includes(status) ? '/home.html' : '/checkout.html';
+    } catch (err) {
+      console.warn('[Login] subscription check failed, defaulting to /home.html', err);
+      return '/home.html';
+    }
+  }
 
   const errorBox   = document.getElementById('error-box');
   const infoBox    = document.getElementById('info-box');
@@ -172,21 +179,27 @@
     submitBtn.style.opacity = '1';
   }
 
-  // Show "email verified" message if redirected from email confirmation
   const urlParams = new URLSearchParams(window.location.search);
+  // ?next= is set by signup.html when redirecting after email verify.
+  // We sanitize: only allow same-origin paths starting with '/'.
+  let nextParam = urlParams.get('next');
+  if (nextParam && (!nextParam.startsWith('/') || nextParam.startsWith('//'))) {
+    nextParam = null;
+  }
+
   if (urlParams.get('verified') === 'true') {
-    showSuccess('Email verified — sign in below.');
+    showSuccess('Email verified — sign in to activate billing.');
   } else if (urlParams.get('signup') === 'pending') {
     showInfo('Check your email to verify your account, then sign in.');
   }
 
-  // Poll for session to be persisted before redirecting
-  async function waitForSessionAndRedirect(sb, destination) {
+  async function waitForSessionAndRedirect(sb, userId) {
     for (let i = 0; i < 30; i++) {
       try {
         const { data } = await sb.auth.getSession();
         if (data?.session?.access_token) {
-          window.location.href = destination;
+          const dest = await pickDestination(sb, userId, nextParam);
+          window.location.href = dest;
           return true;
         }
       } catch (e) { /* keep polling */ }
@@ -195,13 +208,14 @@
     return false;
   }
 
-  // If already signed in, skip straight to home
   if (typeof ofGetSession === 'function') {
     ofGetSession()
-      .then(session => {
+      .then(async session => {
         if (session) {
-          showInfo('Already signed in — redirecting to your branch home…');
-          window.location.href = POST_LOGIN_DEST;
+          showInfo('Already signed in — redirecting…');
+          const sb = getSupabase();
+          const dest = await pickDestination(sb, session.user.id, nextParam);
+          window.location.href = dest;
         }
       })
       .catch(err => console.warn('[OF Login] session check error:', err));
@@ -258,10 +272,8 @@
         return;
       }
 
-      // FIX: was redirecting to /dashboard.html (the public demo). Send the
-      // signed-in user to their actual branch home instead.
-      submitBtn.textContent = 'Loading your branch home...';
-      const ok = await waitForSessionAndRedirect(sb, POST_LOGIN_DEST);
+      submitBtn.textContent = 'Loading…';
+      const ok = await waitForSessionAndRedirect(sb, data.session.user.id);
       if (!ok) {
         showError('Signed in, but session did not persist. Try clearing cookies or switching browsers.');
         resetBtn();

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activating Billing — OriginFlow LOS</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  :root {
+    --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+    --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+    --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+    --mono:'Space Mono',monospace; --serif:'DM Serif Display',serif; --sans:'DM Sans',sans-serif;
+  }
+  *,*::before,*::after { box-sizing:border-box;margin:0;padding:0; }
+  body {
+    background:var(--navy); color:var(--text); font-family:var(--sans);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:2rem;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);
+    background-size:40px 40px; pointer-events:none;
+  }
+  .card {
+    position:relative; z-index:1; width:100%; max-width:480px;
+    background:var(--surface); border:1px solid var(--border);
+    padding:2.5rem 2rem; text-align:center;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+  }
+  .eyebrow {
+    font-family:var(--mono); font-size:0.65rem; letter-spacing:0.18em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:1rem;
+  }
+  h1 { font-family:var(--serif); font-size:1.8rem; color:var(--white); margin-bottom:0.75rem; line-height:1.2; }
+  p { color:var(--muted); font-size:0.95rem; margin-bottom:1.25rem; line-height:1.6; }
+  .spinner {
+    width:36px; height:36px; margin:0 auto 1.5rem;
+    border:2px solid var(--border); border-top-color:var(--accent);
+    border-radius:50%; animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .badge {
+    display:inline-block; font-family:var(--mono); font-size:0.7rem;
+    letter-spacing:0.1em; text-transform:uppercase;
+    padding:0.4rem 0.85rem; border:1px solid rgba(0,255,157,0.4);
+    color:var(--accent2); background:rgba(0,255,157,0.06);
+    margin-bottom:1.25rem;
+  }
+  .badge.standard {
+    color:var(--accent); border-color:rgba(0,212,255,0.4); background:rgba(0,212,255,0.06);
+  }
+  .err {
+    background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3);
+    color:var(--red); padding:0.85rem 1rem; margin-bottom:1.25rem;
+    font-family:var(--mono); font-size:0.72rem; text-align:left;
+  }
+  .btn {
+    display:inline-block; font-family:var(--mono); font-size:0.78rem;
+    letter-spacing:0.12em; text-transform:uppercase; font-weight:700;
+    background:var(--accent); color:var(--navy); border:none;
+    padding:0.85rem 1.75rem; cursor:pointer; text-decoration:none;
+    margin:0.25rem;
+  }
+  .btn:hover { opacity:0.85; }
+  .btn.ghost {
+    background:transparent; color:var(--text); border:1px solid var(--border); font-weight:400;
+  }
+  .btn.ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .summary {
+    background:var(--panel); border:1px solid var(--border);
+    padding:1rem 1.25rem; margin:1rem 0 1.5rem; text-align:left;
+    font-family:var(--mono); font-size:0.78rem;
+  }
+  .summary-row {
+    display:flex; justify-content:space-between; padding:0.4rem 0;
+    border-bottom:1px dotted var(--border);
+  }
+  .summary-row:last-child { border-bottom:none; }
+  .summary-label { color:var(--muted); }
+  .summary-value { color:var(--white); }
+  .summary-value.accent { color:var(--accent2); font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <!-- Loading state -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div class="eyebrow">Preparing your subscription</div>
+    <h1>One quick stop at billing.</h1>
+    <p>We're handing you off to Stripe to activate your branch. Should take five seconds.</p>
+  </div>
+
+  <!-- Founders pricing detected -->
+  <div id="founders-detected" style="display:none;">
+    <div class="badge">FOUNDING RATE LOCKED</div>
+    <h1>You got a founders slot.</h1>
+    <p>Your branch is one of the first 20. This rate is yours forever, even after we raise prices.</p>
+    <div class="summary">
+      <div class="summary-row"><span class="summary-label">Base</span><span class="summary-value">$49.99 / month</span></div>
+      <div class="summary-row"><span class="summary-label">Per closed loan</span><span class="summary-value">$10.00</span></div>
+      <div class="summary-row"><span class="summary-label">Plan</span><span class="summary-value accent" id="plan-pill">FOUNDERS</span></div>
+    </div>
+    <button class="btn" id="btn-go" type="button">Continue to Stripe →</button>
+  </div>
+
+  <!-- Standard pricing -->
+  <div id="standard-detected" style="display:none;">
+    <div class="badge standard">STANDARD PLAN</div>
+    <h1>Almost there.</h1>
+    <p>Founding 20 slots are taken. You're on the standard plan — same software, same support.</p>
+    <button class="btn" id="btn-go-standard" type="button">Continue to Stripe →</button>
+  </div>
+
+  <!-- Already subscribed -->
+  <div id="already-active" style="display:none;">
+    <div class="badge">ALREADY ACTIVE</div>
+    <h1>You're already paid up.</h1>
+    <p>Your branch subscription is active. Head to your home dashboard.</p>
+    <a href="/home.html" class="btn">Go to Home →</a>
+  </div>
+
+  <!-- Canceled return -->
+  <div id="canceled" style="display:none;">
+    <div class="eyebrow" style="color:var(--amber);">Checkout canceled</div>
+    <h1>No charge made.</h1>
+    <p>You can try again whenever you're ready. The founders rate is still locked in for you until someone else takes the slot.</p>
+    <button class="btn" id="btn-retry" type="button">Try again</button>
+    <a href="/home.html" class="btn ghost">Back to home</a>
+  </div>
+
+  <!-- Error -->
+  <div id="error" style="display:none;">
+    <div class="eyebrow" style="color:var(--red);">Something broke</div>
+    <h1>Couldn't start checkout.</h1>
+    <div class="err" id="err-msg"></div>
+    <button class="btn" id="btn-retry-err" type="button">Try again</button>
+    <a href="mailto:dsrackler@gmail.com" class="btn ghost">Email Davis</a>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let supa = null;
+let session = null;
+
+function showOnly(id) {
+  ['loading','founders-detected','standard-detected','already-active','canceled','error']
+    .forEach(s => { document.getElementById(s).style.display = (s === id) ? 'block' : 'none'; });
+}
+
+async function bootstrap() {
+  // Handle ?canceled=1 return from Stripe
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('canceled') === '1') {
+    showOnly('canceled');
+    wireRetry();
+    return;
+  }
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) return showError('Service unavailable. Refresh and try again.');
+
+  try {
+    const { data: { session: s } } = await supa.auth.getSession();
+    if (!s) {
+      window.location.href = '/login.html?next=/checkout.html';
+      return;
+    }
+    session = s;
+
+    // Check current branch subscription status — maybe they're already
+    // subscribed and just landed here by accident.
+    const { data: profile } = await supa
+      .from('profiles')
+      .select('role, branches:branch_id ( subscription_status )')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    const status = profile?.branches?.subscription_status;
+    if (status === 'active' || status === 'trialing') {
+      showOnly('already-active');
+      return;
+    }
+
+    // Check founders availability for the right messaging
+    const { data: remaining } = await supa.rpc('founders_slots_remaining');
+    const isFounders = (remaining ?? 0) > 0;
+
+    if (isFounders) {
+      showOnly('founders-detected');
+      $('#btn-go').addEventListener('click', startCheckout);
+    } else {
+      showOnly('standard-detected');
+      $('#btn-go-standard').addEventListener('click', startCheckout);
+    }
+  } catch (err) {
+    console.error(err);
+    showError(err.message);
+  }
+}
+
+async function startCheckout() {
+  showOnly('loading');
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/create-checkout-session`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Checkout failed');
+    if (!data.url) throw new Error('No checkout URL returned');
+    window.location.href = data.url;
+  } catch (err) {
+    console.error(err);
+    showError(err.message);
+  }
+}
+
+function showError(msg) {
+  $('#err-msg').textContent = msg;
+  showOnly('error');
+  $('#btn-retry-err').addEventListener('click', () => location.reload());
+}
+
+function wireRetry() {
+  $('#btn-retry').addEventListener('click', () => {
+    window.history.replaceState({}, '', '/checkout.html');
+    location.reload();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+// SUPABASE_URL is exposed by /js/config.js
+const SUPABASE_URL = (typeof window.OF_SUPABASE_URL === 'string')
+  ? window.OF_SUPABASE_URL
+  : (window.SUPABASE_URL || '');
+</script>
+</body>
+</html>

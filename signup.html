@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Request Early Access — OriginFlow LOS</title>
-<meta name="description" content="Request early access to OriginFlow LOS. Private beta opens Q2 2026 to a small group of independent mortgage branches.">
+<meta name="description" content="Request early access to OriginFlow LOS. Founders' rate locked for the first 20 branches.">
 <meta name="twitter:site" content="@DRackler">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -49,8 +49,44 @@
   .auth-eyebrow { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
   .auth-eyebrow::before { content: ''; display: block; width: 1.5rem; height: 1px; background: var(--accent); }
   .auth-heading { font-family: var(--serif); font-size: 2.2rem; color: var(--white); margin-bottom: 0.4rem; line-height: 1.15; }
-  .auth-sub { font-size: 0.92rem; color: var(--muted); font-weight: 300; margin-bottom: 2rem; }
+  .auth-sub { font-size: 0.92rem; color: var(--muted); font-weight: 300; margin-bottom: 1.25rem; }
   .auth-sub strong { color: var(--accent2); font-weight: 500; }
+
+  /* ─── FOUNDERS BADGE ─────────────────────────────────────────────── */
+  .founders-strip {
+    background: rgba(0,255,157,0.06);
+    border: 1px solid rgba(0,255,157,0.3);
+    border-left: 3px solid var(--accent2);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent2);
+    letter-spacing: 0.04em;
+  }
+  .founders-strip.standard {
+    background: rgba(0,212,255,0.04);
+    border-color: rgba(0,212,255,0.25);
+    border-left-color: var(--accent);
+    color: var(--accent);
+  }
+  .founders-strip strong { color: var(--white); font-weight: 700; }
+  .founders-strip .pulse {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  .founders-strip.standard .pulse { background: var(--accent); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .founders-strip .price-line {
+    font-family: var(--sans); font-size: 0.78rem;
+    color: var(--text); margin-top: 0.15rem;
+  }
+
   .auth-card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; position: relative; overflow: hidden; }
   .auth-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
   .form-group { margin-bottom: 1.1rem; }
@@ -81,7 +117,6 @@
   .error-box.visible { display: block; }
   .info-box { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.25); color: var(--accent); font-family: var(--mono); font-size: 0.7rem; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: none; letter-spacing: 0.04em; line-height: 1.6; }
   .info-box.visible { display: block; }
-  /* Success state — full takeover */
   .success-state { display: none; text-align: center; padding: 3rem 1rem; }
   .success-state.visible { display: block; }
   .success-icon { font-family: var(--mono); font-size: 3rem; color: var(--accent2); margin-bottom: 1rem; line-height: 1; }
@@ -129,10 +164,18 @@
   <div class="auth-container">
     <div class="auth-eyebrow">Private Beta · Q2 2026</div>
     <h1 class="auth-heading">Request<br>early access.</h1>
-    <p class="auth-sub">Founding 25 branches lock the rate forever. Tell us about your shop — <strong>I review every signup personally</strong>.</p>
+    <p class="auth-sub">Founding 20 branches lock the rate forever. Tell us about your shop — <strong>I review every signup personally</strong>.</p>
+
+    <!-- Live founders counter — hydrated by JS via founders_slots_remaining() RPC -->
+    <div class="founders-strip" id="founders-strip" style="display:none;">
+      <span class="pulse"></span>
+      <div>
+        <div><strong id="founders-count">—</strong> <span id="founders-message">of 20 founder slots remaining</span></div>
+        <div class="price-line" id="founders-price-line">$49.99/month + $10/closed loan · locked forever</div>
+      </div>
+    </div>
 
     <div class="auth-card">
-      <!-- Form view -->
       <div id="form-view">
         <div class="error-box" id="error-box"></div>
         <div class="info-box"  id="info-box"></div>
@@ -221,7 +264,7 @@
 
           <p class="terms-note">
             By signing up, you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.
-            We'll send a verification email — verify it, and we'll be in touch about beta scheduling.
+            We'll send a verification email — verify it, then activate billing to start working files.
           </p>
         </form>
 
@@ -232,10 +275,11 @@
       <!-- Success view -->
       <div class="success-state" id="success-view">
         <div class="success-icon">✓</div>
-        <h2 class="success-title">You're on the list.</h2>
+        <h2 class="success-title">Check your email.</h2>
         <p class="success-body">
-          Check <strong id="success-email">your inbox</strong> for a verification email from Supabase. Click the link to confirm, then sign in any time.<br><br>
-          I review every signup personally. Expect a note from me within 48 hours about beta scheduling.
+          We sent a verification link to <strong id="success-email">your inbox</strong>.<br>
+          Click the link, sign in, and you'll be sent straight to billing setup —<br>
+          where your <strong id="success-rate-line">founders rate</strong> will be locked in.
         </p>
         <p class="success-tag">— Davis · OriginFlow LOS</p>
         <p style="margin-top:2rem;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.06em;">
@@ -256,15 +300,17 @@
 </footer>
 
 <script>
-  // Where to send a user who's already authenticated when they hit /signup.html.
-  // Their authenticated home is /home.html, NOT /dashboard.html (that's the
-  // public marketing demo).
-  const POST_LOGIN_DEST = '/home.html';
+  // After verifying email + signing in, the user lands on /checkout.html
+  // (NOT /home.html), which triggers the Stripe Checkout flow. Once payment
+  // completes, Stripe sends them to /home.html?checkout=success.
+  const POST_VERIFY_DEST = '/checkout.html';
+  // Where to send a returning, already-paid user who hits /signup.html
+  const POST_LOGIN_DEST  = '/home.html';
 
   const errorBox  = document.getElementById('error-box');
   const infoBox   = document.getElementById('info-box');
   const submitBtn = document.getElementById('submit-btn');
-  const formView   = document.getElementById('form-view');
+  const formView  = document.getElementById('form-view');
   const successView = document.getElementById('success-view');
 
   function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); infoBox.classList.remove('visible'); window.scrollTo({top:0,behavior:'smooth'}); }
@@ -275,14 +321,63 @@
     submitBtn.style.opacity = '1';
   }
 
-  // If already signed in, redirect to home
+  // ─── Founders counter: hydrate the live "X of 20 left" badge ────────────
+  // This calls the public RPC we created in 010_stripe_billing.sql. If the
+  // RPC fails (Supabase down, function not deployed yet) we just hide the
+  // strip — never break the form.
+  async function hydrateFoundersCounter() {
+    const sb = (typeof getSupabase === 'function') ? getSupabase() : null;
+    if (!sb) return;
+    try {
+      const { data: remaining, error } = await sb.rpc('founders_slots_remaining');
+      if (error) { console.warn('[Founders] RPC failed:', error); return; }
+      const n = Number(remaining ?? 0);
+      const strip = document.getElementById('founders-strip');
+      const count = document.getElementById('founders-count');
+      const msg   = document.getElementById('founders-message');
+      const price = document.getElementById('founders-price-line');
+
+      if (n > 0) {
+        count.textContent = n;
+        msg.textContent = n === 1 ? 'of 20 founder slots remaining' : 'of 20 founder slots remaining';
+        price.textContent = '$49.99/month + $10/closed loan · locked forever';
+        strip.classList.remove('standard');
+      } else {
+        // All claimed — show standard rate strip instead
+        count.textContent = 'STANDARD';
+        msg.textContent = 'rate · founders allotment claimed';
+        price.textContent = 'Same software, same support — at the standard rate.';
+        strip.classList.add('standard');
+      }
+      strip.style.display = 'flex';
+
+      // Tweak the success-view phrasing to match
+      const rateLine = document.getElementById('success-rate-line');
+      if (rateLine && n === 0) rateLine.textContent = 'standard plan';
+    } catch (err) {
+      console.warn('[Founders] counter hydrate failed:', err);
+    }
+  }
+  hydrateFoundersCounter();
+
+  // If already signed in, send them to wherever they belong
   if (typeof ofGetSession === 'function') {
     ofGetSession()
-      .then(session => {
-        if (session) {
-          showInfo('Already signed in — redirecting to your branch home…');
-          window.location.href = POST_LOGIN_DEST;
-        }
+      .then(async session => {
+        if (!session) return;
+        // Check subscription status — paid users go home, unpaid go to checkout
+        const sb = getSupabase();
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('branches:branch_id ( subscription_status )')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        const status = profile?.branches?.subscription_status;
+        const dest = (status === 'active' || status === 'trialing')
+          ? POST_LOGIN_DEST
+          : POST_VERIFY_DEST;
+        showInfo('Already signed in — redirecting…');
+        window.location.href = dest;
       })
       .catch(err => console.warn('[OF Signup] session check error:', err));
   }
@@ -292,7 +387,6 @@
     errorBox.classList.remove('visible');
     infoBox.classList.remove('visible');
 
-    // Pull all fields
     const fd = new FormData(e.target);
     const email       = fd.get('email').trim();
     const password    = fd.get('password');
@@ -304,7 +398,6 @@
     const current_los = fd.get('current_los');
     const nmls        = (fd.get('nmls') || '').trim();
 
-    // Client-side validation
     if (!email || !password || !first_name || !last_name || !branch_name || !role || !branch_size || !current_los) {
       showError('Please fill in all required fields.');
       return;
@@ -334,9 +427,6 @@
     );
 
     try {
-      // Sign up via Supabase Auth. The metadata in `data` is stored on
-      // auth.users.raw_user_meta_data and read by the tg_populate_early_access
-      // trigger to populate the early_access_signups table.
       const result = await Promise.race([
         sb.auth.signUp({
           email,
@@ -352,7 +442,10 @@
               nmls: nmls || null,
               source: 'web_signup',
             },
-            emailRedirectTo: window.location.origin + '/login.html?verified=true',
+            // After clicking the verification link, land on login.html with
+            // verified=true. login.html will then sign them in and forward
+            // to /checkout.html (see updated login.html).
+            emailRedirectTo: window.location.origin + '/login.html?verified=true&next=/checkout.html',
           },
         }),
         timeout,
@@ -371,13 +464,11 @@
         return;
       }
 
-      // Success — show the success view
       document.getElementById('success-email').textContent = email;
       formView.style.display = 'none';
       successView.classList.add('visible');
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Optional: simple analytics ping
       try { window.dataLayer && window.dataLayer.push({ event: 'signup_success', role, branch_size, current_los }); } catch(_) {}
 
     } catch (err) {
