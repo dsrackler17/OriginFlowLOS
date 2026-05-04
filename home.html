@@ -674,6 +674,9 @@ footer a:hover { color: var(--accent); }
       <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
     </button>
     <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-billing-pill" style="display:none;" title="Click to manage billing">
+      <strong id="nav-billing-status">●</strong> &nbsp;<span id="nav-billing-text">—</span>
+    </span>
     <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
       <span class="nav-user-name" id="nav-user-name">…</span>
@@ -703,6 +706,23 @@ footer a:hover { color: var(--accent); }
     <div class="state-actions">
       <a href="/login.html" class="btn primary">Sign in →</a>
       <a href="/dashboard.html" class="btn">View public demo</a>
+    </div>
+  </div>
+
+  <!-- BILLING REQUIRED -->
+  <div class="state-screen" id="state-billing" style="display:none;">
+    <div class="state-eyebrow" id="billing-eyebrow">Activate billing</div>
+    <h1 class="state-heading" id="billing-heading">Your branch is ready — one last step.</h1>
+    <p class="state-text" id="billing-text">
+      Add a payment method to unlock the pipeline, document AI, and team chat.
+      Cancel anytime — full SQL export of your data on the way out.
+    </p>
+    <div class="state-actions">
+      <a href="/checkout.html" class="btn primary">Activate billing →</a>
+      <a href="mailto:dsrackler@gmail.com" class="btn">Email Davis</a>
+    </div>
+    <div id="billing-past-due" style="display:none; margin-top:1.5rem; padding:0.85rem 1.1rem; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.3); border-left:3px solid var(--amber); font-family:var(--mono); font-size:0.7rem; color:var(--amber); letter-spacing:0.04em;">
+      ⚑ Last payment failed. Update your card in the Customer Portal to keep your branch active.
     </div>
   </div>
 
@@ -932,11 +952,39 @@ let branch = null;
 
 function showState(id) {
   document.getElementById('main-grid').style.gridTemplateColumns = '1fr';
-  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+  ['state-loading','state-signed-out','state-pending','state-billing'].forEach(s => {
     document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
   });
   $('#home-content').style.display = 'none';
   $('#chat-rail').style.display    = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Customer Portal — Stripe-hosted self-service for billing
+// ═══════════════════════════════════════════════════════════════════════════
+async function openCustomerPortal() {
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    if (!session) {
+      window.location.href = '/login.html';
+      return;
+    }
+    const SUPABASE_URL = window.OF_SUPABASE_URL || window.SUPABASE_URL || '';
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-portal-session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not open portal');
+    if (!data.url) throw new Error('No portal URL returned');
+    window.location.href = data.url;
+  } catch (err) {
+    console.error('Portal error:', err);
+    alert('Could not open billing portal: ' + err.message);
+  }
 }
 
 function showHome() {
@@ -952,6 +1000,13 @@ function showHome() {
 async function bootstrap() {
   // wire keyboard shortcut hint to platform
   $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  // Stripe Checkout success return
+  const checkoutResult = new URLSearchParams(window.location.search).get('checkout');
+  if (checkoutResult === 'success') {
+    history.replaceState({}, '', '/home.html');
+    console.log('✓ Checkout completed. Welcome!');
+  }
   $('#kbd-search').textContent     = isMac ? '⌘K' : 'Ctrl+K';
 
   supa = (typeof getSupabase === 'function') ? getSupabase() : null;
@@ -972,7 +1027,15 @@ async function bootstrap() {
 
   const { data: profile, error: profErr } = await supa
     .from('profiles')
-    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .select(`
+      id, branch_id, role, full_name, email,
+      branches:branch_id (
+        id, name,
+        subscription_status, subscription_plan, founders_number,
+        cancel_at_period_end, current_period_end,
+        stripe_customer_id
+      )
+    `)
     .eq('id', session.user.id)
     .maybeSingle();
 
@@ -984,6 +1047,31 @@ async function bootstrap() {
   if (!profile || !profile.branch_id) {
     $('#nav-user-name').textContent = session.user.email || 'Signed in';
     showState('state-pending');
+    return;
+  }
+
+  // Subscription gate — branch admin must have an active or trialing
+  // subscription. Other roles inherit access through the branch.
+  const subStatus = profile.branches?.subscription_status || 'inactive';
+  if (subStatus !== 'active' && subStatus !== 'trialing') {
+    $('#nav-user-name').textContent = profile.full_name || session.user.email;
+    if (subStatus === 'past_due' || subStatus === 'unpaid') {
+      $('#billing-eyebrow').textContent = 'Payment problem';
+      $('#billing-heading').textContent = 'Your last payment failed.';
+      $('#billing-text').textContent = 'Update your card to keep the pipeline live. Takes 30 seconds in the Customer Portal.';
+      $('#billing-past-due').style.display = 'block';
+      const btn = document.querySelector('#state-billing .btn.primary');
+      if (btn) {
+        btn.textContent = 'Update payment method →';
+        btn.href = 'javascript:void(0)';
+        btn.addEventListener('click', () => openCustomerPortal());
+      }
+    } else if (subStatus === 'canceled') {
+      $('#billing-eyebrow').textContent = 'Subscription canceled';
+      $('#billing-heading').textContent = 'Welcome back.';
+      $('#billing-text').textContent = 'Reactivate to pick up where you left off. Your data is still here.';
+    }
+    showState('state-billing');
     return;
   }
 
@@ -1005,6 +1093,30 @@ async function bootstrap() {
   $('#nav-user-role').style.display = 'inline-block';
   $('#nav-branch-name').textContent = branch.name;
   $('#nav-branch-pill').style.display = 'inline-flex';
+
+  // Billing pill (only for admins/owners)
+  if (me.role === 'admin' || me.role === 'owner') {
+    const pill   = $('#nav-billing-pill');
+    const status = $('#nav-billing-status');
+    const text   = $('#nav-billing-text');
+    const sub = profile.branches;
+    if (sub.subscription_plan === 'founders' && sub.founders_number) {
+      status.textContent = '★';
+      status.style.color = 'var(--accent2)';
+      text.textContent = `FOUNDER #${sub.founders_number}`;
+    } else {
+      status.textContent = '●';
+      status.style.color = 'var(--accent2)';
+      text.textContent = (sub.subscription_plan || 'STANDARD').toUpperCase();
+    }
+    if (sub.cancel_at_period_end) {
+      status.style.color = 'var(--amber)';
+      text.textContent += ' · ENDS SOON';
+    }
+    pill.style.display = 'inline-flex';
+    pill.style.cursor = 'pointer';
+    pill.addEventListener('click', openCustomerPortal);
+  }
 
   // Show admin-only links
   if (me.role === 'admin') {
