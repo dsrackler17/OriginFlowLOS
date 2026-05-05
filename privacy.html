@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy · OriginFlow LOS</title>
+<meta name="description" content="How OriginFlow LOS collects, uses, stores, and protects personal information — including borrower PII, GLBA-regulated financial data, and CCPA/GDPR rights.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 3rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+.sonar-icon { width: 32px; height: 32px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-link {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-link:hover { color: var(--accent); }
+.nav-cta {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent);
+  padding: 0.5rem 1.25rem; cursor: pointer; text-decoration: none;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+.nav-cta:hover { opacity: 0.85; }
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 3rem 5rem;
+  width: 100%;
+}
+
+.toc {
+  position: sticky;
+  top: 6rem;
+  align-self: start;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+.toc-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc ol {
+  list-style: none;
+  counter-reset: toc-counter;
+}
+.toc li {
+  counter-increment: toc-counter;
+  margin-bottom: 0.5rem;
+}
+.toc a {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+.toc a::before {
+  content: counter(toc-counter, decimal-leading-zero) " · ";
+  color: var(--border);
+  font-weight: 700;
+}
+.toc a:hover { color: var(--accent); }
+.toc a:hover::before { color: var(--accent); }
+
+.doc { max-width: 760px; }
+.doc-eyebrow {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
+}
+.doc-eyebrow::before {
+  content: ''; display: block; width: 1.5rem; height: 1px; background: var(--accent);
+}
+.doc h1 {
+  font-family: var(--serif); font-size: clamp(2.2rem, 4vw, 3rem);
+  color: var(--white); line-height: 1.1; margin-bottom: 1rem;
+}
+.doc-meta {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  letter-spacing: 0.06em; margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+}
+.doc-meta strong { color: var(--text); font-weight: 700; }
+.doc-intro {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2.5rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.doc-intro strong { color: var(--white); }
+.doc h2 {
+  font-family: var(--serif); font-size: 1.6rem;
+  color: var(--white); margin-top: 3rem; margin-bottom: 1rem;
+  line-height: 1.25;
+  scroll-margin-top: 6rem;
+}
+.doc h2 .num {
+  font-family: var(--mono); font-size: 0.8rem; color: var(--accent);
+  letter-spacing: 0.1em; font-weight: 700; margin-right: 0.75rem;
+  vertical-align: middle;
+}
+.doc h3 {
+  font-family: var(--sans); font-size: 1.05rem; font-weight: 700;
+  color: var(--white); margin-top: 1.5rem; margin-bottom: 0.6rem;
+}
+.doc p {
+  color: var(--text); font-size: 0.95rem; margin-bottom: 1rem;
+  font-weight: 300;
+}
+.doc p strong { color: var(--white); font-weight: 500; }
+.doc ul, .doc ol {
+  margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text);
+  font-size: 0.95rem; font-weight: 300;
+}
+.doc ul li, .doc ol li { margin-bottom: 0.4rem; line-height: 1.7; }
+.doc ul li::marker { color: var(--accent); }
+.doc a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.doc a:hover { color: var(--accent2); }
+
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+}
+.callout.compliance { border-left-color: var(--accent2); }
+.callout.warn { border-left-color: var(--amber); }
+.callout strong { color: var(--white); }
+.callout-label {
+  display: block;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: 0.5rem;
+}
+.callout.compliance .callout-label { color: var(--accent2); }
+
+/* Data table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.data-table th, .data-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.data-table th {
+  background: var(--panel);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.data-table td { color: var(--text); }
+.data-table td:first-child { color: var(--white); font-weight: 500; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+.signature-block {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  line-height: 1.8;
+}
+.signature-block strong { color: var(--white); display: block; margin-bottom: 0.25rem; }
+
+footer {
+  border-top: 1px solid var(--border); padding: 2rem 3rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+.footer-disclaimer { max-width: 600px; text-align: center; line-height: 1.7; }
+
+@media (max-width: 1024px) {
+  main { grid-template-columns: 1fr; padding: 2rem 1.5rem 4rem; gap: 2rem; }
+  .toc { position: static; max-height: none; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .toc ol { columns: 2; column-gap: 1rem; }
+  nav { padding: 1rem 1.5rem; }
+  .data-table { font-size: 0.78rem; }
+  .data-table th, .data-table td { padding: 0.65rem 0.75rem; }
+}
+@media (max-width: 540px) {
+  .toc ol { columns: 1; }
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-link { display: none; }
+  footer { padding: 1.5rem 1rem; }
+  /* On mobile, stack data table cells */
+  .data-table thead { display: none; }
+  .data-table tr {
+    display: block;
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 0;
+  }
+  .data-table td {
+    display: block;
+    border-bottom: none;
+    padding: 0.3rem 1rem;
+  }
+  .data-table td:first-child { padding-top: 0.6rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <div class="nav-right">
+    <a href="/terms.html" class="nav-link">Terms</a>
+    <a href="/login.html" class="nav-link">Log In</a>
+    <a href="/signup.html" class="nav-cta">Sign Up</a>
+  </div>
+</nav>
+
+<main>
+
+  <aside class="toc">
+    <div class="toc-label">Contents</div>
+    <ol>
+      <li><a href="#sec-1">Who we are &amp; what this covers</a></li>
+      <li><a href="#sec-2">How we act: controller vs. processor</a></li>
+      <li><a href="#sec-3">Information we collect</a></li>
+      <li><a href="#sec-4">How we use information</a></li>
+      <li><a href="#sec-5">Borrower financial data &amp; GLBA</a></li>
+      <li><a href="#sec-6">How we share information</a></li>
+      <li><a href="#sec-7">Subprocessors</a></li>
+      <li><a href="#sec-8">Cookies &amp; analytics</a></li>
+      <li><a href="#sec-9">Security</a></li>
+      <li><a href="#sec-10">Data retention</a></li>
+      <li><a href="#sec-11">Your rights (CCPA/CPRA)</a></li>
+      <li><a href="#sec-12">Your rights (GDPR/UK)</a></li>
+      <li><a href="#sec-13">International data transfers</a></li>
+      <li><a href="#sec-14">Children's privacy</a></li>
+      <li><a href="#sec-15">Changes to this Policy</a></li>
+      <li><a href="#sec-16">Contact</a></li>
+    </ol>
+  </aside>
+
+  <article class="doc">
+
+    <div class="doc-eyebrow">Legal</div>
+    <h1>Privacy Policy</h1>
+    <div class="doc-meta">
+      <strong>Effective:</strong> May 5, 2026 &nbsp;·&nbsp;
+      <strong>Last updated:</strong> May 5, 2026 &nbsp;·&nbsp;
+      <strong>Version:</strong> 1.0
+    </div>
+
+    <div class="doc-intro">
+      This Privacy Policy explains how <strong>Rackler Software LLC, doing business as OriginFlow</strong> ("<strong>OriginFlow</strong>", "<strong>we</strong>", "<strong>us</strong>") collects, uses, stores, and shares information when you visit our website or use the OriginFlow LOS service. Mortgage data is sensitive. We try to handle it the way we'd want our own handled.
+    </div>
+
+    <!-- ─── 1 ─────────────────────────────────────────────────────── -->
+    <section id="sec-1">
+      <h2><span class="num">01</span>Who we are &amp; what this covers</h2>
+      <p>OriginFlow LOS is a software-as-a-service loan origination system used by licensed mortgage branches, lenders, and brokers ("<strong>Customers</strong>") to originate, process, underwrite, and close residential mortgage loans. This Policy applies to:</p>
+      <ul>
+        <li>Visitors to our marketing site (originflowlos.com and related properties).</li>
+        <li>Authorized Users of the Service — loan officers, processors, underwriters, closers, branch admins, and viewers acting on behalf of a Customer.</li>
+        <li>Personal information of Borrowers that we process on behalf of Customers as part of providing the Service.</li>
+      </ul>
+      <p>This Policy does <strong>not</strong> govern how a Customer (the licensed lender) collects or uses Borrower information for its own loan origination, credit, or compliance purposes. For that, you'll want to read the Customer's own privacy notice and GLBA notice.</p>
+    </section>
+
+    <!-- ─── 2 ─────────────────────────────────────────────────────── -->
+    <section id="sec-2">
+      <h2><span class="num">02</span>How we act: controller vs. processor</h2>
+      <p>Whether OriginFlow is a "controller" or a "processor" / "service provider" depends on whose data we're talking about:</p>
+      <ul>
+        <li><strong>For website visitors and Authorized Users:</strong> We act as the <strong>controller</strong> (or "business" under CCPA/CPRA) of personal information we collect directly — for example, the email and name you give us when you sign up, billing details for paying customers, and analytics about your use of the marketing site.</li>
+        <li><strong>For Borrower information processed inside the Service:</strong> We act as a <strong>processor</strong> (or "service provider") on behalf of our Customer. The Customer (the licensed lender or branch) is the controller of that data. We process it only on the Customer's documented instructions and in accordance with our Terms and any data processing addendum we sign with the Customer.</li>
+      </ul>
+    </section>
+
+    <!-- ─── 3 ─────────────────────────────────────────────────────── -->
+    <section id="sec-3">
+      <h2><span class="num">03</span>Information we collect</h2>
+
+      <h3>From Authorized Users (signup &amp; account)</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>Category</th><th>Examples</th><th>Source</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Account data</td>
+            <td>First name, last name, work email, hashed password, role, branch name, NMLS number (optional), branch size, current LOS</td>
+            <td>You, at signup</td>
+          </tr>
+          <tr>
+            <td>Authentication data</td>
+            <td>Sign-in timestamps, session tokens, IP address at signup and at agreement acceptance</td>
+            <td>Your browser, our auth provider (Supabase)</td>
+          </tr>
+          <tr>
+            <td>Billing data</td>
+            <td>Stripe customer ID, subscription status, plan, payment status. <strong>We do not see or store full card numbers</strong> — those go directly to Stripe.</td>
+            <td>Stripe</td>
+          </tr>
+          <tr>
+            <td>Communications</td>
+            <td>Emails you send us, in-product chat messages, support requests</td>
+            <td>You</td>
+          </tr>
+          <tr>
+            <td>Usage data</td>
+            <td>Pages viewed, features used, errors encountered, last-seen timestamps, audit log entries (your edits to loan files)</td>
+            <td>The Service, automatically</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>From Borrowers, processed on behalf of Customers</h3>
+      <p>When a Customer uses the Service to work a loan file, the Customer (its loan officers, processors, etc.) uploads or enters Borrower information. As processor, we host and process this information for the Customer. Categories include:</p>
+      <ul>
+        <li><strong>Identity &amp; contact:</strong> Name, address, phone, email, date of birth, government-issued ID images.</li>
+        <li><strong>Sensitive financial identifiers:</strong> Social Security Number (we store a salted hash plus the last four digits — not the plaintext SSN — except where temporarily required for a credit pull, in which case it is encrypted and minimized).</li>
+        <li><strong>Income, employment, and asset data:</strong> Paystubs, W-2s, tax returns, bank statements, employment history, gross monthly income.</li>
+        <li><strong>Credit and underwriting data:</strong> Credit score, tradelines, debts, DTI/LTV ratios, AUS findings, conditions, AVMs.</li>
+        <li><strong>Property data:</strong> Address, appraised value, title, insurance, flood zone.</li>
+        <li><strong>HMDA-relevant data:</strong> Demographic information collected by Customer in compliance with Regulation C.</li>
+        <li><strong>Documents:</strong> PDFs and images uploaded by the Customer or the Borrower, which may include any of the above.</li>
+      </ul>
+
+      <h3>From your browser (visitors and users)</h3>
+      <ul>
+        <li><strong>Server logs:</strong> IP address, browser, operating system, referring URL, timestamp.</li>
+        <li><strong>Cookies and similar technologies:</strong> See Section 08.</li>
+        <li><strong>Analytics:</strong> Aggregated usage data via Google Analytics, with loan IDs and other identifiers stripped from URLs before reporting (see Section 08).</li>
+      </ul>
+    </section>
+
+    <!-- ─── 4 ─────────────────────────────────────────────────────── -->
+    <section id="sec-4">
+      <h2><span class="num">04</span>How we use information</h2>
+      <p>For information where we are the controller, we use it to:</p>
+      <ul>
+        <li>Provide, secure, and operate the Service, including authentication and authorization.</li>
+        <li>Bill paying customers and collect fees through Stripe.</li>
+        <li>Communicate with you about your account, billing, security, and material changes to the Service.</li>
+        <li>Provide support and respond to your inquiries.</li>
+        <li>Detect, investigate, and prevent fraud, abuse, and security incidents.</li>
+        <li>Improve and develop the Service, including by analyzing aggregated and de-identified usage patterns.</li>
+        <li>Comply with legal obligations and enforce our <a href="/terms.html">Terms</a>.</li>
+        <li>With your consent, send occasional product updates (you can unsubscribe any time).</li>
+      </ul>
+      <p>For Borrower information where we are a processor, we use it only to provide the Service to the Customer in accordance with the Customer's instructions and our written agreement with the Customer. <strong>We do not sell Borrower data, share it for cross-context behavioral advertising, or use it to train foundation models.</strong></p>
+    </section>
+
+    <!-- ─── 5 ─────────────────────────────────────────────────────── -->
+    <section id="sec-5">
+      <h2><span class="num">05</span>Borrower financial data &amp; GLBA</h2>
+      <div class="callout compliance">
+        <span class="callout-label">GLBA · Safeguards Rule</span>
+        <strong>We treat Borrower financial information as nonpublic personal information ("NPI") under the Gramm-Leach-Bliley Act.</strong>
+      </div>
+      <p>When we process Borrower NPI on behalf of a Customer, we act as the Customer's service provider. We:</p>
+      <ul>
+        <li>Use NPI only to provide the Service and only on the Customer's instructions.</li>
+        <li>Do not disclose NPI to third parties except (a) to subprocessors needed to provide the Service (see Section 07), (b) as the Customer directs, (c) as required by law or compelled by valid legal process, or (d) to protect the rights, property, or safety of OriginFlow, our Customers, Borrowers, or the public.</li>
+        <li>Maintain administrative, technical, and physical safeguards designed to protect the security, confidentiality, and integrity of NPI, as required by the GLBA Safeguards Rule. See Section 09.</li>
+        <li>Require subprocessors that handle NPI to be bound by confidentiality and security obligations consistent with our own.</li>
+      </ul>
+      <p>The Customer (the licensed lender) is responsible for providing its own GLBA privacy notice to its Borrowers. We do not provide a privacy notice to Borrowers on the Customer's behalf.</p>
+    </section>
+
+    <!-- ─── 6 ─────────────────────────────────────────────────────── -->
+    <section id="sec-6">
+      <h2><span class="num">06</span>How we share information</h2>
+      <p>We share personal information only as described here:</p>
+      <ul>
+        <li><strong>Subprocessors and service providers</strong> who help us deliver the Service (hosting, AI extraction, payments, network security, email). They are bound by contract to protect the information and use it only for the services they provide to us. See Section 07.</li>
+        <li><strong>Within a Customer's branch</strong>, where Authorized Users of the same branch can see loans, borrowers, and documents scoped to that branch by row-level security at the database layer.</li>
+        <li><strong>At the Customer's direction</strong>, for example when the Customer integrates the Service with a credit bureau, AUS, title vendor, or other third party.</li>
+        <li><strong>For legal reasons</strong>: when we believe in good faith that disclosure is required by law, regulation, legal process, or valid government request, or to protect the rights, property, or safety of OriginFlow, our Customers, or others.</li>
+        <li><strong>In a corporate transaction</strong>: in connection with a merger, acquisition, financing, or sale of assets, subject to confidentiality obligations and to Customer's existing rights under the Terms.</li>
+      </ul>
+      <p><strong>We do not sell personal information for money.</strong> We do not "share" personal information for cross-context behavioral advertising as those terms are defined under the CCPA/CPRA. We do not rent, trade, or barter personal information.</p>
+    </section>
+
+    <!-- ─── 7 ─────────────────────────────────────────────────────── -->
+    <section id="sec-7">
+      <h2><span class="num">07</span>Subprocessors</h2>
+      <p>We use carefully selected subprocessors to deliver the Service. Each is bound by contract to confidentiality, security, and processing limits at least as protective as those in this Policy. Our current subprocessors include:</p>
+      <table class="data-table">
+        <thead>
+          <tr><th>Vendor</th><th>Purpose</th><th>Location</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Supabase</td><td>Database (PostgreSQL), storage (uploaded documents), authentication, realtime</td><td>United States</td></tr>
+          <tr><td>Anthropic</td><td>AI document classification and field extraction (Claude models). Inputs are not used to train foundation models.</td><td>United States</td></tr>
+          <tr><td>Stripe</td><td>Payment processing, billing, customer portal</td><td>United States</td></tr>
+          <tr><td>Cloudflare</td><td>DNS, CDN, DDoS and bot protection</td><td>Global edge network</td></tr>
+          <tr><td>Google Analytics (Google LLC)</td><td>Marketing-site usage analytics. No loan or borrower IDs are sent.</td><td>United States</td></tr>
+        </tbody>
+      </table>
+      <p>A current list is also maintained at <a href="/subprocessors.html">/subprocessors.html</a>. We will provide reasonable notice when we add a material subprocessor.</p>
+    </section>
+
+    <!-- ─── 8 ─────────────────────────────────────────────────────── -->
+    <section id="sec-8">
+      <h2><span class="num">08</span>Cookies &amp; analytics</h2>
+      <h3>What we use</h3>
+      <ul>
+        <li><strong>Strictly necessary cookies</strong> — set by our auth provider (Supabase) to keep you signed in and to protect against CSRF. These cannot be disabled if you want to use the Service.</li>
+        <li><strong>Analytics cookies</strong> — set by Google Analytics (gtag.js, measurement ID <code style="font-family:var(--mono);font-size:0.85em;color:var(--accent);">G-6LRWPMYK9C</code>) to help us understand which pages visitors use. We configure GA so that loan IDs and other URL parameters that could identify a borrower are stripped before being sent to Google.</li>
+      </ul>
+      <h3>Your choices</h3>
+      <ul>
+        <li>Most browsers let you block or delete cookies. Doing so may break sign-in.</li>
+        <li>You can install the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics opt-out browser add-on</a>.</li>
+        <li>If you've seen our cookie banner, you can adjust your choice there at any time. We honor "Do Not Track" and "Global Privacy Control" signals from your browser as opt-outs of analytics where applicable.</li>
+      </ul>
+      <h3>No cross-site advertising</h3>
+      <p>We do not use advertising cookies, retargeting pixels, or tracking pixels from social-media platforms.</p>
+    </section>
+
+    <!-- ─── 9 ─────────────────────────────────────────────────────── -->
+    <section id="sec-9">
+      <h2><span class="num">09</span>Security</h2>
+      <p>Security is the table-stakes feature of an LOS. We implement administrative, technical, and physical safeguards designed to protect personal information from unauthorized access, disclosure, alteration, and destruction. These include:</p>
+      <ul>
+        <li><strong>Encryption at rest.</strong> The Supabase Postgres database and storage buckets that hold Customer Data and Borrower documents are encrypted at rest by the underlying cloud provider.</li>
+        <li><strong>Encryption in transit.</strong> All connections to the Service use HTTPS (TLS 1.2 or higher).</li>
+        <li><strong>Row-level security (RLS).</strong> Every query is scoped to the user's branch at the database layer. Even a leaked anonymous API key cannot read another branch's data.</li>
+        <li><strong>SSN minimization.</strong> Plaintext SSNs are not stored. We keep a salted hash and the last four digits, with full SSN encrypted and minimized only where temporarily required for a credit pull.</li>
+        <li><strong>Field-level audit logging.</strong> Every insert, update, and delete on compliance-relevant tables is captured by database triggers, including the actor, role, and timestamp, in a non-bypassable audit log.</li>
+        <li><strong>Malware scanning.</strong> Files uploaded to the document library are quarantined and scanned before being made available to Authorized Users. Files flagged as malicious are not processed.</li>
+        <li><strong>Password policy.</strong> Minimum 8 characters at signup, hashed and salted by our auth provider; we never see your plaintext password.</li>
+        <li><strong>Access controls.</strong> Production access is limited to the founder; access is logged.</li>
+      </ul>
+      <p>No system is perfectly secure. If we become aware of a security incident affecting your data, we will notify you without undue delay as required by applicable law and our agreement with you.</p>
+    </section>
+
+    <!-- ─── 10 ────────────────────────────────────────────────────── -->
+    <section id="sec-10">
+      <h2><span class="num">10</span>Data retention</h2>
+      <div class="callout compliance">
+        <span class="callout-label">TRID-aligned default</span>
+        <strong>We retain loan-related records for a minimum of 25 months by default — matching TRID recordkeeping requirements.</strong>
+      </div>
+      <p>Specific defaults:</p>
+      <ul>
+        <li><strong>Loan files, borrower records, conditions, and documents:</strong> retained for at least <strong>25 months</strong> after the action giving rise to the record (consistent with 12 C.F.R. § 1026.25 (TRID) and § 1002.12 (ECOA)). Customer may configure longer retention (for example, 36 months for ECOA/Reg B records, or longer where state law applies).</li>
+        <li><strong>Audit logs:</strong> retained for the life of the underlying record plus the retention window above.</li>
+        <li><strong>Account data for Authorized Users:</strong> retained while the account is active and for a reasonable period after closure to address billing, support, or legal matters.</li>
+        <li><strong>Server and security logs:</strong> retained for up to 12 months.</li>
+        <li><strong>Marketing-site analytics:</strong> retained according to Google Analytics defaults.</li>
+        <li><strong>Backups:</strong> may persist for a limited rolling period after deletion before being securely overwritten.</li>
+      </ul>
+      <p>On account cancellation, see Section 11 of our <a href="/terms.html">Terms</a> for the data export window. We may retain records longer where required by law, regulation, or to enforce our agreements.</p>
+    </section>
+
+    <!-- ─── 11 ────────────────────────────────────────────────────── -->
+    <section id="sec-11">
+      <h2><span class="num">11</span>Your rights (CCPA / CPRA — California)</h2>
+      <p>If you are a California resident, you have the right to:</p>
+      <ul>
+        <li><strong>Know</strong> what personal information we have collected about you, including categories, sources, purposes, and the categories of third parties we've shared it with.</li>
+        <li><strong>Access</strong> a copy of the specific pieces of personal information we have about you.</li>
+        <li><strong>Correct</strong> inaccurate personal information.</li>
+        <li><strong>Delete</strong> personal information we have collected from you, subject to legal exceptions (including ones that apply to a lender's recordkeeping obligations).</li>
+        <li><strong>Opt out</strong> of "sale" or "sharing" of personal information. As stated above, we do not sell or share personal information for cross-context behavioral advertising.</li>
+        <li><strong>Limit</strong> use of sensitive personal information. We use sensitive personal information only as needed to provide the Service.</li>
+        <li><strong>Non-discrimination</strong> for exercising your rights.</li>
+      </ul>
+      <p>To exercise these rights, email <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a> with the subject "California privacy request." We may need to verify your identity before responding. You can also designate an authorized agent. We aim to respond within 45 days.</p>
+      <p>If your request involves Borrower information processed on behalf of a Customer, we will refer the request to the Customer (the controller) and assist them in responding.</p>
+    </section>
+
+    <!-- ─── 12 ────────────────────────────────────────────────────── -->
+    <section id="sec-12">
+      <h2><span class="num">12</span>Your rights (GDPR / UK GDPR)</h2>
+      <p>If you are in the European Economic Area, the United Kingdom, or Switzerland, and we are the controller of your personal information, you have the right to:</p>
+      <ul>
+        <li>Access your personal data and request a copy.</li>
+        <li>Request correction of inaccurate or incomplete data.</li>
+        <li>Request erasure ("right to be forgotten") in certain circumstances.</li>
+        <li>Restrict or object to processing in certain circumstances.</li>
+        <li>Data portability — receive your data in a structured, machine-readable format.</li>
+        <li>Withdraw consent where processing is based on consent.</li>
+        <li>Lodge a complaint with your local supervisory authority.</li>
+      </ul>
+      <p>The legal bases on which we rely include: performance of a contract with you, our legitimate interests (operating, securing, and improving the Service), compliance with legal obligations, and your consent (for analytics where required).</p>
+      <p>To exercise these rights, email <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a>.</p>
+    </section>
+
+    <!-- ─── 13 ────────────────────────────────────────────────────── -->
+    <section id="sec-13">
+      <h2><span class="num">13</span>International data transfers</h2>
+      <p>OriginFlow is based in the United States, and our subprocessors store data primarily in the United States. If you access the Service from outside the U.S., your information will be transferred to and processed in the U.S. Where required, we rely on appropriate transfer mechanisms (such as Standard Contractual Clauses) to protect personal information transferred from the EEA, UK, or Switzerland.</p>
+    </section>
+
+    <!-- ─── 14 ────────────────────────────────────────────────────── -->
+    <section id="sec-14">
+      <h2><span class="num">14</span>Children's privacy</h2>
+      <p>The Service is not directed to children under 16, and we do not knowingly collect personal information from children. If you believe a child has provided us personal information, contact us and we will delete it.</p>
+    </section>
+
+    <!-- ─── 15 ────────────────────────────────────────────────────── -->
+    <section id="sec-15">
+      <h2><span class="num">15</span>Changes to this Policy</h2>
+      <p>We may update this Policy from time to time. If we make a material change, we will provide reasonable notice (for example, by email to the account owner or by posting a notice in the Service) before the change takes effect. The "Last updated" date at the top reflects the most recent change.</p>
+    </section>
+
+    <!-- ─── 16 ────────────────────────────────────────────────────── -->
+    <section id="sec-16">
+      <h2><span class="num">16</span>Contact</h2>
+      <p>Privacy questions? Reach the founder directly:</p>
+      <div class="signature-block">
+        <strong>Rackler Software LLC, d/b/a OriginFlow</strong>
+        Davis Rackler, Founder &amp; Privacy Contact<br>
+        Email: <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a><br>
+        Lubbock, Texas, USA
+      </div>
+    </section>
+
+  </article>
+</main>
+
+<footer>
+  <a href="/" style="font-family:var(--mono);font-size:0.7rem;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:0.1em;">ORIGINFLOW LOS</a>
+  <div class="footer-disclaimer">
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+  </div>
+  <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;">
+    <a href="/">Home</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+</body>
+</html>

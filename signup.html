@@ -101,6 +101,90 @@
   .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%235a7a99' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2.5rem; cursor: pointer; }
   .form-select option { background: var(--panel); color: var(--white); }
   .form-help { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); margin-top: 0.35rem; letter-spacing: 0.04em; line-height: 1.5; }
+
+  /* ─── AGREEMENT CHECKBOX ─────────────────────────────────────────── */
+  /* Custom checkbox so we can give it the OriginFlow look. The native
+     <input type="checkbox"> stays in the DOM (with required) so browser
+     validation, screen readers, and form data all work — we just hide it
+     visually and paint the box ourselves. */
+  .agreement-block {
+    margin: 1.25rem 0 0.5rem;
+    padding: 1rem 1.1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .agreement-block.invalid {
+    border-color: rgba(255,68,68,0.5);
+    background: rgba(255,68,68,0.04);
+  }
+  .agreement-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: flex-start;
+    cursor: pointer;
+  }
+  .agreement-row input[type="checkbox"] {
+    /* Visually hidden but functionally present */
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+  .agreement-box {
+    width: 18px; height: 18px;
+    border: 1px solid var(--border);
+    background: var(--deep);
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+    position: relative;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .agreement-row:hover .agreement-box { border-color: var(--accent); }
+  .agreement-row input[type="checkbox"]:checked + .agreement-box {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .agreement-row input[type="checkbox"]:checked + .agreement-box::after {
+    content: '';
+    position: absolute;
+    left: 5px; top: 1px;
+    width: 5px; height: 10px;
+    border: solid var(--navy);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .agreement-row input[type="checkbox"]:focus-visible + .agreement-box {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .agreement-text {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.55;
+    font-weight: 300;
+  }
+  .agreement-text strong { color: var(--white); font-weight: 500; }
+  .agreement-text a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .agreement-text a:hover { color: var(--accent2); }
+  .agreement-text .req-mark { color: var(--accent); }
+  .agreement-error {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--red);
+    letter-spacing: 0.04em;
+    margin-top: 0.5rem;
+    padding-left: 1.65rem; /* aligns with text */
+    display: none;
+  }
+  .agreement-block.invalid .agreement-error { display: block; }
+
   .btn-submit { display: block; width: 100%; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; background: var(--accent); color: var(--navy); border: none; padding: 0.95rem; cursor: pointer; font-weight: 700; transition: opacity 0.2s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); margin-top: 0.5rem; }
   .btn-submit:hover { opacity: 0.85; }
   .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -260,10 +344,29 @@
             <div class="form-help">Helps us prioritize verified industry signups.</div>
           </div>
 
+          <!-- ─── REQUIRED AGREEMENT CHECKBOX ──────────────────────── -->
+          <!-- Unchecked by default. Required = true. The agreement event
+               (timestamp, IP, version) is recorded server-side after signup
+               via the record-user-agreement edge function. -->
+          <div class="agreement-block" id="agreement-block">
+            <label class="agreement-row" for="agreement">
+              <input type="checkbox" id="agreement" name="agreement" required />
+              <span class="agreement-box" aria-hidden="true"></span>
+              <span class="agreement-text">
+                I agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a>
+                and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+                <span class="req-mark">*</span>
+                <strong style="display:block;margin-top:0.4rem;font-size:0.8rem;">
+                  I understand OriginFlow is software, and the licensed lender remains responsible for TRID, ECOA, HMDA, RESPA, and state licensing compliance.
+                </strong>
+              </span>
+            </label>
+            <div class="agreement-error">You must agree to the Terms of Service and Privacy Policy to create an account.</div>
+          </div>
+
           <button type="submit" class="btn-submit" id="submit-btn">Request Early Access →</button>
 
           <p class="terms-note">
-            By signing up, you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.
             We'll send a verification email — verify it, then activate billing to start working files.
           </p>
         </form>
@@ -307,11 +410,19 @@
   // Where to send a returning, already-paid user who hits /signup.html
   const POST_LOGIN_DEST  = '/home.html';
 
-  const errorBox  = document.getElementById('error-box');
-  const infoBox   = document.getElementById('info-box');
-  const submitBtn = document.getElementById('submit-btn');
-  const formView  = document.getElementById('form-view');
-  const successView = document.getElementById('success-view');
+  // Version of the legal terms the user agrees to. Bump this whenever you
+  // ship material changes to /terms.html or /privacy.html so the recorded
+  // agreement event tracks which version each user accepted. The user_agreements
+  // table stores this string so you can prove what was on screen at the time.
+  const AGREEMENT_VERSION = '2026-05-05';
+
+  const errorBox       = document.getElementById('error-box');
+  const infoBox        = document.getElementById('info-box');
+  const submitBtn      = document.getElementById('submit-btn');
+  const formView       = document.getElementById('form-view');
+  const successView    = document.getElementById('success-view');
+  const agreementInput = document.getElementById('agreement');
+  const agreementBlock = document.getElementById('agreement-block');
 
   function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); infoBox.classList.remove('visible'); window.scrollTo({top:0,behavior:'smooth'}); }
   function showInfo(msg)  { infoBox.textContent = msg; infoBox.classList.add('visible'); errorBox.classList.remove('visible'); }
@@ -321,10 +432,12 @@
     submitBtn.style.opacity = '1';
   }
 
-  // ─── Founders counter: hydrate the live "X of 20 left" badge ────────────
-  // This calls the public RPC we created in 010_stripe_billing.sql. If the
-  // RPC fails (Supabase down, function not deployed yet) we just hide the
-  // strip — never break the form.
+  // Clear the agreement-error state once the user actually checks the box.
+  agreementInput.addEventListener('change', () => {
+    if (agreementInput.checked) agreementBlock.classList.remove('invalid');
+  });
+
+  // ─── Founders counter ───────────────────────────────────────────────────
   async function hydrateFoundersCounter() {
     const sb = (typeof getSupabase === 'function') ? getSupabase() : null;
     if (!sb) return;
@@ -339,11 +452,10 @@
 
       if (n > 0) {
         count.textContent = n;
-        msg.textContent = n === 1 ? 'of 20 founder slots remaining' : 'of 20 founder slots remaining';
+        msg.textContent = 'of 20 founder slots remaining';
         price.textContent = '$49.99/month + $10/closed loan · locked forever';
         strip.classList.remove('standard');
       } else {
-        // All claimed — show standard rate strip instead
         count.textContent = 'STANDARD';
         msg.textContent = 'rate · founders allotment claimed';
         price.textContent = 'Same software, same support — at the standard rate.';
@@ -351,7 +463,6 @@
       }
       strip.style.display = 'flex';
 
-      // Tweak the success-view phrasing to match
       const rateLine = document.getElementById('success-rate-line');
       if (rateLine && n === 0) rateLine.textContent = 'standard plan';
     } catch (err) {
@@ -365,7 +476,6 @@
     ofGetSession()
       .then(async session => {
         if (!session) return;
-        // Check subscription status — paid users go home, unpaid go to checkout
         const sb = getSupabase();
         const { data: profile } = await sb
           .from('profiles')
@@ -382,10 +492,62 @@
       .catch(err => console.warn('[OF Signup] session check error:', err));
   }
 
+  // ─── Record the agreement event after a successful signup ─────────────
+  // We can't trust client-supplied IP, so the actual IP capture happens in a
+  // Supabase edge function (record-user-agreement) which reads the
+  // x-forwarded-for header server-side. Client just sends version + UA.
+  //
+  // If the edge function isn't deployed yet, this falls back to inserting
+  // directly into the user_agreements table with whatever the DB can see.
+  // Either way, the auth.users row carries the agreement metadata in its
+  // raw_user_meta_data as a backup, so we never lose the consent record.
+  async function recordAgreement(sb, userId) {
+    const payload = {
+      user_id: userId,
+      agreement_version: AGREEMENT_VERSION,
+      terms_url: window.location.origin + '/terms.html',
+      privacy_url: window.location.origin + '/privacy.html',
+      user_agent: navigator.userAgent || null,
+      // Server captures IP — see edge function for x-forwarded-for handling
+    };
+
+    try {
+      // Preferred path: edge function captures real IP server-side
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const SUPABASE_URL = window.OF_SUPABASE_URL || window.SUPABASE_URL || '';
+        if (SUPABASE_URL) {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/record-user-agreement`, {
+            method: 'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) return;
+          console.warn('[Agreement] edge function returned', res.status, '— falling back to direct insert');
+        }
+      }
+    } catch (err) {
+      console.warn('[Agreement] edge function call failed:', err);
+    }
+
+    // Fallback: direct insert. RLS should permit users to insert their own
+    // agreement row. IP will be NULL or whatever PostgREST captures.
+    try {
+      const { error } = await sb.from('user_agreements').insert(payload);
+      if (error) console.warn('[Agreement] direct insert failed:', error);
+    } catch (err) {
+      console.warn('[Agreement] direct insert threw:', err);
+    }
+  }
+
   document.getElementById('signup-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     errorBox.classList.remove('visible');
     infoBox.classList.remove('visible');
+    agreementBlock.classList.remove('invalid');
 
     const fd = new FormData(e.target);
     const email       = fd.get('email').trim();
@@ -397,6 +559,7 @@
     const branch_size = fd.get('branch_size');
     const current_los = fd.get('current_los');
     const nmls        = (fd.get('nmls') || '').trim();
+    const agreed      = agreementInput.checked;
 
     if (!email || !password || !first_name || !last_name || !branch_name || !role || !branch_size || !current_los) {
       showError('Please fill in all required fields.');
@@ -408,6 +571,13 @@
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showError('Please enter a valid email address.');
+      return;
+    }
+    if (!agreed) {
+      // Inline error on the checkbox + a top-level banner so it can't be missed.
+      agreementBlock.classList.add('invalid');
+      agreementBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showError('You must agree to the Terms of Service and Privacy Policy to create an account.');
       return;
     }
 
@@ -426,6 +596,12 @@
       setTimeout(() => reject(new Error('timeout')), 15000)
     );
 
+    // Capture the moment of consent on the client (best-effort — server has the
+    // authoritative timestamp from the agreement record). Both go into
+    // raw_user_meta_data as a redundant audit trail in case the
+    // user_agreements row insert fails.
+    const agreedAtUtc = new Date().toISOString();
+
     try {
       const result = await Promise.race([
         sb.auth.signUp({
@@ -441,10 +617,13 @@
               current_los,
               nmls: nmls || null,
               source: 'web_signup',
+              // Backup audit trail in auth.users.raw_user_meta_data —
+              // a redundant copy of the consent fact in case the
+              // user_agreements insert ever fails.
+              agreed_to_terms: true,
+              agreed_at_utc: agreedAtUtc,
+              agreement_version: AGREEMENT_VERSION,
             },
-            // After clicking the verification link, land on login.html with
-            // verified=true. login.html will then sign them in and forward
-            // to /checkout.html (see updated login.html).
             emailRedirectTo: window.location.origin + '/login.html?verified=true&next=/checkout.html',
           },
         }),
@@ -462,6 +641,15 @@
         }
         resetBtn();
         return;
+      }
+
+      // Record the agreement event server-side. Fire-and-forget — we don't
+      // want to block the success view on this. If it fails, the redundant
+      // copy in raw_user_meta_data is still there as a backup.
+      if (data?.user?.id) {
+        recordAgreement(sb, data.user.id).catch(err =>
+          console.warn('[Agreement] record failed (non-blocking):', err)
+        );
       }
 
       document.getElementById('success-email').textContent = email;

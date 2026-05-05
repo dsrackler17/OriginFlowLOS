@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service · OriginFlow LOS</title>
+<meta name="description" content="Terms of Service for OriginFlow LOS, the loan origination software platform from Rackler Software LLC.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+/* ─── NAV ──────────────────────────────────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 3rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+.sonar-icon { width: 32px; height: 32px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-link {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-link:hover { color: var(--accent); }
+.nav-cta {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent);
+  padding: 0.5rem 1.25rem; cursor: pointer; text-decoration: none;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+.nav-cta:hover { opacity: 0.85; }
+
+/* ─── DOC LAYOUT ───────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 3rem 5rem;
+  width: 100%;
+}
+
+/* TOC sidebar */
+.toc {
+  position: sticky;
+  top: 6rem;
+  align-self: start;
+  max-height: calc(100vh - 8rem);
+  overflow-y: auto;
+}
+.toc-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.toc ol {
+  list-style: none;
+  counter-reset: toc-counter;
+}
+.toc li {
+  counter-increment: toc-counter;
+  margin-bottom: 0.5rem;
+}
+.toc a {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  line-height: 1.4;
+  transition: color 0.15s;
+}
+.toc a::before {
+  content: counter(toc-counter, decimal-leading-zero) " · ";
+  color: var(--border);
+  font-weight: 700;
+}
+.toc a:hover { color: var(--accent); }
+.toc a:hover::before { color: var(--accent); }
+
+/* DOC content */
+.doc {
+  max-width: 760px;
+}
+.doc-eyebrow {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;
+}
+.doc-eyebrow::before {
+  content: ''; display: block; width: 1.5rem; height: 1px; background: var(--accent);
+}
+.doc h1 {
+  font-family: var(--serif); font-size: clamp(2.2rem, 4vw, 3rem);
+  color: var(--white); line-height: 1.1; margin-bottom: 1rem;
+}
+.doc-meta {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  letter-spacing: 0.06em; margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);
+}
+.doc-meta strong { color: var(--text); font-weight: 700; }
+
+.doc-intro {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2.5rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.doc-intro strong { color: var(--white); }
+
+.doc h2 {
+  font-family: var(--serif); font-size: 1.6rem;
+  color: var(--white); margin-top: 3rem; margin-bottom: 1rem;
+  line-height: 1.25;
+  scroll-margin-top: 6rem;
+}
+.doc h2 .num {
+  font-family: var(--mono); font-size: 0.8rem; color: var(--accent);
+  letter-spacing: 0.1em; font-weight: 700; margin-right: 0.75rem;
+  vertical-align: middle;
+}
+.doc h3 {
+  font-family: var(--sans); font-size: 1.05rem; font-weight: 700;
+  color: var(--white); margin-top: 1.5rem; margin-bottom: 0.6rem;
+}
+.doc p {
+  color: var(--text); font-size: 0.95rem; margin-bottom: 1rem;
+  font-weight: 300;
+}
+.doc p strong { color: var(--white); font-weight: 500; }
+.doc ul, .doc ol {
+  margin-bottom: 1rem; padding-left: 1.5rem; color: var(--text);
+  font-size: 0.95rem; font-weight: 300;
+}
+.doc ul li, .doc ol li { margin-bottom: 0.4rem; line-height: 1.7; }
+.doc ul li::marker { color: var(--accent); }
+.doc a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.doc a:hover { color: var(--accent2); }
+
+.callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+}
+.callout.compliance { border-left-color: var(--accent2); }
+.callout.warn { border-left-color: var(--amber); }
+.callout strong { color: var(--white); }
+.callout-label {
+  display: block;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: 0.5rem;
+}
+.callout.compliance .callout-label { color: var(--accent2); }
+
+.def-list {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 1.25rem 1.5rem;
+  margin: 1rem 0 1.5rem;
+}
+.def-list dt {
+  font-family: var(--mono); font-size: 0.75rem;
+  color: var(--accent); letter-spacing: 0.04em;
+  margin-top: 0.85rem; font-weight: 700;
+}
+.def-list dt:first-child { margin-top: 0; }
+.def-list dd {
+  font-size: 0.9rem; color: var(--text);
+  margin-top: 0.25rem; font-weight: 300;
+}
+
+.signature-block {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  line-height: 1.8;
+}
+.signature-block strong { color: var(--white); display: block; margin-bottom: 0.25rem; }
+
+/* ─── FOOTER ───────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 2rem 3rem;
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+.footer-disclaimer { max-width: 600px; text-align: center; line-height: 1.7; }
+
+@media (max-width: 1024px) {
+  main { grid-template-columns: 1fr; padding: 2rem 1.5rem 4rem; gap: 2rem; }
+  .toc { position: static; max-height: none; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .toc ol { columns: 2; column-gap: 1rem; }
+  nav { padding: 1rem 1.5rem; }
+}
+@media (max-width: 540px) {
+  .toc ol { columns: 1; }
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-link { display: none; }
+  footer { padding: 1.5rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <div class="nav-right">
+    <a href="/privacy.html" class="nav-link">Privacy</a>
+    <a href="/login.html" class="nav-link">Log In</a>
+    <a href="/signup.html" class="nav-cta">Sign Up</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- TOC -->
+  <aside class="toc">
+    <div class="toc-label">Contents</div>
+    <ol>
+      <li><a href="#sec-1">Acceptance of these Terms</a></li>
+      <li><a href="#sec-2">Definitions</a></li>
+      <li><a href="#sec-3">Eligibility &amp; accounts</a></li>
+      <li><a href="#sec-4">The service</a></li>
+      <li><a href="#sec-5">Lender responsibility &amp; compliance</a></li>
+      <li><a href="#sec-6">Customer data &amp; ownership</a></li>
+      <li><a href="#sec-7">Acceptable use</a></li>
+      <li><a href="#sec-8">Fees, billing &amp; taxes</a></li>
+      <li><a href="#sec-9">Free trials &amp; founders pricing</a></li>
+      <li><a href="#sec-10">Term &amp; termination</a></li>
+      <li><a href="#sec-11">Data export on cancellation</a></li>
+      <li><a href="#sec-12">Confidentiality</a></li>
+      <li><a href="#sec-13">Intellectual property</a></li>
+      <li><a href="#sec-14">Third-party services &amp; AI</a></li>
+      <li><a href="#sec-15">Disclaimer of warranties</a></li>
+      <li><a href="#sec-16">Limitation of liability</a></li>
+      <li><a href="#sec-17">Indemnification</a></li>
+      <li><a href="#sec-18">Governing law &amp; arbitration</a></li>
+      <li><a href="#sec-19">Modifications to these Terms</a></li>
+      <li><a href="#sec-20">Miscellaneous</a></li>
+      <li><a href="#sec-21">Contact</a></li>
+    </ol>
+  </aside>
+
+  <!-- DOC -->
+  <article class="doc">
+
+    <div class="doc-eyebrow">Legal</div>
+    <h1>Terms of Service</h1>
+    <div class="doc-meta">
+      <strong>Effective:</strong> May 5, 2026 &nbsp;·&nbsp;
+      <strong>Last updated:</strong> May 5, 2026 &nbsp;·&nbsp;
+      <strong>Version:</strong> 1.0
+    </div>
+
+    <div class="doc-intro">
+      These Terms of Service ("<strong>Terms</strong>") govern your use of OriginFlow LOS, the loan origination software-as-a-service platform provided by <strong>Rackler Software LLC, a Texas limited liability company, doing business as OriginFlow</strong> ("<strong>OriginFlow</strong>", "<strong>we</strong>", "<strong>us</strong>", or "<strong>our</strong>"). By creating an account, accessing, or using the Service, you agree to these Terms. If you do not agree, do not use the Service.
+    </div>
+
+    <!-- ─── 1 ─────────────────────────────────────────────────────── -->
+    <section id="sec-1">
+      <h2><span class="num">01</span>Acceptance of these Terms</h2>
+      <p>By clicking "I agree" during signup, accessing the Service, or otherwise indicating acceptance, you agree to these Terms on behalf of yourself and the entity you represent (your "<strong>Branch</strong>" or "<strong>Customer</strong>"). You represent that you have the authority to bind that entity. If you are signing up as an individual, "Customer" means you.</p>
+      <p>These Terms, together with our <a href="/privacy.html">Privacy Policy</a>, any order form or pricing page you accept, and any data processing addendum we sign, form the entire agreement between you and OriginFlow regarding the Service (the "<strong>Agreement</strong>").</p>
+    </section>
+
+    <!-- ─── 2 ─────────────────────────────────────────────────────── -->
+    <section id="sec-2">
+      <h2><span class="num">02</span>Definitions</h2>
+      <dl class="def-list">
+        <dt>Service</dt>
+        <dd>The OriginFlow LOS web application, APIs, mobile interfaces, and any related software, documentation, and support provided by OriginFlow.</dd>
+        <dt>Customer Data</dt>
+        <dd>All data, content, files, documents, borrower information, loan records, and other materials uploaded to, processed by, or generated by Customer or its Authorized Users through the Service.</dd>
+        <dt>Authorized User</dt>
+        <dd>An individual employed or engaged by Customer (such as a loan officer, processor, underwriter, closer, or admin) whom Customer has authorized to access the Service.</dd>
+        <dt>Borrower</dt>
+        <dd>A natural person whose loan application, financial data, or related documents are processed by Customer using the Service.</dd>
+        <dt>Documentation</dt>
+        <dd>The user guides, specifications, and other written materials about the Service made available by OriginFlow.</dd>
+        <dt>AI Output</dt>
+        <dd>Text, classifications, extracted data fields, summaries, or other content generated by artificial-intelligence components of the Service (including Anthropic's Claude models).</dd>
+      </dl>
+    </section>
+
+    <!-- ─── 3 ─────────────────────────────────────────────────────── -->
+    <section id="sec-3">
+      <h2><span class="num">03</span>Eligibility &amp; accounts</h2>
+      <p>You must be at least 18 years old and capable of forming a binding contract. The Service is intended exclusively for licensed mortgage professionals, branches, lenders, brokers, and their authorized service providers. By using the Service, you represent that you (or the Customer you represent) hold all licenses and registrations required for your activities under applicable federal and state law, including any required NMLS registration.</p>
+      <p>You are responsible for: (a) maintaining the confidentiality of account credentials; (b) all activity that occurs under your account; (c) ensuring each Authorized User complies with these Terms; and (d) promptly notifying us of any unauthorized access. We are not liable for losses arising from unauthorized use of your account that you could have prevented through reasonable security practices.</p>
+    </section>
+
+    <!-- ─── 4 ─────────────────────────────────────────────────────── -->
+    <section id="sec-4">
+      <h2><span class="num">04</span>The service</h2>
+      <p>Subject to these Terms and timely payment of fees, OriginFlow grants Customer a non-exclusive, non-transferable, non-sublicensable, revocable right to access and use the Service during the subscription term, solely for Customer's internal business purposes of originating, processing, underwriting, and closing residential mortgage loans.</p>
+      <p>OriginFlow may modify, enhance, or discontinue features of the Service at any time. We will use commercially reasonable efforts to provide advance notice of material adverse changes to paying customers.</p>
+    </section>
+
+    <!-- ─── 5 ─────────────────────────────────────────────────────── -->
+    <section id="sec-5">
+      <h2><span class="num">05</span>Lender responsibility &amp; compliance</h2>
+      <div class="callout compliance">
+        <span class="callout-label">Critical · Read this section carefully</span>
+        <strong>OriginFlow is software. The licensed lender remains solely responsible for compliance.</strong>
+      </div>
+      <p>Customer acknowledges and agrees that:</p>
+      <ul>
+        <li>OriginFlow is a software platform. It is not a lender, broker, investment adviser, financial planner, registered investment adviser, broker-dealer, credit reporting agency, settlement services provider, or law firm.</li>
+        <li>The licensed lender, broker, branch, or originator using the Service ("<strong>Customer</strong>") remains <strong>solely and fully responsible</strong> for compliance with all applicable laws, including but not limited to: the Truth in Lending Act and Regulation Z, the Real Estate Settlement Procedures Act and Regulation X, the TILA-RESPA Integrated Disclosure rule (TRID), the Equal Credit Opportunity Act and Regulation B (ECOA), the Home Mortgage Disclosure Act and Regulation C (HMDA), the Fair Credit Reporting Act (FCRA), the Gramm-Leach-Bliley Act (GLBA) and its Safeguards Rule, the Bank Secrecy Act, anti-money-laundering rules, the SAFE Act, state mortgage licensing laws, fair lending laws, and any other federal, state, or local law applicable to mortgage origination.</li>
+        <li>Customer is solely responsible for: (a) the accuracy and completeness of all data entered into or processed by the Service; (b) underwriting and credit decisions; (c) timing, content, and delivery of regulatory disclosures (including the Loan Estimate, Closing Disclosure, and adverse action notices); (d) verification of borrower identity, income, assets, and employment; (e) flood, appraisal, title, and insurance determinations; and (f) records retention required by applicable law.</li>
+        <li>Any features of the Service that assist with disclosures, calculations, document handling, condition tracking, audit logging, or AI-generated extractions are <strong>tools, not substitutes</strong> for the lender's judgment and review. Outputs of the Service must be reviewed and approved by qualified personnel of Customer before being used to make any credit decision or sent to any borrower or third party.</li>
+        <li>Customer is responsible for maintaining its own internal compliance management system, fair-lending program, vendor management program, and information security program as required by applicable law and any prudential regulator.</li>
+      </ul>
+      <p>OriginFlow makes no representation or warranty that the Service or any output of the Service is, by itself, sufficient to satisfy any regulatory requirement.</p>
+    </section>
+
+    <!-- ─── 6 ─────────────────────────────────────────────────────── -->
+    <section id="sec-6">
+      <h2><span class="num">06</span>Customer data &amp; ownership</h2>
+      <p>As between the parties, Customer owns and retains all right, title, and interest in and to Customer Data. Customer grants OriginFlow a worldwide, non-exclusive, royalty-free license to host, copy, transmit, process, and display Customer Data solely as necessary to provide and improve the Service, prevent or address service or technical problems, comply with the Agreement, comply with law, and as Customer otherwise instructs.</p>
+      <p>OriginFlow will implement and maintain reasonable administrative, physical, and technical safeguards designed to protect the security, confidentiality, and integrity of Customer Data, as further described in our <a href="/privacy.html">Privacy Policy</a> and any applicable Data Processing Addendum.</p>
+      <p>Customer is responsible for: (a) the accuracy, quality, and legality of Customer Data; (b) obtaining all consents and authorizations from borrowers and third parties necessary for OriginFlow to process Customer Data on Customer's behalf; and (c) backup of Customer Data to the extent Customer requires backups beyond what the Service provides.</p>
+      <p>OriginFlow may collect, use, and retain aggregated and de-identified data derived from use of the Service for the purposes of operating, securing, analyzing, and improving the Service, provided such data does not identify Customer, any Authorized User, or any Borrower.</p>
+    </section>
+
+    <!-- ─── 7 ─────────────────────────────────────────────────────── -->
+    <section id="sec-7">
+      <h2><span class="num">07</span>Acceptable use</h2>
+      <p>Customer and its Authorized Users will not, and will not permit any third party to:</p>
+      <ul>
+        <li>Use the Service for any illegal, fraudulent, harassing, defamatory, or unauthorized purpose, or in violation of any law or regulation, including fair lending, anti-discrimination, or consumer protection laws.</li>
+        <li>Upload or transmit any malware, virus, worm, trojan, or other harmful code, or attempt to probe, scan, or test the vulnerability of the Service except as expressly permitted by us in writing.</li>
+        <li>Reverse-engineer, decompile, or attempt to derive the source code of the Service, except to the extent such restriction is prohibited by applicable law.</li>
+        <li>Resell, sublicense, time-share, or rent the Service to a third party.</li>
+        <li>Use the Service to build a competing product or to benchmark its performance for publication without our prior written consent.</li>
+        <li>Scrape, crawl, or use automated means to extract data from the Service except through APIs we make available.</li>
+        <li>Interfere with or disrupt the integrity or performance of the Service or its underlying infrastructure.</li>
+        <li>Circumvent any access controls, rate limits, or security features of the Service.</li>
+        <li>Submit information about an individual to the Service without lawful basis to process that information.</li>
+      </ul>
+      <p>OriginFlow may suspend access to the Service immediately, without prior notice, if we reasonably believe Customer or an Authorized User is violating this Section or creating a security, legal, or reputational risk to OriginFlow or its other customers.</p>
+    </section>
+
+    <!-- ─── 8 ─────────────────────────────────────────────────────── -->
+    <section id="sec-8">
+      <h2><span class="num">08</span>Fees, billing &amp; taxes</h2>
+      <p>Customer will pay the fees described on the pricing page, the order form, or the in-product checkout that Customer accepts. Unless stated otherwise: (a) fees are quoted and payable in U.S. dollars; (b) subscription fees are billed in advance on a monthly or annual basis; (c) per-closed-loan fees are billed in arrears at the cadence specified at signup; (d) all fees are non-refundable except as expressly stated in these Terms; and (e) Customer authorizes us (and our payment processor, currently Stripe) to charge the payment method on file.</p>
+      <p>If a payment fails, we may suspend access to the Service after reasonable notice. Customer will reimburse us for reasonable costs of collection, including attorneys' fees, on past-due amounts.</p>
+      <p>Fees are exclusive of taxes. Customer is responsible for all sales, use, value-added, withholding, and similar taxes, excluding taxes on OriginFlow's net income.</p>
+      <p>OriginFlow may change fees prospectively by giving at least 30 days' notice. New fees take effect on the next renewal term. Founders pricing locks the rate as described in Section 09.</p>
+    </section>
+
+    <!-- ─── 9 ─────────────────────────────────────────────────────── -->
+    <section id="sec-9">
+      <h2><span class="num">09</span>Free trials &amp; founders pricing</h2>
+      <p>From time to time we may offer free trials, founders pricing, or other promotional rates. Founders pricing, where offered, locks the rate stated at signup for the lifetime of the qualifying account, subject to: (i) continuous active subscription without cancellation lapse longer than 30 days; (ii) no material change in plan or seat count outside the founders allotment; and (iii) compliance with these Terms. We may discontinue future enrollment in any promotion at any time without affecting existing locked rates.</p>
+      <p>Trials are provided "as is" without any warranty or service-level commitment, and may be modified or terminated by us at any time.</p>
+    </section>
+
+    <!-- ─── 10 ────────────────────────────────────────────────────── -->
+    <section id="sec-10">
+      <h2><span class="num">10</span>Term &amp; termination</h2>
+      <p><strong>Term.</strong> The Agreement begins when Customer first accepts these Terms or accesses the Service and continues until terminated as provided here.</p>
+      <p><strong>Termination by Customer.</strong> Customer may cancel its subscription at any time through the in-product Customer Portal or by emailing the contact in Section 21. Cancellation takes effect at the end of the current paid period. Customer is responsible for all fees accrued through the effective cancellation date.</p>
+      <p><strong>Termination by OriginFlow.</strong> We may suspend or terminate Customer's access to the Service: (a) immediately upon notice if Customer materially breaches these Terms and does not cure within 10 business days of notice (or for any breach of Sections 05, 07, or 13, immediately and without cure); (b) immediately if required by law or by a regulator; (c) immediately if Customer becomes the subject of bankruptcy, insolvency, or similar proceedings; or (d) for convenience, upon 30 days' notice if we discontinue the Service generally or to a class of customers that includes Customer. If we terminate for convenience, we will refund any prepaid fees on a prorated basis.</p>
+      <p><strong>Effect of termination.</strong> On termination, Customer's right to access the Service ends immediately. The provisions that by their nature should survive (including Sections 06, 12, 13, 15, 16, 17, 18, and 20) survive termination.</p>
+    </section>
+
+    <!-- ─── 11 ────────────────────────────────────────────────────── -->
+    <section id="sec-11">
+      <h2><span class="num">11</span>Data export on cancellation</h2>
+      <div class="callout compliance">
+        <span class="callout-label">Permanent right</span>
+        <strong>Your data is yours. You can take it with you.</strong>
+      </div>
+      <p>For at least <strong>30 days</strong> after the effective date of cancellation or termination (other than termination for material breach by Customer), OriginFlow will make available to Customer:</p>
+      <ul>
+        <li>A SQL export (PostgreSQL-compatible) of all Customer-scoped database records, including loans, borrowers, conditions, audit logs, chat messages, and metadata;</li>
+        <li>A ZIP archive of all documents stored by Customer in the Service, in their original file format;</li>
+        <li>A schema description sufficient to interpret the SQL export.</li>
+      </ul>
+      <p>After this period, OriginFlow may delete Customer Data subject to applicable law and the retention period described in our <a href="/privacy.html">Privacy Policy</a>. OriginFlow may retain Customer Data for longer where required by law (including TRID and ECOA recordkeeping windows applicable to Customer's records, where Customer requests we hold them on Customer's behalf), or in routine backups for a limited period before secure overwrite.</p>
+    </section>
+
+    <!-- ─── 12 ────────────────────────────────────────────────────── -->
+    <section id="sec-12">
+      <h2><span class="num">12</span>Confidentiality</h2>
+      <p>Each party may disclose confidential information to the other in connection with the Agreement. The receiving party will: (a) use the same degree of care to protect confidential information as it uses to protect its own confidential information of similar sensitivity, but in no event less than reasonable care; (b) not use the disclosing party's confidential information for any purpose outside the scope of the Agreement; and (c) not disclose confidential information to any third party except to its employees, contractors, and advisors who need to know the information and who are bound by confidentiality obligations no less protective than these.</p>
+      <p>Confidentiality obligations do not apply to information that is or becomes publicly known through no breach of this Section, was rightfully known before disclosure, was independently developed without use of confidential information, or is required to be disclosed by law (in which case the receiving party will give reasonable notice to the disclosing party where lawful).</p>
+    </section>
+
+    <!-- ─── 13 ────────────────────────────────────────────────────── -->
+    <section id="sec-13">
+      <h2><span class="num">13</span>Intellectual property</h2>
+      <p>OriginFlow and its licensors own all right, title, and interest in and to the Service, the Documentation, and all related intellectual property. No rights are granted to Customer other than the limited access right expressly stated in Section 04.</p>
+      <p>Customer is encouraged to provide feedback, suggestions, and ideas about the Service. Customer grants OriginFlow a perpetual, irrevocable, worldwide, royalty-free license to use and incorporate such feedback into the Service or other products without obligation to Customer.</p>
+      <p>"OriginFlow," the OriginFlow logo, "Rackler Software," and related marks are trademarks of Rackler Software LLC. Customer may not use these marks without our prior written consent.</p>
+    </section>
+
+    <!-- ─── 14 ────────────────────────────────────────────────────── -->
+    <section id="sec-14">
+      <h2><span class="num">14</span>Third-party services &amp; AI</h2>
+      <p>The Service relies on third-party subprocessors, including (without limitation) Supabase (database and storage), Anthropic (Claude AI models), Stripe (payments), and Cloudflare (network and security). A current list of subprocessors is published at <a href="/subprocessors.html">/subprocessors.html</a>. Customer acknowledges that interruption, modification, or termination of a third-party service may affect the Service.</p>
+      <p><strong>AI features.</strong> The Service includes AI features, including document classification and field extraction performed by Anthropic's Claude models ("<strong>AI Features</strong>"). Customer acknowledges:</p>
+      <ul>
+        <li>AI Output may be incomplete, inaccurate, or unreliable. AI Output is provided as a tool to assist Authorized Users; <strong>it is not a substitute for human review</strong>, professional judgment, or the lender's compliance obligations described in Section 05.</li>
+        <li>Customer is solely responsible for verifying AI Output before using it to make a credit decision, send a disclosure, or otherwise act on it.</li>
+        <li>OriginFlow does not use Customer Data submitted to AI Features to train foundation models, and we contractually require our AI vendor not to do so on inputs we route through enterprise endpoints. We make no other representation about how an AI model arrived at a given output.</li>
+        <li>AI Features may be modified or discontinued at any time.</li>
+      </ul>
+    </section>
+
+    <!-- ─── 15 ────────────────────────────────────────────────────── -->
+    <section id="sec-15">
+      <h2><span class="num">15</span>Disclaimer of warranties</h2>
+      <div class="callout warn">
+        <span class="callout-label">Read in all caps because lawyers</span>
+        <strong>The Service is provided "AS IS" and "AS AVAILABLE."</strong>
+      </div>
+      <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, ORIGINFLOW AND ITS LICENSORS AND SUPPLIERS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTIES ARISING FROM COURSE OF DEALING OR USAGE OF TRADE. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR FREE FROM HARMFUL COMPONENTS, OR THAT ANY DATA OR AI OUTPUT WILL BE ACCURATE, COMPLETE, OR RELIABLE. CUSTOMER USES THE SERVICE AT ITS OWN RISK.</p>
+      <p>NO ORAL OR WRITTEN INFORMATION OR ADVICE PROVIDED BY ORIGINFLOW CREATES A WARRANTY NOT EXPRESSLY STATED IN THESE TERMS.</p>
+    </section>
+
+    <!-- ─── 16 ────────────────────────────────────────────────────── -->
+    <section id="sec-16">
+      <h2><span class="num">16</span>Limitation of liability</h2>
+      <p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:</p>
+      <p><strong>(a) Excluded damages.</strong> NEITHER PARTY WILL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, GOODWILL, BUSINESS OPPORTUNITY, OR DATA, ARISING OUT OF OR RELATED TO THE AGREEMENT OR THE SERVICE, WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR ANY OTHER THEORY, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</p>
+      <p><strong>(b) Aggregate cap.</strong> EACH PARTY'S TOTAL CUMULATIVE LIABILITY ARISING OUT OF OR RELATED TO THE AGREEMENT WILL NOT EXCEED THE TOTAL FEES PAID OR PAYABLE BY CUSTOMER TO ORIGINFLOW IN THE TWELVE (12) MONTHS IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO THE CLAIM. FOR FREE TRIALS OR PERIODS WHERE NO FEES WERE PAID, THE AGGREGATE CAP IS ONE HUNDRED U.S. DOLLARS ($100).</p>
+      <p><strong>(c) Carve-outs.</strong> The exclusions and cap above do not apply to: (i) Customer's payment obligations; (ii) either party's indemnification obligations; (iii) Customer's breach of Sections 05, 07, or 13; or (iv) liability that cannot be limited under applicable law.</p>
+      <p><strong>(d) Allocation of risk.</strong> Customer acknowledges that the fees reflect the allocation of risk in this Section, and that we would not provide the Service on these economic terms without these limitations.</p>
+    </section>
+
+    <!-- ─── 17 ────────────────────────────────────────────────────── -->
+    <section id="sec-17">
+      <h2><span class="num">17</span>Indemnification</h2>
+      <p><strong>By Customer.</strong> Customer will defend, indemnify, and hold harmless OriginFlow, its affiliates, and their respective officers, directors, employees, and agents (each, an "<strong>OriginFlow Indemnitee</strong>") from and against any third-party claim, demand, suit, or proceeding (each, a "<strong>Claim</strong>") and any related losses, damages, liabilities, settlements, judgments, costs, and reasonable attorneys' fees arising from or related to: (a) Customer Data, including any allegation that Customer Data infringes the rights of a third party or violates any law; (b) Customer's use of the Service in violation of these Terms or applicable law; (c) Customer's compliance obligations under Section 05, including any claim by a Borrower, regulator, or other party arising out of or related to a credit decision, disclosure, or loan originated using the Service; (d) any breach of Customer's representations, warranties, or covenants under the Agreement; or (e) the gross negligence, willful misconduct, or fraud of Customer or its Authorized Users.</p>
+      <p><strong>By OriginFlow.</strong> OriginFlow will defend Customer against any third-party Claim alleging that the Service, when used as authorized in these Terms, infringes a U.S. patent, copyright, or trade secret of a third party, and will indemnify Customer for amounts finally awarded against Customer (or paid in settlement approved by us) for such Claim. OriginFlow has no obligation under this paragraph for Claims arising from: (i) Customer Data; (ii) modifications of the Service made by anyone other than OriginFlow; (iii) combination of the Service with anything not provided by OriginFlow; or (iv) Customer's use of the Service in breach of these Terms.</p>
+      <p><strong>Procedure.</strong> The indemnified party will give the indemnifying party prompt notice of the Claim, sole control of the defense and settlement (provided no settlement that admits fault or imposes obligations on the indemnified party may be entered without consent), and reasonable cooperation. The indemnified party may participate in the defense at its own expense.</p>
+      <p>This Section states the indemnifying party's exclusive liability, and the indemnified party's exclusive remedy, for the Claims described.</p>
+    </section>
+
+    <!-- ─── 18 ────────────────────────────────────────────────────── -->
+    <section id="sec-18">
+      <h2><span class="num">18</span>Governing law &amp; arbitration</h2>
+      <p><strong>Governing law.</strong> These Terms and any dispute arising out of or related to the Agreement are governed by the laws of the <strong>State of Texas</strong>, without regard to its conflict-of-laws principles. The United Nations Convention on Contracts for the International Sale of Goods does not apply.</p>
+      <p><strong>Binding arbitration.</strong> Except as stated below, any dispute, claim, or controversy arising out of or relating to the Agreement, the Service, or the relationship between the parties (a "<strong>Dispute</strong>") will be resolved by <strong>final and binding arbitration</strong> administered by JAMS under its Comprehensive Arbitration Rules and Procedures (or, for Disputes under $250,000, its Streamlined Arbitration Rules). The arbitration will be conducted by a single arbitrator. The seat of arbitration is <strong>Lubbock County, Texas</strong>. The language is English. Judgment on the award may be entered in any court of competent jurisdiction.</p>
+      <p><strong>Class action waiver.</strong> The parties agree that any Dispute will be resolved on an individual basis only. <strong>Neither party may bring a Dispute as a plaintiff or class member in a class, collective, or representative action.</strong> The arbitrator may not consolidate more than one party's claims and may not preside over any form of representative or class proceeding. If this paragraph is found unenforceable, the entire arbitration agreement is void.</p>
+      <p><strong>Carve-outs.</strong> Either party may bring an action in court (a) for injunctive or other equitable relief to protect intellectual property or confidential information; (b) for collection of undisputed amounts owed; or (c) in small-claims court for a Dispute that qualifies, so long as the action remains in small-claims court and is brought on an individual basis only.</p>
+      <p><strong>Forum for non-arbitrable matters.</strong> For any Dispute not subject to arbitration, the parties consent to the exclusive jurisdiction of the state and federal courts located in <strong>Lubbock County, Texas</strong>, and waive any objection based on inconvenient forum.</p>
+    </section>
+
+    <!-- ─── 19 ────────────────────────────────────────────────────── -->
+    <section id="sec-19">
+      <h2><span class="num">19</span>Modifications to these Terms</h2>
+      <p>We may modify these Terms from time to time. If we make a material change, we will provide reasonable notice (for example, by email to the account owner or by posting a notice in the Service) before the change takes effect. Continued use of the Service after the effective date of the change constitutes acceptance of the modified Terms. If Customer does not agree, Customer's exclusive remedy is to cancel the subscription as provided in Section 10. The "Last updated" date at the top of these Terms reflects the most recent change.</p>
+    </section>
+
+    <!-- ─── 20 ────────────────────────────────────────────────────── -->
+    <section id="sec-20">
+      <h2><span class="num">20</span>Miscellaneous</h2>
+      <h3>Entire agreement</h3>
+      <p>The Agreement is the entire agreement between the parties on its subject matter and supersedes all prior or contemporaneous agreements. The terms of any Customer purchase order, vendor onboarding form, or click-through that conflict with the Agreement are rejected and have no effect unless we expressly accept them in a signed writing.</p>
+      <h3>Assignment</h3>
+      <p>Customer may not assign the Agreement without our prior written consent, except to a successor in interest by merger, acquisition, or sale of substantially all assets, provided the successor agrees in writing to be bound. We may assign the Agreement to an affiliate or to a successor in interest without consent. Any other assignment is void.</p>
+      <h3>Notices</h3>
+      <p>Notices to OriginFlow must be sent to the email address in Section 21, with a copy by U.S. mail to Rackler Software LLC, Lubbock, Texas. Notices to Customer may be sent to the email address on the account or, where appropriate, by in-product notification.</p>
+      <h3>Force majeure</h3>
+      <p>Neither party is liable for failure or delay in performance caused by events beyond its reasonable control, including acts of God, war, terrorism, pandemic, civil unrest, labor disputes, governmental action, or failures of the public internet, public utilities, or third-party hosting providers. Payment obligations are not excused.</p>
+      <h3>Independent contractors</h3>
+      <p>The parties are independent contractors. The Agreement does not create a partnership, joint venture, agency, or employment relationship.</p>
+      <h3>No third-party beneficiaries</h3>
+      <p>The Agreement does not confer any rights on any third party other than the parties to it.</p>
+      <h3>Severability; waiver</h3>
+      <p>If any provision of the Agreement is held unenforceable, it will be modified to the minimum extent necessary to be enforceable, and the rest of the Agreement remains in effect. A waiver of any provision is effective only if in writing and signed by the waiving party, and is not a waiver of any other provision or any subsequent breach.</p>
+      <h3>Export &amp; sanctions</h3>
+      <p>Customer will comply with all applicable U.S. export control and sanctions laws. Customer represents it is not located in, and will not access the Service from, any country embargoed by the U.S. government, and is not on any U.S. restricted-party list.</p>
+      <h3>Government users</h3>
+      <p>The Service is "commercial computer software" as defined in FAR 2.101. Use, duplication, or disclosure by U.S. government end users is governed solely by these Terms.</p>
+    </section>
+
+    <!-- ─── 21 ────────────────────────────────────────────────────── -->
+    <section id="sec-21">
+      <h2><span class="num">21</span>Contact</h2>
+      <p>Questions about these Terms? Reach the founder directly:</p>
+      <div class="signature-block">
+        <strong>Rackler Software LLC, d/b/a OriginFlow</strong>
+        Davis Rackler, Founder<br>
+        Email: <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a><br>
+        Lubbock, Texas, USA
+      </div>
+    </section>
+
+  </article>
+</main>
+
+<footer>
+  <a href="/" style="font-family:var(--mono);font-size:0.7rem;font-weight:700;color:var(--muted);text-decoration:none;letter-spacing:0.1em;">ORIGINFLOW LOS</a>
+  <div class="footer-disclaimer">
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+  </div>
+  <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;">
+    <a href="/">Home</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  </div>
+</footer>
+
+</body>
+</html>
