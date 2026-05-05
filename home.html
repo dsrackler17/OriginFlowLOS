@@ -576,14 +576,37 @@ main {
 }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
+/* Footer is now a 2-row layout: top row is the site-wide compliance
+   disclaimer (added for legal cover — every authenticated page needs the
+   "OriginFlow is software, the licensed lender remains responsible for
+   compliance" language), bottom row keeps the existing wordmark/shortcuts/
+   version/links exactly as they were. Existing rules are preserved; only
+   the parent `footer` rule changed from a single flex row to a flex column
+   to make space for the disclaimer above the existing content. */
 footer {
   border-top: 1px solid var(--border); padding: 0.85rem 2rem;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: column; gap: 0.55rem;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+  color: var(--muted); background: var(--deep);
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
+.footer-disclaimer {
+  font-size: 0.58rem;
+  line-height: 1.7;
+  color: var(--muted);
+  text-align: center;
+  max-width: 920px;
+  margin: 0 auto;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.03em;
+  font-weight: 300;
+}
+.footer-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
 .footer-shortcuts {
   display: flex; gap: 0.85rem; flex-wrap: wrap;
 }
@@ -593,6 +616,52 @@ footer a:hover { color: var(--accent); }
   padding: 0.05rem 0.3rem; border-radius: 2px;
   margin: 0 0.15rem;
 }
+
+/* ─── COOKIE / ANALYTICS CONSENT BANNER ────────────────────────────── */
+/* Default-deny posture for Google Consent Mode v2 — analytics_storage
+   stays 'denied' until the user explicitly clicks Accept. Choice is
+   persisted in localStorage under 'of_cookie_consent' so it carries
+   across all OF pages (landing, signup, home, etc.) — once the user
+   decides on any one page, the banner stays gone everywhere.
+
+   Sits above the page (z-index 500) but below modals (cmdk @ 1000)
+   so a stale banner can't block urgent dialogs. */
+.cookie-banner {
+  position: fixed;
+  bottom: 1rem; left: 1rem; right: 1rem;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  animation: cbIn 0.25s ease both;
+}
+@keyframes cbIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.cookie-banner.hidden { display: none; }
+.cb-text { flex: 1; line-height: 1.6; }
+.cb-text strong { color: var(--white); font-weight: 500; }
+.cb-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.cb-text a:hover { color: var(--accent2); }
+.cb-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.cb-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.5rem 0.9rem;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  transition: all 0.15s;
+}
+.cb-btn.cb-decline:hover { border-color: var(--muted); color: var(--white); }
+.cb-btn.cb-accept {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
 
 /* ─── MOBILE ───────────────────────────────────────────────────────── */
 @media (max-width: 1180px) {
@@ -619,6 +688,12 @@ footer a:hover { color: var(--accent); }
   .home-content { padding: 1rem; }
   .quick-actions { grid-template-columns: repeat(2, 1fr); }
   .qa-card { min-height: 76px; }
+  .cookie-banner {
+    flex-direction: column; align-items: stretch; gap: 0.75rem;
+    bottom: 0.5rem; left: 0.5rem; right: 0.5rem;
+    padding: 0.75rem 0.9rem;
+  }
+  .cb-buttons { justify-content: flex-end; }
 }
 </style>
 <!-- Google tag (gtag.js) -->
@@ -626,6 +701,27 @@ footer a:hover { color: var(--accent); }
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+
+  // ─── Google Consent Mode v2 ───────────────────────────────────────────
+  // Default to DENY everything. If the user previously accepted in the
+  // cookie banner (on any OF page — landing, signup, home, etc.), the
+  // shared localStorage key 'of_cookie_consent' will be 'granted' and we
+  // upgrade analytics_storage on this initial default call so GA can
+  // record the page view without waiting for a consent update. Without
+  // this default-deny posture, GA fires before the user has any chance to
+  // decline, which is exactly what the cookie banner exists to prevent.
+  // 'wait_for_update' gives the banner up to 500ms to apply a fresh
+  // decision before GA decides what to send.
+  var ofConsent = null;
+  try { ofConsent = localStorage.getItem('of_cookie_consent'); } catch(_) {}
+  gtag('consent', 'default', {
+    'ad_storage':         'denied',
+    'ad_user_data':       'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage':  ofConsent === 'granted' ? 'granted' : 'denied',
+    'wait_for_update':    500
+  });
+
   gtag('js', new Date());
   // Strip loan IDs from URL hash + query params before reporting.
   // Without this, every navigation to /dashboard.html#<loan_uuid> would
@@ -833,24 +929,46 @@ footer a:hover { color: var(--accent); }
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE / ANALYTICS CONSENT BANNER                                    -->
+<!-- Hidden by default; the IIFE near the bottom of the page reveals it   -->
+<!-- only when no prior consent decision is recorded in localStorage.     -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cb-text">
+    <strong>We use cookies for analytics.</strong>
+    Helps us see which features people actually use — nothing tied to a borrower or loan ever leaves your browser.
+    Details in our <a href="/privacy.html">Privacy Policy</a>.
+  </div>
+  <div class="cb-buttons">
+    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
+    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <div class="footer-shortcuts">
-    <span><kbd id="kbd-search">⌘K</kbd> search</span>
-    <span><kbd>N</kbd> new loan</span>
-    <span><kbd>D</kbd> pipeline</span>
-    <span><kbd>?</kbd> shortcuts</span>
+  <div class="footer-disclaimer">
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations &mdash; including TRID, ECOA, HMDA, RESPA, and state licensing &mdash; remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
   </div>
-  <span>v0.2 · live data · branch-scoped</span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="/dashboard.html">Pipeline</a>
-    <a href="/branch-library.html">Library</a>
-    <a href="/documents.html">Documents</a>
-    <a href="/reports.html">Reports</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <div class="footer-shortcuts">
+      <span><kbd id="kbd-search">⌘K</kbd> search</span>
+      <span><kbd>N</kbd> new loan</span>
+      <span><kbd>D</kbd> pipeline</span>
+      <span><kbd>?</kbd> shortcuts</span>
+    </div>
+    <span>v0.2 · live data · branch-scoped</span>
+    <div style="display:flex;gap:1.25rem;">
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/branch-library.html">Library</a>
+      <a href="/documents.html">Documents</a>
+      <a href="/reports.html">Reports</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
   </div>
 </footer>
 
@@ -1951,6 +2069,52 @@ window.addEventListener('resize', () => {
       window.innerWidth > 1024 ? '1fr 360px' : '1fr';
   }
 });
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE BANNER WIRING                                                 -->
+<!--                                                                      -->
+<!-- Self-contained IIFE so it can be lifted into a shared /js/of-cookie  -->
+<!-- file later without touching the rest of home.html. Reads/writes      -->
+<!-- localStorage 'of_cookie_consent' (shared with landing, signup,       -->
+<!-- login, all other OF pages — once the user decides anywhere, the      -->
+<!-- banner stays gone everywhere). On Accept/Decline we call             -->
+<!-- gtag('consent','update',...) so GA respects the new state without    -->
+<!-- needing a page reload.                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+
+  var prior = null;
+  try { prior = localStorage.getItem(KEY); } catch (_) {}
+
+  // Show banner only if no prior decision exists. If the user already
+  // accepted or declined on any OF page, we honor that and stay quiet.
+  if (prior !== 'granted' && prior !== 'denied') {
+    banner.classList.remove('hidden');
+  }
+
+  function setConsent(value) {
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+    // Tell Google Consent Mode about the user's choice in real time.
+    // gtag may not exist if an ad-blocker stripped the GA loader — in
+    // that case, the localStorage write is enough; nothing to update.
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': value === 'granted' ? 'granted' : 'denied'
+      });
+    }
+    banner.classList.add('hidden');
+  }
+
+  var accept = document.getElementById('cb-accept');
+  var decline = document.getElementById('cb-decline');
+  if (accept)  accept.addEventListener('click',  function() { setConsent('granted'); });
+  if (decline) decline.addEventListener('click', function() { setConsent('denied');  });
+})();
 </script>
 
 </body>
