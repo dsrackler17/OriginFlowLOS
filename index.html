@@ -16,6 +16,27 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+
+  // ─── Google Consent Mode v2 ───────────────────────────────────────────
+  // Default to DENY everything. If the user previously accepted in the
+  // cookie banner (on any OF page — landing, signup, home, etc.), the
+  // shared localStorage key 'of_cookie_consent' will be 'granted' and we
+  // upgrade analytics_storage on this initial default call so GA can
+  // record the page view without waiting for a consent update. Without
+  // this default-deny posture, GA fires before the user has any chance to
+  // decline, which is exactly what the cookie banner exists to prevent.
+  // 'wait_for_update' gives the banner up to 500ms to apply a fresh
+  // decision before GA decides what to send.
+  var ofConsent = null;
+  try { ofConsent = localStorage.getItem('of_cookie_consent'); } catch(_) {}
+  gtag('consent', 'default', {
+    'ad_storage':         'denied',
+    'ad_user_data':       'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage':  ofConsent === 'granted' ? 'granted' : 'denied',
+    'wait_for_update':    500
+  });
+
   gtag('js', new Date());
   gtag('config', 'G-6LRWPMYK9C');
 </script>
@@ -592,6 +613,50 @@ footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
 .footer-disclaimer { max-width: 600px; text-align: center; line-height: 1.7; }
 
+/* ─── COOKIE / ANALYTICS CONSENT BANNER ────────────────────────────── */
+/* Default-deny posture for Google Consent Mode v2 — analytics_storage
+   stays 'denied' until the user explicitly clicks Accept. Choice is
+   persisted in localStorage under 'of_cookie_consent' so it carries
+   across all OF pages (landing, signup, login, home, etc.) — once the
+   user decides anywhere, the banner stays gone everywhere. The landing
+   page is where most visitors first see it. */
+.cookie-banner {
+  position: fixed;
+  bottom: 1rem; left: 1rem; right: 1rem;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  animation: cbIn 0.25s ease both;
+}
+@keyframes cbIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.cookie-banner.hidden { display: none; }
+.cb-text { flex: 1; line-height: 1.6; }
+.cb-text strong { color: var(--white); font-weight: 500; }
+.cb-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.cb-text a:hover { color: var(--accent2); }
+.cb-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.cb-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.5rem 0.9rem;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  transition: all 0.15s;
+}
+.cb-btn.cb-decline:hover { border-color: var(--muted); color: var(--white); }
+.cb-btn.cb-accept {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
+
 /* ─── REVEAL ───────────────────────────────────────────────────────── */
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
 .reveal.visible { opacity: 1; transform: none; }
@@ -615,6 +680,14 @@ footer a:hover { color: var(--accent); }
   .final-cta { padding: 3rem 1.5rem; }
   .nav-login { padding: 0.45rem 0.75rem; font-size: 0.65rem; }
   .nav-cta { padding: 0.45rem 0.9rem; font-size: 0.65rem; }
+}
+@media (max-width: 540px) {
+  .cookie-banner {
+    flex-direction: column; align-items: stretch; gap: 0.75rem;
+    bottom: 0.5rem; left: 0.5rem; right: 0.5rem;
+    padding: 0.75rem 0.9rem;
+  }
+  .cb-buttons { justify-content: flex-end; }
 }
 </style>
 </head>
@@ -1103,6 +1176,25 @@ footer a:hover { color: var(--accent); }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE / ANALYTICS CONSENT BANNER                                    -->
+<!-- Hidden by default; the IIFE near the bottom of the page reveals it   -->
+<!-- only when no prior consent decision is recorded in localStorage.     -->
+<!-- This is the page where most visitors first see the banner — once     -->
+<!-- they decide here, the choice carries through signup, login, home.    -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cb-text">
+    <strong>We use cookies for analytics.</strong>
+    Helps us see which features people actually use. Nothing tied to a borrower or loan ever leaves your browser.
+    Details in our <a href="/privacy.html">Privacy Policy</a>.
+  </div>
+  <div class="cb-buttons">
+    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
+    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
@@ -1116,6 +1208,8 @@ footer a:hover { color: var(--accent); }
     <a href="#pricing">Pricing</a>
     <a href="#origin">Founder</a>
     <a href="#faq">FAQ</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
     <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
   </div>
 </footer>
@@ -1138,6 +1232,52 @@ footer a:hover { color: var(--accent); }
     });
   }, { threshold: 0.12 });
   els.forEach(el => io.observe(el));
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE BANNER WIRING                                                 -->
+<!--                                                                      -->
+<!-- Self-contained IIFE so it can be lifted into a shared /js/of-cookie  -->
+<!-- file later without touching the rest of the landing page. Reads/     -->
+<!-- writes localStorage 'of_cookie_consent' (shared with home, signup,   -->
+<!-- login, all other OF pages — once the user decides anywhere, the     -->
+<!-- banner stays gone everywhere). On Accept/Decline we call             -->
+<!-- gtag('consent','update',...) so GA respects the new state without    -->
+<!-- needing a page reload.                                               -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+
+  var prior = null;
+  try { prior = localStorage.getItem(KEY); } catch (_) {}
+
+  // Show banner only if no prior decision exists. If the user already
+  // accepted or declined on any OF page, we honor that and stay quiet.
+  if (prior !== 'granted' && prior !== 'denied') {
+    banner.classList.remove('hidden');
+  }
+
+  function setConsent(value) {
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+    // Tell Google Consent Mode about the user's choice in real time.
+    // gtag may not exist if an ad-blocker stripped the GA loader — in
+    // that case, the localStorage write is enough; nothing to update.
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': value === 'granted' ? 'granted' : 'denied'
+      });
+    }
+    banner.classList.add('hidden');
+  }
+
+  var accept = document.getElementById('cb-accept');
+  var decline = document.getElementById('cb-decline');
+  if (accept)  accept.addEventListener('click',  function() { setConsent('granted'); });
+  if (decline) decline.addEventListener('click', function() { setConsent('denied');  });
+})();
 </script>
 
 </body>
