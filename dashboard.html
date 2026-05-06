@@ -1227,14 +1227,25 @@ async function bootstrap() {
   initDetailHandlers();
   initSearchShortcut();
 
-  // Deep-link: open detail if hash present
+  // Deep-link: hash routing now redirects to /loan.html for the full workspace.
+  // The inline detail panel still exists for shift+click peek but is no longer
+  // the primary surface. Hash-only deep-links from old emails/links/palette
+  // results bounce through to /loan.html — keeps every existing URL working.
   if (window.location.hash) {
     const id = window.location.hash.slice(1);
-    if (id) openDetail(id);
+    if (id) {
+      // If navigated here intentionally with a hash, route through.
+      // If it's a fragment from an in-page action (modals, etc.), ignore.
+      if (id.length > 8 && id.match(/^[0-9a-f-]{8,}$/i)) {
+        window.location.replace('/loan.html?id=' + encodeURIComponent(id));
+        return;
+      }
+      openDetail(id);
+    }
   }
   window.addEventListener('hashchange', () => {
     const id = window.location.hash.slice(1);
-    if (id) openDetail(id);
+    if (id) openDetail(id);  // shift+click peek still works
     else closeDetail();
   });
 }
@@ -1521,12 +1532,17 @@ function renderCard(loan) {
 
 function wireCards() {
   document.querySelectorAll('.loan-card').forEach(card => {
-    // click → open detail
+    // click → open the loan workspace at /loan.html
+    // shift-click or middle-click → keep the inline peek (legacy)
     card.addEventListener('click', (e) => {
-      // don't open detail if dragging
       if (card.classList.contains('dragging')) return;
       const id = card.dataset.loanId;
-      window.location.hash = id;
+      // Shift+click or cmd/ctrl+click → inline peek (back-compat)
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+        window.location.hash = id;
+        return;
+      }
+      window.location.href = '/loan.html?id=' + encodeURIComponent(id);
     });
     // drag start
     card.addEventListener('dragstart', (e) => {
