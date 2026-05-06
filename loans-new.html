@@ -506,6 +506,87 @@ select {
 .cookie-btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); }
 .cookie-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
 
+/* ─── INTAKE MODE GATE ─────────────────────────────────────────────── */
+.intake-screen {
+  grid-column: 1 / -1;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh;
+}
+.intake-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.intake-heading {
+  font-family: var(--serif); font-size: 2.25rem; color: var(--white);
+  margin-bottom: 0.65rem; max-width: 640px; text-align: center;
+}
+.intake-sub {
+  max-width: 560px; color: var(--muted);
+  margin-bottom: 2.5rem; text-align: center;
+  font-size: 0.95rem;
+}
+.intake-cards {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 760px;
+}
+.intake-card {
+  background: var(--surface); padding: 1.75rem 1.5rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  cursor: pointer; transition: background 0.15s;
+  text-align: left; border: none; color: var(--text);
+  font-family: inherit; min-height: 220px;
+  position: relative;
+}
+.intake-card:hover { background: var(--panel); }
+.intake-card:hover .intake-card-arrow { color: var(--accent); }
+.intake-card-icon {
+  font-family: var(--mono); font-size: 1.4rem; color: var(--accent);
+  line-height: 1; margin-bottom: 0.4rem;
+}
+.intake-card-title {
+  font-family: var(--serif); font-size: 1.3rem; color: var(--white);
+  line-height: 1.2;
+}
+.intake-card-desc {
+  font-size: 0.85rem; color: var(--text); line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+.intake-card-meta {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); text-transform: uppercase;
+  margin-top: auto;
+}
+.intake-card-arrow {
+  position: absolute; top: 1.5rem; right: 1.5rem;
+  font-family: var(--mono); font-size: 1rem; color: var(--muted);
+  transition: color 0.15s;
+}
+.intake-card.dropzone-active {
+  background: rgba(0,212,255,0.06);
+  outline: 2px dashed var(--accent); outline-offset: -3px;
+}
+.intake-card.parsing {
+  cursor: wait;
+}
+.intake-card.parsing .intake-card-arrow {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  font-size: 0; padding: 0; top: 1.7rem; right: 1.7rem;
+}
+.intake-foot {
+  margin-top: 1.5rem;
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em; text-align: center;
+}
+.intake-foot a { color: var(--accent); text-decoration: none; }
+.intake-foot a:hover { text-decoration: underline; }
+
 /* ─── STATE SCREENS ────────────────────────────────────────────────── */
 .state-screen {
   grid-column: 1 / -1;
@@ -555,6 +636,9 @@ select {
   .cookie-banner { padding: 0.85rem 1rem; flex-direction: column; align-items: stretch; }
   .cookie-banner-actions { width: 100%; }
   .cookie-btn { flex: 1; }
+  .intake-cards { grid-template-columns: 1fr; }
+  .intake-heading { font-size: 1.65rem; }
+  .intake-card { min-height: 170px; padding: 1.25rem 1.15rem; }
 }
 </style>
 
@@ -618,6 +702,33 @@ select {
     <h1 class="state-heading">Viewers can't create loans.</h1>
     <p class="state-text">Your role is set to <strong>Viewer</strong>, which is read-only. Ask your branch admin to upgrade your role if you need to start applications.</p>
     <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <!-- INTAKE MODE GATE — pick blank or MISMO before entering wizard -->
+  <div class="intake-screen" id="state-intake" style="display:none;">
+    <div class="intake-eyebrow">URLA · Form 1003</div>
+    <h1 class="intake-heading">Start a new loan.</h1>
+    <p class="intake-sub">Begin with a blank application, or drop in a MISMO 3.4 file from another LOS and we'll pre-fill what we can.</p>
+    <div class="intake-cards">
+      <button type="button" class="intake-card" id="intake-blank">
+        <span class="intake-card-arrow">→</span>
+        <span class="intake-card-icon">+</span>
+        <span class="intake-card-title">Start blank</span>
+        <span class="intake-card-desc">Fill out the URLA form yourself. Six steps, autosaves locally as you go. Roughly 5–10 minutes for a basic file.</span>
+        <span class="intake-card-meta">Recommended for new applications</span>
+      </button>
+      <label class="intake-card" id="intake-mismo" for="intake-mismo-file">
+        <span class="intake-card-arrow">↓</span>
+        <span class="intake-card-icon">⊟</span>
+        <span class="intake-card-title">Import MISMO 3.4</span>
+        <span class="intake-card-desc">Drop in or pick a <code style="font-family:var(--mono); color:var(--accent);">.xml</code> file. We'll parse loan terms, property, borrowers, and income, then drop you into the wizard to review.</span>
+        <span class="intake-card-meta" id="intake-mismo-meta">Drag a file here, or click to browse</span>
+        <input type="file" id="intake-mismo-file" accept=".xml,application/xml,text/xml" style="display:none;">
+      </label>
+    </div>
+    <div class="intake-foot">
+      Need help with another format? Email <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a> with your export and we'll add a parser.
+    </div>
   </div>
 
   <!-- ─── PROGRESS RAIL ─── -->
@@ -722,11 +833,11 @@ select {
 })();
 </script>
 
-
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // /loans-new.html — Full URLA 1003 wizard
 // 6 steps · co-borrower toggle · localStorage autosave · Supabase save
+// + intake mode gate (blank vs MISMO 3.4 import)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (s) => document.querySelector(s);
@@ -742,6 +853,7 @@ let validSteps = new Set();
 let hasCoborrower = false;
 let createdLoanId = null;
 let autosaveTimer = null;
+let intakeMode = 'blank';   // 'blank' | 'mismo' — stamped on the loan for audit
 const DRAFT_KEY = 'of_new_loan_draft_v1';
 
 const formData = {
@@ -912,18 +1024,32 @@ async function bootstrap() {
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
 
   touchLastSeen();
-  restoreDraft();
+  const restoredFromDraft = restoreDraft();
 
-  showWizard();
-  renderRail();
-  renderStep();
+  // Intake mode gate. Three ways to skip the gate and go straight to the
+  // wizard: (1) ?mode=blank in the URL — explicit choice from a quick-action
+  // tile or sales link; (2) a draft already exists (the user previously
+  // chose a mode and just came back to keep filling it out); (3) ?mode=mismo
+  // — we still show the gate but pre-open the file picker for them.
+  const params = new URLSearchParams(window.location.search);
+  const urlMode = params.get('mode');
+  if (urlMode === 'blank' || restoredFromDraft) {
+    intakeMode = restoredFromDraft && formData.intake_source === 'mismo_import' ? 'mismo' : 'blank';
+    enterWizard();
+  } else {
+    showIntakeMode();
+    if (urlMode === 'mismo') {
+      // Auto-open the file picker on the MISMO card so the link goes
+      // straight to "pick a file." User can still bail to blank.
+      setTimeout(() => $('#intake-mismo-file').click(), 50);
+    }
+  }
   initShortcuts();
-  startAutosave();
 }
 
 function showState(id) {
   document.getElementById('main-grid').style.gridTemplateColumns = '1fr';
-  ['state-loading','state-signed-out','state-readonly'].forEach(s => {
+  ['state-loading','state-signed-out','state-readonly','state-intake'].forEach(s => {
     document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
   });
   $('#rail').style.display = 'none';
@@ -931,7 +1057,7 @@ function showState(id) {
 }
 
 function showWizard() {
-  ['state-loading','state-signed-out','state-readonly'].forEach(s => {
+  ['state-loading','state-signed-out','state-readonly','state-intake'].forEach(s => {
     document.getElementById(s).style.display = 'none';
   });
   document.getElementById('main-grid').style.gridTemplateColumns =
@@ -962,23 +1088,144 @@ function startAutosave() {
   document.addEventListener('change', () => { syncFormToData(); });
 }
 
+// Returns true if a non-empty draft was restored, false otherwise.
+// Callers use this to decide whether to show the intake gate or skip it.
 function restoreDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return;
+    if (!raw) return false;
     const parsed = JSON.parse(raw);
-    if (!parsed.formData || !parsed.savedAt) return;
+    if (!parsed.formData || !parsed.savedAt) return false;
     if (Date.now() - parsed.savedAt > 7 * 24 * 3600 * 1000) {
-      localStorage.removeItem(DRAFT_KEY); return;
+      localStorage.removeItem(DRAFT_KEY); return false;
     }
     Object.assign(formData, parsed.formData);
     hasCoborrower = !!parsed.hasCoborrower;
     currentStep = parsed.currentStep || 0;
     setSaveStatus('saved', 'Draft restored from ' + new Date(parsed.savedAt).toLocaleString());
-  } catch (e) { console.warn('draft restore failed', e); }
+    return true;
+  } catch (e) {
+    console.warn('draft restore failed', e);
+    return false;
+  }
 }
 
 function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (_) {} }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INTAKE MODE GATE — blank vs MISMO 3.4 import
+//
+// Shown before the wizard the first time someone lands on this page (no
+// draft, no ?mode=blank). User picks a path:
+//
+//   • Blank      → wizard opens at Step 1 with empty formData
+//   • MISMO 3.4  → file picker / drop zone, OF_parseMismo34(file) runs,
+//                  result merged into formData, wizard opens at Step 1 with
+//                  fields pre-filled. Loan row gets intake_source='mismo_import'
+//                  on first save (see buildLoanRow).
+//
+// If OF_parseMismo34 isn't implemented, the MISMO card toasts an error
+// and the user can still pick blank — the page never deadlocks.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function showIntakeMode() {
+  showState('state-intake');
+  // Wire the cards. Re-binds on every show so we don't leak listeners.
+  $('#intake-blank').onclick = () => {
+    intakeMode = 'blank';
+    enterWizard();
+  };
+  // The MISMO card is a <label for="intake-mismo-file"> so clicks open the
+  // hidden file input automatically. We just need to handle the change event
+  // and the drag-and-drop behavior.
+  const card = $('#intake-mismo');
+  const input = $('#intake-mismo-file');
+  input.onchange = (e) => {
+    const file = (e.target.files || [])[0];
+    if (file) handleMismoFile(file);
+    e.target.value = '';  // allow re-pick of same filename
+  };
+  // Drag-and-drop on the MISMO card. Match documents.html's pattern.
+  ['dragenter','dragover'].forEach(ev => {
+    card.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      card.classList.add('dropzone-active');
+    });
+  });
+  ['dragleave','drop'].forEach(ev => {
+    card.addEventListener(ev, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (ev === 'dragleave' && card.contains(e.relatedTarget)) return;
+      card.classList.remove('dropzone-active');
+    });
+  });
+  card.addEventListener('drop', (e) => {
+    const file = (e.dataTransfer.files || [])[0];
+    if (file) handleMismoFile(file);
+  });
+}
+
+async function handleMismoFile(file) {
+  // Lightweight client-side guard. The hook should still validate, but
+  // catching obvious wrong-format mistakes here is cheap and saves a round trip.
+  if (!file) return;
+  const looksXml = /\.xml$/i.test(file.name) || (file.type || '').includes('xml');
+  if (!looksXml) {
+    showToast('That doesn\'t look like an XML file. MISMO 3.4 exports end in .xml.', true);
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('File over 10MB. MISMO exports are usually well under 1MB — double-check the file.', true);
+    return;
+  }
+
+  const card = $('#intake-mismo');
+  const meta = $('#intake-mismo-meta');
+  card.classList.add('parsing');
+  meta.textContent = 'Parsing ' + file.name + '…';
+
+  try {
+    if (typeof window.OF_parseMismo34 !== 'function') {
+      throw new Error('MISMO parser not configured. Implement window.OF_parseMismo34(file) — see bottom of /loans-new.html.');
+    }
+    const parsed = await window.OF_parseMismo34(file);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Parser returned no data.');
+    }
+
+    // Merge parsed fields into formData. We DON'T do Object.assign on the
+    // whole thing because parsers sometimes return extra keys we don't want
+    // to write to formData (parser version, raw XML, etc). Whitelist by
+    // checking against existing keys.
+    let parsedCount = 0;
+    for (const key of Object.keys(parsed)) {
+      if (key in formData) {
+        formData[key] = parsed[key];
+        parsedCount++;
+      }
+    }
+    if (parsed.hasCoborrower === true) hasCoborrower = true;
+
+    intakeMode = 'mismo';
+    showToast(`Imported ${parsedCount} field${parsedCount === 1 ? '' : 's'}. Review before submitting.`);
+    enterWizard();
+
+  } catch (err) {
+    console.error('MISMO parse failed:', err);
+    showToast('Import failed: ' + err.message, true);
+    card.classList.remove('parsing');
+    meta.textContent = 'Drag a file here, or click to browse';
+  }
+}
+
+// Common entry from intake mode → wizard. Renders rail + step 1, starts
+// autosave. Same code regardless of which intake path got us here.
+function enterWizard() {
+  showWizard();
+  renderRail();
+  renderStep();
+  startAutosave();
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RAIL
@@ -1198,7 +1445,6 @@ function f_textarea(field, label, opts = {}) {
     </div>
   `;
 }
-
 // ═══════════════════════════════════════════════════════════════════════════
 // STEP 1 — LOAN TERMS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2147,7 +2393,7 @@ async function submitApplication() {
     clearDraft();
     setSaveStatus('saved', 'Submitted · ' + new Date().toLocaleTimeString());
     showToast('Application submitted! Routing to loan file…');
-    setTimeout(() => { window.location.href = '/dashboard.html#' + loanId; }, 800);
+    setTimeout(() => { window.location.href = '/loan.html?id=' + loanId; }, 800);
   } catch (err) {
     console.error('submit error:', err);
     setSaveStatus('error', 'Submit failed');
@@ -2159,6 +2405,7 @@ function buildLoanRow(status) {
   return {
     branch_id: me.branch_id,
     lo_id: me.role === 'lo' || me.role === 'loa' ? me.id : null,
+    intake_source: intakeMode === 'mismo' ? 'mismo_import' : 'manual',
     status,
     purpose: formData.purpose || null,
     loan_amount_cents: dollarsToCents(formData.loan_amount),
@@ -2274,7 +2521,50 @@ window.addEventListener('resize', () => {
       window.innerWidth > 1100 ? '280px 1fr' : '1fr';
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MISMO PARSER HOOK — implement in /js/of-hooks.js or a dedicated <script>
+// before this file loads. Until you wire it, the MISMO card toasts an error;
+// blank intake works regardless.
+//
+// window.OF_parseMismo34 = async function(file) {
+//   // 1. Send file to your edge function for SAX parsing
+//   const xml = await file.text();
+//   const supa = getSupabase();
+//   const { data, error } = await supa.functions.invoke('parse-mismo-34', {
+//     body: { xml }
+//   });
+//   if (error) throw error;
+//
+//   // 2. Return an object whose keys match formData keys exactly. Any keys
+//   //    not in formData are silently dropped (intentional whitelist).
+//   //    Set hasCoborrower: true to enable the co-borrower block.
+//   return {
+//     purpose: data.loan.purpose,                  // 'purchase' | 'refinance' | ...
+//     loan_amount: String(data.loan.amount),       // wizard expects strings
+//     loan_program: data.loan.program,
+//     amortization_type: data.loan.amortization,
+//     loan_term_months: String(data.loan.term_months),
+//     occupancy: data.property.occupancy,
+//     property_type: data.property.type,
+//     property_address_street: data.property.street,
+//     property_address_city:   data.property.city,
+//     property_address_state:  data.property.state,
+//     property_address_zip:    data.property.zip,
+//     b1_first_name: data.borrowers[0].first_name,
+//     b1_last_name:  data.borrowers[0].last_name,
+//     b1_ssn:        data.borrowers[0].ssn,        // formatter masks in render
+//     b1_dob:        data.borrowers[0].dob,        // ISO 'YYYY-MM-DD'
+//     b1_email:      data.borrowers[0].email,
+//     b1_phone:      data.borrowers[0].phone,
+//     // ... and so on for any field you can extract
+//     hasCoborrower: data.borrowers.length > 1,
+//     // co-borrower fields if applicable
+//   };
+// };
+// ═══════════════════════════════════════════════════════════════════════════
 </script>
+
 
 </body>
 </html>
