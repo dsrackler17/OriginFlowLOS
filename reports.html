@@ -515,13 +515,71 @@ nav {
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
-  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+  color: var(--muted); background: var(--deep);
+}
+.footer-disclaimer {
+  padding: 0.75rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.footer-disclaimer strong { color: var(--text); }
+.footer-bottom {
+  padding: 0.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
+
+/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
+.cookie-banner {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--deep);
+  border-top: 1px solid var(--accent);
+  padding: 1rem 2rem;
+  display: none;
+  align-items: center; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+  z-index: 500;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+}
+.cookie-banner.show { display: flex; }
+.cookie-banner-text {
+  flex: 1; min-width: 240px;
+  font-family: var(--sans); font-size: 0.82rem;
+  color: var(--text); line-height: 1.5;
+  letter-spacing: 0;
+}
+.cookie-banner-text a {
+  color: var(--accent); text-decoration: none;
+}
+.cookie-banner-text a:hover { text-decoration: underline; }
+.cookie-banner-actions {
+  display: flex; gap: 0.5rem; flex-shrink: 0;
+}
+.cookie-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  cursor: pointer; transition: all 0.15s;
+}
+.cookie-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cookie-btn.primary {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent);
+}
+.cookie-btn.primary:hover {
+  background: var(--accent2); border-color: var(--accent2);
+}
 
 /* ─── PRINT / PDF EXPORT ───────────────────────────────────────────── */
 @media print {
@@ -559,7 +617,7 @@ footer a:hover { color: var(--accent); }
   .nav-search, .nav-newloan, .nav-signout, .nav-branch, .nav-user-role,
   .range-preset, .range-input, .range-divider, .range-print,
   .panel-export, .tab-btn, .tab-bar,
-  .toast, .modal-overlay,
+  .toast, .modal-overlay, .cookie-banner,
   .state-screen,
   .nav-search-btn,
   .print-only-section-header
@@ -718,6 +776,12 @@ footer a:hover { color: var(--accent); }
   .funnel-row { grid-template-columns: 70px 1fr 80px; gap: 0.4rem; }
   .funnel-stage { font-size: 0.55rem; }
   .hmda-banner { margin: 0.75rem 1rem 0; }
+  .footer-disclaimer { padding: 0.65rem 1rem; }
+  .footer-bottom { padding: 0.65rem 1rem; }
+  .cookie-banner { padding: 0.85rem 1rem; gap: 0.75rem; }
+  .cookie-banner-text { font-size: 0.75rem; min-width: 100%; }
+  .cookie-banner-actions { width: 100%; }
+  .cookie-btn { flex: 1; }
 }
 </style>
 
@@ -1077,18 +1141,91 @@ footer a:hover { color: var(--accent); }
 <div class="toast" id="toast" role="status"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE BANNER                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent">
+  <div class="cookie-banner-text">
+    We use essential cookies to keep you signed in and analytics cookies to understand how the LOS is used. See our <a href="/privacy.html">Privacy Policy</a> for details.
+  </div>
+  <div class="cookie-banner-actions">
+    <button class="cookie-btn" id="cookie-reject" type="button">Reject analytics</button>
+    <button class="cookie-btn primary" id="cookie-accept" type="button">Accept all</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>v0.2 · Reports · Refreshed at <span id="footer-refreshed">—</span></span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="/home.html">Home</a>
-    <a href="/dashboard.html">Pipeline</a>
-    <a href="/branch-library.html">Library</a>
-    <a href="/documents.html">Documents</a>
+  <div class="footer-disclaimer">
+    <strong>OriginFlow LOS</strong> · Confidential branch data — authorized personnel only · Subject to your organization's information security and HMDA/ECOA compliance policies
+  </div>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · Reports · Refreshed at <span id="footer-refreshed">—</span></span>
+    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/branch-library.html">Library</a>
+      <a href="/documents.html">Documents</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
   </div>
 </footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// COOKIE CONSENT — IIFE
+//
+// Reads localStorage.of_cookie_consent. If unset, shows the banner and sets
+// gtag consent default to denied. On user choice, records the decision and
+// updates gtag consent. The gtag() call no-ops silently if GA isn't loaded
+// on this page; once you wire up GA later, the existing decision is honored
+// automatically.
+// ═══════════════════════════════════════════════════════════════════════════
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  var existing = null;
+  try { existing = localStorage.getItem(KEY); } catch (e) { /* localStorage disabled */ }
+
+  // gtag stub — silently no-ops if GA isn't loaded on this page
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ window.dataLayer.push(arguments); }
+
+  function applyConsent(decision) {
+    if (typeof window.gtag === 'function') {
+      window.gtag('consent', 'update', {
+        analytics_storage: decision === 'accepted' ? 'granted' : 'denied',
+        ad_storage: 'denied',
+      });
+    }
+  }
+
+  if (!existing) {
+    // Default: deny analytics until user decides
+    if (typeof window.gtag === 'function') {
+      window.gtag('consent', 'default', {
+        analytics_storage: 'denied',
+        ad_storage: 'denied',
+      });
+    }
+    setTimeout(function() { banner.classList.add('show'); }, 600);
+  } else {
+    applyConsent(existing);
+  }
+
+  function record(decision) {
+    try { localStorage.setItem(KEY, decision); } catch (e) { /* localStorage disabled */ }
+    applyConsent(decision);
+    banner.classList.remove('show');
+  }
+
+  document.getElementById('cookie-accept').addEventListener('click', function() { record('accepted'); });
+  document.getElementById('cookie-reject').addEventListener('click', function() { record('rejected'); });
+})();
+</script>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
