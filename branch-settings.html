@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Branch Settings · OriginFlow LOS</title>
+<meta name="description" content="Branch profile, licensed states, intake routing, and data export.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--navy); color: var(--text);
+  font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px; pointer-events: none; z-index: 0;
+}
+nav, main, footer { position: relative; z-index: 1; }
+
+/* ─── NAV (matches home.html exactly) ──────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92); backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100; gap: 1rem;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
+.sonar-icon { width: 26px; height: 26px; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted); background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer; transition: all 0.15s; min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px; color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer; transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── PAGE HEADER ──────────────────────────────────────────────────── */
+.page-head {
+  padding: 1.75rem 2rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--deep);
+}
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+}
+.page-title { font-family: var(--serif); font-size: 1.85rem; color: var(--white); line-height: 1.15; }
+.page-sub {
+  color: var(--muted); margin-top: 0.35rem; max-width: 720px;
+  font-size: 0.92rem;
+}
+
+/* ─── SECTION TABS ─────────────────────────────────────────────────── */
+.section-tabs {
+  display: flex; gap: 1px; background: var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.section-tab {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.12em;
+  text-transform: uppercase; background: var(--deep); color: var(--muted);
+  border: none; padding: 0.85rem 1.5rem; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.section-tab:hover { color: var(--text); }
+.section-tab.active {
+  background: var(--surface); color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.section-tab .tab-num {
+  font-size: 0.55rem; color: var(--muted); margin-right: 0.5rem;
+}
+.section-tab.active .tab-num { color: var(--accent); }
+
+/* ─── MAIN ─────────────────────────────────────────────────────────── */
+main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.settings-body {
+  flex: 1; overflow-y: auto;
+  padding: 1.5rem 2rem 3rem;
+  max-width: 1200px; width: 100%; margin: 0 auto;
+}
+
+/* ─── PANELS ───────────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.95rem 1.25rem;
+  border-bottom: 1px solid var(--border); background: var(--deep);
+}
+.panel-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text);
+}
+.panel-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0.15rem 0.5rem; border: 1px solid var(--border);
+}
+.panel-tag.dirty { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.panel-tag.saved { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.panel-body { padding: 1.25rem; }
+.panel-foot {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border); background: var(--deep);
+  display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.panel-foot-meta {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ─── FORM PRIMITIVES ──────────────────────────────────────────────── */
+.field-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 1.25rem;
+}
+.field-grid.cols-1 { grid-template-columns: 1fr; }
+.field-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.field-block { display: flex; flex-direction: column; gap: 0.4rem; }
+.field-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.field-label .field-hint { color: var(--muted); text-transform: none; letter-spacing: 0.02em; font-weight: 400; }
+.field-input, .field-select, .field-textarea {
+  width: 100%;
+  background: var(--deep); border: 1px solid var(--border);
+  color: var(--white); font-family: var(--sans); font-size: 0.9rem;
+  padding: 0.6rem 0.8rem; outline: none; transition: border-color 0.15s;
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus { border-color: var(--accent); }
+.field-input:disabled, .field-select:disabled { opacity: 0.5; cursor: not-allowed; }
+.field-input.readonly { background: var(--surface); color: var(--text); cursor: default; }
+.field-textarea { font-family: var(--mono); font-size: 0.78rem; min-height: 72px; resize: vertical; }
+.field-help {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ─── BUTTONS ──────────────────────────────────────────────────────── */
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.65rem 1.1rem;
+  border: 1px solid var(--border); color: var(--text); background: var(--surface);
+  cursor: pointer; text-decoration: none; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.btn.danger { color: var(--red); border-color: rgba(255,68,68,0.4); background: transparent; }
+.btn.danger:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+.btn.ghost { background: transparent; }
+.btn.small { font-size: 0.6rem; padding: 0.45rem 0.75rem; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--border); color: var(--text); background: var(--surface); }
+
+/* ─── STATES GRID ──────────────────────────────────────────────────── */
+.states-toolbar {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--deep); border: 1px solid var(--border);
+  margin-bottom: 1rem; flex-wrap: wrap;
+}
+.states-search {
+  font-family: var(--mono); font-size: 0.7rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 0.45rem 0.7rem;
+  outline: none; min-width: 180px; flex: 1; max-width: 280px;
+}
+.states-search:focus { border-color: var(--accent); }
+.states-search::placeholder { color: var(--muted); }
+.states-count {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.4rem 0.7rem; background: rgba(0,212,255,0.06);
+}
+.states-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+}
+.state-cell {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.65rem 0.85rem; background: var(--deep);
+  cursor: pointer; transition: background 0.15s;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--text);
+  user-select: none;
+}
+.state-cell:hover { background: var(--panel); }
+.state-cell.active {
+  background: rgba(0,212,255,0.08);
+  color: var(--white);
+}
+.state-cell.hidden { display: none; }
+.state-check {
+  width: 14px; height: 14px;
+  border: 1px solid var(--border); background: var(--surface);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; flex-shrink: 0;
+}
+.state-cell.active .state-check {
+  background: var(--accent); border-color: var(--accent); color: var(--navy);
+}
+.state-abbr {
+  font-weight: 700; color: var(--accent);
+  letter-spacing: 0.08em; min-width: 24px;
+}
+.state-name {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 0.65rem; color: var(--muted);
+}
+.state-cell.active .state-name { color: var(--text); }
+
+/* ─── EXPORT ROWS ──────────────────────────────────────────────────── */
+.export-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 1rem; align-items: center;
+  padding: 0.85rem 1rem;
+  background: var(--panel); border: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+.export-row:last-child { margin-bottom: 0; }
+.export-icon {
+  font-family: var(--mono); font-size: 1rem; color: var(--accent);
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); background: var(--deep);
+}
+.export-text { display: flex; flex-direction: column; gap: 0.15rem; }
+.export-title {
+  font-family: var(--sans); font-size: 0.88rem; color: var(--white); font-weight: 500;
+}
+.export-meta {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ─── COMPLIANCE NOTES ─────────────────────────────────────────────── */
+.note-block {
+  padding: 0.85rem 1rem;
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-left: 2px solid var(--accent);
+  font-size: 0.78rem; line-height: 1.55;
+  color: var(--text); margin-bottom: 0.75rem;
+}
+.note-block.warn {
+  background: rgba(245,166,35,0.06); border-color: rgba(245,166,35,0.3); border-left-color: var(--amber);
+}
+.note-block strong { color: var(--white); }
+.note-block code {
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--accent); padding: 0.05rem 0.3rem;
+  background: var(--deep); border: 1px solid var(--border);
+}
+
+/* ─── DENIAL / HMDA / TRID DETAIL TABLES ───────────────────────────── */
+.detail-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.detail-table th, .detail-table td {
+  text-align: left; padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.detail-table th {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted); font-weight: 400;
+  background: var(--deep);
+}
+.detail-table td { color: var(--text); }
+.detail-table td.label { color: var(--muted); font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.04em; width: 40%; }
+.detail-table tr:last-child td { border-bottom: none; }
+
+/* ─── TOAST / STATE SCREENS / FOOTER (matches home.html) ───────────── */
+.state-screen {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.state-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none; animation: toastIn 0.2s ease both;
+  max-width: 400px;
+}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+footer {
+  border-top: 1px solid var(--border); padding: 0.85rem 2rem;
+  display: flex; flex-direction: column; gap: 0.55rem;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep);
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+.footer-disclaimer {
+  font-size: 0.58rem; line-height: 1.7; color: var(--muted);
+  text-align: center; max-width: 920px; margin: 0 auto;
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+  letter-spacing: 0.03em; font-weight: 300;
+}
+.footer-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
+
+/* ─── COOKIE BANNER (matches home.html) ────────────────────────────── */
+.cookie-banner {
+  position: fixed; bottom: 1rem; left: 1rem; right: 1rem;
+  max-width: 680px; margin: 0 auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 500; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  animation: cbIn 0.25s ease both;
+}
+@keyframes cbIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.cookie-banner.hidden { display: none; }
+.cb-text { flex: 1; line-height: 1.6; }
+.cb-text strong { color: var(--white); font-weight: 500; }
+.cb-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.cb-text a:hover { color: var(--accent2); }
+.cb-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.cb-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.5rem 0.9rem;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text); transition: all 0.15s;
+}
+.cb-btn.cb-decline:hover { border-color: var(--muted); color: var(--white); }
+.cb-btn.cb-accept {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .nav-search { display: none; }
+  .field-grid { grid-template-columns: 1fr; }
+  .field-grid.cols-3 { grid-template-columns: 1fr; }
+  .settings-body { padding: 1rem; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch, .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .page-head { padding: 1.25rem 1rem 1rem; }
+  .page-title { font-size: 1.4rem; }
+  .section-tab { padding: 0.7rem 1rem; }
+  .export-row { grid-template-columns: 1fr; }
+  .cookie-banner { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV (identical pattern to home.html / dashboard.html / etc.)         -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/branch-library.html">Library</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
+    <li id="nav-settings-li" style="display:none;"><a href="/branch-settings.html" class="active">Settings</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="nav-search" id="nav-search-btn" type="button" aria-label="Search loans">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
+    </span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- LOADING -->
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading branch settings…</div>
+  </div>
+
+  <!-- SIGNED OUT -->
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">You're not signed in.</h1>
+    <p class="state-text">Branch settings are restricted to admins. Sign in to continue.</p>
+    <div class="state-actions">
+      <a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+  </div>
+
+  <!-- PROFILE PENDING -->
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending</div>
+    <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
+    <p class="state-text">You'll get an email from <strong>dsrackler@gmail.com</strong> when it's live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <!-- NOT ADMIN -->
+  <div class="state-screen" id="state-not-admin" style="display:none;">
+    <div class="state-eyebrow">Admin only</div>
+    <h1 class="state-heading">Branch settings are restricted to branch admins.</h1>
+    <p class="state-text">If you need a setting changed, ping your branch admin in <code style="font-family:var(--mono); color:var(--accent);">#general</code>.</p>
+    <div class="state-actions">
+      <a href="/home.html" class="btn primary">Back to Home</a>
+      <a href="/dashboard.html" class="btn">Open Pipeline</a>
+    </div>
+  </div>
+
+  <!-- ─── ACTIVE ─── -->
+  <div id="settings-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+
+    <!-- PAGE HEADER -->
+    <header class="page-head">
+      <div class="page-eyebrow" id="page-eyebrow">BRANCH SETTINGS</div>
+      <h1 class="page-title">Settings</h1>
+      <p class="page-sub">Branch profile, where you're licensed to lend, intake defaults, and data export. Changes apply immediately and are audit-logged.</p>
+    </header>
+
+    <!-- TAB BAR -->
+    <nav class="section-tabs" id="section-tabs">
+      <button class="section-tab active" data-section="profile"><span class="tab-num">01</span>Branch profile</button>
+      <button class="section-tab" data-section="states"><span class="tab-num">02</span>Licensed states</button>
+      <button class="section-tab" data-section="defaults"><span class="tab-num">03</span>Intake & defaults</button>
+      <button class="section-tab" data-section="export"><span class="tab-num">04</span>Data &amp; export</button>
+      <button class="section-tab" data-section="compliance"><span class="tab-num">05</span>Compliance</button>
+    </nav>
+
+    <div class="settings-body">
+
+      <!-- ─── 01 · BRANCH PROFILE ──────────────────────────────────── -->
+      <section class="panel" id="section-profile">
+        <div class="panel-head">
+          <span class="panel-title">Branch profile</span>
+          <span class="panel-tag" id="profile-status">SAVED</span>
+        </div>
+        <div class="panel-body">
+          <div class="field-grid">
+            <div class="field-block">
+              <label class="field-label" for="profile-name">Branch name</label>
+              <input class="field-input" id="profile-name" type="text" maxlength="120" placeholder="e.g. Lubbock South Plains">
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="profile-nmls">Branch NMLS ID</label>
+              <input class="field-input" id="profile-nmls" type="text" maxlength="20" placeholder="e.g. 1234567" inputmode="numeric">
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="profile-phone">Primary phone</label>
+              <input class="field-input" id="profile-phone" type="tel" maxlength="30" placeholder="(806) 555-0199">
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="profile-email">Compliance contact email <span class="field-hint">— for ECOA/HMDA notices</span></label>
+              <input class="field-input" id="profile-email" type="email" maxlength="160" placeholder="compliance@yourshop.com">
+            </div>
+            <div class="field-block" style="grid-column: 1 / -1;">
+              <label class="field-label" for="profile-address">Branch street address</label>
+              <input class="field-input" id="profile-address" type="text" maxlength="240" placeholder="6602 Slide Rd, Lubbock, TX 79424">
+              <div class="field-help">This shows on the LE/CD as your branch address. Don't enter a P.O. box.</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-foot">
+          <span class="panel-foot-meta" id="profile-meta">Last updated —</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn" id="profile-revert" disabled>Revert</button>
+            <button class="btn primary" id="profile-save" disabled>Save changes</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 02 · LICENSED STATES ─────────────────────────────────── -->
+      <section class="panel" id="section-states" style="display:none;">
+        <div class="panel-head">
+          <span class="panel-title">Licensed states</span>
+          <span class="panel-tag" id="states-status">SAVED</span>
+        </div>
+        <div class="panel-body">
+          <div class="note-block">
+            <strong>Runtime gate.</strong> Loans whose property is in an unlicensed state cannot be submitted. The check fires at intake (<code>/loans-new.html</code>) and again at stage advance — anything past <code>application</code> requires a licensed state. Audit-logged on every block.
+          </div>
+
+          <div class="states-toolbar">
+            <input type="text" class="states-search" id="states-search" placeholder="Search state name or abbr…" autocomplete="off">
+            <span class="states-count" id="states-count">0 / 56 selected</span>
+            <button class="btn small" id="states-select-all" type="button">Select all</button>
+            <button class="btn small" id="states-clear-all" type="button">Clear all</button>
+          </div>
+
+          <div class="states-grid" id="states-grid">
+            <!-- populated by JS -->
+          </div>
+        </div>
+        <div class="panel-foot">
+          <span class="panel-foot-meta" id="states-meta">Last updated —</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn" id="states-revert" disabled>Revert</button>
+            <button class="btn primary" id="states-save" disabled>Save changes</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 03 · INTAKE & DEFAULTS ───────────────────────────────── -->
+      <section class="panel" id="section-defaults" style="display:none;">
+        <div class="panel-head">
+          <span class="panel-title">Intake &amp; defaults</span>
+          <span class="panel-tag" id="defaults-status">SAVED</span>
+        </div>
+        <div class="panel-body">
+          <div class="note-block">
+            <strong>Auto-routing on stage advance.</strong> When a loan moves to <code>submitted</code>, it routes to the default processor below if no processor is already assigned. Same for UW. Round-robin balancing is on the roadmap — for now it's a single default per role.
+          </div>
+
+          <div class="field-grid">
+            <div class="field-block">
+              <label class="field-label" for="default-processor">Default processor <span class="field-hint">— routes new submissions</span></label>
+              <select class="field-select" id="default-processor">
+                <option value="">— None (manual assignment) —</option>
+              </select>
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="default-uw">Default underwriter <span class="field-hint">— routes UW handoff</span></label>
+              <select class="field-select" id="default-uw">
+                <option value="">— None (manual assignment) —</option>
+              </select>
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="default-closer">Default closer <span class="field-hint">— routes CTC files</span></label>
+              <select class="field-select" id="default-closer">
+                <option value="">— None (manual assignment) —</option>
+              </select>
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="default-loan-prefix">Loan number prefix <span class="field-hint">— stamped on every new loan</span></label>
+              <input class="field-input" id="default-loan-prefix" type="text" maxlength="8" placeholder="LBK-" pattern="[A-Z0-9-]*">
+              <div class="field-help">Letters, digits, and dashes only. Sequence is auto-assigned per branch.</div>
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="default-rate-lock-days">Default rate lock (days)</label>
+              <input class="field-input" id="default-rate-lock-days" type="number" min="0" max="180" placeholder="30">
+            </div>
+            <div class="field-block">
+              <label class="field-label" for="default-trid-buffer">TRID waiting-period buffer (days) <span class="field-hint">— extra cushion past 3-day rule</span></label>
+              <input class="field-input" id="default-trid-buffer" type="number" min="0" max="14" placeholder="1">
+              <div class="field-help">Federal minimum is 3 business days for revised CD. Most shops add 1 to absorb mail/holidays.</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-foot">
+          <span class="panel-foot-meta" id="defaults-meta">Last updated —</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn" id="defaults-revert" disabled>Revert</button>
+            <button class="btn primary" id="defaults-save" disabled>Save changes</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 04 · DATA & EXPORT ───────────────────────────────────── -->
+      <section class="panel" id="section-export" style="display:none;">
+        <div class="panel-head">
+          <span class="panel-title">Data &amp; export</span>
+          <span class="panel-tag">READ-ONLY ACTIONS</span>
+        </div>
+        <div class="panel-body">
+          <div class="note-block">
+            <strong>Your data is yours.</strong> Every export below produces a self-contained file you can open in Excel, import into another LOS, or hand to your auditor. We don't watermark, redact, or paywall any of this.
+          </div>
+
+          <div class="export-row">
+            <span class="export-icon">⛁</span>
+            <div class="export-text">
+              <span class="export-title">Branch SQL dump</span>
+              <span class="export-meta">Every loan, borrower, condition, document, and chat message. Postgres-compatible <code style="font-family:var(--mono); color:var(--accent);">.sql.gz</code> (gzipped). ~30s for branches under 5K loans.</span>
+            </div>
+            <button class="btn primary" id="export-sql" type="button">Generate &amp; download</button>
+          </div>
+
+          <div class="export-row">
+            <span class="export-icon">⊟</span>
+            <div class="export-text">
+              <span class="export-title">All loans · MISMO 3.4 bundle</span>
+              <span class="export-meta">Every active and funded loan as a MISMO 3.4 XML file, zipped. Fannie/Freddie/Ginnie-compatible. Use this to migrate to another LOS.</span>
+            </div>
+            <button class="btn primary" id="export-mismo" type="button">Generate bundle</button>
+          </div>
+
+          <div class="export-row">
+            <span class="export-icon">∷</span>
+            <div class="export-text">
+              <span class="export-title">HMDA LAR · current year</span>
+              <span class="export-meta">Loan Application Register in CFPB-prescribed format. Pre-filled from your branch's loan data. Review before filing — software outputs are aids, not substitutes.</span>
+            </div>
+            <button class="btn" id="export-hmda" type="button">Generate LAR (.csv)</button>
+          </div>
+
+          <div class="export-row">
+            <span class="export-icon">⚐</span>
+            <div class="export-text">
+              <span class="export-title">Audit log · last 12 months</span>
+              <span class="export-meta">Every stage change, condition clear, document upload, and login event. CSV with timestamps and actor IDs.</span>
+            </div>
+            <button class="btn" id="export-audit" type="button">Download audit log</button>
+          </div>
+
+          <div class="export-row" style="border-color: rgba(255,68,68,0.3); border-left: 2px solid var(--red);">
+            <span class="export-icon" style="color:var(--red); border-color: rgba(255,68,68,0.3);">⊘</span>
+            <div class="export-text">
+              <span class="export-title">Cancel branch &amp; export everything</span>
+              <span class="export-meta">Schedules a full data export, then closes the branch at the end of the current billing period. You'll get a download link emailed to the compliance contact 24 hours before close.</span>
+            </div>
+            <button class="btn danger" id="export-cancel" type="button">Begin cancellation</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 05 · COMPLIANCE ──────────────────────────────────────── -->
+      <section class="panel" id="section-compliance" style="display:none;">
+        <div class="panel-head">
+          <span class="panel-title">Compliance posture</span>
+          <span class="panel-tag">FACT SHEET</span>
+        </div>
+        <div class="panel-body">
+          <div class="note-block warn">
+            <strong>OriginFlow LOS is software, not a compliance officer.</strong> The information below describes how the platform behaves; it does <em>not</em> constitute legal or compliance advice. Your licensed lender remains responsible for federal and state compliance.
+          </div>
+
+          <table class="detail-table">
+            <thead>
+              <tr><th style="width:40%;">Subject</th><th>OriginFlow behavior</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="label">TRID waiting period</td>
+                <td>Tracked per loan; LE/CD timestamps captured on send. Stage advance to <code style="font-family:var(--mono); color:var(--accent);">funded</code> is blocked until 3 business days after CD send (4 with the buffer above).</td>
+              </tr>
+              <tr>
+                <td class="label">ECOA adverse action</td>
+                <td>When a loan moves to <code style="font-family:var(--mono); color:var(--accent);">denied</code>, an ECOA-compliant adverse action notice is generated and queued for review. 30-day clock starts at denial timestamp.</td>
+              </tr>
+              <tr>
+                <td class="label">HMDA LAR</td>
+                <td>Every loan record contributes the HMDA fields it has. The LAR export above pre-fills 100% of fields the platform tracks; a few demographic fields require manual entry from the application.</td>
+              </tr>
+              <tr>
+                <td class="label">RESPA fees / 0% tolerance</td>
+                <td>Initial LE fee disclosure tracked. CD vs LE delta flagged on the loan if any fee crosses the 0% / 10% / unlimited tolerance line.</td>
+              </tr>
+              <tr>
+                <td class="label">State licensing</td>
+                <td>Configured under <strong>Licensed states</strong>. Loan creation and submission blocked for any property in an unlicensed state. Override requires an admin and writes a justification to the audit log.</td>
+              </tr>
+              <tr>
+                <td class="label">Document retention</td>
+                <td>Documents and audit logs retained for 7 years past loan closure (RESPA standard). Deletion requires admin with two-factor confirmation.</td>
+              </tr>
+              <tr>
+                <td class="label">Encryption at rest</td>
+                <td>AES-256, Postgres TDE. Document storage uses S3-equivalent SSE. Backups encrypted and stored cross-region.</td>
+              </tr>
+              <tr>
+                <td class="label">Encryption in transit</td>
+                <td>TLS 1.3 enforced. HSTS preloaded. Document URLs are short-lived signed URLs.</td>
+              </tr>
+              <tr>
+                <td class="label">Access control</td>
+                <td>Row-level security in Postgres scopes every query to <code style="font-family:var(--mono); color:var(--accent);">branch_id</code>. No cross-branch reads possible at the database layer.</td>
+              </tr>
+              <tr>
+                <td class="label">SOC 2</td>
+                <td>Type 1 in progress. Type 2 observation period begins Q3 2026. Trust report at <code style="font-family:var(--mono); color:var(--accent);">/trust</code> when ready.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- toast -->
+<div class="toast" id="toast" role="status"></div>
+
+<!-- COOKIE BANNER -->
+<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cb-text">
+    <strong>We use cookies for analytics.</strong>
+    Helps us see which features people actually use. Nothing tied to a borrower or loan ever leaves your browser.
+    Details in our <a href="/privacy.html">Privacy Policy</a>.
+  </div>
+  <div class="cb-buttons">
+    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
+    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-disclaimer">
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations &mdash; including TRID, ECOA, HMDA, RESPA, and state licensing &mdash; remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+  </div>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · branch settings · admin only</span>
+    <div style="display:flex;gap:1.25rem;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/team.html">Team</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// /branch-settings.html — admin-only branch configuration
+//
+// Sections (each is its own panel with its own dirty/save state):
+//   01 · Branch profile      — name, NMLS, phone, address, compliance email
+//   02 · Licensed states     — array on `branches.licensed_states[]`. Used as
+//                              a runtime gate at intake (loans-new.html) and
+//                              stage advance (dashboard.html).
+//   03 · Intake & defaults   — default processor / UW / closer for auto-route
+//                              on stage advance + loan number prefix +
+//                              rate lock + TRID buffer.
+//   04 · Data & export       — branch SQL dump, all-loans MISMO bundle,
+//                              HMDA LAR, audit log, cancel-and-export.
+//   05 · Compliance          — read-only fact sheet describing platform
+//                              behavior (NOT legal advice).
+//
+// Schema columns expected on `branches`:
+//   id, name, nmls_id, phone, address, compliance_email,
+//   licensed_states text[],
+//   default_processor_id, default_underwriter_id, default_closer_id,
+//   loan_number_prefix, default_rate_lock_days, trid_buffer_days,
+//   subscription_status, subscription_plan, founders_number,
+//   stripe_customer_id, current_period_end, cancel_at_period_end,
+//   created_at, updated_at
+//
+// Hooks (you implement these against your edge functions):
+//   window.OF_exportBranchSql(branchId)    -> { url, expires_at }
+//   window.OF_exportBranchMismo(branchId)  -> { url, expires_at }
+//   window.OF_exportBranchHmda(branchId, year) -> { url, expires_at }
+//   window.OF_exportAuditLog(branchId, since) -> { url, expires_at }
+//   window.OF_beginCancellation(branchId)  -> { scheduled_for, export_url? }
+//
+// If a hook is missing the button shows an explanatory toast — page
+// degrades gracefully so admins can still review/edit settings.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $ = (s) => document.querySelector(s);
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+// ─── State ───────────────────────────────────────────────────────────────
+let supa = null;
+let me = null;
+let branch = null;        // The full branches row (current saved values)
+let teamProfiles = [];    // Active branch users — for default-assignee dropdowns
+
+// Per-section dirty tracking. Each section has its own snapshot and editor.
+const SECTIONS = ['profile', 'states', 'defaults'];
+const snapshot = {};      // saved values keyed by section field name
+const editing  = {};      // current edit values
+
+// ─── 50 states + DC + 5 territories. Federal lending licensing covers all
+// of these for at least some product types (FHA loans on territories, USDA
+// on Puerto Rico, etc.). We list them all and let admins pick. ──────────
+const US_STATES = [
+  ['AL','Alabama'],      ['AK','Alaska'],       ['AZ','Arizona'],     ['AR','Arkansas'],
+  ['CA','California'],   ['CO','Colorado'],     ['CT','Connecticut'], ['DE','Delaware'],
+  ['DC','D.C.'],         ['FL','Florida'],      ['GA','Georgia'],     ['HI','Hawaii'],
+  ['ID','Idaho'],        ['IL','Illinois'],     ['IN','Indiana'],     ['IA','Iowa'],
+  ['KS','Kansas'],       ['KY','Kentucky'],     ['LA','Louisiana'],   ['ME','Maine'],
+  ['MD','Maryland'],     ['MA','Massachusetts'],['MI','Michigan'],    ['MN','Minnesota'],
+  ['MS','Mississippi'],  ['MO','Missouri'],     ['MT','Montana'],     ['NE','Nebraska'],
+  ['NV','Nevada'],       ['NH','New Hampshire'],['NJ','New Jersey'],  ['NM','New Mexico'],
+  ['NY','New York'],     ['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],
+  ['OK','Oklahoma'],     ['OR','Oregon'],       ['PA','Pennsylvania'],['RI','Rhode Island'],
+  ['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],   ['TX','Texas'],
+  ['UT','Utah'],         ['VT','Vermont'],      ['VA','Virginia'],    ['WA','Washington'],
+  ['WV','West Virginia'],['WI','Wisconsin'],    ['WY','Wyoming'],
+  // Territories
+  ['PR','Puerto Rico'],  ['VI','U.S. Virgin Islands'], ['GU','Guam'],
+  ['AS','American Samoa'],['MP','Northern Mariana Is.'],
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function showToast(msg, isError) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH + BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('session error:', err); }
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile) { showState('state-pending'); return; }
+  if (!profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  $('#nav-user-name').textContent  = me.full_name;
+  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = profile.branches?.name || 'Your Branch';
+  $('#nav-branch-pill').style.display = 'inline-flex';
+
+  // Admin-only gate. Other roles bounce to "not admin" screen.
+  if (me.role !== 'admin') {
+    showState('state-not-admin');
+    return;
+  }
+  $('#nav-team-li').style.display = 'list-item';
+  $('#nav-settings-li').style.display = 'list-item';
+
+  showActive();
+  await loadBranch();
+  await loadTeamProfiles();
+  initSectionTabs();
+  initProfileSection();
+  initStatesSection();
+  initDefaultsSection();
+  initExportSection();
+  initSearchShortcut();
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending','state-not-admin'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#settings-active').style.display = 'none';
+}
+function showActive() {
+  ['state-loading','state-signed-out','state-pending','state-not-admin'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#settings-active').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD BRANCH + TEAM
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadBranch() {
+  const { data, error } = await supa.from('branches')
+    .select(`
+      id, name, nmls_id, phone, address, compliance_email,
+      licensed_states,
+      default_processor_id, default_underwriter_id, default_closer_id,
+      loan_number_prefix, default_rate_lock_days, trid_buffer_days,
+      created_at, updated_at
+    `)
+    .eq('id', me.branch_id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('branch load:', error);
+    showToast('Couldn\'t load branch: ' + error.message, true);
+    return;
+  }
+  branch = data || {};
+
+  // Snapshot every section's saved values
+  snapshot.profile = {
+    name: branch.name || '',
+    nmls_id: branch.nmls_id || '',
+    phone: branch.phone || '',
+    address: branch.address || '',
+    compliance_email: branch.compliance_email || '',
+  };
+  editing.profile = { ...snapshot.profile };
+
+  snapshot.states = {
+    licensed_states: Array.isArray(branch.licensed_states) ? [...branch.licensed_states] : [],
+  };
+  editing.states = { licensed_states: [...snapshot.states.licensed_states] };
+
+  snapshot.defaults = {
+    default_processor_id: branch.default_processor_id || '',
+    default_underwriter_id: branch.default_underwriter_id || '',
+    default_closer_id: branch.default_closer_id || '',
+    loan_number_prefix: branch.loan_number_prefix || '',
+    default_rate_lock_days: branch.default_rate_lock_days ?? '',
+    trid_buffer_days: branch.trid_buffer_days ?? '',
+  };
+  editing.defaults = { ...snapshot.defaults };
+
+  // Display "Last updated" on each section
+  const ago = timeAgo(branch.updated_at);
+  $('#profile-meta').textContent = 'Last updated ' + ago;
+  $('#states-meta').textContent = 'Last updated ' + ago;
+  $('#defaults-meta').textContent = 'Last updated ' + ago;
+}
+
+async function loadTeamProfiles() {
+  const { data, error } = await supa.from('profiles')
+    .select('id, full_name, role')
+    .eq('branch_id', me.branch_id)
+    .in('role', ['lo','loa','processor','underwriter','closer','admin'])
+    .order('full_name', { ascending: true });
+
+  if (error) {
+    console.warn('team profiles load:', error);
+    teamProfiles = [];
+    return;
+  }
+  teamProfiles = data || [];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION TABS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initSectionTabs() {
+  document.querySelectorAll('.section-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.section;
+      document.querySelectorAll('.section-tab').forEach(b => b.classList.toggle('active', b === btn));
+      ['profile','states','defaults','export','compliance'].forEach(s => {
+        document.getElementById('section-' + s).style.display = (s === target) ? 'block' : 'none';
+      });
+      // Update URL hash without scroll
+      const url = new URL(window.location);
+      url.hash = target;
+      history.replaceState({}, '', url);
+    });
+  });
+  // Open the section from hash, if any
+  if (window.location.hash) {
+    const target = window.location.hash.slice(1);
+    const btn = document.querySelector(`.section-tab[data-section="${target}"]`);
+    if (btn) btn.click();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 01 · BRANCH PROFILE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initProfileSection() {
+  const fields = ['name','nmls_id','phone','address','compliance_email'];
+  // Map HTML input ids to schema field names
+  const map = {
+    'profile-name': 'name', 'profile-nmls': 'nmls_id', 'profile-phone': 'phone',
+    'profile-address': 'address', 'profile-email': 'compliance_email',
+  };
+  // Hydrate
+  for (const [inputId, fld] of Object.entries(map)) {
+    document.getElementById(inputId).value = editing.profile[fld] ?? '';
+  }
+  // Wire change tracking
+  for (const [inputId, fld] of Object.entries(map)) {
+    document.getElementById(inputId).addEventListener('input', (e) => {
+      editing.profile[fld] = e.target.value.trim();
+      updateDirtyState('profile');
+    });
+  }
+  $('#profile-revert').addEventListener('click', () => {
+    editing.profile = { ...snapshot.profile };
+    for (const [inputId, fld] of Object.entries(map)) {
+      document.getElementById(inputId).value = editing.profile[fld] ?? '';
+    }
+    updateDirtyState('profile');
+  });
+  $('#profile-save').addEventListener('click', () => saveSection('profile'));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 02 · LICENSED STATES
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initStatesSection() {
+  renderStatesGrid();
+  $('#states-search').addEventListener('input', renderStatesGrid);
+  $('#states-select-all').addEventListener('click', () => {
+    editing.states.licensed_states = US_STATES.map(([abbr]) => abbr);
+    renderStatesGrid();
+    updateDirtyState('states');
+  });
+  $('#states-clear-all').addEventListener('click', () => {
+    editing.states.licensed_states = [];
+    renderStatesGrid();
+    updateDirtyState('states');
+  });
+  $('#states-revert').addEventListener('click', () => {
+    editing.states.licensed_states = [...snapshot.states.licensed_states];
+    renderStatesGrid();
+    updateDirtyState('states');
+  });
+  $('#states-save').addEventListener('click', () => saveSection('states'));
+}
+
+function renderStatesGrid() {
+  const search = ($('#states-search').value || '').trim().toLowerCase();
+  const grid = $('#states-grid');
+  const selected = new Set(editing.states.licensed_states);
+
+  grid.innerHTML = US_STATES.map(([abbr, name]) => {
+    const matches = !search ||
+      abbr.toLowerCase().includes(search) ||
+      name.toLowerCase().includes(search);
+    const isActive = selected.has(abbr);
+    return `
+      <div class="state-cell ${isActive ? 'active' : ''} ${matches ? '' : 'hidden'}"
+           data-abbr="${abbr}" role="button" tabindex="0">
+        <span class="state-check">${isActive ? '✓' : ''}</span>
+        <span class="state-abbr">${abbr}</span>
+        <span class="state-name">${escapeHtml(name)}</span>
+      </div>
+    `;
+  }).join('');
+
+  grid.querySelectorAll('.state-cell').forEach(cell => {
+    cell.addEventListener('click', () => toggleState(cell.dataset.abbr));
+    cell.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        toggleState(cell.dataset.abbr);
+      }
+    });
+  });
+
+  $('#states-count').textContent = `${selected.size} / ${US_STATES.length} selected`;
+}
+
+function toggleState(abbr) {
+  const idx = editing.states.licensed_states.indexOf(abbr);
+  if (idx >= 0) editing.states.licensed_states.splice(idx, 1);
+  else editing.states.licensed_states.push(abbr);
+  renderStatesGrid();
+  updateDirtyState('states');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 03 · INTAKE & DEFAULTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initDefaultsSection() {
+  // Populate role-scoped dropdowns
+  const procs = teamProfiles.filter(p => p.role === 'processor' || p.role === 'admin');
+  const uws   = teamProfiles.filter(p => p.role === 'underwriter' || p.role === 'admin');
+  const cls   = teamProfiles.filter(p => p.role === 'closer' || p.role === 'admin');
+
+  fillDropdown('default-processor', procs, editing.defaults.default_processor_id);
+  fillDropdown('default-uw', uws, editing.defaults.default_underwriter_id);
+  fillDropdown('default-closer', cls, editing.defaults.default_closer_id);
+
+  $('#default-loan-prefix').value = editing.defaults.loan_number_prefix || '';
+  $('#default-rate-lock-days').value = editing.defaults.default_rate_lock_days ?? '';
+  $('#default-trid-buffer').value = editing.defaults.trid_buffer_days ?? '';
+
+  const map = {
+    'default-processor': 'default_processor_id',
+    'default-uw': 'default_underwriter_id',
+    'default-closer': 'default_closer_id',
+    'default-loan-prefix': 'loan_number_prefix',
+    'default-rate-lock-days': 'default_rate_lock_days',
+    'default-trid-buffer': 'trid_buffer_days',
+  };
+  for (const [inputId, fld] of Object.entries(map)) {
+    const el = document.getElementById(inputId);
+    el.addEventListener('input', () => {
+      let v = el.value.trim();
+      if (fld === 'loan_number_prefix') v = v.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+      el.value = v;
+      // Numeric coercion for the integer columns; null when empty.
+      if (fld === 'default_rate_lock_days' || fld === 'trid_buffer_days') {
+        editing.defaults[fld] = v === '' ? null : Number(v);
+      } else if (fld.endsWith('_id')) {
+        editing.defaults[fld] = v || null;
+      } else {
+        editing.defaults[fld] = v;
+      }
+      updateDirtyState('defaults');
+    });
+  }
+  $('#defaults-revert').addEventListener('click', () => {
+    editing.defaults = { ...snapshot.defaults };
+    for (const [inputId, fld] of Object.entries(map)) {
+      document.getElementById(inputId).value = editing.defaults[fld] ?? '';
+    }
+    updateDirtyState('defaults');
+  });
+  $('#defaults-save').addEventListener('click', () => saveSection('defaults'));
+}
+
+function fillDropdown(id, profiles, currentValue) {
+  const el = document.getElementById(id);
+  el.innerHTML = '<option value="">— None (manual assignment) —</option>' +
+    profiles.map(p => `
+      <option value="${escapeHtml(p.id)}" ${p.id === currentValue ? 'selected' : ''}>
+        ${escapeHtml(p.full_name)} · ${(p.role || '').toUpperCase()}
+      </option>
+    `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DIRTY STATE + SAVE (shared across sections 1-3)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function isDirty(section) {
+  const a = snapshot[section] || {};
+  const b = editing[section] || {};
+  // Deep-ish equality: handle arrays + primitives. No nested objects in our schema.
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) {
+    const av = a[k], bv = b[k];
+    if (Array.isArray(av) || Array.isArray(bv)) {
+      if (!Array.isArray(av) || !Array.isArray(bv)) return true;
+      if (av.length !== bv.length) return true;
+      const sa = [...av].sort(), sb = [...bv].sort();
+      for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return true;
+    } else {
+      // null/undefined/'' all equivalent — admin clears a field, treats as unset
+      const aN = av == null || av === '' ? null : av;
+      const bN = bv == null || bv === '' ? null : bv;
+      if (aN !== bN) return true;
+    }
+  }
+  return false;
+}
+
+function updateDirtyState(section) {
+  const dirty = isDirty(section);
+  const tag = document.getElementById(section + '-status');
+  const save = document.getElementById(section + '-save');
+  const revert = document.getElementById(section + '-revert');
+  if (dirty) {
+    tag.textContent = 'UNSAVED';
+    tag.className = 'panel-tag dirty';
+  } else {
+    tag.textContent = 'SAVED';
+    tag.className = 'panel-tag saved';
+  }
+  save.disabled = !dirty;
+  revert.disabled = !dirty;
+}
+
+async function saveSection(section) {
+  const save = document.getElementById(section + '-save');
+  save.disabled = true;
+  save.textContent = 'Saving…';
+
+  try {
+    const payload = { ...editing[section], updated_at: new Date().toISOString() };
+    const { error } = await supa.from('branches')
+      .update(payload).eq('id', me.branch_id);
+    if (error) throw error;
+
+    // Audit log (best-effort)
+    supa.from('audit_logs').insert({
+      branch_id: me.branch_id,
+      actor_id: me.id, actor_role: me.role,
+      operation: 'update', table_name: 'branches',
+      diff: { section, changed: payload },
+    }).then(({ error }) => { if (error) console.warn('audit:', error.message); });
+
+    // Move editing → snapshot
+    if (Array.isArray(editing[section].licensed_states)) {
+      snapshot[section] = { licensed_states: [...editing[section].licensed_states] };
+    } else {
+      snapshot[section] = { ...editing[section] };
+    }
+    updateDirtyState(section);
+    document.getElementById(section + '-meta').textContent = 'Last updated just now';
+    showToast('Saved.');
+  } catch (err) {
+    console.error('save err:', err);
+    showToast('Save failed: ' + err.message, true);
+  } finally {
+    save.disabled = !isDirty(section);
+    save.textContent = 'Save changes';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 04 · DATA & EXPORT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initExportSection() {
+  $('#export-sql').addEventListener('click', () => runExport('OF_exportBranchSql', 'Branch SQL dump', { branchId: me.branch_id }));
+  $('#export-mismo').addEventListener('click', () => runExport('OF_exportBranchMismo', 'MISMO 3.4 bundle', { branchId: me.branch_id }));
+  $('#export-hmda').addEventListener('click', () => runExport('OF_exportBranchHmda', 'HMDA LAR', { branchId: me.branch_id, year: new Date().getFullYear() }));
+  $('#export-audit').addEventListener('click', () => runExport('OF_exportAuditLog', 'Audit log', { branchId: me.branch_id, since: new Date(Date.now() - 365*86400000).toISOString() }));
+  $('#export-cancel').addEventListener('click', beginCancellation);
+}
+
+async function runExport(hookName, label, args) {
+  const hook = window[hookName];
+  if (typeof hook !== 'function') {
+    showToast(`${label} export hook not configured. See bottom of branch-settings.html for the hook signature.`, true);
+    return;
+  }
+  showToast(`Generating ${label.toLowerCase()}…`);
+  try {
+    const result = await hook(args);
+    if (!result || !result.url) throw new Error('Hook returned no URL');
+    // Audit
+    supa.from('audit_logs').insert({
+      branch_id: me.branch_id,
+      actor_id: me.id, actor_role: me.role,
+      operation: 'export', table_name: 'branches',
+      diff: { export: hookName, args },
+    });
+    // Open the download
+    window.location.href = result.url;
+  } catch (err) {
+    console.error('export err:', err);
+    showToast(`${label} failed: ${err.message}`, true);
+  }
+}
+
+async function beginCancellation() {
+  const confirmText = prompt(
+    'This will schedule a full data export and close your branch at the end of the current billing period. ' +
+    'Type CANCEL to confirm.'
+  );
+  if (confirmText !== 'CANCEL') {
+    showToast('Cancellation aborted.', false);
+    return;
+  }
+  const hook = window.OF_beginCancellation;
+  if (typeof hook !== 'function') {
+    showToast('Cancellation hook not configured. Email dsrackler@gmail.com to cancel.', true);
+    return;
+  }
+  try {
+    const result = await hook({ branchId: me.branch_id });
+    showToast('Cancellation scheduled. You\'ll receive an email with the export link 24h before close.');
+    if (result?.scheduled_for) {
+      $('#export-cancel').textContent = 'Scheduled · ' + new Date(result.scheduled_for).toLocaleDateString();
+      $('#export-cancel').disabled = true;
+    }
+  } catch (err) {
+    showToast('Cancellation failed: ' + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEARCH SHORTCUT (Cmd/Ctrl+K → bounce to home palette, since this page has none)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initSearchShortcut() {
+  $('#nav-search-btn').addEventListener('click', () => {
+    window.location.href = '/home.html#cmdk';
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      window.location.href = '/home.html#cmdk';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORT HOOKS — implement these in /js/of-hooks.js or a dedicated <script>
+// before this file. Each receives a single args object and returns a Promise
+// resolving to { url, expires_at }. The url is opened with window.location
+// so signed S3 / R2 URLs work without CORS.
+//
+// Example:
+//
+//   window.OF_exportBranchSql = async function({ branchId }) {
+//     const supa = getSupabase();
+//     const { data, error } = await supa.functions.invoke('export-branch-sql', {
+//       body: { branch_id: branchId }
+//     });
+//     if (error) throw error;
+//     return data;  // { url, expires_at }
+//   };
+//
+// Until you wire each hook, the corresponding button toasts an explanatory
+// error so admins know which edge function to deploy next.
+// ═══════════════════════════════════════════════════════════════════════════
+</script>
+
+<!-- COOKIE BANNER WIRING (matches home.html) -->
+<script>
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+  var prior = null;
+  try { prior = localStorage.getItem(KEY); } catch (_) {}
+  if (prior !== 'granted' && prior !== 'denied') banner.classList.remove('hidden');
+  function setConsent(value) {
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', { 'analytics_storage': value === 'granted' ? 'granted' : 'denied' });
+    }
+    banner.classList.add('hidden');
+  }
+  var accept = document.getElementById('cb-accept');
+  var decline = document.getElementById('cb-decline');
+  if (accept)  accept.addEventListener('click',  function() { setConsent('granted'); });
+  if (decline) decline.addEventListener('click', function() { setConsent('denied');  });
+})();
+</script>
+
+</body>
+</html>
