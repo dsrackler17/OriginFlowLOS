@@ -146,9 +146,7 @@ nav {
   color: var(--muted); margin-top: 0.35rem; max-width: 720px;
   font-size: 0.92rem;
 }
-.page-actions {
-  display: flex; gap: 0.5rem; flex-wrap: wrap;
-}
+.page-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .btn-primary {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
   text-transform: uppercase; font-weight: 700;
@@ -219,17 +217,8 @@ nav {
 }
 
 /* ─── ROSTER TABLE ─────────────────────────────────────────────────── */
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.roster-wrap {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem 2rem;
-}
+main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.roster-wrap { flex: 1; overflow-y: auto; padding: 1.5rem 2rem; }
 .roster-table {
   width: 100%;
   border-collapse: separate;
@@ -250,18 +239,10 @@ main {
   z-index: 1;
 }
 .roster-table thead th.num { text-align: right; }
-.roster-table tbody tr {
-  transition: background 0.12s;
-}
-.roster-table tbody tr:hover {
-  background: rgba(0,212,255,0.03);
-}
-.roster-table tbody tr.archived {
-  opacity: 0.55;
-}
-.roster-table tbody tr.archived:hover {
-  opacity: 0.8;
-}
+.roster-table tbody tr { transition: background 0.12s; }
+.roster-table tbody tr:hover { background: rgba(0,212,255,0.03); }
+.roster-table tbody tr.archived { opacity: 0.55; }
+.roster-table tbody tr.archived:hover { opacity: 0.8; }
 .roster-table td {
   padding: 0.95rem 1rem;
   border-bottom: 1px solid var(--border);
@@ -269,15 +250,10 @@ main {
   color: var(--text);
   vertical-align: middle;
 }
-.roster-table tbody tr:last-child td {
-  border-bottom: none;
-}
+.roster-table tbody tr:last-child td { border-bottom: none; }
 .roster-table td.num { text-align: right; font-family: var(--mono); font-size: 0.78rem; }
 
-.user-cell {
-  display: flex; align-items: center; gap: 0.75rem;
-  min-width: 0;
-}
+.user-cell { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 .user-avatar {
   width: 36px; height: 36px;
   background: var(--deep);
@@ -289,10 +265,7 @@ main {
   text-transform: uppercase;
 }
 .user-avatar.you { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.04); }
-.user-info {
-  display: flex; flex-direction: column; gap: 0.1rem;
-  min-width: 0;
-}
+.user-info { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
 .user-name {
   font-family: var(--sans); font-size: 0.9rem; color: var(--white);
   font-weight: 500;
@@ -338,10 +311,7 @@ main {
 .role-select:hover { border-color: var(--accent); }
 .role-select:focus { border-color: var(--accent); }
 
-.row-actions {
-  display: flex; gap: 0.4rem;
-  justify-content: flex-end;
-}
+.row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 .row-action {
   font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
   text-transform: uppercase; cursor: pointer;
@@ -354,10 +324,7 @@ main {
 .row-action.danger:hover { color: var(--red); border-color: rgba(255,68,68,0.5); }
 .row-action.success { color: var(--accent2); border-color: rgba(0,255,157,0.3); }
 .row-action.success:hover { color: var(--navy); background: var(--accent2); border-color: var(--accent2); }
-.row-action:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
+.row-action:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .last-active {
   font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
@@ -402,11 +369,7 @@ main {
   font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
   text-transform: uppercase; color: var(--accent);
 }
-.modal-body {
-  padding: 1.25rem;
-  overflow-y: auto;
-  flex: 1;
-}
+.modal-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
 .modal-foot {
   padding: 0.85rem 1.25rem;
   border-top: 1px solid var(--border);
@@ -536,13 +499,59 @@ main {
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
-  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+  color: var(--muted); background: var(--deep);
+}
+.footer-disclaimer {
+  padding: 0.7rem 2rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.55rem; line-height: 1.5;
+  color: var(--muted);
+}
+.footer-disclaimer strong { color: var(--text); font-weight: 700; }
+.footer-bottom {
+  padding: 0.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
+
+/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
+.cookie-banner {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--accent);
+  padding: 1rem 1.5rem;
+  display: none;
+  align-items: center; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+  z-index: 500;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+}
+.cookie-banner.show { display: flex; }
+.cookie-banner-text {
+  flex: 1; min-width: 280px;
+  font-family: var(--sans); font-size: 0.82rem;
+  color: var(--text); line-height: 1.5;
+}
+.cookie-banner-text a { color: var(--accent); text-decoration: none; }
+.cookie-banner-text a:hover { text-decoration: underline; }
+.cookie-banner-actions { display: flex; gap: 0.6rem; flex-shrink: 0; }
+.cookie-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  cursor: pointer; transition: all 0.15s;
+}
+.cookie-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cookie-btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); }
+.cookie-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
 
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
@@ -553,9 +562,7 @@ footer a:hover { color: var(--accent); }
   .roster-table thead th.col-loans,
   .roster-table tbody td.col-loans,
   .roster-table thead th.col-active,
-  .roster-table tbody td.col-active {
-    display: none;
-  }
+  .roster-table tbody td.col-active { display: none; }
 }
 @media (max-width: 540px) {
   nav { padding: 0.85rem 1rem; gap: 0.5rem; }
@@ -568,12 +575,15 @@ footer a:hover { color: var(--accent); }
   .roster-wrap { padding: 0.75rem 0.5rem; }
   .roster-table thead th, .roster-table td { padding: 0.65rem 0.55rem; font-size: 0.78rem; }
   .roster-table thead th.col-email,
-  .roster-table tbody td.col-email {
-    display: none;
-  }
-  .user-email { display: block; }   /* show email under name in mobile */
+  .roster-table tbody td.col-email { display: none; }
+  .user-email { display: block; }
   .role-pill { font-size: 0.5rem; padding: 0.18rem 0.4rem; }
   .row-actions { flex-direction: column; gap: 0.25rem; }
+  .footer-disclaimer { padding: 0.6rem 1rem; }
+  .footer-bottom { padding: 0.65rem 1rem; }
+  .cookie-banner { padding: 0.85rem 1rem; flex-direction: column; align-items: stretch; }
+  .cookie-banner-actions { width: 100%; }
+  .cookie-btn { flex: 1; }
 }
 </style>
 
@@ -582,9 +592,6 @@ footer a:hover { color: var(--accent); }
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- NAV                                                                  -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
 <nav>
   <a href="/home.html" class="nav-logo">
     <div class="sonar-icon">
@@ -625,19 +632,14 @@ footer a:hover { color: var(--accent); }
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MAIN                                                                 -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
 <main id="main">
 
-  <!-- LOADING -->
   <div class="state-screen" id="state-loading">
     <div class="spinner"></div>
     <div class="state-eyebrow">Authenticating</div>
     <div class="state-heading" style="font-size:1.4rem;">Loading team…</div>
   </div>
 
-  <!-- SIGNED OUT -->
   <div class="state-screen" id="state-signed-out" style="display:none;">
     <div class="state-eyebrow">Sign in required</div>
     <h1 class="state-heading">The team page is branch-scoped.</h1>
@@ -645,7 +647,6 @@ footer a:hover { color: var(--accent); }
     <a href="/login.html" class="btn primary">Sign in →</a>
   </div>
 
-  <!-- PROFILE PENDING -->
   <div class="state-screen" id="state-pending" style="display:none;">
     <div class="state-eyebrow">Account pending</div>
     <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
@@ -653,15 +654,12 @@ footer a:hover { color: var(--accent); }
     <a href="/home.html" class="btn">Back to Home</a>
   </div>
 
-  <!-- ─── ACTIVE ─── -->
   <div id="team-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
 
-    <!-- VIEWER-MODE BANNER (hidden for admins) -->
     <div class="viewer-banner" id="viewer-banner" style="display:none;">
       <strong>Read-only view.</strong> Your branch's admins can edit roles and invite new members. Ask your admin if something here looks wrong.
     </div>
 
-    <!-- PAGE HEADER -->
     <header class="page-head">
       <div class="page-head-text">
         <div class="page-eyebrow">BRANCH ROSTER</div>
@@ -673,7 +671,6 @@ footer a:hover { color: var(--accent); }
       </div>
     </header>
 
-    <!-- METRICS -->
     <section class="metric-strip" id="metric-strip">
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
@@ -681,7 +678,6 @@ footer a:hover { color: var(--accent); }
       <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
     </section>
 
-    <!-- FILTERS -->
     <div class="filter-bar">
       <input type="text" class="filter-input" id="filter-search" placeholder="Search by name, email, or role…">
       <select class="filter-select" id="filter-role">
@@ -701,7 +697,6 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
 
-    <!-- ROSTER -->
     <div class="roster-wrap">
       <table class="roster-table">
         <thead>
@@ -724,9 +719,6 @@ footer a:hover { color: var(--accent); }
 
 </main>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- INVITE MODAL                                                         -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="invite-modal" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="modal-head">
@@ -764,9 +756,6 @@ footer a:hover { color: var(--accent); }
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- REMOVE MODAL                                                         -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="remove-modal" role="dialog" aria-modal="true">
   <div class="modal">
     <div class="modal-head">
@@ -774,11 +763,7 @@ footer a:hover { color: var(--accent); }
     </div>
     <div class="modal-body">
       <div id="remove-summary" style="margin-bottom: 1rem;"></div>
-
-      <div class="modal-warning" id="remove-impact">
-        <!-- populated dynamically with the user's open loans -->
-      </div>
-
+      <div class="modal-warning" id="remove-impact"></div>
       <div class="field-block">
         <label class="field-label" for="remove-confirm-input">Type <strong style="color:var(--red);">REMOVE</strong> to confirm</label>
         <input type="text" class="field-input confirm-typed" id="remove-confirm-input" placeholder="REMOVE" autocomplete="off">
@@ -792,22 +777,76 @@ footer a:hover { color: var(--accent); }
   </div>
 </div>
 
-<!-- toast -->
 <div class="toast" id="toast" role="status"></div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- FOOTER                                                               -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cookie-banner-text">
+    We use a small amount of session storage to keep you signed in and remember your branch.
+    Optional analytics help us understand how the LOS is used.
+    See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
+  </div>
+  <div class="cookie-banner-actions">
+    <button class="cookie-btn" id="cookie-reject" type="button">Reject optional</button>
+    <button class="cookie-btn primary" id="cookie-accept" type="button">Accept all</button>
+  </div>
+</div>
+
 <footer>
-  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>v0.2 · Team · Branch user management</span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="/home.html">Home</a>
-    <a href="/dashboard.html">Pipeline</a>
-    <a href="/branch-library.html">Library</a>
-    <a href="/reports.html">Reports</a>
+  <div class="footer-disclaimer">
+    <strong>OriginFlow LOS</strong> · Confidential branch data — authorized personnel only · Subject to your organization's information security and HMDA/ECOA compliance policies
+  </div>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · Team · Branch user management</span>
+    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/branch-library.html">Library</a>
+      <a href="/reports.html">Reports</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
   </div>
 </footer>
+
+<script>
+// ─── Cookie consent IIFE ─────────────────────────────────────────────
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+  if (typeof window.gtag !== 'function') {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { window.dataLayer.push(arguments); };
+  }
+  try {
+    window.gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+    });
+  } catch (_e) {}
+  var existing = null;
+  try { existing = localStorage.getItem(KEY); } catch (_e) {}
+  if (existing === 'accepted') {
+    try { window.gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'denied' }); } catch (_e) {}
+    return;
+  }
+  if (existing === 'rejected') return;
+  setTimeout(function() { banner.classList.add('show'); }, 600);
+  function decide(value) {
+    try { localStorage.setItem(KEY, value); } catch (_e) {}
+    banner.classList.remove('show');
+    try {
+      window.gtag('consent', 'update', {
+        analytics_storage: value === 'accepted' ? 'granted' : 'denied',
+        ad_storage: 'denied',
+      });
+    } catch (_e) {}
+  }
+  document.getElementById('cookie-accept').addEventListener('click', function() { decide('accepted'); });
+  document.getElementById('cookie-reject').addEventListener('click', function() { decide('rejected'); });
+})();
+</script>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════

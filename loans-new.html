@@ -160,12 +160,8 @@ main {
   border-color: rgba(0,212,255,0.3);
   border-left-color: var(--accent);
 }
-.rail-step.done {
-  border-left-color: var(--accent2);
-}
-.rail-step.touched {
-  border-left-color: var(--amber);
-}
+.rail-step.done { border-left-color: var(--accent2); }
+.rail-step.touched { border-left-color: var(--amber); }
 .rail-step-num {
   font-family: var(--mono); font-size: 0.85rem; font-weight: 700;
   color: var(--muted);
@@ -184,9 +180,7 @@ main {
   background: var(--accent2);
 }
 .rail-step-mid { display: flex; flex-direction: column; gap: 0.1rem; }
-.rail-step-label {
-  font-size: 0.85rem; color: var(--white); font-weight: 500;
-}
+.rail-step-label { font-size: 0.85rem; color: var(--white); font-weight: 500; }
 .rail-step-meta {
   font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
   color: var(--muted); text-transform: uppercase;
@@ -232,9 +226,7 @@ main {
   font-family: var(--serif); font-size: 2.1rem; color: var(--white);
   line-height: 1.1; margin-bottom: 0.5rem;
 }
-.step-intro {
-  color: var(--muted); margin-bottom: 2rem; max-width: 620px;
-}
+.step-intro { color: var(--muted); margin-bottom: 2rem; max-width: 620px; }
 
 .section {
   border: 1px solid var(--border);
@@ -259,10 +251,7 @@ main {
 .section-body { padding: 1.25rem 1.15rem; }
 
 /* ─── FIELDS ───────────────────────────────────────────────────────── */
-.row {
-  display: grid; gap: 1rem;
-  margin-bottom: 1rem;
-}
+.row { display: grid; gap: 1rem; margin-bottom: 1rem; }
 .row.cols-2 { grid-template-columns: 1fr 1fr; }
 .row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
 .row.cols-4 { grid-template-columns: repeat(4, 1fr); }
@@ -274,9 +263,7 @@ main {
   font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
 }
-.field-label.req::after {
-  content: ' *'; color: var(--accent);
-}
+.field-label.req::after { content: ' *'; color: var(--accent); }
 .field-hint {
   font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
   letter-spacing: 0.04em; margin-top: 0.15rem;
@@ -313,14 +300,8 @@ select {
   padding-right: 2rem;
 }
 
-/* radio / checkbox groups */
-.choice-group {
-  display: flex; flex-wrap: wrap; gap: 0.5rem;
-}
-.choice {
-  position: relative;
-  flex: 1; min-width: 120px;
-}
+.choice-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.choice { position: relative; flex: 1; min-width: 120px; }
 .choice input { position: absolute; opacity: 0; pointer-events: none; }
 .choice label {
   display: flex; align-items: center; justify-content: center; text-align: center;
@@ -339,11 +320,8 @@ select {
   color: var(--accent); border-color: var(--accent);
   background: rgba(0,212,255,0.08);
 }
-.choice input:focus-visible + label {
-  outline: 1px solid var(--accent); outline-offset: 2px;
-}
+.choice input:focus-visible + label { outline: 1px solid var(--accent); outline-offset: 2px; }
 
-/* yes/no toggle inline */
 .yn-group {
   display: inline-flex; gap: 1px; background: var(--border);
   border: 1px solid var(--border);
@@ -351,10 +329,7 @@ select {
 .yn-group .choice { flex: 0 0 auto; min-width: 60px; }
 .yn-group .choice label { border: none; padding: 0.5rem 1rem; }
 
-/* prefix input (for $ and %) */
-.input-prefix {
-  position: relative;
-}
+.input-prefix { position: relative; }
 .input-prefix::before {
   content: attr(data-prefix);
   position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%);
@@ -362,9 +337,7 @@ select {
   pointer-events: none;
 }
 .input-prefix input { padding-left: 1.8rem; }
-.input-suffix {
-  position: relative;
-}
+.input-suffix { position: relative; }
 .input-suffix::after {
   content: attr(data-suffix);
   position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%);
@@ -373,10 +346,7 @@ select {
 }
 .input-suffix input { padding-right: 2.2rem; }
 
-/* repeater (employment, income, assets, liabilities, REO) */
-.repeater {
-  display: flex; flex-direction: column; gap: 1rem;
-}
+.repeater { display: flex; flex-direction: column; gap: 1rem; }
 .repeater-item {
   border: 1px solid var(--border);
   background: var(--panel);
@@ -408,7 +378,6 @@ select {
 }
 .repeater-add:hover { background: rgba(0,212,255,0.06); border-style: solid; }
 
-/* coborrower toggle banner */
 .cob-banner {
   display: flex; align-items: center; justify-content: space-between;
   padding: 1rem 1.15rem;
@@ -504,6 +473,39 @@ select {
 .toast.show { display: block; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
+/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
+.cookie-banner {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--accent);
+  padding: 1rem 1.5rem;
+  display: none;
+  align-items: center; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+  z-index: 500;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+}
+.cookie-banner.show { display: flex; }
+.cookie-banner-text {
+  flex: 1; min-width: 280px;
+  font-family: var(--sans); font-size: 0.82rem;
+  color: var(--text); line-height: 1.5;
+}
+.cookie-banner-text a { color: var(--accent); text-decoration: none; }
+.cookie-banner-text a:hover { text-decoration: underline; }
+.cookie-banner-actions { display: flex; gap: 0.6rem; flex-shrink: 0; }
+.cookie-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  cursor: pointer; transition: all 0.15s;
+}
+.cookie-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cookie-btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); }
+.cookie-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+
 /* ─── STATE SCREENS ────────────────────────────────────────────────── */
 .state-screen {
   grid-column: 1 / -1;
@@ -550,6 +552,9 @@ select {
   .step-title { font-size: 1.5rem; }
   .nav-crumb { display: none; }
   nav { padding: 0.85rem 1rem; }
+  .cookie-banner { padding: 0.85rem 1rem; flex-direction: column; align-items: stretch; }
+  .cookie-banner-actions { width: 100%; }
+  .cookie-btn { flex: 1; }
 }
 </style>
 
@@ -663,205 +668,141 @@ select {
 <!-- toast -->
 <div class="toast" id="toast" role="status"></div>
 
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE BANNER                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cookie-banner-text">
+    We use a small amount of session storage to keep you signed in and remember your branch.
+    Optional analytics help us understand how the LOS is used.
+    See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
+  </div>
+  <div class="cookie-banner-actions">
+    <button class="cookie-btn" id="cookie-reject" type="button">Reject optional</button>
+    <button class="cookie-btn primary" id="cookie-accept" type="button">Accept all</button>
+  </div>
+</div>
+
+<script>
+// ─── Cookie consent IIFE ─────────────────────────────────────────────
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+  if (typeof window.gtag !== 'function') {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { window.dataLayer.push(arguments); };
+  }
+  try {
+    window.gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+    });
+  } catch (_e) {}
+  var existing = null;
+  try { existing = localStorage.getItem(KEY); } catch (_e) {}
+  if (existing === 'accepted') {
+    try { window.gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'denied' }); } catch (_e) {}
+    return;
+  }
+  if (existing === 'rejected') return;
+  setTimeout(function() { banner.classList.add('show'); }, 600);
+  function decide(value) {
+    try { localStorage.setItem(KEY, value); } catch (_e) {}
+    banner.classList.remove('show');
+    try {
+      window.gtag('consent', 'update', {
+        analytics_storage: value === 'accepted' ? 'granted' : 'denied',
+        ad_storage: 'denied',
+      });
+    } catch (_e) {}
+  }
+  document.getElementById('cookie-accept').addEventListener('click', function() { decide('accepted'); });
+  document.getElementById('cookie-reject').addEventListener('click', function() { decide('rejected'); });
+})();
+</script>
+
+
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // /loans-new.html — Full URLA 1003 wizard
 // 6 steps · co-borrower toggle · localStorage autosave · Supabase save
-//
-// Saves to:
-//   loans            (status='lead' on draft, 'application' on submit)
-//   borrowers        (one row per borrower)
-//   loan_borrowers   (junction with position)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (s) => document.querySelector(s);
 const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-// ─── Auth state ──────────────────────────────────────────────────────────
 let supa = null;
 let me = null;
 let branch = null;
 
-// ─── Form state ──────────────────────────────────────────────────────────
 let currentStep = 0;
-let touchedSteps = new Set();   // steps user has visited
-let validSteps = new Set();     // steps that pass validation
+let touchedSteps = new Set();
+let validSteps = new Set();
 let hasCoborrower = false;
-let createdLoanId = null;       // becomes set on first draft save
+let createdLoanId = null;
 let autosaveTimer = null;
 const DRAFT_KEY = 'of_new_loan_draft_v1';
 
-// formData mirrors the URLA 1003 schema — flat object, no nesting
 const formData = {
-  // Step 1: Loan Terms
-  purpose: '',                  // purchase, refinance, cash_out_refi, construction, other
-  loan_amount: '',              // dollars (we convert to cents on save)
-  loan_program: '',             // conventional, fha, va, usda, jumbo, other
-  amortization_type: '',        // fixed, arm, other
-  loan_term_months: '',         // 360, 240, 180, 120, etc
-  interest_rate: '',
-  occupancy: '',                // primary, secondary, investment
-  property_type: '',            // sfr, condo, pud, manufactured, multi_2_4
-  down_payment: '',
-  estimated_closing_date: '',
-
-  // Step 2: Property
-  property_address_street: '',
-  property_address_unit: '',
-  property_address_city: '',
-  property_address_state: '',
-  property_address_zip: '',
-  property_address_county: '',
-  property_year_built: '',
-  property_value: '',
-  property_units: '1',
-  project_type: '',             // none, condominium, pud, cooperative
-  mixed_use: 'no',
-  manufactured_home: 'no',
-
-  // Step 3: Borrowers (b1 = primary, b2 = co-borrower if hasCoborrower)
+  purpose: '', loan_amount: '', loan_program: '', amortization_type: '',
+  loan_term_months: '', interest_rate: '', occupancy: '', property_type: '',
+  down_payment: '', estimated_closing_date: '',
+  property_address_street: '', property_address_unit: '',
+  property_address_city: '', property_address_state: '', property_address_zip: '',
+  property_address_county: '', property_year_built: '', property_value: '',
+  property_units: '1', project_type: '', mixed_use: 'no', manufactured_home: 'no',
   b1_first_name: '', b1_middle: '', b1_last_name: '', b1_suffix: '',
-  b1_ssn: '', b1_dob: '',
-  b1_email: '', b1_phone: '', b1_phone_alt: '',
-  b1_marital: '',               // married, separated, unmarried
-  b1_dependents: '0',
-  b1_dependent_ages: '',
-  b1_citizenship: '',           // us_citizen, permanent_resident, non_permanent
-  b1_current_address: '',
-  b1_current_city: '', b1_current_state: '', b1_current_zip: '',
-  b1_current_years: '', b1_current_months: '',
-  b1_housing: '',               // own, rent, no_primary
-  b1_monthly_rent: '',
-  b1_mailing_same: 'yes',
-  b1_mailing_address: '', b1_mailing_city: '', b1_mailing_state: '', b1_mailing_zip: '',
-
+  b1_ssn: '', b1_dob: '', b1_email: '', b1_phone: '', b1_phone_alt: '',
+  b1_marital: '', b1_dependents: '0', b1_dependent_ages: '', b1_citizenship: '',
+  b1_current_address: '', b1_current_city: '', b1_current_state: '', b1_current_zip: '',
+  b1_current_years: '', b1_current_months: '', b1_housing: '', b1_monthly_rent: '',
+  b1_mailing_same: 'yes', b1_mailing_address: '', b1_mailing_city: '',
+  b1_mailing_state: '', b1_mailing_zip: '',
   b2_first_name: '', b2_middle: '', b2_last_name: '', b2_suffix: '',
-  b2_ssn: '', b2_dob: '',
-  b2_email: '', b2_phone: '',
-  b2_marital: '', b2_dependents: '0', b2_dependent_ages: '',
-  b2_citizenship: '',
-  b2_same_address: 'yes',
-  b2_current_address: '',
+  b2_ssn: '', b2_dob: '', b2_email: '', b2_phone: '',
+  b2_marital: '', b2_dependents: '0', b2_dependent_ages: '', b2_citizenship: '',
+  b2_same_address: 'yes', b2_current_address: '',
   b2_current_city: '', b2_current_state: '', b2_current_zip: '',
-  b2_current_years: '', b2_current_months: '',
-  b2_housing: '',
-  b2_monthly_rent: '',
-
-  // Step 4: Employment & Income (per borrower, repeating)
-  b1_employment: [],
-  b1_other_income: [],
-  b2_employment: [],
-  b2_other_income: [],
-
-  // Step 5: Assets & Liabilities
-  assets: [],                   // {kind, institution, account, balance, owner}
-  liabilities: [],              // {kind, creditor, balance, monthly, months_left, payoff_at_close, owner}
-  reo: [],                      // {address, city, state, zip, type, status, value, mortgage_balance, monthly_payment, rental_income, owner}
-
-  // Step 6: Declarations + Demographics + Government Monitoring
-  // Declarations (yes/no for each, b1 + b2)
-  decl_a: 'no',  // primary residence?
-  decl_b: 'no',  // ownership in last 3 yrs?
-  decl_c: 'no',  // family/business affiliation with seller?
-  decl_d1: 'no', // borrowing for down payment?
-  decl_d2: 'no', // applying for any other mortgage?
-  decl_d3: 'no', // applying for new credit?
-  decl_d4: 'no', // subject to lien priority?
-  decl_e: 'no',  // co-signer on debt?
-  decl_f: 'no',  // outstanding judgments?
-  decl_g: 'no',  // currently delinquent on federal debt?
-  decl_h: 'no',  // party to lawsuit?
-  decl_i: 'no',  // conveyed title in lieu in last 7 yrs?
-  decl_j: 'no',  // pre-foreclosure / short sale in last 7?
-  decl_k: 'no',  // foreclosure in last 7?
-  decl_l: 'no',  // bankruptcy in last 7? (which type)
-  decl_l_chapter: '',  // 7, 11, 12, 13
-
-  // Demographics (b1)
-  b1_demo_decline: 'no',
-  b1_ethnicity: '',             // hispanic, not_hispanic, no_provide
-  b1_race: [],                  // multi-select
-  b1_sex: '',                   // male, female, no_provide
-  b1_demo_method: '',           // face_to_face, phone, fax_mail, email_internet
-
-  b2_demo_decline: 'no',
-  b2_ethnicity: '',
-  b2_race: [],
-  b2_sex: '',
-  b2_demo_method: '',
+  b2_current_years: '', b2_current_months: '', b2_housing: '', b2_monthly_rent: '',
+  b1_employment: [], b1_other_income: [], b2_employment: [], b2_other_income: [],
+  assets: [], liabilities: [], reo: [],
+  decl_a: 'no', decl_b: 'no', decl_c: 'no', decl_d1: 'no', decl_d2: 'no',
+  decl_d3: 'no', decl_d4: 'no', decl_e: 'no', decl_f: 'no', decl_g: 'no',
+  decl_h: 'no', decl_i: 'no', decl_j: 'no', decl_k: 'no', decl_l: 'no',
+  decl_l_chapter: '',
+  b1_demo_decline: 'no', b1_ethnicity: '', b1_race: [], b1_sex: '', b1_demo_method: '',
+  b2_demo_decline: 'no', b2_ethnicity: '', b2_race: [], b2_sex: '', b2_demo_method: '',
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// STEP DEFINITIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
 const STEPS = [
-  {
-    id: 'terms',
-    label: 'Loan Terms',
-    meta: 'Section L1 · loan basics',
-    eyebrow: 'Step 1 of 6 · Section L1',
-    title: 'What kind of loan?',
+  { id: 'terms', label: 'Loan Terms', meta: 'Section L1 · loan basics',
+    eyebrow: 'Step 1 of 6 · Section L1', title: 'What kind of loan?',
     intro: 'The basics: purpose, amount, program, and how it amortizes. You can change everything later.',
-    render: renderStepTerms,
-    validate: validateStepTerms,
-    requiredFields: ['purpose', 'loan_amount', 'loan_program', 'amortization_type', 'occupancy', 'property_type'],
-  },
-  {
-    id: 'property',
-    label: 'Property',
-    meta: 'Section L2 · subject property',
-    eyebrow: 'Step 2 of 6 · Section L2',
-    title: 'Where\'s the property?',
+    render: renderStepTerms, validate: validateStepTerms,
+    requiredFields: ['purpose', 'loan_amount', 'loan_program', 'amortization_type', 'occupancy', 'property_type'] },
+  { id: 'property', label: 'Property', meta: 'Section L2 · subject property',
+    eyebrow: 'Step 2 of 6 · Section L2', title: 'Where\'s the property?',
     intro: 'Subject property address and characteristics. Required for AUS and disclosures.',
-    render: renderStepProperty,
-    validate: validateStepProperty,
-    requiredFields: ['property_address_street', 'property_address_city', 'property_address_state', 'property_address_zip'],
-  },
-  {
-    id: 'borrowers',
-    label: 'Borrower(s)',
-    meta: 'Section 1 · personal info',
-    eyebrow: 'Step 3 of 6 · Section 1',
-    title: 'Who\'s on the loan?',
+    render: renderStepProperty, validate: validateStepProperty,
+    requiredFields: ['property_address_street', 'property_address_city', 'property_address_state', 'property_address_zip'] },
+  { id: 'borrowers', label: 'Borrower(s)', meta: 'Section 1 · personal info',
+    eyebrow: 'Step 3 of 6 · Section 1', title: 'Who\'s on the loan?',
     intro: 'Personal information for the primary borrower, plus co-borrower if applicable. SSN and DOB are needed before we can pull credit.',
-    render: renderStepBorrowers,
-    validate: validateStepBorrowers,
-    requiredFields: ['b1_first_name', 'b1_last_name', 'b1_ssn', 'b1_dob', 'b1_email', 'b1_phone'],
-  },
-  {
-    id: 'employment',
-    label: 'Employment & Income',
-    meta: 'Section 1c · income',
-    eyebrow: 'Step 4 of 6 · Section 1c',
-    title: 'How do they get paid?',
+    render: renderStepBorrowers, validate: validateStepBorrowers,
+    requiredFields: ['b1_first_name', 'b1_last_name', 'b1_ssn', 'b1_dob', 'b1_email', 'b1_phone'] },
+  { id: 'employment', label: 'Employment & Income', meta: 'Section 1c · income',
+    eyebrow: 'Step 4 of 6 · Section 1c', title: 'How do they get paid?',
     intro: 'Current employment, prior employment if needed for two-year history, and any non-employment income.',
-    render: renderStepEmployment,
-    validate: validateStepEmployment,
-    requiredFields: [],
-  },
-  {
-    id: 'assets',
-    label: 'Assets & Liabilities',
-    meta: 'Section 2 · financial',
-    eyebrow: 'Step 5 of 6 · Section 2',
-    title: 'Assets, debts, and properties owned.',
+    render: renderStepEmployment, validate: validateStepEmployment, requiredFields: [] },
+  { id: 'assets', label: 'Assets & Liabilities', meta: 'Section 2 · financial',
+    eyebrow: 'Step 5 of 6 · Section 2', title: 'Assets, debts, and properties owned.',
     intro: 'You can leave most of this empty for now — we\'ll auto-populate liabilities from credit when it\'s pulled. Add cash-on-hand assets and any properties owned.',
-    render: renderStepAssets,
-    validate: validateStepAssets,
-    requiredFields: [],
-  },
-  {
-    id: 'declarations',
-    label: 'Declarations',
-    meta: 'Sections 5 + 7 · disclosures',
-    eyebrow: 'Step 6 of 6 · Sections 5 + 7',
-    title: 'Last bit: declarations and demographics.',
+    render: renderStepAssets, validate: validateStepAssets, requiredFields: [] },
+  { id: 'declarations', label: 'Declarations', meta: 'Sections 5 + 7 · disclosures',
+    eyebrow: 'Step 6 of 6 · Sections 5 + 7', title: 'Last bit: declarations and demographics.',
     intro: 'Required by federal law (URLA + HMDA). Borrowers can decline to provide demographic information — but we still need to record the question was asked.',
-    render: renderStepDeclarations,
-    validate: validateStepDeclarations,
-    requiredFields: [],
-  },
+    render: renderStepDeclarations, validate: validateStepDeclarations, requiredFields: [] },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -874,29 +815,19 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// ─── Last-seen tracking ─────────────────────────────────────────────────
-// Updates profiles.last_seen_at so the /team.html metrics ("active in last
-// 7 days") stay honest. Fire-and-forget — never blocks the page, never
-// throws to the caller. Throttled to once per 60s per browser via
-// localStorage to avoid hammering the DB on rapid navigation between pages.
 async function touchLastSeen() {
   try {
     if (!supa || !me?.id) return;
     const KEY = 'of_last_seen_touched_at';
     const last = parseInt(localStorage.getItem(KEY) || '0', 10);
     const now = Date.now();
-    if (now - last < 60000) return;  // throttle: once per 60s
+    if (now - last < 60000) return;
     localStorage.setItem(KEY, String(now));
-    // Don't await — let the write happen in the background. Errors are
-    // logged but never propagated (RLS, network blip, missing column,
-    // whatever — the page renders normally regardless).
     supa.from('profiles')
       .update({ last_seen_at: new Date().toISOString() })
       .eq('id', me.id)
       .then(({ error }) => { if (error) console.warn('last_seen update:', error.message); });
   } catch (err) {
-    // localStorage disabled, etc. — silent failure, the throttle just
-    // becomes per-page-load instead of per-minute.
     console.warn('touchLastSeen:', err);
   }
 }
@@ -938,11 +869,10 @@ function formatPhone(v) {
   if (d.length <= 6) return '(' + d.slice(0,3) + ') ' + d.slice(3);
   return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
 }
-function formatZip(v) {
-  return digits(v).slice(0, 5);
-}
+function formatZip(v) { return digits(v).slice(0, 5); }
 
 const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'];
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTH BOOTSTRAP
@@ -981,11 +911,7 @@ async function bootstrap() {
   };
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
 
-  // Update last_seen_at so the team page metrics stay honest. Throttled to
-  // once per 60s via localStorage to avoid spamming writes on rapid navigation.
   touchLastSeen();
-
-  // Try to restore a draft from localStorage
   restoreDraft();
 
   showWizard();
@@ -1019,7 +945,6 @@ function showWizard() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function startAutosave() {
-  // Save to localStorage every 1.5s after a change
   document.addEventListener('input', () => {
     syncFormToData();
     clearTimeout(autosaveTimer);
@@ -1034,9 +959,7 @@ function startAutosave() {
       }
     }, 1500);
   });
-  document.addEventListener('change', () => {
-    syncFormToData();
-  });
+  document.addEventListener('change', () => { syncFormToData(); });
 }
 
 function restoreDraft() {
@@ -1045,23 +968,17 @@ function restoreDraft() {
     if (!raw) return;
     const parsed = JSON.parse(raw);
     if (!parsed.formData || !parsed.savedAt) return;
-    // Skip drafts older than 7 days
     if (Date.now() - parsed.savedAt > 7 * 24 * 3600 * 1000) {
-      localStorage.removeItem(DRAFT_KEY);
-      return;
+      localStorage.removeItem(DRAFT_KEY); return;
     }
     Object.assign(formData, parsed.formData);
     hasCoborrower = !!parsed.hasCoborrower;
     currentStep = parsed.currentStep || 0;
     setSaveStatus('saved', 'Draft restored from ' + new Date(parsed.savedAt).toLocaleString());
-  } catch (e) {
-    console.warn('draft restore failed', e);
-  }
+  } catch (e) { console.warn('draft restore failed', e); }
 }
 
-function clearDraft() {
-  try { localStorage.removeItem(DRAFT_KEY); } catch (_) {}
-}
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (_) {} }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RAIL
@@ -1090,14 +1007,10 @@ function renderRail() {
   ol.querySelectorAll('.rail-step').forEach(b => {
     b.addEventListener('click', () => goToStep(parseInt(b.dataset.step, 10)));
   });
-
-  // Progress bar
   const total = STEPS.length;
   const pct = Math.round((validSteps.size / total) * 100);
   $('#rail-progress-fill').style.width = pct + '%';
   $('#rail-progress-pct').textContent = pct + '% complete';
-
-  // Loan number pill
   $('#rail-loan-num').textContent = createdLoanId
     ? 'Loan saved · ' + branch.name
     : 'Unsaved draft · ' + branch.name;
@@ -1110,7 +1023,6 @@ function renderRail() {
 function renderStep() {
   const step = STEPS[currentStep];
   touchedSteps.add(currentStep);
-
   const el = $('#form-content');
   el.innerHTML = `
     <div class="step-eyebrow">${escapeHtml(step.eyebrow)}</div>
@@ -1120,13 +1032,10 @@ function renderStep() {
   `;
   step.render($('#step-body'));
   populateForm();
-
-  // Footer state
   $('#form-foot-status').textContent = `Step ${currentStep + 1} of ${STEPS.length} · ${step.label}`;
   $('#btn-prev').disabled = currentStep === 0;
   $('#btn-next').style.display    = (currentStep === STEPS.length - 1) ? 'none' : 'inline-flex';
   $('#btn-submit').style.display  = (currentStep === STEPS.length - 1) ? 'inline-flex' : 'none';
-
   $('#form-scroll').scrollTop = 0;
   renderRail();
 }
@@ -1144,10 +1053,7 @@ function nextStep() {
   const valid = step.validate();
   if (valid) validSteps.add(currentStep);
   else       validSteps.delete(currentStep);
-  if (!valid) {
-    showToast('Fix the highlighted fields before continuing.', true);
-    return;
-  }
+  if (!valid) { showToast('Fix the highlighted fields before continuing.', true); return; }
   if (currentStep < STEPS.length - 1) goToStep(currentStep + 1);
 }
 
@@ -1156,14 +1062,12 @@ function prevStep() {
   if (currentStep > 0) goToStep(currentStep - 1);
 }
 
-// Sync DOM inputs back into formData
 function syncFormToData() {
   document.querySelectorAll('[data-field]').forEach(el => {
     const f = el.dataset.field;
     if (el.type === 'radio') {
       if (el.checked) formData[f] = el.value;
     } else if (el.type === 'checkbox') {
-      // multi-checkbox arrays
       const isMulti = el.dataset.multi === 'true';
       if (isMulti) {
         const arr = Array.isArray(formData[f]) ? formData[f] : [];
@@ -1180,7 +1084,6 @@ function syncFormToData() {
   });
 }
 
-// Populate DOM inputs from formData (after render)
 function populateForm() {
   document.querySelectorAll('[data-field]').forEach(el => {
     const f = el.dataset.field;
@@ -1199,6 +1102,7 @@ function populateForm() {
     }
   });
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FIELD HELPERS (HTML builders)
@@ -1329,29 +1233,18 @@ function renderStepTerms(el) {
       <div class="section-body">
         <div class="row cols-2">
           ${f_select('loan_program', 'Loan Program', [
-            ['conventional','Conventional'],
-            ['fha','FHA'],
-            ['va','VA'],
-            ['usda','USDA Rural'],
-            ['jumbo','Jumbo'],
-            ['non_qm','Non-QM'],
-            ['other','Other'],
+            ['conventional','Conventional'],['fha','FHA'],['va','VA'],['usda','USDA Rural'],
+            ['jumbo','Jumbo'],['non_qm','Non-QM'],['other','Other'],
           ], { required: true })}
           ${f_select('amortization_type', 'Amortization', [
-            ['fixed','Fixed Rate'],
-            ['arm_5_1','ARM 5/1'],
-            ['arm_7_1','ARM 7/1'],
-            ['arm_10_1','ARM 10/1'],
-            ['other','Other'],
+            ['fixed','Fixed Rate'],['arm_5_1','ARM 5/1'],['arm_7_1','ARM 7/1'],
+            ['arm_10_1','ARM 10/1'],['other','Other'],
           ], { required: true })}
         </div>
         <div class="row cols-3">
           ${f_select('loan_term_months', 'Term', [
-            ['360','30 yrs (360 mo)'],
-            ['240','20 yrs (240 mo)'],
-            ['180','15 yrs (180 mo)'],
-            ['120','10 yrs (120 mo)'],
-            ['other','Other'],
+            ['360','30 yrs (360 mo)'],['240','20 yrs (240 mo)'],
+            ['180','15 yrs (180 mo)'],['120','10 yrs (120 mo)'],['other','Other'],
           ])}
           ${f_pct('interest_rate', 'Note Rate (if known)', { hint: 'Locked or estimate' })}
           <div class="field" data-field-wrap="estimated_closing_date">
@@ -1369,25 +1262,18 @@ function renderStepTerms(el) {
       </div>
       <div class="section-body">
         ${f_choice('occupancy', 'Occupancy', [
-          ['primary','Primary Residence'],
-          ['secondary','Second Home'],
-          ['investment','Investment'],
+          ['primary','Primary Residence'],['secondary','Second Home'],['investment','Investment'],
         ], { required: true })}
         ${f_choice('property_type', 'Property Type', [
-          ['sfr','Single Family'],
-          ['condo','Condo'],
-          ['pud','PUD'],
-          ['multi_2_4','2-4 Unit'],
-          ['manufactured','Manufactured'],
+          ['sfr','Single Family'],['condo','Condo'],['pud','PUD'],
+          ['multi_2_4','2-4 Unit'],['manufactured','Manufactured'],
         ], { required: true })}
       </div>
     </div>
   `;
 }
 
-function validateStepTerms() {
-  return validateRequired(STEPS[0].requiredFields);
-}
+function validateStepTerms() { return validateRequired(STEPS[0].requiredFields); }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STEP 2 — PROPERTY
@@ -1426,10 +1312,8 @@ function renderStepProperty(el) {
           ${f_select('property_units', 'Units', [['1','1'],['2','2'],['3','3'],['4','4']])}
         </div>
         ${f_select('project_type', 'Project Type (if any)', [
-          ['none','None / Detached'],
-          ['condominium','Condominium'],
-          ['pud','Planned Unit Development'],
-          ['cooperative','Cooperative'],
+          ['none','None / Detached'],['condominium','Condominium'],
+          ['pud','Planned Unit Development'],['cooperative','Cooperative'],
         ])}
         <div class="row cols-2">
           ${f_yn('mixed_use', 'Mixed-Use Property?')}
@@ -1440,9 +1324,8 @@ function renderStepProperty(el) {
   `;
 }
 
-function validateStepProperty() {
-  return validateRequired(STEPS[1].requiredFields);
-}
+function validateStepProperty() { return validateRequired(STEPS[1].requiredFields); }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STEP 3 — BORROWERS
@@ -1470,7 +1353,7 @@ function renderStepBorrowers(el) {
   $('#cob-toggle').addEventListener('click', () => {
     syncFormToData();
     hasCoborrower = !hasCoborrower;
-    renderStep();  // re-render this step
+    renderStep();
   });
 }
 
@@ -1532,9 +1415,7 @@ function renderBorrowerBlock(idx, label) {
           </div>
           <div class="section-body">
             ${f_choice(p+'marital', 'Marital Status', [
-              ['married','Married'],
-              ['separated','Separated'],
-              ['unmarried','Unmarried'],
+              ['married','Married'],['separated','Separated'],['unmarried','Unmarried'],
             ])}
             <div class="row cols-2">
               ${f_text(p+'dependents', 'Dependents', { type: 'number', placeholder: '0' })}
@@ -1579,7 +1460,6 @@ function validateStepBorrowers() {
   if (hasCoborrower) {
     ok = validateRequired(['b2_first_name', 'b2_last_name']) && ok;
   }
-  // SSN format check
   if (formData.b1_ssn && digits(formData.b1_ssn).length !== 9) {
     markInvalid('b1_ssn'); ok = false;
   }
@@ -1606,7 +1486,6 @@ function renderEmploymentSection(idx, label) {
   const incKey = `b${idx}_other_income`;
   const empItems = formData[empKey] || [];
   const incItems = formData[incKey] || [];
-
   return `
     <div class="borrower-block">
       <div class="borrower-block-head">
@@ -1750,7 +1629,6 @@ function renderIncomeItem(key, i, e) {
 }
 
 function wireEmploymentRepeaters() {
-  // Add buttons
   document.querySelectorAll('[data-add]').forEach(btn => {
     btn.addEventListener('click', () => {
       syncRepeatersToData();
@@ -1769,7 +1647,6 @@ function wireEmploymentRepeaters() {
       renderStep();
     });
   });
-  // Remove buttons
   document.querySelectorAll('[data-remove]').forEach(btn => {
     btn.addEventListener('click', () => {
       syncRepeatersToData();
@@ -1781,7 +1658,6 @@ function wireEmploymentRepeaters() {
       }
     });
   });
-  // Live sync from repeater fields
   document.querySelectorAll('.repeater-item').forEach(item => {
     item.addEventListener('input', () => syncRepeatersToData());
     item.addEventListener('change', () => syncRepeatersToData());
@@ -1805,8 +1681,9 @@ function syncRepeatersToData() {
 
 function validateStepEmployment() {
   syncRepeatersToData();
-  return true; // employment optional at intake; UW will require during processing
+  return true;
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STEP 5 — ASSETS & LIABILITIES & REO
@@ -1814,7 +1691,6 @@ function validateStepEmployment() {
 
 function renderStepAssets(el) {
   el.innerHTML = `
-
     <div class="section">
       <div class="section-head">
         <span class="section-title">Assets</span>
@@ -1826,9 +1702,7 @@ function renderStepAssets(el) {
             ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No assets added.</div>`
             : (formData.assets || []).map((e, i) => renderAssetItem(i, e)).join('')}
         </div>
-        <button type="button" class="repeater-add" data-add="assets" style="margin-top: 0.75rem;">
-          + Add Asset
-        </button>
+        <button type="button" class="repeater-add" data-add="assets" style="margin-top: 0.75rem;">+ Add Asset</button>
       </div>
     </div>
 
@@ -1844,9 +1718,7 @@ function renderStepAssets(el) {
             ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No liabilities added.</div>`
             : (formData.liabilities || []).map((e, i) => renderLiabilityItem(i, e)).join('')}
         </div>
-        <button type="button" class="repeater-add" data-add="liabilities" style="margin-top: 0.75rem;">
-          + Add Liability
-        </button>
+        <button type="button" class="repeater-add" data-add="liabilities" style="margin-top: 0.75rem;">+ Add Liability</button>
       </div>
     </div>
 
@@ -1861,9 +1733,7 @@ function renderStepAssets(el) {
             ? `<div style="color: var(--muted); font-family: var(--mono); font-size: 0.7rem; padding: 0.5rem 0;">No real estate owned added. (Skip for first-time buyers.)</div>`
             : (formData.reo || []).map((e, i) => renderReoItem(i, e)).join('')}
         </div>
-        <button type="button" class="repeater-add" data-add="reo" style="margin-top: 0.75rem;">
-          + Add Property Owned
-        </button>
+        <button type="button" class="repeater-add" data-add="reo" style="margin-top: 0.75rem;">+ Add Property Owned</button>
       </div>
     </div>
   `;
@@ -2058,6 +1928,7 @@ function validateStepAssets() {
   return true;
 }
 
+
 // ═══════════════════════════════════════════════════════════════════════════
 // STEP 6 — DECLARATIONS + DEMOGRAPHICS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2095,8 +1966,6 @@ function renderStepDeclarations(el) {
     ${renderDemoBlock('1', 'Primary Borrower')}
     ${hasCoborrower ? renderDemoBlock('2', 'Co-borrower') : ''}
   `;
-
-  // Re-render bankruptcy chapter on toggle
   document.querySelectorAll('input[name="decl_l"]').forEach(r => {
     r.addEventListener('change', () => {
       formData.decl_l = r.checked ? r.value : formData.decl_l;
@@ -2151,15 +2020,11 @@ function renderDemoBlock(idx, label) {
               </div>
             </div>
             ${f_choice(p+'sex', 'Sex', [
-              ['male','Male'],
-              ['female','Female'],
-              ['no_provide','Do Not Wish to Provide'],
+              ['male','Male'],['female','Female'],['no_provide','Do Not Wish to Provide'],
             ])}
             ${f_choice(p+'demo_method', 'How was this information collected?', [
-              ['face_to_face','Face-to-Face'],
-              ['phone','Phone'],
-              ['fax_mail','Fax / Mail'],
-              ['email_internet','Email / Internet'],
+              ['face_to_face','Face-to-Face'],['phone','Phone'],
+              ['fax_mail','Fax / Mail'],['email_internet','Email / Internet'],
             ])}
           </div>
         </div>
@@ -2168,9 +2033,7 @@ function renderDemoBlock(idx, label) {
   `;
 }
 
-function validateStepDeclarations() {
-  return true; // declarations are all toggles, no required validation beyond the form
-}
+function validateStepDeclarations() { return true; }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // VALIDATION
@@ -2178,7 +2041,6 @@ function validateStepDeclarations() {
 
 function validateRequired(fields) {
   let ok = true;
-  // clear prior invalid
   document.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
   for (const f of fields) {
     const v = formData[f];
@@ -2219,6 +2081,7 @@ document.addEventListener('input', (e) => {
   }
 });
 
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SAVE — DRAFT & SUBMIT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2227,14 +2090,12 @@ async function saveDraft() {
   syncFormToData();
   syncRepeatersToData();
   setSaveStatus('saving', 'Saving draft to server…');
-
   try {
     if (!createdLoanId) {
       const loanRow = buildLoanRow('lead');
       const { data: loan, error } = await supa.from('loans').insert(loanRow).select().single();
       if (error) throw error;
       createdLoanId = loan.id;
-      // also save primary borrower if name is set
       if (formData.b1_first_name && formData.b1_last_name) {
         await saveBorrowers(createdLoanId);
       }
@@ -2245,7 +2106,6 @@ async function saveDraft() {
         await saveBorrowers(createdLoanId);
       }
     }
-
     setSaveStatus('saved', 'Saved · ' + new Date().toLocaleTimeString());
     showToast('Draft saved.');
     renderRail();
@@ -2259,8 +2119,6 @@ async function saveDraft() {
 async function submitApplication() {
   syncFormToData();
   syncRepeatersToData();
-
-  // Validate all steps
   let firstInvalid = -1;
   for (let i = 0; i < STEPS.length; i++) {
     const valid = STEPS[i].validate();
@@ -2272,7 +2130,6 @@ async function submitApplication() {
     goToStep(firstInvalid);
     return;
   }
-
   setSaveStatus('saving', 'Submitting application…');
   try {
     const loanRow = buildLoanRow('application');
@@ -2287,13 +2144,10 @@ async function submitApplication() {
       if (error) throw error;
     }
     await saveBorrowers(loanId);
-
     clearDraft();
     setSaveStatus('saved', 'Submitted · ' + new Date().toLocaleTimeString());
     showToast('Application submitted! Routing to loan file…');
-    setTimeout(() => {
-      window.location.href = '/dashboard.html#' + loanId;
-    }, 800);
+    setTimeout(() => { window.location.href = '/dashboard.html#' + loanId; }, 800);
   } catch (err) {
     console.error('submit error:', err);
     setSaveStatus('error', 'Submit failed');
@@ -2326,15 +2180,12 @@ function buildLoanRow(status) {
     },
     property_year_built: formData.property_year_built ? parseInt(formData.property_year_built, 10) : null,
     property_units: formData.property_units ? parseInt(formData.property_units, 10) : 1,
-    application_data: { ...formData, hasCoborrower },  // store full URLA snapshot as JSONB
+    application_data: { ...formData, hasCoborrower },
   };
 }
 
 async function saveBorrowers(loanId) {
-  // Upsert borrowers: clear existing junction, insert primary (and co if present)
-  // (Simpler than diffing — and since this is creation flow it's fine.)
   await supa.from('loan_borrowers').delete().eq('loan_id', loanId);
-
   const borrowers = [];
   if (formData.b1_first_name && formData.b1_last_name) {
     borrowers.push({ pos: 1, data: extractBorrower('1') });
@@ -2342,7 +2193,6 @@ async function saveBorrowers(loanId) {
   if (hasCoborrower && formData.b2_first_name && formData.b2_last_name) {
     borrowers.push({ pos: 2, data: extractBorrower('2') });
   }
-
   for (const b of borrowers) {
     const { data: bRow, error: bErr } = await supa.from('borrowers')
       .insert({ branch_id: me.branch_id, ...b.data })
@@ -2363,7 +2213,7 @@ function extractBorrower(idx) {
     last_name:  formData[p+'last_name'] || null,
     suffix:     formData[p+'suffix'] || null,
     ssn_last4:  digits(formData[p+'ssn']).slice(-4) || null,
-    ssn_full:   digits(formData[p+'ssn']) || null,  // RLS should restrict access
+    ssn_full:   digits(formData[p+'ssn']) || null,
     dob:        formData[p+'dob'] || null,
     email:      formData[p+'email'] || null,
     phone:      formData[p+'phone'] || null,
@@ -2386,21 +2236,15 @@ function initShortcuts() {
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     const isInput = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
-
-    // Cmd/Ctrl+S — save draft (works even in inputs)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      saveDraft();
-      return;
+      e.preventDefault(); saveDraft(); return;
     }
-    // Cmd/Ctrl+Arrow — step nav (works even in inputs)
     if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowRight') {
       e.preventDefault(); nextStep(); return;
     }
     if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowLeft') {
       e.preventDefault(); prevStep(); return;
     }
-    // Esc — back home (only outside inputs)
     if (e.key === 'Escape' && !isInput) {
       e.preventDefault();
       if (confirm('Leave this application? Your draft is saved locally and will be here when you come back.')) {
@@ -2409,7 +2253,6 @@ function initShortcuts() {
     }
   });
 
-  // Warn on tab close if there's unsaved data
   window.addEventListener('beforeunload', (e) => {
     const hasData = formData.b1_first_name || formData.loan_amount || formData.property_address_street;
     if (hasData && !createdLoanId) {

@@ -363,80 +363,6 @@ main {
   text-align: center; padding: 3rem 1rem; letter-spacing: 0.04em;
 }
 
-/* ─── MANUAL REVIEW (row badge + detail panel) ─────────────────────── */
-/* Tiny dot+text badge that prefixes the doc name when a doc is in any
-   manual-review state. Approved/rejected/pending each get their own color. */
-.doc-review-badge {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  font-family: var(--mono); font-size: 0.52rem;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  padding: 0.1rem 0.4rem; margin-right: 0.45rem;
-  border: 1px solid;
-  vertical-align: 0.1em;
-}
-.doc-review-badge.pending  { color: var(--amber);   border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.1); }
-.doc-review-badge.approved { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.07); }
-.doc-review-badge.rejected { color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.1); }
-
-/* Detail-panel review block — sits above the extraction panel and gives
-   the processor everything they need to act: status, who reviewed, AI
-   flags, and the three action buttons. */
-.review-panel {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  margin-bottom: 1rem;
-  border-left: 2px solid var(--border);
-}
-.review-panel.pending  { border-left-color: var(--amber); }
-.review-panel.approved { border-left-color: var(--accent2); }
-.review-panel.rejected { border-left-color: var(--red); }
-.review-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.7rem 0.95rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--deep);
-}
-.review-title {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--text);
-}
-.review-status-tag {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
-  text-transform: uppercase; padding: 0.15rem 0.5rem;
-  border: 1px solid;
-}
-.review-status-tag.pending  { color: var(--amber);   border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.1); }
-.review-status-tag.approved { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.07); }
-.review-status-tag.rejected { color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.1); }
-.review-status-tag.none     { color: var(--muted);   border-color: var(--border); }
-.review-body { padding: 0.85rem 0.95rem; }
-.review-meta {
-  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
-  letter-spacing: 0.04em; line-height: 1.6;
-}
-.review-meta strong { color: var(--white); font-weight: 700; }
-
-/* AI flag chips — small amber/red pills listing whatever the extraction
-   model decided was worth flagging (low_quality, redacted, suspect_match
-   etc). Stacks horizontally and wraps. */
-.ai-flag-chips {
-  display: flex; flex-wrap: wrap; gap: 0.35rem;
-  margin-top: 0.6rem;
-}
-.ai-flag-chip {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.18rem 0.5rem;
-  border: 1px solid rgba(245,166,35,0.5);
-  color: var(--amber);
-  background: rgba(245,166,35,0.07);
-}
-
-/* Color variants for the dh-action review buttons. */
-.dh-action.approve:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
-.dh-action.reject:hover:not(:disabled)  { border-color: var(--red);     color: var(--red); }
-.dh-action.flag:hover:not(:disabled)    { border-color: var(--amber);   color: var(--amber); }
-
 /* ─── DETAIL PANE ──────────────────────────────────────────────────── */
 .detail-empty {
   font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
@@ -764,82 +690,66 @@ main {
 @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
-/* Footer is now a 2-row layout: top row is the site-wide compliance
-   disclaimer (added for legal cover — every authenticated page needs the
-   "OriginFlow is software, the licensed lender remains responsible for
-   compliance" language), bottom row keeps the existing wordmark/version/
-   links exactly as they were. Existing rules are preserved; only the
-   parent `footer` rule changed from a single flex row to a flex column
-   to make space for the disclaimer above the existing content. */
 footer {
-  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
-  display: flex; flex-direction: column; gap: 0.55rem;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
   color: var(--muted); background: var(--deep);
 }
-footer a { color: var(--muted); text-decoration: none; }
-footer a:hover { color: var(--accent); }
 .footer-disclaimer {
-  font-size: 0.58rem;
-  line-height: 1.7;
-  color: var(--muted);
-  text-align: center;
-  max-width: 920px;
-  margin: 0 auto;
-  padding-bottom: 0.5rem;
+  padding: 0.7rem 2rem;
   border-bottom: 1px solid var(--border);
-  letter-spacing: 0.03em;
-  font-weight: 300;
+  text-align: center;
+  font-size: 0.55rem; line-height: 1.5;
+  color: var(--muted);
 }
+.footer-disclaimer strong { color: var(--text); font-weight: 700; }
 .footer-bottom {
+  padding: 0.75rem 2rem;
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 1rem;
 }
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
 
-/* ─── COOKIE / ANALYTICS CONSENT BANNER ────────────────────────────── */
-/* Shared banner pattern across all OF pages. The IIFE near end-of-body
-   reads/writes localStorage 'of_cookie_consent' so once a user decides
-   on any page, the banner stays gone everywhere. The gtag('consent',
-   'update', ...) call is wrapped in a typeof-check, so this works as a
-   no-op on pages without GA today and starts gating analytics
-   automatically when GA gets added later. z-index 500 sits below the
-   upload modal at 1000. */
+/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
 .cookie-banner {
-  position: fixed;
-  bottom: 1rem; left: 1rem; right: 1rem;
-  max-width: 680px;
-  margin: 0 auto;
+  position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  padding: 0.85rem 1.1rem;
-  display: flex; align-items: center; gap: 1rem;
-  font-family: var(--mono); font-size: 0.7rem;
-  color: var(--text); letter-spacing: 0.04em;
+  border-top: 2px solid var(--accent);
+  padding: 1rem 1.5rem;
+  display: none;
+  align-items: center; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
   z-index: 500;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  animation: cbIn 0.25s ease both;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
 }
-@keyframes cbIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.cookie-banner.hidden { display: none; }
-.cb-text { flex: 1; line-height: 1.6; }
-.cb-text strong { color: var(--white); font-weight: 500; }
-.cb-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.cb-text a:hover { color: var(--accent2); }
-.cb-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
-.cb-btn {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
-  text-transform: uppercase; padding: 0.5rem 0.9rem;
-  cursor: pointer; border: 1px solid var(--border);
+.cookie-banner.show { display: flex; }
+.cookie-banner-text {
+  flex: 1; min-width: 280px;
+  font-family: var(--sans); font-size: 0.82rem;
+  color: var(--text); line-height: 1.5;
+}
+.cookie-banner-text a {
+  color: var(--accent); text-decoration: none;
+}
+.cookie-banner-text a:hover { text-decoration: underline; }
+.cookie-banner-actions {
+  display: flex; gap: 0.6rem; flex-shrink: 0;
+}
+.cookie-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
   background: transparent; color: var(--text);
-  transition: all 0.15s;
+  cursor: pointer; transition: all 0.15s;
 }
-.cb-btn.cb-decline:hover { border-color: var(--muted); color: var(--white); }
-.cb-btn.cb-accept {
-  background: var(--accent); color: var(--navy);
-  border-color: var(--accent); font-weight: 700;
+.cookie-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cookie-btn.primary {
+  background: var(--accent); color: var(--navy); border-color: var(--accent);
 }
-.cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
+.cookie-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
 
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1280px) {
@@ -870,12 +780,11 @@ footer a:hover { color: var(--accent); }
   .filter-input { min-width: 140px; }
   .docs-list { padding: 0.5rem 1rem 1rem; }
   .dropzone { margin: 0.75rem 1rem; padding: 1rem; }
-  .cookie-banner {
-    flex-direction: column; align-items: stretch; gap: 0.75rem;
-    bottom: 0.5rem; left: 0.5rem; right: 0.5rem;
-    padding: 0.75rem 0.9rem;
-  }
-  .cb-buttons { justify-content: flex-end; }
+  .footer-disclaimer { padding: 0.6rem 1rem; }
+  .footer-bottom { padding: 0.65rem 1rem; }
+  .cookie-banner { padding: 0.85rem 1rem; flex-direction: column; align-items: stretch; }
+  .cookie-banner-actions { width: 100%; }
+  .cookie-btn { flex: 1; }
 }
 </style>
 
@@ -906,7 +815,6 @@ footer a:hover { color: var(--accent); }
   <ul class="nav-center">
     <li><a href="/home.html">Home</a></li>
     <li><a href="/dashboard.html">Pipeline</a></li>
-    <li><a href="/branch-library.html">Library</a></li>
     <li><a href="/documents.html" class="active">Documents</a></li>
     <li><a href="/reports.html">Reports</a></li>
     <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
@@ -994,7 +902,6 @@ footer a:hover { color: var(--accent); }
         <option value="title">Title</option>
         <option value="insurance">Insurance binder</option>
         <option value="other">Other</option>
-        <option value="__unset">— Unclassified —</option>
       </select>
       <select class="filter-select" id="filter-status">
         <option value="all">All statuses</option>
@@ -1004,13 +911,6 @@ footer a:hover { color: var(--accent); }
         <option value="extracted">Extracted</option>
         <option value="applied">Applied to loan</option>
         <option value="failed">Failed</option>
-      </select>
-      <select class="filter-select" id="filter-review">
-        <option value="all">All review states</option>
-        <option value="needs_review">⚠ Needs manual review</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-        <option value="not_reviewed">Not yet reviewed</option>
       </select>
       <div class="filter-spacer"></div>
       <button class="upload-btn" id="upload-btn" type="button">+ Upload</button>
@@ -1101,19 +1001,17 @@ footer a:hover { color: var(--accent); }
 <div class="toast" id="toast" role="status"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- COOKIE / ANALYTICS CONSENT BANNER                                    -->
-<!-- Hidden by default; the IIFE near the bottom of the page reveals it   -->
-<!-- only when no prior consent decision is recorded in localStorage.     -->
+<!-- COOKIE BANNER                                                        -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
-  <div class="cb-text">
-    <strong>We use cookies for analytics.</strong>
-    Helps us see which features people actually use. Nothing tied to a borrower or loan ever leaves your browser.
-    Details in our <a href="/privacy.html">Privacy Policy</a>.
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cookie-banner-text">
+    We use a small amount of session storage to keep you signed in and remember your branch.
+    Optional analytics help us understand how the LOS is used.
+    See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
   </div>
-  <div class="cb-buttons">
-    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
-    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  <div class="cookie-banner-actions">
+    <button class="cookie-btn" id="cookie-reject" type="button">Reject optional</button>
+    <button class="cookie-btn primary" id="cookie-accept" type="button">Accept all</button>
   </div>
 </div>
 
@@ -1122,21 +1020,77 @@ footer a:hover { color: var(--accent); }
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
   <div class="footer-disclaimer">
-    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations &mdash; including TRID, ECOA, HMDA, RESPA, and state licensing &mdash; remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+    <strong>OriginFlow LOS</strong> · Confidential branch data — authorized personnel only · Subject to your organization's information security and HMDA/ECOA compliance policies
   </div>
   <div class="footer-bottom">
     <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
     <span>v0.2 · Documents · Claude Vision extraction</span>
-    <div style="display:flex;gap:1.25rem;">
+    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
       <a href="/home.html">Home</a>
       <a href="/dashboard.html">Pipeline</a>
-      <a href="/branch-library.html">Library</a>
       <a href="/reports.html">Reports</a>
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
     </div>
   </div>
 </footer>
+
+<script>
+// ─── Cookie consent IIFE ─────────────────────────────────────────────
+// Runs independently of the main bootstrap so it shows even before auth
+// resolves. Reads localStorage; if no decision yet, shows the banner.
+// gtag('consent', 'update', ...) silently no-ops if GA isn't loaded on
+// this page — safe to call regardless.
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+
+  // Default to denying analytics until the user explicitly accepts.
+  // If GA gets added to this page later, it'll respect this default.
+  if (typeof window.gtag !== 'function') {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { window.dataLayer.push(arguments); };
+  }
+  try {
+    window.gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+    });
+  } catch (_e) {}
+
+  var existing = null;
+  try { existing = localStorage.getItem(KEY); } catch (_e) {}
+
+  if (existing === 'accepted') {
+    try {
+      window.gtag('consent', 'update', {
+        analytics_storage: 'granted',
+        ad_storage: 'denied',
+      });
+    } catch (_e) {}
+    return;
+  }
+  if (existing === 'rejected') return;
+
+  // Defer slightly so the initial paint isn't blocked by the banner.
+  setTimeout(function() { banner.classList.add('show'); }, 600);
+
+  function decide(value) {
+    try { localStorage.setItem(KEY, value); } catch (_e) {}
+    banner.classList.remove('show');
+    try {
+      window.gtag('consent', 'update', {
+        analytics_storage: value === 'accepted' ? 'granted' : 'denied',
+        ad_storage: 'denied',
+      });
+    } catch (_e) {}
+  }
+
+  document.getElementById('cookie-accept').addEventListener('click', function() { decide('accepted'); });
+  document.getElementById('cookie-reject').addEventListener('click', function() { decide('rejected'); });
+})();
+</script>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1160,7 +1114,7 @@ footer a:hover { color: var(--accent); }
 //
 // Schema expected on `documents` table:
 //   id, branch_id, loan_id (nullable), uploaded_by,
-//   filename, file_url, file_size_bytes, mime_type,
+//   file_name, file_url, file_size_bytes, mime_type,
 //   doc_type, status (uploaded|extracting|extracted|applied|failed),
 //   extraction_data (jsonb), extraction_confidence (numeric 0-1),
 //   uploaded_at, extracted_at, archived_at
@@ -1178,7 +1132,6 @@ let docs = [];
 let docsById = new Map();
 let loans = [];          // for the loan filter dropdown
 let loansById = new Map();
-let profilesById = new Map();  // uploader profiles cached at boot
 let selectedDocId = null;
 let realtimeChan = null;
 
@@ -1190,7 +1143,6 @@ let filters = {
   loan_id: 'all',
   doc_type: 'all',
   status: 'all',
-  manual_review: 'all',
 };
 
 // pending upload (when modal is open)
@@ -1343,28 +1295,16 @@ async function bootstrap() {
   if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
   if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
 
-  // Read URL params:
-  //   ?loan_id=<id>     - scope to a single loan (per-loan view)
-  //   ?doc_type=<type>  - prefilter the doc-type dropdown (deep link from library category tile)
-  //   ?status=<status>  - prefilter the status dropdown
-  //   ?review=<state>   - prefilter the manual-review dropdown ('needs_review' etc.)
-  // Filter prefills are applied AFTER initFilters() runs since they need the
-  // listeners already wired so the dropdowns reflect state correctly.
+  // Read URL params: ?loan_id=<id>
   const params = new URLSearchParams(window.location.search);
   const urlLoanId = params.get('loan_id');
-  const urlDocType = params.get('doc_type');
-  const urlStatus = params.get('status');
-  const urlReview = params.get('review');
   if (urlLoanId) {
     scopedLoanId = urlLoanId;
     view = 'loan';
   }
 
   showActive();
-  // Load loans + uploader profiles in parallel — both are independent of docs
-  // and we want them both ready before loadDocs() so the list can render
-  // uploader names and loan numbers without flicker.
-  await Promise.all([loadLoans(), loadProfiles()]);
+  await loadLoans();        // populate filter dropdown + scoped-loan info
   await loadDocs();
   initFilters();
   initUpload();
@@ -1372,27 +1312,6 @@ async function bootstrap() {
   initRealtime();
   initViewToggle();
   initSearchShortcut();
-
-  // Apply URL-driven filter prefills after listeners are wired so the
-  // dropdowns visually reflect the deep-linked state.
-  if (urlDocType) {
-    filters.doc_type = urlDocType;
-    const sel = $('#filter-doctype');
-    if (sel) sel.value = urlDocType;
-    renderList();
-  }
-  if (urlStatus) {
-    filters.status = urlStatus;
-    const sel = $('#filter-status');
-    if (sel) sel.value = urlStatus;
-    renderList();
-  }
-  if (urlReview) {
-    filters.manual_review = urlReview;
-    const sel = $('#filter-review');
-    if (sel) sel.value = urlReview;
-    renderList();
-  }
 
   // Deep-link to a specific doc: #<doc_id>
   if (window.location.hash) {
@@ -1417,41 +1336,6 @@ function showActive() {
     document.getElementById(s).style.display = 'none';
   });
   $('#docs-active').style.display = 'flex';
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// LOAD PROFILES (uploader cache)
-//
-// The previous implementation embedded uploader info into the documents
-// query via `uploader:uploaded_by(full_name, role)`. PostgREST returned 400
-// because there's no FK constraint from documents.uploaded_by directly to
-// profiles.id (the FK actually points at auth.users.id, which PostgREST
-// can't traverse to profiles automatically). Instead we fetch every profile
-// in the branch once at boot and stitch the uploader info onto each doc
-// in JS via attachUploader().
-// ═══════════════════════════════════════════════════════════════════════════
-
-async function loadProfiles() {
-  const { data, error } = await supa.from('profiles')
-    .select('id, full_name, role')
-    .eq('branch_id', me.branch_id);
-  if (error) {
-    console.warn('profiles load error:', error.message);
-    return;
-  }
-  profilesById.clear();
-  (data || []).forEach(p => profilesById.set(p.id, p));
-}
-
-// Attach { full_name, role } to doc.uploader so render code can keep using
-// d.uploader.full_name. If the uploader isn't in our cache (e.g. they've
-// since left the branch), we leave it null and renderers fall back to
-// hiding the name.
-function attachUploader(doc) {
-  if (doc && doc.uploaded_by) {
-    doc.uploader = profilesById.get(doc.uploaded_by) || null;
-  }
-  return doc;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1505,25 +1389,12 @@ async function loadLoans() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function loadDocs() {
-  // PostgREST aliases (alias:real_column) keep all the JS code reading
-  // d.file_url, d.status, d.extraction_data etc. while actually fetching
-  // from the real column names: storage_path, extraction_status, extraction,
-  // ai_confidence, extraction_completed_at, size_bytes.
   let q = supa.from('documents')
     .select(`
-      id, branch_id, loan_id, borrower_id, uploaded_by, filename,
-      file_url:storage_path,
-      file_size_bytes:size_bytes,
-      page_count,
-      mime_type, doc_type,
-      status:extraction_status,
-      extraction_data:extraction,
-      extraction_confidence:ai_confidence,
-      ai_flags, ai_model,
-      manual_review_status, reviewed_by, reviewed_at,
-      uploaded_at,
-      extracted_at:extraction_completed_at,
-      archived_at
+      id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
+      mime_type, doc_type, status, extraction_data, extraction_confidence,
+      uploaded_at, extracted_at, archived_at,
+      uploader:uploaded_by ( full_name, role )
     `)
     .eq('branch_id', me.branch_id)
     .is('archived_at', null)
@@ -1540,7 +1411,7 @@ async function loadDocs() {
     $('#docs-list').innerHTML = `<div class="docs-empty" style="color:var(--red);">Couldn't load: ${escapeHtml(error.message)}</div>`;
     return;
   }
-  docs = (data || []).map(attachUploader);
+  docs = data || [];
   docsById.clear();
   docs.forEach(d => docsById.set(d.id, d));
 
@@ -1557,30 +1428,12 @@ function loadMetrics() {
   const extracted = docs.filter(d => d.status === 'extracted' || d.status === 'applied').length;
   const applied = docs.filter(d => d.status === 'applied').length;
   const pending = docs.filter(d => d.status === 'extracting' || d.status === 'uploaded').length;
-  const needsReview = docs.filter(d => d.manual_review_status === 'pending').length;
 
   // Avg confidence on extracted docs (normalized 0-1)
   const confs = docs
     .map(d => _normConf(d.extraction_confidence))
     .filter(v => v != null);
   const avgConf = confs.length ? (confs.reduce((a,b) => a+b, 0) / confs.length) : null;
-
-  // 4th cell is dual-purpose: when something's pending review, that's the
-  // most actionable thing we can show, so it takes the slot. Otherwise we
-  // fall back to the avg-confidence number.
-  const fourthCell = needsReview > 0
-    ? `
-      <div class="metric-cell" style="cursor:pointer;" id="metric-needs-review" title="Click to filter">
-        <div class="metric-label">Needs Review</div>
-        <div class="metric-value amber">${needsReview}</div>
-        <div class="metric-sub">awaiting processor · click to filter</div>
-      </div>`
-    : `
-      <div class="metric-cell">
-        <div class="metric-label">Avg Confidence</div>
-        <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${confLabel(avgConf)}</div>
-        <div class="metric-sub">${pending ? pending + ' still pending' : 'across extractions'}</div>
-      </div>`;
 
   $('#metric-strip').innerHTML = `
     <div class="metric-cell">
@@ -1598,18 +1451,12 @@ function loadMetrics() {
       <div class="metric-value green">${applied}</div>
       <div class="metric-sub">data written back</div>
     </div>
-    ${fourthCell}
+    <div class="metric-cell">
+      <div class="metric-label">Avg Confidence</div>
+      <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${confLabel(avgConf)}</div>
+      <div class="metric-sub">${pending ? pending + ' still pending' : 'across extractions'}</div>
+    </div>
   `;
-
-  // Click-to-filter on the Needs Review tile (only present when count > 0)
-  const needsCell = $('#metric-needs-review');
-  if (needsCell) {
-    needsCell.addEventListener('click', () => {
-      $('#filter-review').value = 'needs_review';
-      filters.manual_review = 'needs_review';
-      renderList();
-    });
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1633,37 +1480,16 @@ function initFilters() {
     filters.status = e.target.value;
     renderList();
   });
-  $('#filter-review').addEventListener('change', e => {
-    filters.manual_review = e.target.value;
-    renderList();
-  });
 }
 
-// Treat manual_review_status as a free-form string but bucket the common
-// states. NULL means "not yet reviewed". The "needs_review" filter accepts
-// 'pending' as the canonical "flagged" state — adjust if your enum uses
-// something different (e.g. 'needs_review', 'flagged').
 function applyFilters(rows) {
   return rows.filter(d => {
     if (filters.loan_id !== 'all' && d.loan_id !== filters.loan_id) return false;
-    // Special value '__unset' (used by the library's "Unclassified" tile)
-    // matches docs that haven't been classified yet — null or empty string.
-    if (filters.doc_type === '__unset') {
-      if (d.doc_type) return false;
-    } else if (filters.doc_type !== 'all' && d.doc_type !== filters.doc_type) {
-      return false;
-    }
+    if (filters.doc_type !== 'all' && d.doc_type !== filters.doc_type) return false;
     if (filters.status !== 'all' && d.status !== filters.status) return false;
-    if (filters.manual_review !== 'all') {
-      const r = d.manual_review_status;
-      if (filters.manual_review === 'needs_review' && r !== 'pending') return false;
-      if (filters.manual_review === 'approved'     && r !== 'approved') return false;
-      if (filters.manual_review === 'rejected'     && r !== 'rejected') return false;
-      if (filters.manual_review === 'not_reviewed' && r != null)        return false;
-    }
     if (filters.search) {
       const haystack = [
-        d.filename,
+        d.file_name,
         d.doc_type,
         loansById.get(d.loan_id)?.loan_number || '',
         d.uploader?.full_name || '',
@@ -1679,15 +1505,7 @@ function applyFilters(rows) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function initViewToggle() {
-  $('#view-branch').addEventListener('click', () => {
-    // When not scoped to a loan, "Branch Library" is a destination,
-    // not a view toggle — send them to the library landing page.
-    if (!scopedLoanId) {
-      window.location.href = '/branch-library.html';
-      return;
-    }
-    switchView('branch');
-  });
+  $('#view-branch').addEventListener('click', () => switchView('branch'));
   $('#view-loan').addEventListener('click', () => switchView('loan'));
 }
 
@@ -1738,8 +1556,8 @@ function renderList() {
 }
 
 function renderRow(d) {
-  const ext = fileExt(d.filename);
-  const extCls = fileExtClass(d.mime_type, d.filename);
+  const ext = fileExt(d.file_name);
+  const extCls = fileExtClass(d.mime_type, d.file_name);
   const docTypeLabel = DOC_TYPES[d.doc_type] || (d.doc_type || '—');
   const docTypeDetected = d.status === 'extracted' || d.status === 'applied';
   const loan = d.loan_id ? loansById.get(d.loan_id) : null;
@@ -1752,17 +1570,12 @@ function renderRow(d) {
   else meta.push('Branch library');
   if (d.uploader?.full_name) meta.push(escapeHtml(d.uploader.full_name));
   meta.push(bytes(d.file_size_bytes));
-  if (d.page_count) meta.push(d.page_count + ' pg');
-
-  // Review badge — only renders for non-null states. Pending uses a ⚠ glyph
-  // so it pops at a glance even on dense lists.
-  const reviewBadge = renderReviewBadge(d);
 
   return `
     <div class="doc-row ${isSelected ? 'selected' : ''}" data-doc-id="${escapeHtml(d.id)}">
       <div class="doc-icon ${extCls}">${escapeHtml(ext)}</div>
       <div class="doc-mid">
-        <div class="doc-name">${reviewBadge}${escapeHtml(d.filename)}</div>
+        <div class="doc-name">${escapeHtml(d.file_name)}</div>
         <div class="doc-meta">${meta.join(' · ')}</div>
       </div>
       <div class="doc-type ${docTypeDetected ? 'detected' : ''}">${escapeHtml(docTypeLabel)}</div>
@@ -1799,17 +1612,15 @@ function renderDetail(doc) {
 
   const loan = doc.loan_id ? loansById.get(doc.loan_id) : null;
   const docTypeLabel = DOC_TYPES[doc.doc_type] || doc.doc_type || 'Auto-detect';
-  const ext = fileExt(doc.filename);
+  const ext = fileExt(doc.file_name);
 
   // Head
   const meta = [];
   meta.push(`<span>${escapeHtml(ext)} · ${bytes(doc.file_size_bytes)}</span>`);
   meta.push(`<span>${escapeHtml(docTypeLabel)}</span>`);
-  if (doc.page_count) meta.push(`<span>${doc.page_count} ${doc.page_count === 1 ? 'page' : 'pages'}</span>`);
   if (loan) meta.push(`<span><a href="/dashboard.html#${escapeHtml(doc.loan_id)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(loan.loan_number)}</a></span>`);
   else meta.push(`<span>Branch library</span>`);
   if (doc.uploader?.full_name) meta.push(`<span>by ${escapeHtml(doc.uploader.full_name)}</span>`);
-  if (doc.ai_model) meta.push(`<span>AI: ${escapeHtml(doc.ai_model)}</span>`);
   meta.push(`<span>${timeAgo(doc.uploaded_at)}</span>`);
 
   // Don't allow extraction or preview if the file is being scanned or has been
@@ -1819,26 +1630,14 @@ function renderDetail(doc) {
   const canExtract = !isQuarantined && !isInfected && (doc.status === 'uploaded' || doc.status === 'failed');
   const canDelete = me.role !== 'viewer';
   const canPreview = !isQuarantined && !isInfected && doc.file_url;
-  const canReview = me.role !== 'viewer' && !isQuarantined && !isInfected;
-
-  // Manual review buttons — Approve / Reject / Flag — only show ones that
-  // would actually change the current state, so a doc already 'approved'
-  // doesn't show "Approve" again.
-  const rs = doc.manual_review_status;
-  const reviewBtns = canReview ? `
-    ${rs !== 'approved' ? `<button class="dh-action approve" id="btn-review-approve">✓ Approve</button>` : ''}
-    ${rs !== 'rejected' ? `<button class="dh-action reject"  id="btn-review-reject">✗ Reject</button>` : ''}
-    ${rs !== 'pending'  ? `<button class="dh-action flag"    id="btn-review-flag">⚠ Flag for review</button>` : ''}
-  ` : '';
 
   $('#detail-head').innerHTML = `
-    <div class="dh-name">${escapeHtml(doc.filename)}</div>
+    <div class="dh-name">${escapeHtml(doc.file_name)}</div>
     <div class="dh-meta-row">${meta.join('')}</div>
     <div class="dh-actions">
       ${canPreview ? `<a class="dh-action" href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">↗ Open file</a>` : ''}
       ${canExtract ? `<button class="dh-action primary" id="btn-extract">${doc.status === 'failed' ? 'Retry extraction' : 'Run AI extraction'}</button>` : ''}
       ${doc.status === 'extracted' && doc.loan_id ? `<button class="dh-action primary" id="btn-apply-all">Apply all to loan</button>` : ''}
-      ${reviewBtns}
       ${canDelete ? `<button class="dh-action danger" id="btn-archive">Archive</button>` : ''}
     </div>
   `;
@@ -1849,14 +1648,6 @@ function renderDetail(doc) {
   if (doc.status === 'extracted' && doc.loan_id) {
     $('#btn-apply-all').addEventListener('click', () => applyAllToLoan(doc.id));
   }
-  // Review handlers — guarded by element existence since each button only
-  // renders when its target state is different from the current one.
-  const onApprove = $('#btn-review-approve');
-  const onReject  = $('#btn-review-reject');
-  const onFlag    = $('#btn-review-flag');
-  if (onApprove) onApprove.addEventListener('click', () => setReviewStatus(doc.id, 'approved'));
-  if (onReject)  onReject.addEventListener('click',  () => setReviewStatus(doc.id, 'rejected'));
-  if (onFlag)    onFlag.addEventListener('click',    () => setReviewStatus(doc.id, 'pending'));
 
   // Body
   const body = $('#detail-body');
@@ -1897,7 +1688,6 @@ function renderDetail(doc) {
   }
 
   body.innerHTML = `
-    ${renderReviewPanel(doc)}
     ${renderExtractionPanel(doc)}
     ${renderPreview(doc)}
   `;
@@ -1906,102 +1696,6 @@ function renderDetail(doc) {
   body.querySelectorAll('[data-action-key]').forEach(btn => {
     btn.addEventListener('click', () => applyAction(doc.id, btn.dataset.actionKey, btn.dataset.actionIdx));
   });
-
-  // Schedule the PDF preview watchdog (only fires if a PDF iframe is in the
-  // panel and never reports load within 2.5s — meaning CORS, X-Frame-Options,
-  // or Content-Disposition is blocking it). renderPreview() stashed the URL
-  // in window._pdfPreviewWatchdogs keyed by previewId.
-  const pdfPreviewId = 'pdf-preview-' + doc.id;
-  if (window._pdfPreviewWatchdogs && window._pdfPreviewWatchdogs[pdfPreviewId]) {
-    const url = window._pdfPreviewWatchdogs[pdfPreviewId];
-    setTimeout(() => {
-      const loading = document.getElementById(pdfPreviewId + '-loading');
-      if (loading && loading.parentElement) {
-        // iframe never fired its onload handler — treat as blocked
-        OF_pdfPreviewFailed(pdfPreviewId, url);
-      }
-    }, 2500);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// MANUAL REVIEW
-//
-// `manual_review_status` is a free-form text column on the documents table.
-// We treat the canonical values as 'pending', 'approved', 'rejected'. NULL
-// means "not reviewed yet". If your enum uses different values, the
-// approve/reject/flag buttons will still work — they just write the
-// canonical strings, so keep your CHECK constraint loose or remap on the
-// server side.
-// ═══════════════════════════════════════════════════════════════════════════
-
-function renderReviewBadge(d) {
-  const r = d.manual_review_status;
-  if (!r) return '';
-  const labels = { pending: '⚠ REVIEW', approved: '✓ OK', rejected: '✗ REJECTED' };
-  const cls = (r === 'pending' || r === 'approved' || r === 'rejected') ? r : 'pending';
-  const label = labels[r] || r.toUpperCase();
-  return `<span class="doc-review-badge ${cls}">${escapeHtml(label)}</span>`;
-}
-
-function renderReviewPanel(doc) {
-  const r = doc.manual_review_status;
-  const cls = (r === 'pending' || r === 'approved' || r === 'rejected') ? r : '';
-  const flags = Array.isArray(doc.ai_flags) ? doc.ai_flags : [];
-  const showPanel = r != null || flags.length > 0;
-
-  // Don't render the panel at all if there's nothing to say (no review
-  // status, no flags) — keeps the detail body clean for happy-path docs.
-  if (!showPanel) return '';
-
-  let statusTag, statusLabel;
-  if (r === 'pending')      { statusTag = 'pending';  statusLabel = 'Pending review'; }
-  else if (r === 'approved'){ statusTag = 'approved'; statusLabel = '✓ Approved'; }
-  else if (r === 'rejected'){ statusTag = 'rejected'; statusLabel = '✗ Rejected'; }
-  else if (r)               { statusTag = '';         statusLabel = r; }
-  else                      { statusTag = 'none';     statusLabel = 'Not reviewed'; }
-
-  const reviewer = doc.reviewed_by ? profilesById.get(doc.reviewed_by) : null;
-  const reviewerLine = (r && r !== 'pending' && reviewer)
-    ? `Reviewed by <strong>${escapeHtml(reviewer.full_name)}</strong> · ${timeAgo(doc.reviewed_at)}`
-    : (r === 'pending' ? 'Awaiting processor review' : 'No review recorded');
-
-  const flagChips = flags.length > 0
-    ? `<div class="ai-flag-chips">${flags.map(f => `<span class="ai-flag-chip">${escapeHtml(String(f))}</span>`).join('')}</div>`
-    : '';
-
-  return `
-    <div class="review-panel ${cls}">
-      <div class="review-head">
-        <span class="review-title">Manual Review</span>
-        <span class="review-status-tag ${statusTag}">${escapeHtml(statusLabel)}</span>
-      </div>
-      <div class="review-body">
-        <div class="review-meta">${reviewerLine}</div>
-        ${flagChips}
-      </div>
-    </div>
-  `;
-}
-
-async function setReviewStatus(docId, newStatus) {
-  // 'pending' = flagging for review. We clear reviewer + timestamp because
-  // it isn't a "review" yet — someone is asking for one. 'approved' /
-  // 'rejected' record the current user as the reviewer.
-  const update = newStatus === 'pending'
-    ? { manual_review_status: 'pending', reviewed_by: null, reviewed_at: null }
-    : { manual_review_status: newStatus, reviewed_by: me.id, reviewed_at: new Date().toISOString() };
-
-  try {
-    const { error } = await supa.from('documents').update(update).eq('id', docId);
-    if (error) throw error;
-    const labels = { approved: 'Approved', rejected: 'Rejected', pending: 'Flagged for review' };
-    showToast(labels[newStatus] || ('Review status: ' + newStatus));
-    await loadDocs();
-  } catch (err) {
-    console.error('review status err:', err);
-    showToast('Couldn\'t update review status: ' + err.message, true);
-  }
 }
 
 function renderExtractionPanel(doc) {
@@ -2129,7 +1823,7 @@ function renderPreview(doc) {
         <div class="preview-head">Preview · Image</div>
         <div class="preview-body">
           <img src="${escapeHtml(doc.file_url)}"
-               alt="${escapeHtml(doc.filename)}"
+               alt="${escapeHtml(doc.file_name)}"
                loading="lazy"
                onerror="this.parentElement.innerHTML='<div class=&quot;preview-fallback&quot;>Image failed to load (CORS or 404).<br><a href=&quot;${escapeHtml(doc.file_url)}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Open in new tab</a></div>'">
         </div>
@@ -2149,18 +1843,7 @@ function renderPreview(doc) {
     //   Content-Disposition: inline   (NOT attachment)
     //   X-Frame-Options: SAMEORIGIN or omitted entirely
     //   Content-Security-Policy: frame-ancestors ... must allow your domain
-    //
-    // NOTE: We do NOT embed a <script> tag in this template literal —
-    // doing so caused a closing tag sequence (less-than slash s c r i p t
-    // greater-than) to appear in the page source, which terminates the
-    // OUTER script block at parse time and leaks all subsequent JS into
-    // the document body. (Also, scripts injected via innerHTML don't
-    // execute anyway.) The watchdog is now scheduled in renderDetail()
-    // right after innerHTML is set.
     const previewId = 'pdf-preview-' + doc.id;
-    // Stash the URL so the watchdog can find it when it fires
-    window._pdfPreviewWatchdogs = window._pdfPreviewWatchdogs || {};
-    window._pdfPreviewWatchdogs[previewId] = doc.file_url;
     return `
       <div class="preview-box">
         <div class="preview-head">Preview · PDF</div>
@@ -2173,12 +1856,26 @@ function renderPreview(doc) {
           </div>
           <iframe id="${previewId}"
                   src="${escapeHtml(doc.file_url)}#toolbar=0"
-                  title="${escapeHtml(doc.filename)}"
+                  title="${escapeHtml(doc.file_name)}"
                   style="width:100%; height:320px; border:none; background:white; opacity:0;"
                   onload="OF_pdfPreviewLoaded('${previewId}', '${escapeHtml(doc.file_url)}')"
                   onerror="OF_pdfPreviewFailed('${previewId}', '${escapeHtml(doc.file_url)}')"></iframe>
         </div>
       </div>
+      <script>
+        // 2.5s watchdog — if onload never fires, assume blocked
+        (function() {
+          var id = '${previewId}';
+          setTimeout(function() {
+            var wrap = document.getElementById(id + '-wrap');
+            var loading = document.getElementById(id + '-loading');
+            if (loading && loading.parentElement) {
+              // Still in DOM == iframe never fired load
+              OF_pdfPreviewFailed(id, ${JSON.stringify(doc.file_url)});
+            }
+          }, 2500);
+        })();
+      </script>
     `;
   }
   return `
@@ -2254,7 +1951,7 @@ async function runExtraction(docId) {
   try {
     // Mark in DB so other users see it too
     await supa.from('documents')
-      .update({ extraction_status: 'extracting' })
+      .update({ status: 'extracting' })
       .eq('id', docId);
 
     // ───────────────────────────────────────────────────────────────
@@ -2285,16 +1982,16 @@ async function runExtraction(docId) {
     // Persist
     const { error } = await supa.from('documents')
       .update({
-        extraction_status: 'extracted',
-        doc_type:          result.doc_type || doc.doc_type || null,
-        extraction: {
-          fields:            result.fields || [],
+        status: 'extracted',
+        doc_type: result.doc_type || doc.doc_type || null,
+        extraction_data: {
+          fields: result.fields || [],
           suggested_actions: result.suggested_actions || [],
-          applied_actions:   [],
-          extracted_at_utc:  new Date().toISOString(),
+          applied_actions: [],
+          extracted_at_utc: new Date().toISOString(),
         },
-        ai_confidence:           result.confidence ?? null,
-        extraction_completed_at: new Date().toISOString(),
+        extraction_confidence: result.confidence ?? null,
+        extracted_at: new Date().toISOString(),
       })
       .eq('id', docId);
 
@@ -2306,8 +2003,8 @@ async function runExtraction(docId) {
     console.error('extract err:', err);
     await supa.from('documents')
       .update({
-        extraction_status: 'failed',
-        extraction:        { error: err.message },
+        status: 'failed',
+        extraction_data: { error: err.message },
       })
       .eq('id', docId);
     showToast('Extraction failed: ' + err.message, true);
@@ -2346,16 +2043,16 @@ async function applyAction(docId, actionKey, actionIdx) {
       console.warn('No window.OF_applyExtractionAction hook — recording click only.');
     }
 
-    // Mark as applied in extraction jsonb + bump extraction_status if all applied
+    // Mark as applied in extraction_data + bump status if all applied
     const applied = new Set(data.applied_actions || []);
     applied.add(actionKey);
 
     const allApplied = (data.suggested_actions || []).every(a => applied.has(a.key));
 
     const update = {
-      extraction: { ...data, applied_actions: [...applied] },
+      extraction_data: { ...data, applied_actions: [...applied] },
     };
-    if (allApplied) update.extraction_status = 'applied';
+    if (allApplied) update.status = 'applied';
 
     const { error } = await supa.from('documents')
       .update(update)
@@ -2536,13 +2233,13 @@ async function confirmUpload() {
         branch_id: me.branch_id,
         loan_id: loanId,
         uploaded_by: me.id,
-        filename: file.name,
-        storage_path:      uploaded.file_url,
-        size_bytes:        uploaded.file_size_bytes ?? file.size,
-        mime_type:         uploaded.mime_type ?? file.type ?? 'application/octet-stream',
-        doc_type:          docType,
-        extraction_status: initialStatus,
-        uploaded_at:       new Date().toISOString(),
+        file_name: file.name,
+        file_url: uploaded.file_url,
+        file_size_bytes: uploaded.file_size_bytes ?? file.size,
+        mime_type: uploaded.mime_type ?? file.type ?? 'application/octet-stream',
+        doc_type: docType,
+        status: initialStatus,
+        uploaded_at: new Date().toISOString(),
       })
       .select().single();
     if (error) throw error;
@@ -2556,10 +2253,7 @@ async function confirmUpload() {
     // If your OF_uploadFile returns status='quarantined', extraction will be
     // skipped here and re-attempted automatically when realtime sees the
     // status change to 'uploaded' after the scan passes.
-    //
-    // Note: .insert().select().single() returns the RAW row (no PostgREST
-    // aliasing), so the column is extraction_status, not status.
-    if (typeof window.OF_extractDocument === 'function' && row.extraction_status === 'uploaded') {
+    if (typeof window.OF_extractDocument === 'function' && row.status === 'uploaded') {
       await loadDocs();
       runExtraction(row.id).catch(err => console.warn('auto-extract failed:', err));
     } else {
@@ -2663,12 +2357,8 @@ async function handleRealtimeUpdate(row) {
   // Detect quarantined → uploaded transition (scan completed). If our hook
   // is set up, kick off extraction automatically — same UX as if the file
   // had been clean from the start.
-  //
-  // NB: realtime payloads come with RAW column names (no PostgREST aliasing),
-  // so we read row.extraction_status here. prev came from our cached docs
-  // which were aliased via the SELECT, so prev.status is correct.
   const prev = docsById.get(row.id);
-  const justCleared = prev && prev.status === 'quarantined' && row.extraction_status === 'uploaded';
+  const justCleared = prev && prev.status === 'quarantined' && row.status === 'uploaded';
 
   // Patch the row. Re-fetch with joins so uploader name etc. stays current.
   const enriched = await fetchSingleDoc(row.id);
@@ -2715,19 +2405,10 @@ function handleRealtimeDelete(row) {
 async function fetchSingleDoc(id) {
   const { data, error } = await supa.from('documents')
     .select(`
-      id, branch_id, loan_id, borrower_id, uploaded_by, filename,
-      file_url:storage_path,
-      file_size_bytes:size_bytes,
-      page_count,
-      mime_type, doc_type,
-      status:extraction_status,
-      extraction_data:extraction,
-      extraction_confidence:ai_confidence,
-      ai_flags, ai_model,
-      manual_review_status, reviewed_by, reviewed_at,
-      uploaded_at,
-      extracted_at:extraction_completed_at,
-      archived_at
+      id, branch_id, loan_id, uploaded_by, file_name, file_url, file_size_bytes,
+      mime_type, doc_type, status, extraction_data, extraction_confidence,
+      uploaded_at, extracted_at, archived_at,
+      uploader:uploaded_by ( full_name, role )
     `)
     .eq('id', id)
     .maybeSingle();
@@ -2735,7 +2416,7 @@ async function fetchSingleDoc(id) {
     console.warn('realtime row fetch failed:', error);
     return null;
   }
-  return attachUploader(data);
+  return data;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2846,54 +2527,6 @@ document.addEventListener('DOMContentLoaded', bootstrap);
 // };
 // */
 // ═══════════════════════════════════════════════════════════════════════════
-</script>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- COOKIE BANNER WIRING                                                 -->
-<!--                                                                      -->
-<!-- Self-contained IIFE so it can be lifted into a shared /js/of-cookie  -->
-<!-- file later without touching the rest of documents.html. Reads/writes -->
-<!-- localStorage 'of_cookie_consent' (shared with landing, signup,       -->
-<!-- login, home, all other OF pages — once the user decides anywhere,    -->
-<!-- the banner stays gone everywhere). The gtag('consent','update',...)  -->
-<!-- call is wrapped in a typeof-check, so this is a no-op on pages that  -->
-<!-- don't load Google Analytics today and starts gating analytics        -->
-<!-- automatically when GA gets added later.                              -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<script>
-(function() {
-  var KEY = 'of_cookie_consent';
-  var banner = document.getElementById('cookie-banner');
-  if (!banner) return;
-
-  var prior = null;
-  try { prior = localStorage.getItem(KEY); } catch (_) {}
-
-  // Show banner only if no prior decision exists. If the user already
-  // accepted or declined on any OF page, we honor that and stay quiet.
-  if (prior !== 'granted' && prior !== 'denied') {
-    banner.classList.remove('hidden');
-  }
-
-  function setConsent(value) {
-    try { localStorage.setItem(KEY, value); } catch (_) {}
-    // Tell Google Consent Mode about the user's choice in real time.
-    // gtag may not exist if an ad-blocker stripped the GA loader, OR if
-    // this page doesn't load GA at all — in either case the localStorage
-    // write is enough; nothing to update.
-    if (typeof gtag === 'function') {
-      gtag('consent', 'update', {
-        'analytics_storage': value === 'granted' ? 'granted' : 'denied'
-      });
-    }
-    banner.classList.add('hidden');
-  }
-
-  var accept = document.getElementById('cb-accept');
-  var decline = document.getElementById('cb-decline');
-  if (accept)  accept.addEventListener('click',  function() { setConsent('granted'); });
-  if (decline) decline.addEventListener('click', function() { setConsent('denied');  });
-})();
 </script>
 
 </body>
