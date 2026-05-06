@@ -1310,10 +1310,18 @@ function renderQuickActions() {
   cards.push(common.reports);
 
   if (me.role === 'admin') {
-    // Admin gets a 7th... we cap at 6 so swap reports for team. Actually keep both — let's show 6 only.
-    // Replace the last "documents" duplicate with team for admin if we'd otherwise duplicate.
+    // Admin gets Team + Settings instead of duplicate "documents" tiles.
+    // The cap is still 6. Settings is the new right-most card so admins see
+    // it in their muscle-memory slot for "I need to configure the branch."
     cards[cards.length - 2] = { icon:'⚙', label:'Team', sub:'users · roles', href:'/team.html' };
+    cards[cards.length - 1] = { icon:'⚒', label:'Settings', sub:'states · export · defaults', href:'/branch-settings.html' };
   }
+
+  // TODO when pricing engine ships:
+  // For LO/LOA/admin, replace common.documents in cards[2-3] with:
+  //   { icon:'$', label:'+ Price scenario', sub:'speculative pricing', href:'/loans-new.html?mode=price' }
+  // Don't add until window.OF_priceScenario actually returns scenarios — empty
+  // tiles erode trust faster than missing tiles.
 
   // Cap at 6 (matches grid)
   const final = cards.slice(0, 6);
@@ -1443,32 +1451,53 @@ async function loadMetrics(cfg) {
       <div class="metric-cell"><div class="metric-label">Clear-to-Close</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">${money(ctc.total)}</div></div>
     `;
   } else if (me.role === 'underwriter') {
-    const [uwQueue, cond, ctc, denied] = await Promise.all([
-      summarize({ ...myFilter, status: 'underwriting' }),
-      summarize({ ...myFilter, status: 'conditional_approval' }),
-      summarize({ ...myFilter, status: 'clear_to_close' }),
-      summarize({ ...myFilter, status: 'denied' }),
-    ]);
-    row.innerHTML = `
-      <div class="metric-cell"><div class="metric-label">UW Queue</div><div class="metric-value amber">${uwQueue.count}</div><div class="metric-sub">${money(uwQueue.total)}</div></div>
-      <div class="metric-cell"><div class="metric-label">Conditional</div><div class="metric-value">${cond.count}</div><div class="metric-sub">awaiting clear</div></div>
-      <div class="metric-cell"><div class="metric-label">Cleared (Yours)</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">CTC</div></div>
-      <div class="metric-cell"><div class="metric-label">Denied (Yours)</div><div class="metric-value">${denied.count}</div><div class="metric-sub">w/ ECOA letter</div></div>
-    `;
+      const [uwQueue, cond, ctc, denied] = await Promise.all([
+        summarize({ ...myFilter, status: 'underwriting' }),
+        summarize({ ...myFilter, status: 'conditional_approval' }),
+        summarize({ ...myFilter, status: 'clear_to_close' }),
+        summarize({ ...myFilter, status: 'denied' }),
+      ]);
+      // Files in UW with no AUS run yet → my "awaiting AUS" count
+      let awaitingAus = null;
+      try {
+        const { data: uwIds } = await supa.from('loans').select('id')
+          .eq('branch_id', me.branch_id).eq('underwriter_id', me.id)
+          .in('status', ['underwriting','conditional_approval']).is('archived_at', null);
+        const ids = (uwIds || []).map(r => r.id);
+        if (ids.length === 0) {
+          awaitingAus = 0;
+        } else {
+          const { data: ranIds } = await supa.from('aus_runs').select('loan_id').in('loan_id', ids);
+          const ran = new Set((ranIds || []).map(r => r.loan_id));
+          awaitingAus = ids.filter(id => !ran.has(id)).length;
+        }
+      } catch (_) { /* aus_runs not deployed; leave as null */ }
+      row.innerHTML = `
+        <div class="metric-cell"><div class="metric-label">UW Queue</div><div class="metric-value amber">${uwQueue.count}</div><div class="metric-sub">${money(uwQueue.total)}</div></div>
+        <div class="metric-cell"><div class="metric-label">Awaiting AUS</div><div class="metric-value ${awaitingAus ? 'amber' : ''}">${awaitingAus ?? '—'}</div><div class="metric-sub">${awaitingAus == null ? 'engine not configured' : 'no DU/LP run yet'}</div></div>
+        <div class="metric-cell"><div class="metric-label">Cleared (Yours)</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">CTC</div></div>
+        <div class="metric-cell"><div class="metric-label">Denied (Yours)</div><div class="metric-value">${denied.count}</div><div class="metric-sub">w/ ECOA letter</div></div>
+      `;
   } else {
-    const [active, uw, ctc, funded] = await Promise.all([
-      summarize({ status: ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'] }),
-      summarize({ status: ['underwriting','conditional_approval'] }),
-      summarize({ status: 'clear_to_close' }),
-      summarize({ status: 'funded' }),
-    ]);
-    row.innerHTML = `
-      <div class="metric-cell"><div class="metric-label">Active Pipeline</div><div class="metric-value cyan">${money(active.total)}</div><div class="metric-sub">${active.count} files</div></div>
-      <div class="metric-cell"><div class="metric-label">In Underwriting</div><div class="metric-value amber">${uw.count}</div><div class="metric-sub">UW + conditional</div></div>
-      <div class="metric-cell"><div class="metric-label">Clear-to-Close</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">ready to fund</div></div>
-      <div class="metric-cell"><div class="metric-label">Funded</div><div class="metric-value green">${funded.count}</div><div class="metric-sub">${money(funded.total)}</div></div>
-    `;
-  }
+      const [active, uw, ctc, funded] = await Promise.all([
+        summarize({ status: ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'] }),
+        summarize({ status: ['underwriting','conditional_approval'] }),
+        summarize({ status: 'clear_to_close' }),
+        summarize({ status: 'funded' }),
+      ]);
+      // Locks expiring in ≤ 3 days, branch-wide
+      const soon = new Date(Date.now() + 3*86400*1000).toISOString();
+      const { count: locksCount } = await supa.from('loans')
+        .select('id', { count: 'exact', head: true })
+        .eq('branch_id', me.branch_id).is('archived_at', null)
+        .not('lock_expires_at', 'is', null).lt('lock_expires_at', soon);
+      row.innerHTML = `
+        <div class="metric-cell"><div class="metric-label">Active Pipeline</div><div class="metric-value cyan">${money(active.total)}</div><div class="metric-sub">${active.count} files</div></div>
+        <div class="metric-cell"><div class="metric-label">In Underwriting</div><div class="metric-value amber">${uw.count}</div><div class="metric-sub">UW + conditional</div></div>
+        <div class="metric-cell"><div class="metric-label">Clear-to-Close</div><div class="metric-value green">${ctc.count}</div><div class="metric-sub">ready to fund</div></div>
+        <div class="metric-cell"><div class="metric-label">Locks expiring</div><div class="metric-value ${locksCount ? 'amber' : ''}">${locksCount ?? '—'}</div><div class="metric-sub">in next 3 days</div></div>
+      `;
+    }
 }
 
 // ─── MY FILES ────────────────────────────────────────────────────────────
@@ -1509,7 +1538,7 @@ async function loadMyFiles(cfg) {
     const city = (loan.property_address && loan.property_address.city) ? loan.property_address.city.toUpperCase() : '—';
     const state = (loan.property_address && loan.property_address.state) ? loan.property_address.state.toUpperCase() : '';
     return `
-      <a class="file-row" href="/dashboard.html#${escapeHtml(loan.id)}">
+      <a class="file-row" href="/loan.html?id=${escapeHtml(loan.id)}">
         <span class="file-num">${escapeHtml(loan.loan_number)}</span>
         <span class="file-mid">
           <span class="file-name">${escapeHtml(name)}${cob}</span>
@@ -1524,83 +1553,178 @@ async function loadMyFiles(cfg) {
   }).join('');
 }
 
-// ─── ACTION QUEUE ────────────────────────────────────────────────────────
 async function loadQueue(cfg) {
   const list = $('#queue-list');
   $('#queue-panel-tag').textContent = '';
 
   try {
+    // ─── LO / LOA ─────────────────────────────────────────────────────
+    // Stale leads + lock expiry + eSign returns awaiting
     if (me.role === 'lo' || me.role === 'loa') {
+      const myLoans = await myLoanIds(cfg.filterCol);
+      const items = [];
+
+      // 1. Stale leads & app-stage files (24h+ no activity)
       const cutoff = new Date(Date.now() - 24*3600*1000).toISOString();
-      const { data, error } = await supa.from('loans')
+      const { data: stale } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
-        .eq('branch_id', me.branch_id)
-        .eq(cfg.filterCol, me.id)
-        .in('status', ['lead','application'])
-        .lt('updated_at', cutoff)
-        .order('updated_at', { ascending: true })
-        .limit(8);
-      if (error) throw error;
-      renderActionList(list, data, (loan) => {
+        .eq('branch_id', me.branch_id).eq(cfg.filterCol, me.id)
+        .in('status', ['lead','application']).lt('updated_at', cutoff)
+        .order('updated_at', { ascending: true }).limit(5);
+      for (const loan of (stale || [])) {
         const b = (loan.borrowers || [])[0]?.borrower;
-        const name = b ? `${b.last_name}, ${b.first_name}` : 'lead';
-        return {
-          icon: '⚐',
-          urgency: loan.status === 'lead' ? 'urgent' : '',
-          text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(name)} — no activity ${timeAgo(loan.updated_at)}`,
-          href: `/dashboard.html#${loan.id}`,
-        };
-      }, 'No stale leads. Good hunting.');
-      $('#queue-panel-tag').textContent = (data || []).length + ' stale';
+        items.push({
+          icon: '⚐', urgency: loan.status === 'lead' ? 'urgent' : '',
+          text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(b ? b.last_name + ', ' + b.first_name : 'lead')} — no activity ${timeAgo(loan.updated_at)}`,
+          href: `/loan.html?id=${loan.id}`,
+        });
+      }
 
-    } else if (me.role === 'processor' || me.role === 'loa') {
-      let q = supa.from('conditions')
-        .select(`
-          id, title, category, created_at,
-          loans!inner ( id, loan_number, branch_id, processor_id, lo_id )
-        `)
-        .eq('loans.branch_id', me.branch_id)
-        .eq('status', 'outstanding')
-        .order('created_at', { ascending: true })
-        .limit(8);
-      if (me.role === 'processor') q = q.eq('loans.processor_id', me.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      renderActionList(list, data, (cond) => ({
-        icon: cond.category === 'PTD' ? '⚑' : '⚑',
-        urgency: cond.category === 'PTD' ? 'urgent' : '',
-        text: `<strong>${escapeHtml(cond.loans.loan_number)}</strong> · ${escapeHtml(cond.title)} <span style="color:var(--muted);">· ${escapeHtml(cond.category || 'PTD')}</span>`,
-        href: `/dashboard.html#${cond.loans.id}`,
-      }), 'All your conditions are clear. Nice.');
-      $('#queue-panel-tag').textContent = (data || []).length + ' open';
+      // 2. Rate locks expiring in ≤ 3 days
+      if (myLoans.length > 0) {
+        const soon = new Date(Date.now() + 3*86400*1000).toISOString();
+        const { data: locks } = await supa.from('loans')
+          .select('id, loan_number, lock_expires_at')
+          .in('id', myLoans).not('lock_expires_at', 'is', null)
+          .lt('lock_expires_at', soon).limit(5);
+        for (const l of (locks || [])) {
+          const days = Math.ceil((new Date(l.lock_expires_at) - Date.now()) / 86400000);
+          items.push({
+            icon: '⚑', urgency: days < 0 ? 'urgent' : '',
+            text: `<strong>${escapeHtml(l.loan_number)}</strong> · rate lock ${days < 0 ? 'EXPIRED ' + (-days) + 'd ago' : 'expires in ' + days + 'd'}`,
+            href: `/loan.html?id=${l.id}#tab=overview`,
+          });
+        }
+      }
 
+      // 3. eSign envelopes awaiting return > 48h (best-effort; tolerate missing table)
+      if (myLoans.length > 0) {
+        try {
+          const cutoff48 = new Date(Date.now() - 48*3600*1000).toISOString();
+          const { data: env } = await supa.from('esign_envelopes')
+            .select('loan_id, package_type, sent_at, status, loans!inner(loan_number)')
+            .in('loan_id', myLoans).eq('status', 'sent')
+            .lt('sent_at', cutoff48).limit(5);
+          for (const e of (env || [])) {
+            items.push({
+              icon: '✎', urgency: '',
+              text: `<strong>${escapeHtml(e.loans.loan_number)}</strong> · awaiting eSign return ${timeAgo(e.sent_at)} (${e.package_type.replace('_',' ')})`,
+              href: `/loan.html?id=${e.loan_id}#tab=disclosures`,
+            });
+          }
+        } catch (_) { /* esign_envelopes table not deployed yet */ }
+      }
+
+      renderActionList(list, items.slice(0, 8), x => x, 'No stale leads, no expiring locks, no pending signatures. Good hunting.');
+      $('#queue-panel-tag').textContent = items.length + (items.length === 1 ? ' item' : ' items');
+
+    // ─── PROCESSOR ────────────────────────────────────────────────────
+    // Open conditions + TRID timer alerts + AUS recommendations to action
+    } else if (me.role === 'processor') {
+      const items = [];
+
+      // 1. Open conditions on assigned files
+      const { data: conds } = await supa.from('conditions')
+        .select(`id, title, category, created_at,
+                 loans!inner ( id, loan_number, branch_id, processor_id )`)
+        .eq('loans.branch_id', me.branch_id).eq('loans.processor_id', me.id)
+        .eq('status', 'outstanding').order('created_at', { ascending: true }).limit(5);
+      for (const c of (conds || [])) {
+        items.push({
+          icon: '⚑', urgency: c.category === 'PTD' ? 'urgent' : '',
+          text: `<strong>${escapeHtml(c.loans.loan_number)}</strong> · ${escapeHtml(c.title)} <span style="color:var(--muted);">· ${escapeHtml(c.category || 'PTD')}</span>`,
+          href: `/loan.html?id=${c.loans.id}#tab=conditions`,
+        });
+      }
+
+      // 2. TRID timers — CDs sent, waiting period clears in next ~36h
+      const myProcLoans = await myLoanIds('processor_id');
+      if (myProcLoans.length > 0) {
+        const { data: trid } = await supa.from('loans')
+          .select('id, loan_number, cd_sent_at')
+          .in('id', myProcLoans).not('cd_sent_at', 'is', null)
+          .in('status', ['conditional_approval','clear_to_close','docs_out']).limit(20);
+        const now = Date.now();
+        for (const l of (trid || [])) {
+          // 3 business days ≈ 5 calendar days conservatively
+          const earliest = new Date(l.cd_sent_at).getTime() + 5*86400*1000;
+          const hoursOut = (earliest - now) / 3600000;
+          if (hoursOut > 0 && hoursOut < 36) {
+            items.push({
+              icon: '⏱', urgency: '',
+              text: `<strong>${escapeHtml(l.loan_number)}</strong> · TRID waiting period clears in ~${Math.round(hoursOut)}h`,
+              href: `/loan.html?id=${l.id}#tab=disclosures`,
+            });
+          }
+        }
+      }
+
+      // 3. AUS recommendations on assigned files (refer / caution / ineligible)
+      try {
+        if (myProcLoans.length > 0) {
+          const { data: aus } = await supa.from('aus_runs')
+            .select('loan_id, recommendation, ran_at, loans!inner(loan_number)')
+            .in('loan_id', myProcLoans).order('ran_at', { ascending: false }).limit(20);
+          // Only surface latest run per loan, only if non-clean
+          const latestPerLoan = new Map();
+          for (const r of (aus || [])) if (!latestPerLoan.has(r.loan_id)) latestPerLoan.set(r.loan_id, r);
+          for (const r of latestPerLoan.values()) {
+            const rec = String(r.recommendation || '').toLowerCase();
+            if (rec.includes('refer') || rec.includes('caution') || rec.includes('ineligible')) {
+              items.push({
+                icon: '⚠', urgency: rec.includes('caution') ? 'urgent' : '',
+                text: `<strong>${escapeHtml(r.loans.loan_number)}</strong> · AUS finding: ${escapeHtml(r.recommendation)}`,
+                href: `/loan.html?id=${r.loan_id}#tab=findings`,
+              });
+            }
+          }
+        }
+      } catch (_) { /* aus_runs table not deployed yet */ }
+
+      renderActionList(list, items.slice(0, 8), x => x, 'All conditions cleared, no TRID timers in the next 36h. Nice.');
+      $('#queue-panel-tag').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
+
+    // ─── UNDERWRITER ──────────────────────────────────────────────────
     } else if (me.role === 'underwriter') {
       const { data, error } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
-        .eq('branch_id', me.branch_id)
-        .eq('underwriter_id', me.id)
+        .eq('branch_id', me.branch_id).eq('underwriter_id', me.id)
         .in('status', ['underwriting','conditional_approval'])
-        .order('updated_at', { ascending: true })
-        .limit(8);
+        .order('updated_at', { ascending: true }).limit(8);
       if (error) throw error;
       renderActionList(list, data, (loan) => {
         const b = (loan.borrowers || [])[0]?.borrower;
         const name = b ? `${b.last_name}, ${b.first_name}` : 'file';
         return {
-          icon: loan.status === 'underwriting' ? '⚑' : '✓',
-          urgency: '',
+          icon: loan.status === 'underwriting' ? '⚑' : '✓', urgency: '',
           text: `<strong>${escapeHtml(loan.loan_number)}</strong> · ${escapeHtml(name)} — ${statusLabel(loan.status)} since ${timeAgo(loan.updated_at)}`,
-          href: `/dashboard.html#${loan.id}`,
+          href: `/loan.html?id=${loan.id}`,
         };
       }, 'UW queue is empty.');
       $('#queue-panel-tag').textContent = (data || []).length + ' files';
 
+    // ─── CLOSER ───────────────────────────────────────────────────────
+    } else if (me.role === 'closer') {
+      const { data } = await supa.from('loans')
+        .select('id, loan_number, status, updated_at, cd_sent_at, borrowers:loan_borrowers(position, borrower:borrower_id(first_name, last_name))')
+        .eq('branch_id', me.branch_id).in('status', ['clear_to_close','docs_out'])
+        .order('updated_at', { ascending: true }).limit(8);
+      renderActionList(list, data || [], (l) => {
+        const b = (l.borrowers || [])[0]?.borrower;
+        return {
+          icon: l.status === 'clear_to_close' ? '✓' : '⊟', urgency: '',
+          text: `<strong>${escapeHtml(l.loan_number)}</strong> · ${escapeHtml(b ? b.last_name : 'file')} — ${statusLabel(l.status)}${l.cd_sent_at ? ' · CD sent ' + timeAgo(l.cd_sent_at) : ''}`,
+          href: `/loan.html?id=${l.id}#tab=disclosures`,
+        };
+      }, 'No CTC or docs-out files right now.');
+      $('#queue-panel-tag').textContent = (data || []).length + ' files';
+
+    // ─── ADMIN / VIEWER ───────────────────────────────────────────────
     } else {
       const { data, error } = await supa.from('audit_logs')
         .select('id, table_name, operation, actor_role, created_at, loan_id')
         .eq('branch_id', me.branch_id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .order('created_at', { ascending: false }).limit(10);
       if (error) throw error;
       list.innerHTML = (data || []).map(row => `
         <div class="action-row info">
@@ -1609,7 +1733,7 @@ async function loadQueue(cfg) {
             <strong>${escapeHtml(row.actor_role || 'system')}</strong> ${escapeHtml(row.operation)} on ${escapeHtml(row.table_name)}
             <span style="color:var(--muted);">· ${timeAgo(row.created_at)}</span>
           </span>
-          ${row.loan_id ? `<a class="action-cta" href="/dashboard.html#${row.loan_id}">View →</a>` : '<span></span>'}
+          ${row.loan_id ? `<a class="action-cta" href="/loan.html?id=${row.loan_id}">View →</a>` : '<span></span>'}
         </div>
       `).join('') || `<div class="panel-empty">No recent activity.</div>`;
       $('#queue-panel-tag').textContent = 'last 10 events';
@@ -1618,6 +1742,20 @@ async function loadQueue(cfg) {
     console.error('queue load error:', err);
     list.innerHTML = `<div class="panel-empty" style="color:var(--red);">Error loading queue: ${escapeHtml(err.message)}</div>`;
   }
+}
+
+// Helper: collect IDs of loans assigned to me on the given column. Used by
+// the LO/Processor branches above to bound subsequent queries (lock expiry,
+// eSign returns, AUS findings) to "files that are mine." Returns [] when
+// no filter column is set or when the user has no assignments — callers
+// must check length before running an `IN ()` against it (PostgREST 400s
+// on empty IN lists).
+async function myLoanIds(filterCol) {
+  if (!filterCol) return [];
+  const { data } = await supa.from('loans').select('id')
+    .eq('branch_id', me.branch_id).eq(filterCol, me.id)
+    .is('archived_at', null).limit(500);
+  return (data || []).map(r => r.id);
 }
 
 function renderActionList(el, rows, mapper, emptyText) {
