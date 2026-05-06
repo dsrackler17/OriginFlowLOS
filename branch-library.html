@@ -437,13 +437,59 @@ main {
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
-  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+  color: var(--muted); background: var(--deep);
+}
+.footer-disclaimer {
+  padding: 0.7rem 2rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.55rem; line-height: 1.5;
+  color: var(--muted);
+}
+.footer-disclaimer strong { color: var(--text); font-weight: 700; }
+.footer-bottom {
+  padding: 0.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
+
+/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
+.cookie-banner {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 2px solid var(--accent);
+  padding: 1rem 1.5rem;
+  display: none;
+  align-items: center; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+  z-index: 500;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+}
+.cookie-banner.show { display: flex; }
+.cookie-banner-text {
+  flex: 1; min-width: 280px;
+  font-family: var(--sans); font-size: 0.82rem;
+  color: var(--text); line-height: 1.5;
+}
+.cookie-banner-text a { color: var(--accent); text-decoration: none; }
+.cookie-banner-text a:hover { text-decoration: underline; }
+.cookie-banner-actions { display: flex; gap: 0.6rem; flex-shrink: 0; }
+.cookie-btn {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  cursor: pointer; transition: all 0.15s;
+}
+.cookie-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cookie-btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); }
+.cookie-btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
 
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
@@ -463,6 +509,11 @@ footer a:hover { color: var(--accent); }
   .section { padding: 1.5rem 1rem; }
   .feed-col { padding: 1.25rem 1rem; }
   .category-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-disclaimer { padding: 0.6rem 1rem; }
+  .footer-bottom { padding: 0.65rem 1rem; }
+  .cookie-banner { padding: 0.85rem 1rem; flex-direction: column; align-items: stretch; }
+  .cookie-banner-actions { width: 100%; }
+  .cookie-btn { flex: 1; }
 }
 </style>
 
@@ -613,18 +664,79 @@ footer a:hover { color: var(--accent); }
 </main>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE BANNER                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cookie-banner-text">
+    We use a small amount of session storage to keep you signed in and remember your branch.
+    Optional analytics help us understand how the LOS is used.
+    See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
+  </div>
+  <div class="cookie-banner-actions">
+    <button class="cookie-btn" id="cookie-reject" type="button">Reject optional</button>
+    <button class="cookie-btn primary" id="cookie-accept" type="button">Accept all</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>v0.2 · Branch Library</span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="/home.html">Home</a>
-    <a href="/dashboard.html">Pipeline</a>
-    <a href="/documents.html">Documents</a>
-    <a href="/reports.html">Reports</a>
+  <div class="footer-disclaimer">
+    <strong>OriginFlow LOS</strong> · Confidential branch data — authorized personnel only · Subject to your organization's information security and HMDA/ECOA compliance policies
+  </div>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · Branch Library</span>
+    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/documents.html">Documents</a>
+      <a href="/reports.html">Reports</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
   </div>
 </footer>
+
+<script>
+// ─── Cookie consent IIFE ─────────────────────────────────────────────
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+  if (typeof window.gtag !== 'function') {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { window.dataLayer.push(arguments); };
+  }
+  try {
+    window.gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+    });
+  } catch (_e) {}
+  var existing = null;
+  try { existing = localStorage.getItem(KEY); } catch (_e) {}
+  if (existing === 'accepted') {
+    try { window.gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'denied' }); } catch (_e) {}
+    return;
+  }
+  if (existing === 'rejected') return;
+  setTimeout(function() { banner.classList.add('show'); }, 600);
+  function decide(value) {
+    try { localStorage.setItem(KEY, value); } catch (_e) {}
+    banner.classList.remove('show');
+    try {
+      window.gtag('consent', 'update', {
+        analytics_storage: value === 'accepted' ? 'granted' : 'denied',
+        ad_storage: 'denied',
+      });
+    } catch (_e) {}
+  }
+  document.getElementById('cookie-accept').addEventListener('click', function() { decide('accepted'); });
+  document.getElementById('cookie-reject').addEventListener('click', function() { decide('rejected'); });
+})();
+</script>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
