@@ -2409,10 +2409,12 @@ function buildLoanRow(status) {
     status,
     purpose: formData.purpose || null,
     loan_amount_cents: dollarsToCents(formData.loan_amount),
-    loan_program: formData.loan_program || null,
+    program: formData.loan_program || null,
     amortization_type: formData.amortization_type || null,
-    loan_term_months: formData.loan_term_months ? parseInt(formData.loan_term_months, 10) : null,
-    interest_rate_pct: formData.interest_rate ? Number(formData.interest_rate) : null,
+    term_months: formData.loan_term_months ? parseInt(formData.loan_term_months, 10) : null,
+    // Convert percent → basis points. 3.625% → 363 bps. Eliminates the
+    // float-precision footgun every LOS hits eventually.
+    rate_bps: formData.interest_rate ? Math.round(Number(formData.interest_rate) * 100) : null,
     occupancy: formData.occupancy || null,
     property_type: formData.property_type || null,
     estimated_closing_date: formData.estimated_closing_date || null,
@@ -2445,6 +2447,23 @@ async function saveBorrowers(loanId) {
       .insert({ branch_id: me.branch_id, ...b.data })
       .select().single();
     if (bErr) throw bErr;
+
+    // Encrypt the SSN server-side. The ssn_encrypted column is REVOKE'd
+    // from authenticated, so the only way SSNs get into the DB is via
+    // this RPC. If it fails, we keep the borrower row anyway and show
+    // a non-blocking warning — processor will see the missing-SSN flag.
+    const ssnDigits = String(formData[`b${b.pos}_ssn`] || '').replace(/\D/g, '');
+    if (ssnDigits.length === 9) {
+      const { error: ssnErr } = await supa.rpc('borrowers_set_ssn', {
+        p_borrower_id: bRow.id,
+        p_ssn_plain: ssnDigits,
+      });
+      if (ssnErr) {
+        console.error('SSN encrypt failed for borrower', bRow.id, ssnErr);
+        showToast('Borrower saved, but SSN encryption failed: ' + ssnErr.message, true);
+      }
+    }
+
     const { error: lbErr } = await supa.from('loan_borrowers').insert({
       loan_id: loanId, borrower_id: bRow.id, position: b.pos,
     });
@@ -2460,7 +2479,8 @@ function extractBorrower(idx) {
     last_name:  formData[p+'last_name'] || null,
     suffix:     formData[p+'suffix'] || null,
     ssn_last4:  digits(formData[p+'ssn']).slice(-4) || null,
-    ssn_full:   digits(formData[p+'ssn']) || null,
+    // ssn_full removed — encrypted server-side via borrowers_set_ssn() RPC,
+    // called from saveBorrowers() after the borrower row is inserted.
     dob:        formData[p+'dob'] || null,
     email:      formData[p+'email'] || null,
     phone:      formData[p+'phone'] || null,
