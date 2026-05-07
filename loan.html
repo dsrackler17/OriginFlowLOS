@@ -205,13 +205,43 @@ main { flex:1; display:flex; flex-direction:column; min-height:0; }
 .doc-status-pill.extracting { color:var(--amber); border-color:rgba(245,166,35,0.4); background:rgba(245,166,35,0.06); }
 .doc-status-pill.failed { color:var(--red); border-color:rgba(255,68,68,0.4); background:rgba(255,68,68,0.06); }
 
-/* ACTIVITY */
-.activity-row { display:grid; grid-template-columns:90px 1fr auto; gap:1rem; align-items:start; padding:0.55rem 0.85rem; border-bottom:1px dotted var(--border); font-size:0.78rem; }
-.activity-row:last-child { border-bottom:none; }
-.activity-time { font-family:var(--mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.04em; }
-.activity-text { color:var(--text); line-height:1.5; }
-.activity-text strong { color:var(--white); }
-.activity-actor { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); padding:0.1rem 0.4rem; border:1px solid rgba(0,212,255,0.3); white-space:nowrap; }
+/* ACTIVITY — loan_audit_events with field diff + AI narrative */
+.audit-event { padding: 0.85rem 1rem; border-bottom: 1px dotted var(--border); display: flex; flex-direction: column; gap: 0.55rem; }
+.audit-event:last-child { border-bottom: none; }
+.audit-event-head { display: grid; grid-template-columns: 90px 1fr auto; gap: 0.85rem; align-items: center; }
+.audit-event-time { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em; }
+.audit-event-summary { font-size: 0.85rem; color: var(--white); line-height: 1.4; }
+.audit-event-summary strong { color: var(--accent2); font-weight: 500; }
+.audit-event-actor { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding: 0.15rem 0.5rem; border: 1px solid rgba(0,212,255,0.3); white-space: nowrap; }
+.audit-event-actor.ai { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.audit-event-actor.system { color: var(--muted); border-color: var(--border); }
+
+.audit-diff { background: var(--panel); border: 1px solid var(--border); padding: 0.5rem 0.7rem; font-family: var(--mono); font-size: 0.65rem; display: flex; flex-direction: column; gap: 0.2rem; margin-left: 90px; }
+@media (max-width: 720px) { .audit-diff { margin-left: 0; } .audit-event-head { grid-template-columns: 1fr; gap: 0.3rem; } }
+.audit-diff-row { display: grid; grid-template-columns: 140px 1fr auto 1fr; gap: 0.5rem; align-items: baseline; padding: 0.15rem 0; border-bottom: 1px dotted var(--border); }
+.audit-diff-row:last-child { border-bottom: none; }
+.audit-diff-field { color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.55rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audit-diff-before { color: var(--muted); text-decoration: line-through; word-break: break-word; }
+.audit-diff-arrow { color: var(--accent); font-size: 0.7rem; }
+.audit-diff-after { color: var(--white); word-break: break-word; }
+.audit-diff-after.green { color: var(--accent2); }
+.audit-diff-more { color: var(--muted); font-size: 0.55rem; padding-top: 0.25rem; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.audit-narrative { display: flex; gap: 0.55rem; align-items: flex-start; padding: 0.55rem 0.7rem; background: rgba(0,212,255,0.04); border-left: 2px solid var(--accent); font-size: 0.82rem; color: var(--text); line-height: 1.55; margin-left: 90px; }
+@media (max-width: 720px) { .audit-narrative { margin-left: 0; } }
+.audit-narrative.pending { background: rgba(245,166,35,0.04); border-left-color: var(--amber); }
+.audit-narrative.failed { background: rgba(255,68,68,0.04); border-left-color: var(--red); color: var(--red); }
+.audit-narrative-tag { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em; padding: 0.1rem 0.4rem; border: 1px solid rgba(0,212,255,0.4); color: var(--accent); background: rgba(0,212,255,0.08); flex-shrink: 0; align-self: center; }
+.audit-narrative.pending .audit-narrative-tag { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
+.audit-narrative.failed .audit-narrative-tag { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.08); }
+.audit-narrative-shimmer {
+  background: linear-gradient(90deg, var(--muted) 0%, var(--text) 50%, var(--muted) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 
 /* CHAT */
 .chat-thread { display:flex; flex-direction:column; gap:0.55rem; max-height:520px; overflow-y:auto; padding-right:0.25rem; margin-bottom:0.6rem; }
@@ -316,6 +346,7 @@ footer a:hover { color:var(--accent); }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
+<script src="/js/of-hooks.js"></script>
 </head>
 <body>
 
@@ -1295,15 +1326,28 @@ async function renderTabDocs() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TAB · ACTIVITY
+// TAB · ACTIVITY — loan_audit_events with AI narrative
+//
+// Single source of truth. The legacy audit_logs table was dropped;
+// everything that used to insert there now writes to loan_audit_events
+// with field_changes (jsonb) + narrative + narrative_status. A separate
+// background function (you wire this) reads pending rows and asks Claude
+// to summarize each diff into a one-liner. Until it runs, the row shows
+// a shimmer; once it completes, the realtime listener swaps in the text.
 // ═══════════════════════════════════════════════════════════════════════════
 async function renderTabActivity() {
   const since = new Date(Date.now() - 90 * 86400 * 1000).toISOString();
-  const { data, error } = await supa.from('audit_logs')
-    .select(`id, table_name, operation, actor_role, created_at, diff,
-             actor:actor_id ( full_name )`)
-    .eq('loan_id', loanId).gte('created_at', since)
-    .order('created_at', { ascending: false }).limit(200);
+  const { data, error } = await supa.from('loan_audit_events')
+    .select(`
+      id, table_name, operation, actor_id, actor_role, created_at,
+      field_changes, narrative, narrative_status,
+      actor:actor_id ( full_name )
+    `)
+    .eq('loan_id', loanId)
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(200);
+
   if (error) {
     $('#activity-body').innerHTML = `<div class="empty-state">Couldn't load: ${escapeHtml(error.message)}</div>`;
     return;
@@ -1312,18 +1356,96 @@ async function renderTabActivity() {
     $('#activity-body').innerHTML = `<div class="empty-state">No activity in the last 90 days.</div>`;
     return;
   }
-  $('#activity-body').innerHTML = data.map(r => {
-    let summary = `${escapeHtml(r.operation)} on ${escapeHtml(r.table_name)}`;
-    if (r.diff?.from_status && r.diff?.to_status) {
-      summary = `Stage ${escapeHtml(STAGE_LABEL[r.diff.from_status] || r.diff.from_status)} → <strong>${escapeHtml(STAGE_LABEL[r.diff.to_status] || r.diff.to_status)}</strong>`;
-    }
-    return `
-      <div class="activity-row">
-        <span class="activity-time">${timeAgo(r.created_at)}</span>
-        <span class="activity-text">${summary} <small style="color:var(--muted);">· ${escapeHtml(r.actor?.full_name || 'system')}</small></span>
-        <span class="activity-actor">${escapeHtml((r.actor_role || 'system').toUpperCase())}</span>
+  $('#activity-body').innerHTML = data.map(renderAuditEvent).join('');
+}
+
+// Format a single audit row. Pulled out so realtime patches can replace
+// just one row's HTML without re-rendering the whole list.
+function renderAuditEvent(r) {
+  const isAI = r.actor_role === 'ai_agent';
+  const isSystem = r.actor_role === 'system';
+  const actorName = r.actor?.full_name
+    || (isAI ? 'AI Agent' : isSystem ? 'System' : 'Unknown');
+  const role = (r.actor_role || 'system').toUpperCase();
+  const actorClass = isAI ? 'ai' : isSystem ? 'system' : '';
+
+  // Header summary — a few common operations get nicer phrasing
+  const fc = Array.isArray(r.field_changes) ? r.field_changes : [];
+  let summary;
+  const stageChange = fc.find(f => f.field === 'status' && r.table_name === 'loans');
+  if (stageChange) {
+    const before = STAGE_LABEL[stageChange.before] || stageChange.before;
+    const after  = STAGE_LABEL[stageChange.after]  || stageChange.after;
+    summary = `Stage <span style="color:var(--muted);">${escapeHtml(before)}</span> → <strong>${escapeHtml(after)}</strong>`;
+  } else if (r.operation === 'extract' && r.table_name === 'documents') {
+    summary = 'Extracted document fields';
+  } else if (r.operation === 'auto_clear' && r.table_name === 'conditions') {
+    summary = '<strong>AI cleared a condition</strong>';
+  } else if (r.operation === 'malware_quarantine') {
+    summary = '<span style="color:var(--red);">Malware scanner quarantined a document</span>';
+  } else {
+    summary = `${escapeHtml(r.operation)} on ${escapeHtml(r.table_name)}`;
+  }
+
+  // Field diff — show up to 6 changes inline, summarize the rest
+  const diffHtml = fc.length > 0 ? `
+    <div class="audit-diff">
+      ${fc.slice(0, 6).map(c => `
+        <div class="audit-diff-row">
+          <span class="audit-diff-field">${escapeHtml(c.field)}</span>
+          <span class="audit-diff-before">${escapeHtml(formatDiffVal(c.before))}</span>
+          <span class="audit-diff-arrow">→</span>
+          <span class="audit-diff-after">${escapeHtml(formatDiffVal(c.after))}</span>
+        </div>
+      `).join('')}
+      ${fc.length > 6 ? `<div class="audit-diff-more">+${fc.length - 6} more change${fc.length - 6 === 1 ? '' : 's'}</div>` : ''}
+    </div>
+  ` : '';
+
+  // AI narrative — three states: complete, pending/generating, failed
+  let narrativeHtml = '';
+  const status = r.narrative_status || 'complete';
+  if (status === 'complete' && r.narrative) {
+    narrativeHtml = `
+      <div class="audit-narrative">
+        <span class="audit-narrative-tag">AI</span>
+        <span>${escapeHtml(r.narrative)}</span>
       </div>`;
-  }).join('');
+  } else if (status === 'pending' || status === 'generating') {
+    narrativeHtml = `
+      <div class="audit-narrative pending">
+        <span class="audit-narrative-tag">AI</span>
+        <span class="audit-narrative-shimmer">Generating summary…</span>
+      </div>`;
+  } else if (status === 'failed') {
+    narrativeHtml = `
+      <div class="audit-narrative failed">
+        <span class="audit-narrative-tag">AI</span>
+        <span>Narrative generation failed.</span>
+      </div>`;
+  }
+
+  return `
+    <div class="audit-event" data-event-id="${escapeHtml(r.id)}">
+      <div class="audit-event-head">
+        <span class="audit-event-time">${timeAgo(r.created_at)}</span>
+        <span class="audit-event-summary">${summary}</span>
+        <span class="audit-event-actor ${actorClass}">${escapeHtml(actorName)} · ${escapeHtml(role)}</span>
+      </div>
+      ${diffHtml}
+      ${narrativeHtml}
+    </div>
+  `;
+}
+
+function formatDiffVal(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'object') {
+    const json = JSON.stringify(v);
+    return json.length > 80 ? json.slice(0, 80) + '…' : json;
+  }
+  if (typeof v === 'string' && v.length > 80) return v.slice(0, 80) + '…';
+  return String(v);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1654,7 +1776,7 @@ window.promptMoveStage = function() {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// REALTIME (loan + conditions changes propagate live)
+// REALTIME (loan + conditions + audit narrative changes propagate live)
 // ═══════════════════════════════════════════════════════════════════════════
 function initRealtime() {
   const loanCh = supa.channel(`loan:${loanId}`)
@@ -1664,7 +1786,6 @@ function initRealtime() {
         await loadLoan();
         if (!loan) { showState('state-notfound'); return; }
         renderHeader(); renderActionRow();
-        // Reload whichever tab is active
         const active = document.querySelector('.loan-tab.active')?.dataset.tab;
         TAB_LOADED.delete(active);
         if (active) await activateTab(active);
@@ -1680,6 +1801,44 @@ function initRealtime() {
         if (TAB_LOADED.has('conditions')) await renderTabConditions();
       }).subscribe();
   realtimeChans.push(condCh);
+
+  // Round 2: live audit narrative updates. Subscribe to INSERT (so newly-
+  // inserted rows appear without a tab refresh) and UPDATE (so the AI-
+  // narrative shimmer flips to real text in-place when the generator
+  // function completes).
+  const auditCh = supa.channel(`loan-audit:${loanId}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'loan_audit_events', filter: `loan_id=eq.${loanId}` },
+      async () => {
+        if (TAB_LOADED.has('activity')) await renderTabActivity();
+      })
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'loan_audit_events', filter: `loan_id=eq.${loanId}` },
+      async (payload) => {
+        if (!TAB_LOADED.has('activity')) return;
+        // Patch just the affected row instead of re-querying.
+        // Realtime payloads on UPDATE include the full new row, so we have
+        // everything we need EXCEPT the joined actor profile. Re-fetch
+        // that one row to enrich.
+        const { data: enriched } = await supa.from('loan_audit_events')
+          .select(`
+            id, table_name, operation, actor_id, actor_role, created_at,
+            field_changes, narrative, narrative_status,
+            actor:actor_id ( full_name )
+          `)
+          .eq('id', payload.new.id).maybeSingle();
+        if (!enriched) return;
+        const rowEl = document.querySelector(
+          `.audit-event[data-event-id="${enriched.id}"]`
+        );
+        if (rowEl) {
+          // Replace this single row's outerHTML in place
+          const wrap = document.createElement('div');
+          wrap.innerHTML = renderAuditEvent(enriched);
+          rowEl.replaceWith(wrap.firstElementChild);
+        }
+      }).subscribe();
+  realtimeChans.push(auditCh);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

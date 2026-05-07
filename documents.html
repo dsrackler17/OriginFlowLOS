@@ -733,6 +733,8 @@ footer a:hover { color: var(--accent); }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
+<!-- Round 2 · OF_uploadFile, OF_extractDocument, OF_applyExtractionAction -->
+<script src="/js/of-hooks.js"></script>
 </head>
 <body>
 
@@ -1467,6 +1469,22 @@ async function selectDoc(id) {
 
   const doc = docsById.get(id);
   if (!doc) return;
+
+  // Round 2 · file_url is now a storage PATH (e.g. <branch>/<loan>/<uuid>.pdf)
+  // not a fetchable URL. Resolve a 1hr-TTL signed URL and stash it on the
+  // doc so renderPreview / "Open file" / iframe src all work. Skip the
+  // call when the file_url already looks like a public URL (legacy rows
+  // or external uploads). Falls through silently if OF_getSignedUrl is
+  // missing (degrades to using file_url directly).
+  if (typeof window.OF_getSignedUrl === 'function' && doc.file_url
+      && !/^https?:\/\//.test(doc.file_url) && !doc._preview_url) {
+    try {
+      doc._preview_url = await window.OF_getSignedUrl(doc.file_url);
+    } catch (err) {
+      console.warn('signed url resolve failed:', err);
+    }
+  }
+
   renderDetail(doc);
 }
 
@@ -1499,7 +1517,7 @@ function renderDetail(doc) {
     <div class="dh-name">${escapeHtml(doc.file_name)}</div>
     <div class="dh-meta-row">${meta.join('')}</div>
     <div class="dh-actions">
-      ${canPreview ? `<a class="dh-action" href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">↗ Open file</a>` : ''}
+      ${canPreview ? `<a class="dh-action" href="${escapeHtml(doc._preview_url || doc.file_url)}" target="_blank" rel="noopener">↗ Open file</a>` : ''}
       ${canExtract ? `<button class="dh-action primary" id="btn-extract">${doc.status === 'failed' ? 'Retry extraction' : 'Run AI extraction'}</button>` : ''}
       ${doc.status === 'extracted' && doc.loan_id ? `<button class="dh-action primary" id="btn-apply-all">Apply all to loan</button>` : ''}
       ${canDelete ? `<button class="dh-action danger" id="btn-archive">Archive</button>` : ''}
@@ -1561,12 +1579,12 @@ function renderDetail(doc) {
     btn.addEventListener('click', () => applyAction(doc.id, btn.dataset.actionKey, btn.dataset.actionIdx));
   });
 
-  // Wire PDF preview watchdog. We do this from JS instead of inlining a
-  // script tag in renderPreview's template literal because (a) a literal
-  // closing-script-tag inside the template literal terminates the outer
-  // script block during HTML parsing, breaking the entire page, and (b)
-  // script tags inserted via innerHTML aren't executed by the browser
-  // anyway. Don't undo this — the page renders raw JS as text if you do.
+  // Wire the PDF preview watchdog. We do this from JS instead of inlining
+  // a <script> tag in renderPreview's template literal because (a) a
+  // literal closing-script tag inside the template literal terminates the
+  // outer script block during HTML parsing — the page renders the rest
+  // as raw text — and (b) script tags inserted via innerHTML aren't
+  // executed by the browser anyway. Don't undo this.
   body.querySelectorAll('[data-pdf-watchdog]').forEach(wrap => {
     const previewId = wrap.dataset.pdfWatchdog;
     const pdfUrl = wrap.dataset.pdfUrl;
@@ -1700,35 +1718,32 @@ function renderPreview(doc) {
     `;
   }
 
+  // Round 2: file_url is a Storage path; _preview_url is a 1hr signed URL
+  // resolved by selectDoc(). Fall back to file_url for legacy / external rows.
+  const previewSrc = doc._preview_url || doc.file_url;
   const mime = doc.mime_type || '';
   if (mime.startsWith('image/')) {
     return `
       <div class="preview-box">
         <div class="preview-head">Preview · Image</div>
         <div class="preview-body">
-          <img src="${escapeHtml(doc.file_url)}"
+          <img src="${escapeHtml(previewSrc)}"
                alt="${escapeHtml(doc.file_name)}"
                loading="lazy"
-               onerror="this.parentElement.innerHTML='<div class=&quot;preview-fallback&quot;>Image failed to load (CORS or 404).<br><a href=&quot;${escapeHtml(doc.file_url)}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Open in new tab</a></div>'">
+               onerror="this.parentElement.innerHTML='<div class=&quot;preview-fallback&quot;>Image failed to load (CORS or 404).<br><a href=&quot;${escapeHtml(previewSrc)}&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Open in new tab</a></div>'">
         </div>
       </div>
     `;
   }
   if (mime === 'application/pdf') {
     // PDFs in iframes can fail silently from CORS, X-Frame-Options, or
-    // Content-Security-Policy headers on the storage bucket. We start a
-    // 2.5s watchdog: if the iframe never fires `load`, assume it's blocked
-    // and swap in a "open in new tab" fallback. Browsers fire `load` even
-    // for blocked content sometimes, so we also do a contentDocument probe
-    // where the same-origin policy permits.
+    // Content-Security-Policy headers. We start a 2.5s watchdog: if the
+    // iframe never fires `load`, assume it's blocked and swap in a
+    // "open in new tab" fallback. Browsers fire `load` even for blocked
+    // content sometimes, so we also do a contentDocument probe.
     //
-    // CORS / headers your bucket needs for inline PDF preview:
-    //   Access-Control-Allow-Origin: <your domain>
-    //   Content-Disposition: inline   (NOT attachment)
-    //   X-Frame-Options: SAMEORIGIN or omitted entirely
-    //   Content-Security-Policy: frame-ancestors ... must allow your domain
-    // The watchdog is wired up from renderDetail() after innerHTML is set.
-    // We CANNOT inline a script tag in this template literal for two reasons:
+    // The watchdog is wired up from renderDetail() AFTER innerHTML is set.
+    // We CANNOT inline a <script> tag in this template literal:
     //   1. A literal closing-script tag inside a template literal terminates
     //      the outer script block during HTML parsing — it doesn't matter
     //      that we're "inside" a JS string, because the HTML parser scans
@@ -1743,7 +1758,7 @@ function renderPreview(doc) {
         <div class="preview-body"
              id="${previewId}-wrap"
              data-pdf-watchdog="${escapeHtml(previewId)}"
-             data-pdf-url="${escapeHtml(doc.file_url)}"
+             data-pdf-url="${escapeHtml(previewSrc)}"
              style="padding:0; min-height:320px; position:relative;">
           <div id="${previewId}-loading"
                style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -1752,11 +1767,11 @@ function renderPreview(doc) {
             Loading PDF…
           </div>
           <iframe id="${previewId}"
-                  src="${escapeHtml(doc.file_url)}#toolbar=0"
+                  src="${escapeHtml(previewSrc)}#toolbar=0"
                   title="${escapeHtml(doc.file_name)}"
                   style="width:100%; height:320px; border:none; background:white; opacity:0;"
-                  onload="OF_pdfPreviewLoaded('${previewId}', '${escapeHtml(doc.file_url)}')"
-                  onerror="OF_pdfPreviewFailed('${previewId}', '${escapeHtml(doc.file_url)}')"></iframe>
+                  onload="OF_pdfPreviewLoaded('${previewId}', '${escapeHtml(previewSrc)}')"
+                  onerror="OF_pdfPreviewFailed('${previewId}', '${escapeHtml(previewSrc)}')"></iframe>
         </div>
       </div>
     `;
@@ -1767,7 +1782,7 @@ function renderPreview(doc) {
       <div class="preview-body">
         <div class="preview-fallback">
           ${escapeHtml(mime || 'Unknown file type')} can't be previewed inline.
-          <br><a href="${escapeHtml(doc.file_url)}" target="_blank" rel="noopener">Open in new tab</a>
+          <br><a href="${escapeHtml(previewSrc)}" target="_blank" rel="noopener">Open in new tab</a>
         </div>
       </div>
     </div>
