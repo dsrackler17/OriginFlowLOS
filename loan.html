@@ -17,7 +17,7 @@
   --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
   --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
 }
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height:100%; }
 body { background:var(--navy); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.6; min-height:100vh; display:flex; flex-direction:column; }
 body::before {
@@ -286,13 +286,112 @@ main { flex:1; display:flex; flex-direction:column; min-height:0; }
 .finding-list li { color:var(--text); }
 .finding-list li::marker { color:var(--muted); }
 
+/* ─── FEES TAB ──────────────────────────────────────────────────────────
+   TRID closing-cost itemization. Sections A/B/C/E/F/G/H map to LE/CD form
+   layout. Tolerance buckets compute live; bust state is the loud signal. */
+
+.fees-coc-banner { display:flex; align-items:center; gap:0.85rem; background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.4); border-left:3px solid var(--red); padding:0.85rem 1.1rem; margin-bottom:1.1rem; }
+.fees-coc-banner-icon { font-family:var(--mono); font-size:1.1rem; color:var(--red); line-height:1; flex-shrink:0; }
+.fees-coc-banner-text { flex:1; font-size:0.85rem; color:var(--text); line-height:1.5; }
+.fees-coc-banner-text strong { color:var(--red); font-weight:500; }
+.fees-coc-banner-text small { display:block; font-family:var(--mono); font-size:0.6rem; color:var(--muted); margin-top:0.2rem; letter-spacing:0.04em; }
+
+.fees-le-meta { font-family:var(--mono); font-size:0.62rem; color:var(--muted); letter-spacing:0.04em; margin-bottom:1rem; padding:0.45rem 0.75rem; background:var(--deep); border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap; }
+.fees-le-meta-text strong { color:var(--text); font-weight:400; }
+.fees-le-meta-action { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.08em; text-transform:uppercase; padding:0.25rem 0.55rem; border:1px solid rgba(0,212,255,0.3); color:var(--accent); background:transparent; cursor:pointer; }
+.fees-le-meta-action:hover { background:var(--accent); color:var(--navy); }
+
+.fees-summary-strip { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:1.25rem; }
+.fees-bucket { background:var(--surface); padding:0.85rem 1.1rem; display:flex; flex-direction:column; gap:0.25rem; }
+.fees-bucket.bust { background:rgba(255,68,68,0.08); }
+.fees-bucket-label { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); }
+.fees-bucket-amount { font-family:var(--serif); font-size:1.4rem; color:var(--white); line-height:1.1; }
+.fees-bucket.bust .fees-bucket-amount { color:var(--red); }
+.fees-bucket.ok .fees-bucket-amount { color:var(--accent2); }
+.fees-bucket-meta { font-family:var(--mono); font-size:0.58rem; color:var(--muted); letter-spacing:0.04em; }
+.fees-bucket-meta.bust { color:var(--red); font-weight:700; }
+.fees-bucket-meta.ok { color:var(--accent2); }
+
+.fees-section { border:1px solid var(--border); background:var(--surface); margin-bottom:1rem; }
+.fees-section-head { display:grid; grid-template-columns:auto 1fr auto auto; gap:0.85rem; align-items:center; padding:0.7rem 1rem; border-bottom:1px solid var(--border); background:var(--deep); }
+.fees-section-letter { font-family:var(--mono); font-size:0.85rem; color:var(--accent); font-weight:700; letter-spacing:0.05em; width:24px; height:24px; border:1px solid rgba(0,212,255,0.4); display:flex; align-items:center; justify-content:center; background:rgba(0,212,255,0.06); }
+.fees-section-name { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--text); }
+.fees-section-total { font-family:var(--mono); font-size:0.8rem; color:var(--white); font-weight:700; }
+.fees-section-add { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; padding:0.35rem 0.6rem; border:1px solid rgba(0,212,255,0.3); background:transparent; color:var(--accent); transition:all 0.15s; }
+.fees-section-add:hover { background:var(--accent); color:var(--navy); }
+.fees-section-add:disabled { opacity:0.4; cursor:not-allowed; }
+
+.fees-rows { padding:0.4rem 0; }
+.fee-row { display:grid; grid-template-columns:1fr 100px 110px 80px 80px; gap:0.85rem; align-items:center; padding:0.6rem 1rem; border-bottom:1px dotted var(--border); font-size:0.78rem; }
+.fee-row:last-child { border-bottom:none; }
+.fee-row:hover { background:rgba(0,212,255,0.03); }
+.fee-row.bust { background:rgba(255,68,68,0.05); }
+.fee-row.bust:hover { background:rgba(255,68,68,0.08); }
+
+.fee-name { display:flex; flex-direction:column; gap:0.15rem; min-width:0; }
+.fee-desc { color:var(--white); font-size:0.85rem; line-height:1.3; word-break:break-word; }
+.fee-payee { font-family:var(--mono); font-size:0.58rem; color:var(--muted); letter-spacing:0.04em; }
+.fee-payee strong { color:var(--text); font-weight:400; }
+
+.fee-tolerance-pill { font-family:var(--mono); font-size:0.5rem; letter-spacing:0.1em; text-transform:uppercase; padding:0.15rem 0.4rem; border:1px solid; text-align:center; white-space:nowrap; }
+.fee-tolerance-pill.zero { color:var(--red); border-color:rgba(255,68,68,0.4); background:rgba(255,68,68,0.06); }
+.fee-tolerance-pill.ten_pct { color:var(--amber); border-color:rgba(245,166,35,0.4); background:rgba(245,166,35,0.06); }
+.fee-tolerance-pill.unlimited { color:var(--muted); border-color:var(--border); }
+
+.fee-le-amount, .fee-current-amount { font-family:var(--mono); font-size:0.8rem; color:var(--text); text-align:right; font-weight:400; }
+.fee-le-amount.muted { color:var(--muted); font-style:italic; }
+.fee-current-amount.bust { color:var(--red); font-weight:700; }
+.fee-current-amount.changed { color:var(--amber); }
+.fee-current-amount-delta { display:block; font-size:0.55rem; color:var(--muted); margin-top:0.1rem; letter-spacing:0.04em; }
+.fee-current-amount.bust .fee-current-amount-delta { color:var(--red); }
+
+.fee-actions { display:flex; gap:0.3rem; justify-content:flex-end; }
+.fee-action-btn { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.06em; cursor:pointer; padding:0.25rem 0.45rem; border:1px solid var(--border); background:transparent; color:var(--muted); transition:all 0.15s; }
+.fee-action-btn:hover { color:var(--accent); border-color:var(--accent); }
+.fee-action-btn.danger:hover { color:var(--red); border-color:var(--red); }
+
+.fees-row-header { display:grid; grid-template-columns:1fr 100px 110px 80px 80px; gap:0.85rem; padding:0.4rem 1rem; font-family:var(--mono); font-size:0.55rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+.fees-row-header > span:nth-child(2),
+.fees-row-header > span:nth-child(4),
+.fees-row-header > span:nth-child(5) { text-align:right; }
+
+@media (max-width:720px) {
+  .fees-summary-strip { grid-template-columns:repeat(2,1fr); }
+  .fees-row-header { display:none; }
+  .fee-row { grid-template-columns:1fr auto; gap:0.5rem; padding:0.7rem 0.85rem; }
+  .fee-row > .fee-tolerance-pill,
+  .fee-row > .fee-le-amount,
+  .fee-row > .fee-current-amount { grid-column:1 / -1; text-align:left; padding-left:0; font-size:0.7rem; }
+  .fee-row > .fee-current-amount::before { content:'Now: '; color:var(--muted); font-family:var(--mono); font-size:0.55rem; }
+  .fee-row > .fee-le-amount::before { content:'LE: '; color:var(--muted); font-family:var(--mono); font-size:0.55rem; }
+  .fees-section-head { grid-template-columns:auto 1fr auto; }
+  .fees-section-add { grid-column:1 / -1; margin-top:0.4rem; }
+}
+
+/* Fee form (used inside the shared modal) */
+.fee-form-grid { display:grid; gap:0.85rem; }
+.fee-form-row { display:grid; gap:0.85rem; grid-template-columns:1fr 1fr; }
+.fee-form-row.cols-1 { grid-template-columns:1fr; }
+.fee-form-row.cols-3 { grid-template-columns:repeat(3,1fr); }
+.fee-form-field { display:flex; flex-direction:column; gap:0.3rem; }
+.fee-form-label { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+.fee-form-input, .fee-form-select { background:var(--deep); border:1px solid var(--border); color:var(--white); font-family:var(--sans); font-size:0.85rem; padding:0.55rem 0.7rem; outline:none; width:100%; }
+.fee-form-input:focus, .fee-form-select:focus { border-color:var(--accent); }
+.fee-form-input.money { font-family:var(--mono); }
+.fee-form-hint { font-family:var(--mono); font-size:0.55rem; color:var(--muted); letter-spacing:0.04em; }
+.fee-form-paid-grid { display:grid; gap:0.5rem; grid-template-columns:repeat(2,1fr); }
+.fee-form-paid-grid .fee-form-field { gap:0.2rem; }
+.fee-form-paid-grid .fee-form-input { font-family:var(--mono); font-size:0.78rem; padding:0.4rem 0.55rem; }
+.fee-form-paid-total { font-family:var(--mono); font-size:0.65rem; color:var(--accent); letter-spacing:0.06em; padding:0.35rem 0.55rem; background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.3); text-align:right; }
+
 /* MODAL */
 .modal-overlay { position:fixed; inset:0; background:rgba(4,13,26,0.85); backdrop-filter:blur(6px); z-index:1000; display:none; align-items:center; justify-content:center; padding:1.5rem; }
 .modal-overlay.open { display:flex; animation:fadeIn 0.15s ease both; }
 .modal { background:var(--surface); border:1px solid var(--border); width:100%; max-width:540px; box-shadow:0 30px 80px rgba(0,0,0,0.6); }
+.modal.wide { max-width:680px; }
 .modal-head { padding:1rem 1.25rem; border-bottom:1px solid var(--border); background:var(--deep); }
 .modal-title { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); }
-.modal-body { padding:1.25rem; }
+.modal-body { padding:1.25rem; max-height:70vh; overflow-y:auto; }
 .modal-prompt { font-family:var(--serif); font-size:1.15rem; color:var(--white); line-height:1.3; margin-bottom:0.75rem; }
 .modal-detail { font-family:var(--mono); font-size:0.7rem; color:var(--muted); letter-spacing:0.04em; margin-bottom:1rem; line-height:1.6; }
 .modal-foot { padding:0.85rem 1.25rem; border-top:1px solid var(--border); background:var(--deep); display:flex; justify-content:flex-end; gap:0.6rem; }
@@ -305,6 +404,8 @@ main { flex:1; display:flex; flex-direction:column; min-height:0; }
 .btn:hover { border-color:var(--accent); color:var(--accent); }
 .btn.primary { background:var(--accent); color:var(--navy); border-color:var(--accent); font-weight:700; }
 .btn.primary:hover { background:var(--accent2); border-color:var(--accent2); color:var(--navy); }
+.btn.danger { color:var(--red); border-color:rgba(255,68,68,0.4); }
+.btn.danger:hover { background:rgba(255,68,68,0.08); border-color:var(--red); }
 
 /* STATE / TOAST / FOOTER / COOKIES */
 .state-screen { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4rem 2rem; min-height:60vh; text-align:center; }
@@ -341,6 +442,7 @@ footer a:hover { color:var(--accent); }
   .loan-tabs { padding:0 1rem; }
   .loan-tab { padding:0.7rem 0.85rem; }
   .loan-body { padding:1rem; }
+  .fee-form-row, .fee-form-row.cols-3 { grid-template-columns:1fr; }
 }
 </style>
 
@@ -436,6 +538,7 @@ footer a:hover { color:var(--accent); }
       <button class="loan-tab" data-tab="property"><span>Property</span></button>
       <button class="loan-tab" data-tab="disclosures"><span>Disclosures</span><span class="loan-tab-badge" id="badge-disclosures">—</span></button>
       <button class="loan-tab" data-tab="conditions"><span>Conditions</span><span class="loan-tab-badge" id="badge-conditions">—</span></button>
+      <button class="loan-tab" data-tab="fees"><span>Fees</span><span class="loan-tab-badge" id="badge-fees">—</span></button>
       <button class="loan-tab" data-tab="findings"><span>AUS Findings</span><span class="loan-tab-badge" id="badge-findings">—</span></button>
       <button class="loan-tab" data-tab="docs"><span>Docs</span><span class="loan-tab-badge" id="badge-docs">—</span></button>
       <button class="loan-tab" data-tab="activity"><span>Activity</span></button>
@@ -467,6 +570,20 @@ footer a:hover { color:var(--accent); }
 
       <section class="tab-section" id="tab-conditions"><div class="panel"><div class="panel-head"><span class="panel-title">Conditions</span><span class="panel-tag" id="conditions-count-tag">—</span></div><div class="panel-body" id="conditions-body"><div class="empty-state">Loading…</div></div></div></section>
 
+      <section class="tab-section" id="tab-fees">
+        <div id="fees-coc-banner" class="fees-coc-banner" style="display:none;">
+          <span class="fees-coc-banner-icon">⚠</span>
+          <div class="fees-coc-banner-text" id="fees-coc-banner-text">—</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Closing cost itemization · TRID</span>
+            <span class="panel-tag" id="fees-status-tag">—</span>
+          </div>
+          <div class="panel-body" id="fees-body"><div class="empty-state">Loading…</div></div>
+        </div>
+      </section>
+
       <section class="tab-section" id="tab-findings"><div class="panel"><div class="panel-head"><span class="panel-title">AUS findings · DU / LP / GUS</span><span class="panel-tag" id="findings-status-tag">—</span></div><div class="panel-body" id="findings-body"><div class="empty-state">Loading…</div></div></div></section>
 
       <section class="tab-section" id="tab-docs"><div class="panel"><div class="panel-head"><span class="panel-title">Documents on this loan</span><span class="panel-tag" id="docs-count-tag">—</span></div><div class="panel-body" id="docs-body"><div class="empty-state">Loading…</div></div></div></section>
@@ -490,7 +607,7 @@ footer a:hover { color:var(--accent); }
 </main>
 
 <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true">
-  <div class="modal">
+  <div class="modal" id="modal-shell">
     <div class="modal-head"><span class="modal-title" id="modal-title">Confirm</span></div>
     <div class="modal-body">
       <div class="modal-prompt" id="modal-prompt">—</div>
@@ -498,6 +615,7 @@ footer a:hover { color:var(--accent); }
       <div id="modal-extra"></div>
     </div>
     <div class="modal-foot">
+      <button class="btn danger" id="modal-tertiary" type="button" style="display:none;">Delete</button>
       <button class="btn" id="modal-cancel" type="button">Cancel</button>
       <button class="btn primary" id="modal-confirm" type="button">Confirm</button>
     </div>
@@ -526,7 +644,8 @@ footer a:hover { color:var(--accent); }
 //
 // Routes here from /dashboard.html (cards), /home.html (file rows),
 // /documents.html (loan number link). Tabs: Overview, Borrowers, Property,
-// Disclosures (TRID), Conditions, Findings (AUS), Docs, Activity, File Chat.
+// Disclosures (TRID), Conditions, Fees, Findings (AUS), Docs, Activity,
+// File Chat.
 //
 // Hooks (implement in /js/of-hooks.js or a dedicated <script> before this
 // file; missing hooks degrade gracefully with explanatory toasts):
@@ -537,6 +656,73 @@ footer a:hover { color:var(--accent); }
 //
 // Hook results write back to per-loan tables (credit_pulls, aus_runs,
 // esign_envelopes, pricing_scenarios) which this page reads directly.
+//
+// ─── ROUND 4 · FEES TAB · expected schema ──────────────────────────────────
+// The Fees tab reads/writes a `fees` table that does NOT exist yet. The
+// migration below makes ASSUMPTIONS — flagged inline — about FK column types
+// (uuid) and current_branch() RLS pattern. Cross-check against your actual
+// schema before running. Specifically, this assumes:
+//
+//   ASSUMPTION 1: loans.id and branches.id are uuid (matches every other
+//                 _id column in your other tables based on what's visible).
+//   ASSUMPTION 2: profiles.id is uuid (same).
+//   ASSUMPTION 3: there's a current_branch() function in scope for RLS,
+//                 OR you've got a similar pattern. If not, replace the
+//                 USING clauses with whatever pattern your other tables
+//                 use (the conditions/documents tables would be the
+//                 reference).
+//   ASSUMPTION 4: gen_random_uuid() is available (pgcrypto enabled). If
+//                 your other tables use uuid_generate_v4(), swap that in.
+//
+//   create table public.fees (
+//     id                                  uuid primary key default gen_random_uuid(),
+//     loan_id                             uuid not null references public.loans(id) on delete cascade,
+//     branch_id                           uuid not null references public.branches(id),
+//
+//     -- LE/CD section letter. A=Origination, B=Services-Did-Not-Shop,
+//     -- C=Services-Did-Shop, E=Taxes/Govt, F=Prepaids, G=Escrow, H=Other.
+//     -- D and I are computed totals; not stored.
+//     section                             text not null check (section in ('A','B','C','E','F','G','H')),
+//
+//     description                         text not null,
+//     payee                               text,
+//
+//     -- All amounts in cents. Sum of these five = fee total.
+//     borrower_paid_at_closing_cents      bigint not null default 0,
+//     borrower_paid_before_closing_cents  bigint not null default 0,
+//     seller_paid_at_closing_cents        bigint not null default 0,
+//     seller_paid_before_closing_cents    bigint not null default 0,
+//     paid_by_others_cents                bigint not null default 0,
+//
+//     -- TRID tolerance bucket. 'zero' = cannot increase from LE.
+//     -- 'ten_pct' = sum of all 'ten_pct' fees ≤ sum on LE * 1.10.
+//     -- 'unlimited' = no tolerance check (still must be in good faith).
+//     tolerance_bucket                    text not null check (tolerance_bucket in ('zero','ten_pct','unlimited')),
+//     is_pfc                              boolean not null default false,
+//
+//     -- Snapshot of what was on the initial LE for this fee. NULL = added
+//     -- after LE was issued (i.e. a COC fee). le_snapshot_at = the loans
+//     -- row's le_sent_at when this snapshot was frozen.
+//     le_amount_cents                     bigint,
+//     le_snapshot_at                      timestamptz,
+//
+//     created_at                          timestamptz not null default now(),
+//     created_by                          uuid references public.profiles(id),
+//     updated_at                          timestamptz not null default now(),
+//     updated_by                          uuid references public.profiles(id),
+//     archived_at                         timestamptz
+//   );
+//
+//   create index fees_loan_id_idx on public.fees (loan_id) where archived_at is null;
+//   create index fees_branch_id_idx on public.fees (branch_id);
+//   alter table public.fees enable row level security;
+//   -- ASSUMPTION: replicate your existing RLS pattern from `conditions` or
+//   -- `documents`. Below is a placeholder using current_branch().
+//   create policy "fees_branch_select" on public.fees for select using (branch_id = current_branch());
+//   create policy "fees_branch_write"  on public.fees for all   using (branch_id = current_branch());
+//
+// Tolerance math runs client-side in computeBucketTotals(). Server-side
+// re-validation lives in the upcoming check-compliance edge function.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (s) => document.querySelector(s);
@@ -557,6 +743,27 @@ const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s[0], s[1]]));
 const STAGE_CLS   = Object.fromEntries(STAGES.map(s => [s[0], s[2]]));
 const STAGE_INDEX = Object.fromEntries(STAGES.slice(0,9).map((s, i) => [s[0], i]));
 
+// Fee section letter → human label. Maps to LE/CD layout. D and I are
+// computed totals (Total Loan Costs = A+B+C, Total Other Costs = E+F+G+H)
+// and are not stored as rows — we render them as section totals only.
+const FEE_SECTIONS = [
+  ['A', 'Origination Charges',                'Lender fees: points, application, underwriting'],
+  ['B', 'Services Borrower Did Not Shop For', 'Lender-selected providers: appraisal, credit, flood'],
+  ['C', 'Services Borrower Did Shop For',     'Borrower-selected providers: title, settlement'],
+  ['E', 'Taxes and Government Fees',          'Recording, transfer taxes'],
+  ['F', 'Prepaids',                            'Per-diem interest, insurance premiums, taxes'],
+  ['G', 'Initial Escrow Payment at Closing',  'Months of taxes/insurance held in escrow'],
+  ['H', 'Other',                               "Owner's title insurance, HOA, home warranty"],
+];
+const FEE_SECTION_LABEL = Object.fromEntries(FEE_SECTIONS.map(s => [s[0], s[1]]));
+
+// Bucket → human label.
+const BUCKET_LABEL = {
+  zero:      'Zero tolerance',
+  ten_pct:   '10% bucket',
+  unlimited: 'Unlimited',
+};
+
 // ─── helpers ─────────────────────────────────────────────────────────────
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -564,6 +771,12 @@ function escapeHtml(s) {
 function moneyFull(cents) {
   if (cents == null) return '—';
   return '$' + (Number(cents) / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function moneyCents(cents) {
+  // Same as moneyFull but always shows cents — used in fee tables where
+  // $123.45 vs $123 matters for tolerance reconciliation.
+  if (cents == null) return '—';
+  return '$' + (Number(cents) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function timeAgo(iso) {
   if (!iso) return '—';
@@ -585,6 +798,17 @@ function factList(rows) {
   return `<div class="fact-list">${rows.map(([l, v, cls]) =>
     `<div class="fact-row"><span class="fact-label">${escapeHtml(l)}</span><span class="fact-val ${cls||''}">${escapeHtml(v ?? '—')}</span></div>`
   ).join('')}</div>`;
+}
+
+// Parse a money string like "$1,234.56" or "1234.56" → cents (integer).
+// Returns null for invalid input. Used by the fee form.
+function parseMoneyToCents(s) {
+  if (s == null || s === '') return null;
+  const cleaned = String(s).replace(/[$,\s]/g, '');
+  if (cleaned === '' || cleaned === '-') return null;
+  const n = Number(cleaned);
+  if (!isFinite(n)) return null;
+  return Math.round(n * 100);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -729,8 +953,7 @@ function renderHeader() {
   $('#lh-amount-sub').textContent = subBits.join(' · ') || '—';
 }
 
-// Action buttons depend on stage + role. Each button is a verb that fires a
-// hook (eSign, credit, AUS, price) or a stage transition.
+// Action buttons depend on stage + role.
 function renderActionRow() {
   const row = $('#lh-action-row');
   const buttons = [];
@@ -769,8 +992,8 @@ function onAction(act) {
 // ═══════════════════════════════════════════════════════════════════════════
 const TAB_LOADERS = {
   overview: renderTabOverview, borrowers: renderTabBorrowers, property: renderTabProperty,
-  disclosures: renderTabDisclosures, conditions: renderTabConditions, findings: renderTabFindings,
-  docs: renderTabDocs, activity: renderTabActivity, chat: renderTabChat,
+  disclosures: renderTabDisclosures, conditions: renderTabConditions, fees: renderTabFees,
+  findings: renderTabFindings, docs: renderTabDocs, activity: renderTabActivity, chat: renderTabChat,
 };
 const TAB_LOADED = new Set(['overview']);
 
@@ -786,7 +1009,7 @@ async function activateTab(name) {
   const url = new URL(window.location); url.hash = 'tab=' + name; history.replaceState({}, '', url);
   if (!TAB_LOADED.has(name)) {
     TAB_LOADED.add(name);
-    try { await TAB_LOADERS[name](); } catch (err) { console.error(err); showToast('Couldn\'t load tab: ' + err.message, true); }
+    try { await TAB_LOADERS[name](); } catch (err) { console.error(err); showToast("Couldn't load tab: " + err.message, true); }
   }
 }
 
@@ -813,7 +1036,25 @@ async function refreshBadges() {
     .eq('loan_id', loanId).is('archived_at', null);
   $('#badge-docs').textContent = docCount ?? '—';
 
-  // Findings table may not exist yet — tolerate failure
+  // Fees badge — count + flag tolerance bust. Tolerates missing table.
+  try {
+    const { data: feeRows } = await supa.from('fees')
+      .select('id, section, tolerance_bucket, le_amount_cents, borrower_paid_at_closing_cents, borrower_paid_before_closing_cents, seller_paid_at_closing_cents, seller_paid_before_closing_cents, paid_by_others_cents')
+      .eq('loan_id', loanId).is('archived_at', null);
+    if (feeRows && feeRows.length > 0) {
+      const buckets = computeBucketTotals(feeRows);
+      const anyBust = ['zero','ten_pct'].some(k => buckets[k].bust);
+      $('#badge-fees').textContent = feeRows.length;
+      $('#badge-fees').className = 'loan-tab-badge ' + (anyBust ? 'red' : 'green');
+    } else {
+      $('#badge-fees').textContent = '0';
+      $('#badge-fees').className = 'loan-tab-badge';
+    }
+  } catch (_) {
+    $('#badge-fees').textContent = '—';
+    $('#badge-fees').className = 'loan-tab-badge';
+  }
+
   try {
     const { count: ausCount } = await supa.from('aus_runs')
       .select('id', { count: 'exact', head: true }).eq('loan_id', loanId);
@@ -860,7 +1101,7 @@ async function renderTabOverview() {
   ];
   $('#overview-team').innerHTML = factList(teamRows);
 
-  // Pricing scenarios — read from pricing_scenarios if it exists, else empty CTA
+  // Pricing scenarios
   try {
     const { data: scenarios } = await supa.from('pricing_scenarios')
       .select('id, rate_bps, points, comp_bps, monthly_pi_cents, total_cost_cents, lock_days, created_at, locked_at')
@@ -889,7 +1130,7 @@ async function renderTabOverview() {
     $('#overview-pricing').innerHTML = `<div class="empty-state">Pricing engine not configured. Implement <code style="font-family:var(--mono); color:var(--accent);">window.OF_priceScenario</code>.</div>`;
   }
 
-  // Compliance posture: licensed state check, TRID timer, lock expiry
+  // Compliance posture
   const compRows = [];
   const propState = (loan.property_address?.state || '').toUpperCase();
   const { data: branchData } = await supa.from('branches').select('licensed_states').eq('id', me.branch_id).maybeSingle();
@@ -911,6 +1152,20 @@ async function renderTabOverview() {
     compRows.push(['Rate lock', '— not locked', 'muted']);
   }
 
+  // Fee tolerance posture (only if fees exist)
+  try {
+    const { data: feeRows } = await supa.from('fees')
+      .select('section, tolerance_bucket, le_amount_cents, borrower_paid_at_closing_cents, borrower_paid_before_closing_cents, seller_paid_at_closing_cents, seller_paid_before_closing_cents, paid_by_others_cents')
+      .eq('loan_id', loanId).is('archived_at', null);
+    if (feeRows && feeRows.length > 0) {
+      const buckets = computeBucketTotals(feeRows);
+      const bustCount = ['zero','ten_pct'].filter(k => buckets[k].bust).length;
+      compRows.push(['Fee tolerance',
+        bustCount > 0 ? `⚠ ${bustCount} bucket${bustCount===1?'':'s'} bust` : '✓ within tolerance',
+        bustCount > 0 ? 'alert' : '']);
+    }
+  } catch (_) { /* fees table not deployed yet */ }
+
   const tagCls = compRows.some(r => r[2] === 'alert') ? 'red' : (compRows.some(r => r[2] === 'flag') ? 'amber' : 'green');
   $('#overview-compliance-tag').className = 'panel-tag ' + tagCls;
   $('#overview-compliance-tag').textContent = tagCls === 'green' ? 'CLEAN' : (tagCls === 'amber' ? 'WATCH' : 'BLOCKED');
@@ -928,7 +1183,6 @@ async function renderTabBorrowers() {
     return;
   }
 
-  // Pull most-recent credit per borrower (table may not exist yet)
   let pullsByBor = {};
   try {
     const { data: pulls } = await supa.from('credit_pulls')
@@ -949,7 +1203,7 @@ async function renderTabBorrowers() {
       scoreCls = repScore >= 740 ? 'high' : (repScore >= 680 ? 'med' : 'low');
     }
     const ageDays = pull?.pulled_at ? Math.floor((Date.now() - new Date(pull.pulled_at).getTime()) / 86400000) : null;
-    const stale = ageDays != null && ageDays > 120;  // FNMA standard: 120-day expiration
+    const stale = ageDays != null && ageDays > 120;
 
     return `
       <div class="borrower-card">
@@ -1024,18 +1278,8 @@ async function renderTabProperty() {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TAB · DISCLOSURES (TRID)
-//
-// We compute the TRID timeline from the loan row's columns:
-//   le_sent_at, intent_to_proceed_at, cd_sent_at
-// + a 3-business-day waiting period after CD (federal min). The branch's
-// trid_buffer_days adds an extra cushion. Each milestone has a state:
-//   'complete'  — happened
-//   'pending'   — not yet (clock running, or upstream blocking)
-//   'alert'     — overdue, or violates a TRID rule
 // ═══════════════════════════════════════════════════════════════════════════
 function computeTridMilestones() {
-  // Naive 3-business-day calc — adequate for v0.2; full federal-holiday
-  // calendar comes later. "Business day" = Mon-Fri here.
   function addBusinessDays(date, n) {
     const d = new Date(date);
     let added = 0;
@@ -1049,10 +1293,9 @@ function computeTridMilestones() {
   const now = new Date();
   const events = [];
 
-  // 1. Initial LE sent
   events.push({
     title: 'Initial Loan Estimate sent',
-    state: loan.le_sent_at ? 'complete' : (STAGE_INDEX[loan.status] >= STAGE_INDEX.application ? 'pending' : 'pending'),
+    state: loan.le_sent_at ? 'complete' : 'pending',
     at: loan.le_sent_at,
     detail: loan.le_sent_at
       ? `LE sent ${dateOnly(loan.le_sent_at)}.`
@@ -1060,10 +1303,9 @@ function computeTridMilestones() {
     rule: 'TRID · 12 CFR § 1026.19(e)(1)(iii)',
   });
 
-  // 2. Intent to proceed received
   events.push({
     title: 'Intent to proceed received',
-    state: loan.intent_to_proceed_at ? 'complete' : (loan.le_sent_at ? 'pending' : 'pending'),
+    state: loan.intent_to_proceed_at ? 'complete' : 'pending',
     at: loan.intent_to_proceed_at,
     detail: loan.intent_to_proceed_at
       ? `Borrower confirmed intent ${dateOnly(loan.intent_to_proceed_at)}.`
@@ -1071,7 +1313,6 @@ function computeTridMilestones() {
     rule: 'TRID · 12 CFR § 1026.19(e)(2)(i)(A)',
   });
 
-  // 3. Closing Disclosure sent
   events.push({
     title: 'Closing Disclosure sent',
     state: loan.cd_sent_at ? 'complete' : 'pending',
@@ -1082,7 +1323,6 @@ function computeTridMilestones() {
     rule: 'TRID · 12 CFR § 1026.19(f)(1)(ii)',
   });
 
-  // 4. CD waiting period
   if (loan.cd_sent_at) {
     const earliestClose = addBusinessDays(loan.cd_sent_at, 3);
     const cleared = now >= earliestClose;
@@ -1106,18 +1346,16 @@ function computeTridMilestones() {
     });
   }
 
-  // 5. Funding
   const funded = loan.status === 'funded';
   events.push({
     title: funded ? 'Loan funded' : 'Awaiting funding',
-    state: funded ? 'complete' : (loan.status === 'docs_out' ? 'pending' : 'pending'),
+    state: funded ? 'complete' : 'pending',
     at: funded ? loan.updated_at : null,
     detail: funded
       ? `Funded ${dateOnly(loan.updated_at)}.`
       : 'Funding occurs after CD waiting period clears and docs are returned.',
   });
 
-  // Alert pass: if funded but CD waiting wasn't honored, flag
   if (funded && loan.cd_sent_at) {
     const earliest = addBusinessDays(loan.cd_sent_at, 3);
     if (new Date(loan.updated_at) < earliest) {
@@ -1204,7 +1442,686 @@ async function clearCondition(condId) {
     await renderTabConditions();
     await refreshBadges();
   } catch (err) {
-    showToast('Couldn\'t clear: ' + err.message, true);
+    showToast("Couldn't clear: " + err.message, true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB · FEES (closing-cost itemization, TRID tolerance tracking)
+//
+// The fees tab is the system of record for the loan's closing costs. Every
+// row maps to a line on the LE/CD form (sections A through H). Tolerance
+// buckets are computed live from the rows and compared against a snapshot
+// of the initial LE (frozen on each row when the LE was first sent).
+//
+// Three tolerance buckets per TRID 12 CFR § 1026.19(e)(3):
+//   ZERO     — must equal LE amount. Any increase = bust + COC required.
+//              Origination, transfer taxes, fees to lender or affiliates,
+//              and providers borrower can't shop for.
+//   10%      — sum of all bucket fees ≤ sum on LE × 1.10. Bust if exceeded.
+//              Recording fees + providers borrower selected from lender's
+//              written list.
+//   UNLIMITED — no tolerance check. Per-diem interest, insurance premiums,
+//              escrow, providers borrower shopped for outside the list.
+//
+// On a bust, the COC banner shows at the top of the tab and the row gets
+// flagged. Revised-LE generation lives in the upcoming detect-coc edge
+// function (Round 4 step 9); this tab is the reporting/editing surface.
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _feesCache = [];
+
+async function renderTabFees() {
+  let fees = [];
+  let fetchError = null;
+  try {
+    const { data, error } = await supa.from('fees')
+      .select('*')
+      .eq('loan_id', loanId).is('archived_at', null)
+      .order('section', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    fees = data || [];
+    _feesCache = fees;
+  } catch (err) {
+    fetchError = err;
+    _feesCache = [];
+  }
+
+  const body = $('#fees-body');
+  const tagEl = $('#fees-status-tag');
+  const cocEl = $('#fees-coc-banner');
+
+  if (fetchError) {
+    tagEl.textContent = 'NOT CONFIGURED';
+    tagEl.className = 'panel-tag amber';
+    cocEl.style.display = 'none';
+    body.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">$</span>
+        Fees table not deployed yet.<br>
+        <small style="opacity:0.7; display:block; margin-top:0.5rem;">
+          Run the migration at the top of the script in this file
+          (search for "ROUND 4 · FEES TAB"). Once the
+          <code style="font-family:var(--mono); color:var(--accent);">fees</code>
+          table exists, this tab activates.
+        </small>
+      </div>`;
+    return;
+  }
+
+  const buckets = computeBucketTotals(fees);
+  const grandTotal = computeGrandTotal(fees);
+  const anyBust = buckets.zero.bust || buckets.ten_pct.bust;
+  const hasLeSnapshot = fees.some(f => f.le_snapshot_at);
+  const canEdit = me.role !== 'viewer';
+
+  if (anyBust) { tagEl.textContent = 'TOLERANCE BUST'; tagEl.className = 'panel-tag red'; }
+  else if (fees.length === 0) { tagEl.textContent = 'EMPTY'; tagEl.className = 'panel-tag'; }
+  else if (!hasLeSnapshot) { tagEl.textContent = 'NO LE SNAPSHOT'; tagEl.className = 'panel-tag amber'; }
+  else { tagEl.textContent = 'WITHIN TOLERANCE'; tagEl.className = 'panel-tag green'; }
+
+  if (anyBust) {
+    const bustParts = [];
+    if (buckets.zero.bust) bustParts.push(`<strong>Zero-tolerance bust</strong>: ${escapeHtml(buckets.zero.bustReason)}`);
+    if (buckets.ten_pct.bust) bustParts.push(`<strong>10% bucket bust</strong>: ${escapeHtml(buckets.ten_pct.bustReason)}`);
+    $('#fees-coc-banner-text').innerHTML = `
+      ${bustParts.join('. ')}.
+      <small>Change of circumstance (COC) required. A revised LE must be issued within 3 business days of the change.</small>
+    `;
+    cocEl.style.display = 'flex';
+  } else {
+    cocEl.style.display = 'none';
+  }
+
+  // LE snapshot meta line
+  let leMetaHtml = '';
+  if (loan.le_sent_at && hasLeSnapshot) {
+    const snapshotAts = fees.map(f => f.le_snapshot_at).filter(Boolean);
+    const earliestSnap = snapshotAts.length ? snapshotAts.sort()[0] : null;
+    const totalLe = fees.reduce((sum, f) => sum + (Number(f.le_amount_cents) || 0), 0);
+    leMetaHtml = `
+      <div class="fees-le-meta">
+        <span class="fees-le-meta-text">
+          <strong>Initial LE issued ${dateOnly(loan.le_sent_at)}</strong> ·
+          ${fees.filter(f => f.le_amount_cents != null).length} fees on snapshot ·
+          ${moneyCents(totalLe)} total
+          ${earliestSnap ? ` · frozen ${timeAgo(earliestSnap)}` : ''}
+        </span>
+        ${canEdit ? `<button class="fees-le-meta-action" id="fees-resnap-btn">Re-snapshot from LE</button>` : ''}
+      </div>`;
+  } else if (loan.le_sent_at && !hasLeSnapshot && fees.length > 0) {
+    leMetaHtml = `
+      <div class="fees-le-meta">
+        <span class="fees-le-meta-text" style="color: var(--amber);">
+          ⚠ <strong>LE was sent ${dateOnly(loan.le_sent_at)}</strong>, but no fees were snapshotted at that time.
+          Tolerance can't be tracked without a baseline.
+        </span>
+        ${canEdit ? `<button class="fees-le-meta-action" id="fees-resnap-btn">Snapshot now</button>` : ''}
+      </div>`;
+  } else if (!loan.le_sent_at && fees.length > 0) {
+    leMetaHtml = `
+      <div class="fees-le-meta">
+        <span class="fees-le-meta-text">
+          LE not yet sent · tolerance buckets compute against current values only · snapshot freezes when LE is sent
+        </span>
+      </div>`;
+  }
+
+  // Summary strip
+  const stripHtml = `
+    <div class="fees-summary-strip">
+      ${renderBucketCard('Zero tolerance',     buckets.zero,    'cannot increase from LE')}
+      ${renderBucketCard('10% bucket',          buckets.ten_pct, 'cumulative ≤ LE × 1.10')}
+      ${renderBucketCard('Unlimited',           buckets.unlimited, 'no tolerance check', true)}
+      <div class="fees-bucket">
+        <div class="fees-bucket-label">Total Closing Costs</div>
+        <div class="fees-bucket-amount">${moneyCents(grandTotal)}</div>
+        <div class="fees-bucket-meta">${fees.length} line item${fees.length === 1 ? '' : 's'}</div>
+      </div>
+    </div>`;
+
+  // Group fees by section
+  const bySection = {};
+  for (const f of fees) {
+    if (!bySection[f.section]) bySection[f.section] = [];
+    bySection[f.section].push(f);
+  }
+
+  const sectionsHtml = FEE_SECTIONS.map(([letter, name, hint]) => {
+    const rows = bySection[letter] || [];
+    const sectionTotal = rows.reduce((sum, f) => sum + feeTotalCents(f), 0);
+    const rowsHtml = rows.length === 0
+      ? `<div class="empty-state" style="margin: 0.5rem 1rem; padding: 1rem;">No items in section ${letter} yet.</div>`
+      : `
+        <div class="fees-row-header">
+          <span>Description</span>
+          <span>Tolerance</span>
+          <span>LE amount</span>
+          <span>Current</span>
+          <span></span>
+        </div>
+        <div class="fees-rows">
+          ${rows.map(f => renderFeeRow(f, canEdit)).join('')}
+        </div>
+      `;
+    return `
+      <div class="fees-section">
+        <div class="fees-section-head">
+          <span class="fees-section-letter">${letter}</span>
+          <span class="fees-section-name">${escapeHtml(name)}</span>
+          <span class="fees-section-total">${moneyCents(sectionTotal)}</span>
+          ${canEdit ? `<button class="fees-section-add" data-add-section="${letter}">+ Add fee</button>` : '<span></span>'}
+        </div>
+        ${rowsHtml}
+      </div>
+    `;
+  }).join('');
+
+  body.innerHTML = `
+    ${leMetaHtml}
+    ${stripHtml}
+    ${sectionsHtml}
+  `;
+
+  // Wire actions
+  body.querySelectorAll('[data-add-section]').forEach(btn => {
+    btn.addEventListener('click', () => openFeeModal(null, btn.dataset.addSection));
+  });
+  body.querySelectorAll('[data-edit-fee]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fee = _feesCache.find(f => f.id === btn.dataset.editFee);
+      if (fee) openFeeModal(fee);
+    });
+  });
+  body.querySelectorAll('[data-delete-fee]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fee = _feesCache.find(f => f.id === btn.dataset.deleteFee);
+      if (fee) confirmDeleteFee(fee);
+    });
+  });
+  const resnapBtn = $('#fees-resnap-btn');
+  if (resnapBtn) resnapBtn.addEventListener('click', confirmSnapshotLE);
+}
+
+function renderBucketCard(label, bucketData, hint, isUnlimited) {
+  const cls = isUnlimited ? '' : (bucketData.bust ? 'bust' : 'ok');
+  const metaCls = isUnlimited ? '' : (bucketData.bust ? 'bust' : 'ok');
+  let metaText;
+  if (isUnlimited) {
+    metaText = hint;
+  } else if (bucketData.bust) {
+    metaText = `BUST · over by ${moneyCents(bucketData.deltaCents)}`;
+  } else if (bucketData.leTotalCents > 0) {
+    const delta = bucketData.currentTotalCents - bucketData.leTotalCents;
+    if (delta === 0) metaText = `unchanged from LE`;
+    else if (delta < 0) metaText = `under LE by ${moneyCents(-delta)}`;
+    else metaText = `+${moneyCents(delta)} vs LE (within tolerance)`;
+  } else {
+    metaText = bucketData.itemCount > 0 ? `${bucketData.itemCount} item${bucketData.itemCount === 1 ? '' : 's'}, no LE baseline` : 'no items';
+  }
+  return `
+    <div class="fees-bucket ${cls}">
+      <div class="fees-bucket-label">${escapeHtml(label)}</div>
+      <div class="fees-bucket-amount">${moneyCents(bucketData.currentTotalCents)}</div>
+      <div class="fees-bucket-meta ${metaCls}">${escapeHtml(metaText)}</div>
+    </div>`;
+}
+
+function renderFeeRow(f, canEdit) {
+  const current = feeTotalCents(f);
+  const le = f.le_amount_cents != null ? Number(f.le_amount_cents) : null;
+  const delta = le != null ? current - le : null;
+  const isBust = isFeeBust(f);
+  const isChanged = le != null && delta !== 0 && !isBust;
+
+  const currentCls = isBust ? 'bust' : (isChanged ? 'changed' : '');
+  const deltaText = delta != null && delta !== 0
+    ? `<span class="fee-current-amount-delta">${delta > 0 ? '+' : ''}${moneyCents(delta)} vs LE</span>`
+    : '';
+
+  return `
+    <div class="fee-row ${isBust ? 'bust' : ''}">
+      <div class="fee-name">
+        <div class="fee-desc">${escapeHtml(f.description)}</div>
+        ${f.payee ? `<div class="fee-payee"><strong>Payee:</strong> ${escapeHtml(f.payee)}</div>` : ''}
+      </div>
+      <span class="fee-tolerance-pill ${escapeHtml(f.tolerance_bucket)}">${escapeHtml(BUCKET_LABEL[f.tolerance_bucket] || f.tolerance_bucket)}</span>
+      <span class="fee-le-amount ${le == null ? 'muted' : ''}">${le != null ? moneyCents(le) : 'not on LE'}</span>
+      <span class="fee-current-amount ${currentCls}">${moneyCents(current)}${deltaText}</span>
+      <span class="fee-actions">
+        ${canEdit ? `
+          <button class="fee-action-btn" data-edit-fee="${escapeHtml(f.id)}">Edit</button>
+          <button class="fee-action-btn danger" data-delete-fee="${escapeHtml(f.id)}">×</button>
+        ` : ''}
+      </span>
+    </div>
+  `;
+}
+
+// Sum of the five paid-by columns. Always returns an integer (cents).
+function feeTotalCents(f) {
+  return (Number(f.borrower_paid_at_closing_cents) || 0)
+       + (Number(f.borrower_paid_before_closing_cents) || 0)
+       + (Number(f.seller_paid_at_closing_cents) || 0)
+       + (Number(f.seller_paid_before_closing_cents) || 0)
+       + (Number(f.paid_by_others_cents) || 0);
+}
+
+function computeGrandTotal(fees) {
+  return fees.reduce((s, f) => s + feeTotalCents(f), 0);
+}
+
+// Tolerance bust check for a single fee. Only zero-tolerance items can bust
+// individually; 10% items can only bust as a cumulative bucket. Unlimited
+// never busts.
+function isFeeBust(f) {
+  if (f.tolerance_bucket !== 'zero') return false;
+  if (f.le_amount_cents == null) return false;
+  return feeTotalCents(f) > Number(f.le_amount_cents);
+}
+
+// Compute bucket totals + bust state.
+function computeBucketTotals(fees) {
+  const out = {
+    zero:      { currentTotalCents: 0, leTotalCents: 0, deltaCents: 0, bust: false, bustReason: '', itemCount: 0 },
+    ten_pct:   { currentTotalCents: 0, leTotalCents: 0, deltaCents: 0, bust: false, bustReason: '', itemCount: 0 },
+    unlimited: { currentTotalCents: 0, leTotalCents: 0, deltaCents: 0, bust: false, bustReason: '', itemCount: 0 },
+  };
+  for (const f of fees) {
+    const bucket = out[f.tolerance_bucket];
+    if (!bucket) continue;
+    bucket.currentTotalCents += feeTotalCents(f);
+    if (f.le_amount_cents != null) bucket.leTotalCents += Number(f.le_amount_cents);
+    bucket.itemCount += 1;
+  }
+
+  // Zero-tolerance: any individual fee where current > LE = bust.
+  const zeroBusters = fees.filter(f => f.tolerance_bucket === 'zero' && isFeeBust(f));
+  if (zeroBusters.length > 0) {
+    out.zero.bust = true;
+    const names = zeroBusters.slice(0, 3).map(f => f.description).join(', ');
+    const more = zeroBusters.length > 3 ? ` (+${zeroBusters.length - 3} more)` : '';
+    const overage = zeroBusters.reduce((s, f) => s + (feeTotalCents(f) - Number(f.le_amount_cents || 0)), 0);
+    out.zero.deltaCents = overage;
+    out.zero.bustReason = `${names}${more} exceed LE by ${moneyCents(overage)}`;
+  }
+
+  // 10% bucket: cumulative cap.
+  if (out.ten_pct.leTotalCents > 0) {
+    const cap = Math.floor(out.ten_pct.leTotalCents * 1.10);
+    if (out.ten_pct.currentTotalCents > cap) {
+      out.ten_pct.bust = true;
+      out.ten_pct.deltaCents = out.ten_pct.currentTotalCents - cap;
+      out.ten_pct.bustReason = `current ${moneyCents(out.ten_pct.currentTotalCents)} exceeds LE+10% cap of ${moneyCents(cap)}`;
+    }
+  }
+
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FEE MODAL — add or edit a fee row
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Default tolerance bucket per section. Reasonable starting point — users
+// can override per-fee from the dropdown (e.g. transfer taxes in section E
+// are zero-tolerance even though E defaults to ten_pct).
+const DEFAULT_BUCKET_FOR_SECTION = {
+  A: 'zero',       // Origination charges
+  B: 'zero',       // Services borrower didn't shop
+  C: 'ten_pct',    // Services borrower shopped (from list)
+  E: 'ten_pct',    // Recording fees - 10% (transfer taxes are zero, set per-row)
+  F: 'unlimited',  // Prepaids
+  G: 'unlimited',  // Escrow
+  H: 'unlimited',  // Other - varies
+};
+
+function openFeeModal(existingFee, presetSection) {
+  const isEdit = !!existingFee;
+  const section = existingFee?.section || presetSection || 'A';
+  const defaultBucket = existingFee?.tolerance_bucket || DEFAULT_BUCKET_FOR_SECTION[section] || 'unlimited';
+
+  const f = existingFee || {};
+  const formatCents = (c) => c == null || c === 0 ? '' : (Number(c) / 100).toFixed(2);
+
+  const sectionOptions = FEE_SECTIONS.map(([letter, name]) =>
+    `<option value="${letter}" ${section === letter ? 'selected' : ''}>${letter} · ${escapeHtml(name)}</option>`
+  ).join('');
+
+  const bucketOptions = Object.entries(BUCKET_LABEL).map(([v, l]) =>
+    `<option value="${v}" ${defaultBucket === v ? 'selected' : ''}>${escapeHtml(l)}</option>`
+  ).join('');
+
+  const leSnapshotRow = isEdit && f.le_amount_cents != null ? `
+    <div class="fee-form-row cols-1">
+      <div class="fee-form-field">
+        <label class="fee-form-label">LE Snapshot Amount (frozen)</label>
+        <input type="text" class="fee-form-input money" id="fee-form-le-amount" value="${formatCents(f.le_amount_cents)}" placeholder="0.00">
+        <span class="fee-form-hint">
+          The amount of this fee at the time the initial LE was sent.
+          Editing this manually breaks audit trail — use only to fix snapshot mistakes.
+          ${f.le_snapshot_at ? `Frozen ${timeAgo(f.le_snapshot_at)}.` : ''}
+        </span>
+      </div>
+    </div>
+  ` : '';
+
+  const formHtml = `
+    <div class="fee-form-grid">
+      <div class="fee-form-row cols-1">
+        <div class="fee-form-field">
+          <label class="fee-form-label">Description</label>
+          <input type="text" class="fee-form-input" id="fee-form-description"
+                 value="${escapeHtml(f.description || '')}"
+                 placeholder="e.g. Appraisal Fee, Title Insurance, Recording Fee">
+        </div>
+      </div>
+
+      <div class="fee-form-row">
+        <div class="fee-form-field">
+          <label class="fee-form-label">Section</label>
+          <select class="fee-form-select" id="fee-form-section">${sectionOptions}</select>
+        </div>
+        <div class="fee-form-field">
+          <label class="fee-form-label">Tolerance Bucket</label>
+          <select class="fee-form-select" id="fee-form-bucket">${bucketOptions}</select>
+        </div>
+      </div>
+
+      <div class="fee-form-row cols-1">
+        <div class="fee-form-field">
+          <label class="fee-form-label">Payee</label>
+          <input type="text" class="fee-form-input" id="fee-form-payee"
+                 value="${escapeHtml(f.payee || '')}"
+                 placeholder="e.g. ABC Title Co., County Recorder">
+          <span class="fee-form-hint">Optional. Required for the LE/CD line, but can be filled later.</span>
+        </div>
+      </div>
+
+      <div class="fee-form-row cols-1">
+        <div class="fee-form-field">
+          <label class="fee-form-label">Paid By (enter as dollars)</label>
+          <div class="fee-form-paid-grid">
+            <div class="fee-form-field">
+              <label class="fee-form-label" style="font-size: 0.5rem;">Borrower @ Closing</label>
+              <input type="text" class="fee-form-input money" id="fee-form-bp-at" value="${formatCents(f.borrower_paid_at_closing_cents)}" placeholder="0.00">
+            </div>
+            <div class="fee-form-field">
+              <label class="fee-form-label" style="font-size: 0.5rem;">Borrower Before Closing</label>
+              <input type="text" class="fee-form-input money" id="fee-form-bp-before" value="${formatCents(f.borrower_paid_before_closing_cents)}" placeholder="0.00">
+            </div>
+            <div class="fee-form-field">
+              <label class="fee-form-label" style="font-size: 0.5rem;">Seller @ Closing</label>
+              <input type="text" class="fee-form-input money" id="fee-form-sp-at" value="${formatCents(f.seller_paid_at_closing_cents)}" placeholder="0.00">
+            </div>
+            <div class="fee-form-field">
+              <label class="fee-form-label" style="font-size: 0.5rem;">Seller Before Closing</label>
+              <input type="text" class="fee-form-input money" id="fee-form-sp-before" value="${formatCents(f.seller_paid_before_closing_cents)}" placeholder="0.00">
+            </div>
+            <div class="fee-form-field" style="grid-column: 1 / -1;">
+              <label class="fee-form-label" style="font-size: 0.5rem;">Paid By Others (lender credit, etc.)</label>
+              <input type="text" class="fee-form-input money" id="fee-form-other" value="${formatCents(f.paid_by_others_cents)}" placeholder="0.00">
+            </div>
+          </div>
+          <div class="fee-form-paid-total" id="fee-form-running-total">Total: $0.00</div>
+        </div>
+      </div>
+
+      ${leSnapshotRow}
+    </div>
+  `;
+
+  openModal({
+    title: isEdit ? 'Edit fee' : 'Add fee',
+    prompt: isEdit ? `Edit "${f.description}"` : `Add a new fee in section ${section}`,
+    detail: '',
+    extra: formHtml,
+    confirmLabel: isEdit ? 'Save changes' : 'Add fee',
+    wide: true,
+    onConfirm: async () => {
+      const payload = readFeeFormToPayload();
+      if (!payload) return;
+      closeModal();
+      try {
+        await saveFee(existingFee, payload);
+      } catch (err) {
+        showToast('Save failed: ' + err.message, true);
+      }
+    },
+  });
+
+  // Live total
+  const update = () => {
+    const total = ['fee-form-bp-at','fee-form-bp-before','fee-form-sp-at','fee-form-sp-before','fee-form-other']
+      .reduce((sum, id) => sum + (parseMoneyToCents($('#' + id).value) || 0), 0);
+    $('#fee-form-running-total').textContent = 'Total: ' + moneyCents(total);
+  };
+  ['fee-form-bp-at','fee-form-bp-before','fee-form-sp-at','fee-form-sp-before','fee-form-other'].forEach(id => {
+    $('#' + id).addEventListener('input', update);
+  });
+  update();
+
+  // Auto-set tolerance default when section changes (only for new fees)
+  if (!isEdit) {
+    $('#fee-form-section').addEventListener('change', (e) => {
+      const newSec = e.target.value;
+      const def = DEFAULT_BUCKET_FOR_SECTION[newSec] || 'unlimited';
+      $('#fee-form-bucket').value = def;
+    });
+  }
+}
+
+function readFeeFormToPayload() {
+  const description = $('#fee-form-description').value.trim();
+  if (!description) { showToast('Description is required.', true); return null; }
+  if (description.length > 200) { showToast('Description too long (max 200 chars).', true); return null; }
+
+  const section = $('#fee-form-section').value;
+  if (!FEE_SECTIONS.find(s => s[0] === section)) { showToast('Invalid section.', true); return null; }
+
+  const bucket = $('#fee-form-bucket').value;
+  if (!BUCKET_LABEL[bucket]) { showToast('Invalid tolerance bucket.', true); return null; }
+
+  const payload = {
+    description,
+    section,
+    tolerance_bucket: bucket,
+    payee: $('#fee-form-payee').value.trim() || null,
+    borrower_paid_at_closing_cents:     parseMoneyToCents($('#fee-form-bp-at').value)     || 0,
+    borrower_paid_before_closing_cents: parseMoneyToCents($('#fee-form-bp-before').value) || 0,
+    seller_paid_at_closing_cents:       parseMoneyToCents($('#fee-form-sp-at').value)     || 0,
+    seller_paid_before_closing_cents:   parseMoneyToCents($('#fee-form-sp-before').value) || 0,
+    paid_by_others_cents:               parseMoneyToCents($('#fee-form-other').value)     || 0,
+  };
+
+  // LE snapshot override (edit mode only)
+  const leOverrideEl = $('#fee-form-le-amount');
+  if (leOverrideEl) {
+    payload._le_amount_override_cents = parseMoneyToCents(leOverrideEl.value);
+  }
+
+  return payload;
+}
+
+async function saveFee(existingFee, payload) {
+  const isEdit = !!existingFee;
+
+  if (isEdit) {
+    const fieldsToTrack = [
+      'description','section','tolerance_bucket','payee',
+      'borrower_paid_at_closing_cents','borrower_paid_before_closing_cents',
+      'seller_paid_at_closing_cents','seller_paid_before_closing_cents',
+      'paid_by_others_cents',
+    ];
+    const fieldChanges = [];
+    for (const k of fieldsToTrack) {
+      if (existingFee[k] !== payload[k] && !(existingFee[k] == null && payload[k] === 0)) {
+        fieldChanges.push({ field: 'fees.' + k, before: existingFee[k], after: payload[k] });
+      }
+    }
+    if (payload._le_amount_override_cents !== undefined &&
+        payload._le_amount_override_cents !== existingFee.le_amount_cents) {
+      fieldChanges.push({
+        field: 'fees.le_amount_cents (manual override)',
+        before: existingFee.le_amount_cents,
+        after: payload._le_amount_override_cents,
+      });
+    }
+
+    const update = {
+      description: payload.description,
+      section: payload.section,
+      tolerance_bucket: payload.tolerance_bucket,
+      payee: payload.payee,
+      borrower_paid_at_closing_cents: payload.borrower_paid_at_closing_cents,
+      borrower_paid_before_closing_cents: payload.borrower_paid_before_closing_cents,
+      seller_paid_at_closing_cents: payload.seller_paid_at_closing_cents,
+      seller_paid_before_closing_cents: payload.seller_paid_before_closing_cents,
+      paid_by_others_cents: payload.paid_by_others_cents,
+      updated_at: new Date().toISOString(),
+      updated_by: me.id,
+    };
+    if (payload._le_amount_override_cents !== undefined) {
+      update.le_amount_cents = payload._le_amount_override_cents;
+    }
+
+    const { error } = await supa.from('fees').update(update).eq('id', existingFee.id);
+    if (error) throw error;
+
+    if (fieldChanges.length > 0) {
+      await writeAuditEvent({
+        operation: 'update',
+        table_name: 'fees',
+        field_changes: fieldChanges,
+      });
+    }
+    showToast(`Updated "${payload.description}"`);
+  } else {
+    // Insert. If LE has been sent, this is a COC fee — leave le_amount_cents
+    // and le_snapshot_at NULL to mark it as such. The tolerance compute
+    // handles "no LE baseline" correctly.
+    const insertRow = {
+      loan_id: loanId,
+      branch_id: me.branch_id,
+      ...payload,
+      created_by: me.id,
+      updated_by: me.id,
+    };
+    delete insertRow._le_amount_override_cents;
+
+    const { data: inserted, error } = await supa.from('fees').insert(insertRow).select().single();
+    if (error) throw error;
+
+    await writeAuditEvent({
+      operation: 'insert',
+      table_name: 'fees',
+      field_changes: [{ field: 'fees', before: null, after: `${insertRow.section} · ${insertRow.description} · ${moneyCents(feeTotalCents(insertRow))}` }],
+    });
+    showToast(`Added "${payload.description}"`);
+  }
+
+  await renderTabFees();
+  await refreshBadges();
+}
+
+function confirmDeleteFee(fee) {
+  openModal({
+    title: 'Delete fee',
+    prompt: `Delete "${fee.description}"?`,
+    detail: `This archives the fee from the loan. ${fee.le_amount_cents != null
+      ? '<strong style="color: var(--amber);">This fee was on the initial LE</strong> — removing it may reset the tolerance baseline for its bucket. Consider re-snapshotting the LE if the deletion is intentional.'
+      : 'The fee was not on the initial LE, so removing it is a clean change.'}`,
+    confirmLabel: 'Archive fee',
+    onConfirm: async () => {
+      closeModal();
+      try {
+        const { error } = await supa.from('fees')
+          .update({ archived_at: new Date().toISOString(), updated_by: me.id })
+          .eq('id', fee.id);
+        if (error) throw error;
+        await writeAuditEvent({
+          operation: 'archive',
+          table_name: 'fees',
+          field_changes: [{ field: 'fees', before: `${fee.section} · ${fee.description} · ${moneyCents(feeTotalCents(fee))}`, after: '(archived)' }],
+        });
+        showToast(`Archived "${fee.description}"`);
+        await renderTabFees();
+        await refreshBadges();
+      } catch (err) {
+        showToast('Delete failed: ' + err.message, true);
+      }
+    },
+  });
+}
+
+// Snapshot freeze: copies the current value of every fee into le_amount_cents
+// and stamps le_snapshot_at. Manual rescue if snapshot got out of sync —
+// post-MVP we'll move to a server-side trigger that fires on LE send.
+function confirmSnapshotLE() {
+  openModal({
+    title: 'Snapshot fees from LE',
+    prompt: 'Freeze current values as the LE baseline?',
+    detail: `This copies the current value of every fee on this loan into the
+      LE snapshot column, and stamps the snapshot timestamp.
+      <strong style="color: var(--amber);">Use with care</strong> — if you've
+      already issued an LE and tolerance is being tracked against it,
+      re-snapshotting will erase the comparison and start fresh from today's
+      values. Only do this if the snapshot is wrong or wasn't taken when LE was first issued.`,
+    confirmLabel: 'Snapshot now',
+    onConfirm: async () => {
+      closeModal();
+      try {
+        const now = new Date().toISOString();
+        const updates = _feesCache.map(f =>
+          supa.from('fees').update({
+            le_amount_cents: feeTotalCents(f),
+            le_snapshot_at: now,
+            updated_by: me.id,
+          }).eq('id', f.id)
+        );
+        const results = await Promise.all(updates);
+        const errs = results.filter(r => r.error);
+        if (errs.length > 0) throw new Error(errs[0].error.message);
+
+        await writeAuditEvent({
+          operation: 'snapshot',
+          table_name: 'fees',
+          field_changes: [{
+            field: 'fees.le_snapshot_at',
+            before: '(unfrozen)',
+            after: `${_feesCache.length} fees frozen at ${dateOnly(now)}`,
+          }],
+        });
+        showToast(`Snapshotted ${_feesCache.length} fees.`);
+        await renderTabFees();
+        await refreshBadges();
+      } catch (err) {
+        showToast('Snapshot failed: ' + err.message, true);
+      }
+    },
+  });
+}
+
+// Generic audit-event writer. Other tabs (conditions, eSign, AUS) will get
+// migrated onto this helper in subsequent Round-4 steps; for now the fees
+// tab is the first user. narrative_status='pending' tells the cron drain
+// to summarize this event with Haiku 4.5 next pass.
+async function writeAuditEvent({ operation, table_name, field_changes }) {
+  try {
+    const { error } = await supa.from('loan_audit_events').insert({
+      loan_id: loanId,
+      branch_id: me.branch_id,
+      table_name,
+      operation,
+      actor_id: me.id,
+      actor_role: me.role,
+      field_changes,
+      narrative_status: 'pending',
+    });
+    if (error) console.warn('audit event insert:', error);
+  } catch (err) {
+    console.warn('audit event:', err);
   }
 }
 
@@ -1276,7 +2193,7 @@ async function renderTabFindings() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TAB · DOCS (scoped to this loan)
+// TAB · DOCS
 // ═══════════════════════════════════════════════════════════════════════════
 async function renderTabDocs() {
   const { data, error } = await supa.from('documents')
@@ -1327,13 +2244,6 @@ async function renderTabDocs() {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TAB · ACTIVITY — loan_audit_events with AI narrative
-//
-// Single source of truth. The legacy audit_logs table was dropped;
-// everything that used to insert there now writes to loan_audit_events
-// with field_changes (jsonb) + narrative + narrative_status. A separate
-// background function (you wire this) reads pending rows and asks Claude
-// to summarize each diff into a one-liner. Until it runs, the row shows
-// a shimmer; once it completes, the realtime listener swaps in the text.
 // ═══════════════════════════════════════════════════════════════════════════
 async function renderTabActivity() {
   const since = new Date(Date.now() - 90 * 86400 * 1000).toISOString();
@@ -1359,8 +2269,6 @@ async function renderTabActivity() {
   $('#activity-body').innerHTML = data.map(renderAuditEvent).join('');
 }
 
-// Format a single audit row. Pulled out so realtime patches can replace
-// just one row's HTML without re-rendering the whole list.
 function renderAuditEvent(r) {
   const isAI = r.actor_role === 'ai_agent';
   const isSystem = r.actor_role === 'system';
@@ -1369,7 +2277,6 @@ function renderAuditEvent(r) {
   const role = (r.actor_role || 'system').toUpperCase();
   const actorClass = isAI ? 'ai' : isSystem ? 'system' : '';
 
-  // Header summary — a few common operations get nicer phrasing
   const fc = Array.isArray(r.field_changes) ? r.field_changes : [];
   let summary;
   const stageChange = fc.find(f => f.field === 'status' && r.table_name === 'loans');
@@ -1383,11 +2290,16 @@ function renderAuditEvent(r) {
     summary = '<strong>AI cleared a condition</strong>';
   } else if (r.operation === 'malware_quarantine') {
     summary = '<span style="color:var(--red);">Malware scanner quarantined a document</span>';
+  } else if (r.table_name === 'fees') {
+    if (r.operation === 'insert')   summary = 'Added fee';
+    else if (r.operation === 'update')  summary = 'Edited fee';
+    else if (r.operation === 'archive') summary = 'Removed fee';
+    else if (r.operation === 'snapshot') summary = '<strong>Snapshotted fees from LE</strong>';
+    else summary = `Fees · ${escapeHtml(r.operation)}`;
   } else {
     summary = `${escapeHtml(r.operation)} on ${escapeHtml(r.table_name)}`;
   }
 
-  // Field diff — show up to 6 changes inline, summarize the rest
   const diffHtml = fc.length > 0 ? `
     <div class="audit-diff">
       ${fc.slice(0, 6).map(c => `
@@ -1402,7 +2314,6 @@ function renderAuditEvent(r) {
     </div>
   ` : '';
 
-  // AI narrative — three states: complete, pending/generating, failed
   let narrativeHtml = '';
   const status = r.narrative_status || 'complete';
   if (status === 'complete' && r.narrative) {
@@ -1452,7 +2363,6 @@ function formatDiffVal(v) {
 // TAB · CHAT
 // ═══════════════════════════════════════════════════════════════════════════
 async function renderTabChat() {
-  // Find or wait-to-create channel
   if (!chatChannelId) {
     const { data: ch } = await supa.from('chat_channels')
       .select('id').eq('kind', 'loan').eq('loan_id', loanId).maybeSingle();
@@ -1489,7 +2399,6 @@ async function renderTabChat() {
     $('#chat-input').placeholder = 'Viewers cannot post';
   }
 
-  // Subscribe
   const ch = supa.channel(`loan-chat:${chatChannelId}`)
     .on('postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `channel_id=eq.${chatChannelId}` },
@@ -1528,7 +2437,6 @@ function initChatForm() {
     const inp = $('#chat-input'), btn = $('#chat-send');
     inp.disabled = true; btn.disabled = true;
     try {
-      // Create channel if needed
       if (!chatChannelId) {
         const { data: newCh, error: createErr } = await supa.from('chat_channels')
           .insert({ branch_id: me.branch_id, slug: 'loan-' + loanId,
@@ -1536,7 +2444,6 @@ function initChatForm() {
           .select().single();
         if (createErr) throw createErr;
         chatChannelId = newCh.id;
-        // Re-subscribe to realtime now that we have a channel
         const empty = $('#chat-thread').querySelector('.empty-state');
         if (empty) $('#chat-thread').innerHTML = '';
       }
@@ -1546,7 +2453,6 @@ function initChatForm() {
       });
       if (error) throw error;
       inp.value = '';
-      // If realtime isn't yet subscribed (first message), reload
       if (realtimeChans.filter(c => c.topic.includes('loan-chat')).length === 0) {
         await renderTabChat();
       }
@@ -1559,300 +2465,324 @@ function initChatForm() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ACTIONS — credit pull, AUS run, pricing, eSign, stage move
-//
-// Each prompt opens the modal with a confirmation; on confirm, runs the
-// hook and writes the result back to the appropriate per-loan table.
+// ACTIONS — credit, AUS, pricing, eSign, stage move
+// All hooks degrade gracefully when the corresponding window.OF_* function
+// isn't implemented yet (Round 4 in progress).
 // ═══════════════════════════════════════════════════════════════════════════
 
-let modalConfirmHandler = null;
-function initModal() {
-  $('#modal-cancel').addEventListener('click', closeModal);
-  $('#modal-overlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
-  $('#modal-confirm').addEventListener('click', async () => {
-    if (modalConfirmHandler) await modalConfirmHandler();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && $('#modal-overlay').classList.contains('open')) closeModal();
-  });
-}
-function openModal({ title, prompt, detail, extra, confirmLabel, onConfirm }) {
-  $('#modal-title').textContent = title || 'Confirm';
-  $('#modal-prompt').textContent = prompt || '';
-  $('#modal-detail').innerHTML = detail || '';
-  $('#modal-extra').innerHTML = extra || '';
-  $('#modal-confirm').textContent = confirmLabel || 'Confirm';
-  modalConfirmHandler = onConfirm;
-  $('#modal-overlay').classList.add('open');
-}
-function closeModal() {
-  $('#modal-overlay').classList.remove('open');
-  modalConfirmHandler = null;
-}
+function promptPullCredit(specificBorrowerId) {
+  if (typeof window.OF_pullCredit !== 'function') {
+    showToast('Credit pull not configured. Implement window.OF_pullCredit.', true);
+    return;
+  }
+  const bs = (loan.borrowers || []).map(x => x.borrower).filter(Boolean);
+  if (bs.length === 0) { showToast('No borrowers on this loan to pull credit for.', true); return; }
+  const target = specificBorrowerId
+    ? bs.find(b => b.id === specificBorrowerId)
+    : bs[0];
+  if (!target) { showToast('Borrower not found.', true); return; }
 
-window.promptPullCredit = function(borrowerId) {
-  const bs = (loan.borrowers || []).map(b => b.borrower).filter(Boolean);
-  const target = borrowerId ? bs.find(b => b.id === borrowerId) : bs[0];
-  if (!target) { showToast('No borrower to pull credit on.', true); return; }
   openModal({
-    title: 'Pull credit · tri-merge',
-    prompt: `Pull credit on ${target.first_name} ${target.last_name}?`,
-    detail: `Hard inquiry. Fees passed through to the loan. SSN ending ${target.ssn_last4 || '—'}. Report stored to <code style="font-family:var(--mono); color:var(--accent);">credit_pulls</code> and the score posts to the borrower record.`,
+    title: 'Pull credit',
+    prompt: `Pull tri-merge for ${target.first_name} ${target.last_name}?`,
+    detail: `This will request a hard pull from MeridianLink (Equifax + Experian + TransUnion) and write the result to <code style="font-family:var(--mono); color:var(--accent);">credit_pulls</code>. The cost is billed to your branch.`,
     confirmLabel: 'Pull credit',
     onConfirm: async () => {
       closeModal();
-      if (typeof window.OF_pullCredit !== 'function') {
-        showToast('Credit hook not configured. Implement window.OF_pullCredit.', true);
-        return;
-      }
-      showToast('Pulling credit on ' + target.first_name + '…');
+      showToast('Requesting tri-merge…');
       try {
-        const result = await window.OF_pullCredit({ borrowerId: target.id, loanId, bureau: 'tri_merge' });
-        await supa.from('credit_pulls').insert({
-          loan_id: loanId, branch_id: me.branch_id, borrower_id: target.id,
-          score_equifax: result.score_equifax ?? null,
-          score_experian: result.score_experian ?? null,
-          score_transunion: result.score_transunion ?? null,
-          report_url: result.report_url ?? null,
-          pulled_by: me.id, pulled_at: result.pulled_at || new Date().toISOString(),
-        });
-        showToast('Credit pulled successfully.');
-        TAB_LOADED.delete('borrowers'); await activateTab('borrowers');
+        await window.OF_pullCredit({ loanId, borrowerId: target.id });
+        showToast('Credit pulled.');
+        TAB_LOADED.delete('borrowers');
+        if (document.querySelector('.loan-tab.active').dataset.tab === 'borrowers') {
+          await renderTabBorrowers();
+        }
       } catch (err) {
         showToast('Credit pull failed: ' + err.message, true);
       }
     },
   });
-};
+}
 
-window.promptRunAus = function() {
+function promptRunAus() {
+  if (typeof window.OF_runAus !== 'function') {
+    showToast('AUS not configured. Implement window.OF_runAus.', true);
+    return;
+  }
+  const engineDefault = loan.program === 'fha' || loan.program === 'va' ? 'du'
+                      : loan.program === 'usda' ? 'gus' : 'du';
   openModal({
     title: 'Run AUS',
-    prompt: 'Run automated underwriting on this file?',
-    detail: 'Submits the loan to DU (Fannie), LP (Freddie), or GUS (USDA) based on program. Findings written to <code style="font-family:var(--mono); color:var(--accent);">aus_runs</code>; recommendation surfaces in the Findings tab and on the home queue.',
-    extra: `<div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-      <label style="display:flex; align-items:center; gap:0.4rem; font-family:var(--mono); font-size:0.7rem; color:var(--text);">
-        <input type="radio" name="aus-engine" value="auto" checked> Auto-select
-      </label>
-      <label style="display:flex; align-items:center; gap:0.4rem; font-family:var(--mono); font-size:0.7rem; color:var(--text);">
-        <input type="radio" name="aus-engine" value="du"> DU
-      </label>
-      <label style="display:flex; align-items:center; gap:0.4rem; font-family:var(--mono); font-size:0.7rem; color:var(--text);">
-        <input type="radio" name="aus-engine" value="lp"> LP
-      </label>
-      <label style="display:flex; align-items:center; gap:0.4rem; font-family:var(--mono); font-size:0.7rem; color:var(--text);">
-        <input type="radio" name="aus-engine" value="gus"> GUS
-      </label>
-    </div>`,
+    prompt: `Run automated underwriting on ${loan.loan_number}?`,
+    detail: 'Submits the file to DU/LP/GUS via MISMO 3.4 and writes the recommendation + findings PDF back to <code style="font-family:var(--mono); color:var(--accent);">aus_runs</code>.',
+    extra: `
+      <div class="modal-field">
+        <label for="aus-engine">Engine</label>
+        <select id="aus-engine">
+          <option value="du" ${engineDefault === 'du' ? 'selected' : ''}>DU (Fannie Mae)</option>
+          <option value="lp">LP (Freddie Mac)</option>
+          <option value="gus" ${engineDefault === 'gus' ? 'selected' : ''}>GUS (USDA)</option>
+        </select>
+      </div>`,
     confirmLabel: 'Run AUS',
     onConfirm: async () => {
-      const engine = document.querySelector('input[name="aus-engine"]:checked')?.value || 'auto';
+      const engine = $('#aus-engine').value;
       closeModal();
-      if (typeof window.OF_runAus !== 'function') {
-        showToast('AUS hook not configured. Implement window.OF_runAus.', true);
-        return;
-      }
-      showToast('Submitting to AUS…');
+      showToast(`Running ${engine.toUpperCase()}…`);
       try {
-        const result = await window.OF_runAus({ loanId, engine: engine === 'auto' ? null : engine });
-        await supa.from('aus_runs').insert({
-          loan_id: loanId, branch_id: me.branch_id,
-          engine: result.engine || engine, recommendation: result.recommendation,
-          findings_url: result.findings_url, findings_summary: result.findings_summary,
-          ran_by: me.id, ran_at: result.ran_at || new Date().toISOString(),
-        });
-        showToast('AUS complete: ' + (result.recommendation || 'unknown'));
-        TAB_LOADED.delete('findings'); await activateTab('findings');
+        await window.OF_runAus({ loanId, engine });
+        showToast('AUS run complete.');
+        TAB_LOADED.delete('findings');
+        if (document.querySelector('.loan-tab.active').dataset.tab === 'findings') {
+          await renderTabFindings();
+        }
         await refreshBadges();
       } catch (err) {
         showToast('AUS run failed: ' + err.message, true);
       }
     },
   });
-};
+}
 
-window.promptPriceScenario = function() {
+function promptPriceScenario() {
+  if (typeof window.OF_priceScenario !== 'function') {
+    showToast('Pricing engine not configured. Implement window.OF_priceScenario.', true);
+    return;
+  }
   openModal({
     title: 'Price scenario',
-    prompt: 'Generate pricing scenarios?',
-    detail: 'Returns 3-5 rate/point combinations from your pricing engine, plus comp impact and lock options. Saves to <code style="font-family:var(--mono); color:var(--accent);">pricing_scenarios</code>.',
+    prompt: `Run pricing for ${loan.loan_number}?`,
+    detail: 'Pulls live rate sheet and computes the rate/point/payment grid. Writes scenarios to <code style="font-family:var(--mono); color:var(--accent);">pricing_scenarios</code>.',
     confirmLabel: 'Run pricing',
     onConfirm: async () => {
       closeModal();
-      if (typeof window.OF_priceScenario !== 'function') {
-        showToast('Pricing hook not configured. Implement window.OF_priceScenario.', true);
-        return;
-      }
-      showToast('Pricing…');
+      showToast('Running pricing…');
       try {
-        const result = await window.OF_priceScenario({ loanId });
-        if (Array.isArray(result?.scenarios)) {
-          for (const s of result.scenarios) {
-            await supa.from('pricing_scenarios').insert({
-              loan_id: loanId, branch_id: me.branch_id,
-              rate_bps: s.rate_bps, points: s.points, comp_bps: s.comp_bps,
-              monthly_pi_cents: s.monthly_pi_cents, total_cost_cents: s.total_cost_cents,
-              lock_days: s.lock_days, created_by: me.id,
-            });
-          }
-        }
-        showToast(`Generated ${result?.scenarios?.length || 0} scenarios.`);
-        TAB_LOADED.delete('overview'); await activateTab('overview');
+        await window.OF_priceScenario({ loanId });
+        showToast('Pricing complete.');
+        TAB_LOADED.delete('overview');
+        await renderTabOverview();
       } catch (err) {
         showToast('Pricing failed: ' + err.message, true);
       }
     },
   });
-};
+}
 
-window.promptESign = function() {
-  const pkg = ['conditional_approval','clear_to_close'].includes(loan.status) ? 'initial_disclosures' : 'closing_package';
+function promptESign() {
+  if (typeof window.OF_sendForESign !== 'function') {
+    showToast('eSign not configured. Implement window.OF_sendForESign.', true);
+    return;
+  }
   openModal({
     title: 'Send for eSign',
-    prompt: `Send ${pkg.replace('_', ' ')} for eSignature?`,
-    detail: `Generates the ${pkg === 'initial_disclosures' ? 'LE + initial disclosures package' : 'closing package'} and emails the borrower(s) for signature. Envelope status syncs back to the loan; signed copies post to Documents.`,
-    confirmLabel: 'Send envelope',
+    prompt: `Send package for borrower signature?`,
+    detail: 'Generates the disclosure package (LE/CD/intent-to-proceed/initial 1003) and dispatches to all borrowers via Dropbox Sign. Writes the envelope to <code style="font-family:var(--mono); color:var(--accent);">esign_envelopes</code>.',
+    extra: `
+      <div class="modal-field">
+        <label for="esign-pkg">Package</label>
+        <select id="esign-pkg">
+          <option value="initial_disclosures">Initial disclosures (LE + intent + 1003)</option>
+          <option value="cd">Closing Disclosure only</option>
+          <option value="closing_docs">Closing docs (full)</option>
+        </select>
+      </div>`,
+    confirmLabel: 'Send for eSign',
     onConfirm: async () => {
+      const pkg = $('#esign-pkg').value;
       closeModal();
-      if (typeof window.OF_sendForESign !== 'function') {
-        showToast('eSign hook not configured. Implement window.OF_sendForESign.', true);
-        return;
-      }
-      showToast('Generating envelope…');
+      showToast('Generating and dispatching…');
       try {
-        const result = await window.OF_sendForESign({ loanId, package_type: pkg });
-        await supa.from('esign_envelopes').insert({
-          loan_id: loanId, branch_id: me.branch_id,
-          envelope_id: result.envelope_id, package_type: pkg,
-          status: result.status || 'sent', sent_by: me.id,
-          sent_at: result.sent_at || new Date().toISOString(),
-        });
-        showToast('Sent to borrower(s).');
+        await window.OF_sendForESign({ loanId, package_type: pkg });
+        showToast('Package sent for signature.');
+        TAB_LOADED.delete('disclosures');
+        if (document.querySelector('.loan-tab.active').dataset.tab === 'disclosures') {
+          await renderTabDisclosures();
+        }
       } catch (err) {
-        showToast('eSign failed: ' + err.message, true);
+        showToast('eSign dispatch failed: ' + err.message, true);
       }
     },
   });
-};
+}
 
-window.promptMoveStage = function() {
-  const idx = STAGE_INDEX[loan.status];
-  if (idx == null) { showToast('No stage transitions available from ' + loan.status, true); return; }
-  const options = STAGES.slice(0, 9)
-    .filter(s => s[0] !== loan.status)
-    .map(s => `<option value="${s[0]}">${s[1]}</option>`).join('');
+function promptMoveStage() {
+  const cur = loan.status;
+  const curIdx = STAGE_INDEX[cur];
+  const valid = STAGES.slice(0, 9).filter(s => s[0] !== cur);
   openModal({
-    title: 'Move stage',
-    prompt: `Move ${loan.loan_number} from ${STAGE_LABEL[loan.status]} to…`,
-    detail: 'Stage changes are audit-logged. Backward moves require a reason in file chat.',
+    title: 'Move loan stage',
+    prompt: `Currently in <strong>${escapeHtml(STAGE_LABEL[cur] || cur)}</strong>. Move to:`,
+    detail: 'Stage moves are logged to <code style="font-family:var(--mono); color:var(--accent);">stage_changes</code> and surface in the activity log.',
     extra: `
-      <select id="modal-target-stage" style="width:100%; background: var(--deep); border: 1px solid var(--border); color: var(--white); font-family: var(--sans); font-size: 0.9rem; padding: 0.6rem 0.8rem; outline: none;">
-        ${options}
-      </select>`,
+      <div class="modal-field">
+        <label for="stage-target">Target stage</label>
+        <select id="stage-target">
+          ${valid.map(([id, label]) => `<option value="${id}">${label}${curIdx != null && STAGE_INDEX[id] != null && STAGE_INDEX[id] < curIdx ? ' ⤴ (back)' : ''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-field">
+        <label for="stage-reason">Reason (optional)</label>
+        <input type="text" id="stage-reason" maxlength="200" placeholder="Why this move?">
+      </div>`,
     confirmLabel: 'Move stage',
     onConfirm: async () => {
-      const newStatus = $('#modal-target-stage').value;
+      const target = $('#stage-target').value;
+      const reason = $('#stage-reason').value.trim() || null;
       closeModal();
       try {
-        const { error } = await supa.from('loans')
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
-          .eq('id', loanId);
-        if (error) throw error;
+        const { error: e1 } = await supa.from('loans').update({
+          status: target, updated_at: new Date().toISOString(),
+        }).eq('id', loanId);
+        if (e1) throw e1;
         await supa.from('stage_changes').insert({
           loan_id: loanId, branch_id: me.branch_id,
-          from_status: loan.status, to_status: newStatus,
-          changed_by: me.id, actor_role: me.role,
-        }).then(({ error }) => { if (error) console.warn('stage_changes:', error); });
-        showToast(`Moved to ${STAGE_LABEL[newStatus]}.`);
-        await loadLoan();
-        renderHeader(); renderActionRow();
-        TAB_LOADED.clear(); TAB_LOADED.add('overview');
-        await renderTabOverview(); await refreshBadges();
+          from_stage: cur, to_stage: target,
+          changed_by: me.id, reason,
+        });
+        await writeAuditEvent({
+          operation: 'update', table_name: 'loans',
+          field_changes: [{ field: 'status', before: cur, after: target }],
+        });
+        showToast(`Moved to ${STAGE_LABEL[target]}.`);
+        await loadLoan(); renderHeader(); renderActionRow();
+        TAB_LOADED.clear(); TAB_LOADED.add(document.querySelector('.loan-tab.active').dataset.tab);
+        await TAB_LOADERS[document.querySelector('.loan-tab.active').dataset.tab]();
+        await refreshBadges();
       } catch (err) {
-        showToast('Stage move failed: ' + err.message, true);
+        showToast("Couldn't move stage: " + err.message, true);
       }
     },
   });
-};
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
-// REALTIME (loan + conditions + audit narrative changes propagate live)
+// MODAL — shared shell, used for confirms + forms (incl. fee form)
+// ═══════════════════════════════════════════════════════════════════════════
+let _modalOnConfirm = null;
+
+function initModal() {
+  $('#modal-cancel').addEventListener('click', closeModal);
+  $('#modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#modal-overlay').classList.contains('open')) closeModal();
+  });
+  $('#modal-confirm').addEventListener('click', () => {
+    if (typeof _modalOnConfirm === 'function') _modalOnConfirm();
+  });
+}
+
+function openModal({ title, prompt, detail, extra, confirmLabel, onConfirm, wide }) {
+  $('#modal-title').textContent = title || 'Confirm';
+  $('#modal-prompt').innerHTML = prompt || '';
+  $('#modal-detail').innerHTML = detail || '';
+  $('#modal-extra').innerHTML = extra || '';
+  $('#modal-confirm').textContent = confirmLabel || 'Confirm';
+  $('#modal-tertiary').style.display = 'none';
+  $('#modal-shell').classList.toggle('wide', !!wide);
+  _modalOnConfirm = onConfirm || null;
+  $('#modal-overlay').classList.add('open');
+  // Focus first input/select if one exists in extra; otherwise focus confirm.
+  setTimeout(() => {
+    const firstInput = $('#modal-extra').querySelector('input, select, textarea');
+    if (firstInput) firstInput.focus();
+    else $('#modal-confirm').focus();
+  }, 60);
+}
+
+function closeModal() {
+  $('#modal-overlay').classList.remove('open');
+  $('#modal-shell').classList.remove('wide');
+  _modalOnConfirm = null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME — loan, conditions, audit events, fees
 // ═══════════════════════════════════════════════════════════════════════════
 function initRealtime() {
-  const loanCh = supa.channel(`loan:${loanId}`)
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'loans', filter: `id=eq.${loanId}` },
-      async () => {
-        await loadLoan();
-        if (!loan) { showState('state-notfound'); return; }
-        renderHeader(); renderActionRow();
-        const active = document.querySelector('.loan-tab.active')?.dataset.tab;
-        TAB_LOADED.delete(active);
-        if (active) await activateTab(active);
-        await refreshBadges();
-      }).subscribe();
-  realtimeChans.push(loanCh);
+  // Loan row
+  realtimeChans.push(
+    supa.channel(`loan:${loanId}`)
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'loans', filter: `id=eq.${loanId}` },
+        async () => { await loadLoan(); renderHeader(); renderActionRow(); }
+      ).subscribe()
+  );
 
-  const condCh = supa.channel(`loan-conds:${loanId}`)
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'conditions', filter: `loan_id=eq.${loanId}` },
-      async () => {
-        await refreshBadges();
-        if (TAB_LOADED.has('conditions')) await renderTabConditions();
-      }).subscribe();
-  realtimeChans.push(condCh);
-
-  // Round 2: live audit narrative updates. Subscribe to INSERT (so newly-
-  // inserted rows appear without a tab refresh) and UPDATE (so the AI-
-  // narrative shimmer flips to real text in-place when the generator
-  // function completes).
-  const auditCh = supa.channel(`loan-audit:${loanId}`)
-    .on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'loan_audit_events', filter: `loan_id=eq.${loanId}` },
-      async () => {
-        if (TAB_LOADED.has('activity')) await renderTabActivity();
-      })
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'loan_audit_events', filter: `loan_id=eq.${loanId}` },
-      async (payload) => {
-        if (!TAB_LOADED.has('activity')) return;
-        // Patch just the affected row instead of re-querying.
-        // Realtime payloads on UPDATE include the full new row, so we have
-        // everything we need EXCEPT the joined actor profile. Re-fetch
-        // that one row to enrich.
-        const { data: enriched } = await supa.from('loan_audit_events')
-          .select(`
-            id, table_name, operation, actor_id, actor_role, created_at,
-            field_changes, narrative, narrative_status,
-            actor:actor_id ( full_name )
-          `)
-          .eq('id', payload.new.id).maybeSingle();
-        if (!enriched) return;
-        const rowEl = document.querySelector(
-          `.audit-event[data-event-id="${enriched.id}"]`
-        );
-        if (rowEl) {
-          // Replace this single row's outerHTML in place
-          const wrap = document.createElement('div');
-          wrap.innerHTML = renderAuditEvent(enriched);
-          rowEl.replaceWith(wrap.firstElementChild);
+  // Conditions
+  realtimeChans.push(
+    supa.channel(`loan-conds:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'conditions', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          await refreshBadges();
+          if (document.querySelector('.loan-tab.active').dataset.tab === 'conditions') {
+            await renderTabConditions();
+          }
         }
-      }).subscribe();
-  realtimeChans.push(auditCh);
+      ).subscribe()
+  );
+
+  // Audit events (for activity tab + narrative streaming)
+  realtimeChans.push(
+    supa.channel(`loan-audit:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'loan_audit_events', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          if (document.querySelector('.loan-tab.active').dataset.tab === 'activity') {
+            await renderTabActivity();
+          }
+        }
+      ).subscribe()
+  );
+
+  // Fees — refresh tab + badge when anyone (including same user in another tab) changes a fee
+  realtimeChans.push(
+    supa.channel(`loan-fees:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'fees', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          await refreshBadges();
+          if (document.querySelector('.loan-tab.active').dataset.tab === 'fees') {
+            await renderTabFees();
+          }
+          // Compliance posture on overview also reads fees
+          if (document.querySelector('.loan-tab.active').dataset.tab === 'overview') {
+            await renderTabOverview();
+          }
+        }
+      ).subscribe()
+  );
 }
+
+window.addEventListener('beforeunload', () => {
+  for (const ch of realtimeChans) try { supa.removeChannel(ch); } catch (_) {}
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEARCH SHORTCUT
 // ═══════════════════════════════════════════════════════════════════════════
 function initSearchShortcut() {
-  $('#nav-search-btn').addEventListener('click', () => { window.location.href = '/home.html#cmdk'; });
+  $('#nav-search-btn').addEventListener('click', () => { window.location.href = '/dashboard.html?focus=search'; });
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
-      window.location.href = '/home.html#cmdk';
+      window.location.href = '/dashboard.html?focus=search';
     }
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTS (for inline onclick in empty-states)
+// ═══════════════════════════════════════════════════════════════════════════
+window.handleSignOut = handleSignOut;
+window.promptPullCredit = promptPullCredit;
+window.promptRunAus = promptRunAus;
+window.promptPriceScenario = promptPriceScenario;
+window.promptESign = promptESign;
+window.promptMoveStage = promptMoveStage;
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 </script>
