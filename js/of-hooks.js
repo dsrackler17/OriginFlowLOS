@@ -229,6 +229,11 @@
 
     const data = await fetchDisclosureData(loanId);
 
+    // Round 4-13: compliance preflight. For 'cd' kind, verify a locked
+    // pricing scenario exists (otherwise the CD would render with
+    // null/zero rates). Throws a structured error the caller can branch on.
+    checkCompliancePreflight(kind, data);
+
     const pdfBytes = await generatePackagePdf(kind, data);
     if (!pdfBytes || pdfBytes.length === 0) {
       throw new Error('PDF generation returned empty bytes');
@@ -458,22 +463,54 @@
       .select('id, section, description, payee, tolerance_bucket, is_pfc, ' +
               'borrower_paid_at_closing_cents, borrower_paid_before_closing_cents, ' +
               'seller_paid_at_closing_cents, seller_paid_before_closing_cents, ' +
-              'paid_by_others_cents, le_amount_cents, le_snapshot_at')
+              'paid_by_others_cents, le_amount_cents, le_snapshot_at, archived_at')
       .eq('loan_id', loanId)
       .is('archived_at', null)
       .order('section', { ascending: true })
       .order('created_at', { ascending: true });
 
     // ── pricing scenario (latest locked, else latest) ──
+    // Round 4-13: pull all the fields the CD generator needs (points_pct
+    // not points; apr_pct, lock_days, total_cost_cents, llpa_breakdown).
+    // Schema column is points_pct — a previous version of this query
+    // selected `points` which doesn't exist; fixed.
     const pricingQ = client.from('pricing_scenarios')
-      .select('rate_bps, points, monthly_pi_cents, total_cost_cents, locked_at, created_at')
+      .select('id, rate_bps, points_pct, monthly_pi_cents, apr_pct, ' +
+              'lock_days, lock_expires_at, total_cost_cents, ' +
+              'llpa_breakdown, locked_at, locked_by, created_at')
       .eq('loan_id', loanId)
+      .is('archived_at', null)
       .order('locked_at', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    const [loanRes, feesRes, pricingRes] = await Promise.allSettled([loanQ, feesQ, pricingQ]);
+    // ── active closing (most recent non-cancelled) ──
+    // Round 4-13: the CD generator pulls scheduled_at, cd_sent_at,
+    // settlement type, title-company info from this row.
+    const closingQ = client.from('closings')
+      .select('id, scheduled_at, signed_at, funding_date, funded_at, ' +
+              'disbursed_at, recorded_at, settlement_type, ' +
+              'title_company_name, title_file_number, ' +
+              'closing_agent_name, closing_agent_email, ' +
+              'closing_location_type, closing_location_address, ' +
+              'cd_envelope_id, cd_sent_at, cd_signed_at, cd_3day_clears_at, ' +
+              'closing_package_envelope_id, closing_package_sent_at, ' +
+              'locked_pricing_scenario_id, locked_loan_amount_cents, ' +
+              'locked_rate_bps, locked_term_months, locked_monthly_pi_cents, ' +
+              'locked_apr_pct, locked_total_cost_cents, ' +
+              'ptc_conditions_clear, cd_waiting_period_clear, status')
+      .eq('loan_id', loanId)
+      .is('archived_at', null)
+      .not('status', 'in', '(cancelled,rescheduled)')
+      .order('scheduled_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const [loanRes, feesRes, pricingRes, closingRes] = await Promise.allSettled([
+      loanQ, feesQ, pricingQ, closingQ,
+    ]);
 
     if (loanRes.status !== 'fulfilled' || loanRes.value.error || !loanRes.value.data) {
       const err = loanRes.status === 'fulfilled' ? loanRes.value.error : loanRes.reason;
@@ -491,6 +528,19 @@
     let pricing = null;
     if (pricingRes.status === 'fulfilled' && !pricingRes.value.error) {
       pricing = pricingRes.value.data;
+    } else if (pricingRes.status === 'fulfilled' && pricingRes.value.error) {
+      // pricing_scenarios table not deployed yet — that's fine
+      console.warn('pricing_scenarios fetch failed (treating as none):',
+                   pricingRes.value.error.message);
+    }
+
+    let closing = null;
+    if (closingRes.status === 'fulfilled' && !closingRes.value.error) {
+      closing = closingRes.value.data;
+    } else if (closingRes.status === 'fulfilled' && closingRes.value.error) {
+      // closings table not deployed yet — also fine
+      console.warn('closings fetch failed (treating as none):',
+                   closingRes.value.error.message);
     }
 
     let branch = null;
@@ -532,9 +582,18 @@
       cd_sent_at: loan.cd_sent_at,
       borrowers,
       fees,
+      // Pricing — exposed under two names for back-compat:
+      //   `pricing`                  — legacy alias (LE generator + older callers)
+      //   `locked_pricing_scenario`  — new name the CD generator uses
       pricing,
+      locked_pricing_scenario: pricing,
+      closing,
       branch,
       lo: loan.lo,
+      // Round 4-13: convenience derived fields the CD generator reads
+      lo_name: loan.lo?.full_name || null,
+      seller_name: null,    // not modeled yet; future enhancement
+      has_escrow: true,     // default; future setting on loans table
     };
   }
 
@@ -557,14 +616,65 @@
       }
       return await D.generateLoanEstimate(data);
     }
-    if (kind === 'cd' || kind === 'closing_docs') {
+    if (kind === 'cd') {
+      // Round 4-13: CD generator wired. Compliance gates already ran in
+      // OF_sendForESign before we got here — this just produces the bytes.
+      if (typeof D.generateClosingDisclosure !== 'function') {
+        throw new Error(
+          'OFDisclosure.generateClosingDisclosure missing — your /js/disclosure-pdf.js predates Round 4-13. Update it.'
+        );
+      }
+      return await D.generateClosingDisclosure(data);
+    }
+    if (kind === 'closing_docs') {
+      // The full closing-doc package (Note + Mortgage/DOT + Riders + CD +
+      // ancillary forms) requires generators we haven't shipped yet.
+      // Sending just the CD via this path would mislabel the envelope kind
+      // — the webhook + audit trail care about the distinction. So we
+      // throw rather than silently substitute.
       throw new Error(
-        kind === 'cd'
-          ? 'CD generation is not yet implemented. Use initial_disclosures or revised_le for now.'
-          : 'Closing-docs generation is not yet implemented.'
+        'closing_docs (full Note + Mortgage + Riders package) is not yet implemented. ' +
+        'For now, dispatch the CD with package_type="cd" and the full closing package ' +
+        'separately via the title company.'
       );
     }
     throw new Error('Unknown package type: ' + kind);
+  }
+
+  // ─── Compliance pre-flight gates ─────────────────────────────────────────
+  // Run BEFORE we generate the PDF so we don't waste time on a 5-page
+  // render that a missing-locked-rate gate would block. Throws an Error
+  // with .code set so OF_sendForESign can surface it nicely.
+
+  function checkCompliancePreflight(kind, data) {
+    if (kind === 'cd') {
+      if (!data.locked_pricing_scenario || !data.locked_pricing_scenario.locked_at) {
+        const err = new Error(
+          'Cannot send CD without a locked rate. Lock a pricing scenario first (Pricing tab → Lock this rate).'
+        );
+        err.code = 'no_locked_scenario';
+        throw err;
+      }
+      if (!data.loan_amount_cents || data.loan_amount_cents <= 0) {
+        const err = new Error('Cannot send CD: loan amount missing or invalid.');
+        err.code = 'invalid_loan_amount';
+        throw err;
+      }
+      if (!data.term_months || data.term_months <= 0) {
+        const err = new Error('Cannot send CD: term missing or invalid.');
+        err.code = 'invalid_term';
+        throw err;
+      }
+      // Soft warning: closing record missing. The CD CAN be sent without
+      // a closings row (some workflows send CD before scheduling), but
+      // most data on page 1 (closing date, settlement agent) will read
+      // as "—". Not a hard block.
+      if (!data.closing) {
+        console.warn('OF_sendForESign(cd): no active closing record — CD will render with placeholder closing/settlement info.');
+      }
+    }
+    // Other kinds (initial_disclosures, revised_le) have no preflight gates
+    // beyond what the underlying generators check internally.
   }
 
   async function uploadDisclosurePdf(pdfBytes, data, kind) {
