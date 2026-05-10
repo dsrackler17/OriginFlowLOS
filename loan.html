@@ -739,6 +739,7 @@ footer a:hover { color:var(--accent); }
       <button class="loan-tab" data-tab="conditions"><span>Conditions</span><span class="loan-tab-badge" id="badge-conditions">—</span></button>
       <button class="loan-tab" data-tab="fees"><span>Fees</span><span class="loan-tab-badge" id="badge-fees">—</span></button>
       <button class="loan-tab" data-tab="coc"><span>COC</span><span class="loan-tab-badge" id="badge-coc">—</span></button>
+      <button class="loan-tab" data-tab="closings"><span>Closings</span><span class="loan-tab-badge" id="badge-closings">—</span></button>
       <button class="loan-tab" data-tab="findings"><span>AUS Findings</span><span class="loan-tab-badge" id="badge-findings">—</span></button>
       <button class="loan-tab" data-tab="docs"><span>Docs</span><span class="loan-tab-badge" id="badge-docs">—</span></button>
       <button class="loan-tab" data-tab="activity"><span>Activity</span></button>
@@ -801,6 +802,16 @@ footer a:hover { color:var(--accent); }
             <span class="panel-tag" id="coc-status-tag">—</span>
           </div>
           <div class="panel-body" id="coc-body"><div class="empty-state">Loading…</div></div>
+        </div>
+      </section>
+
+      <section class="tab-section" id="tab-closings">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Closing &amp; funding</span>
+            <span class="panel-tag" id="closings-status-tag">—</span>
+          </div>
+          <div class="panel-body" id="closings-body"><div class="empty-state">Loading…</div></div>
         </div>
       </section>
 
@@ -1214,6 +1225,7 @@ const TAB_LOADERS = {
   overview: renderTabOverview, borrowers: renderTabBorrowers, property: renderTabProperty,
   disclosures: renderTabDisclosures, conditions: renderTabConditions, fees: renderTabFees,
   coc: renderTabCoc,
+  closings: renderTabClosings,
   pricing: renderTabPricing,
   findings: renderTabFindings, docs: renderTabDocs, activity: renderTabActivity, chat: renderTabChat,
 };
@@ -1306,6 +1318,37 @@ async function refreshBadges() {
   } catch (_) {
     $('#badge-coc').textContent = '—';
     $('#badge-coc').className = 'loan-tab-badge';
+  }
+
+  // Closings badge — status of the active closing. Tolerates missing table.
+  // Color matches the closing lifecycle: cyan=scheduled, amber=docs out / signed,
+  // green=funded or recorded, plain=no closing scheduled yet.
+  try {
+    const { data: clRows } = await supa.from('closings')
+      .select('id, status')
+      .eq('loan_id', loanId).is('archived_at', null);
+    const ACTIVE = ['scheduled', 'docs_out', 'signed', 'funded', 'recorded'];
+    const active = (clRows || []).find(c => ACTIVE.includes(c.status));
+    if (active) {
+      $('#badge-closings').textContent = ({
+        scheduled: 'SCHED', docs_out: 'DOCS', signed: 'SIGN',
+        funded: 'FUND', recorded: 'REC',
+      })[active.status] || active.status.toUpperCase().slice(0, 5);
+      $('#badge-closings').className = 'loan-tab-badge ' + ({
+        scheduled: 'cyan',  docs_out: 'amber', signed: 'amber',
+        funded: 'green',    recorded: 'green',
+      })[active.status];
+    } else if ((clRows || []).length > 0) {
+      // Only cancelled/rescheduled/complete in history
+      $('#badge-closings').textContent = (clRows || []).length;
+      $('#badge-closings').className = 'loan-tab-badge';
+    } else {
+      $('#badge-closings').textContent = '—';
+      $('#badge-closings').className = 'loan-tab-badge';
+    }
+  } catch (_) {
+    $('#badge-closings').textContent = '—';
+    $('#badge-closings').className = 'loan-tab-badge';
   }
 
   // Pricing badge — green if a scenario is locked, count otherwise.
@@ -3575,6 +3618,824 @@ function addBusinessDaysClient(date, n) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// TAB · CLOSINGS  (Round 4-15)
+// ═══════════════════════════════════════════════════════════════════════════
+// Active closing → hero card with status timeline + locked terms + compliance
+// gates + lifecycle actions. Cancelled/rescheduled closings → collapsed
+// history rows. "Schedule closing" empty state when none exists.
+//
+// The CD-dispatch action is the new functionality: it calls OF_sendForESign
+// with package_type='cd', then stamps closings.cd_envelope_id with the
+// returned envelope_id. Once the borrower signs the CD via Dropbox Sign, the
+// esign_envelopes_link_closing_trg trigger (Round 4-14) propagates to
+// closings.cd_signed_at, which then fires closings_compute_derived_trg to
+// snapshot locked terms onto the closing row. Whole cascade is database-side
+// after the initial UPDATE.
+
+async function renderTabClosings() {
+  const body = document.getElementById('closings-body');
+  const tag = document.getElementById('closings-status-tag');
+  if (!body) return;
+  body.innerHTML = '<div class="empty-state">Loading…</div>';
+
+  let rows = [];
+  let conditionsOutstanding = 0;
+  let openCocsCount = 0;
+
+  try {
+    const closingsQ = supa.from('closings')
+      .select(`
+        id, status, scheduled_at, signed_at, funding_date, funded_at,
+        recorded_at, disbursed_at, settlement_type,
+        title_company_name, title_file_number, closing_agent_name,
+        closing_agent_email, closing_agent_phone,
+        closing_location_type, closing_location_address,
+        wire_instructions_received, wire_instructions_verified,
+        cd_envelope_id, cd_sent_at, cd_signed_at, cd_3day_clears_at, cd_revisions_count,
+        closing_package_envelope_id, closing_package_sent_at, closing_package_signed_at,
+        locked_pricing_scenario_id, locked_loan_amount_cents, locked_rate_bps,
+        locked_term_months, locked_monthly_pi_cents, locked_apr_pct,
+        locked_total_cost_cents, locked_at,
+        ptc_conditions_clear, ptd_conditions_clear, cd_waiting_period_clear,
+        fee_tolerance_clear,
+        cancellation_reason, scheduled_by, created_at, updated_at
+      `)
+      .eq('loan_id', loanId)
+      .is('archived_at', null)
+      .order('scheduled_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
+
+    // Compliance derivations need conditions + COCs counts. Run in parallel.
+    const condsQ = supa.from('conditions')
+      .select('id, status')
+      .eq('loan_id', loanId)
+      .is('archived_at', null);
+    const cocsQ = supa.from('change_of_circumstance')
+      .select('id, status, coc_type')
+      .eq('loan_id', loanId)
+      .is('archived_at', null);
+
+    const [closingsRes, condsRes, cocsRes] = await Promise.allSettled([closingsQ, condsQ, cocsQ]);
+    if (closingsRes.status !== 'fulfilled' || closingsRes.value.error) {
+      const err = closingsRes.status === 'fulfilled' ? closingsRes.value.error : closingsRes.reason;
+      throw new Error(err?.message || 'closings fetch failed');
+    }
+    rows = closingsRes.value.data || [];
+
+    if (condsRes.status === 'fulfilled' && !condsRes.value.error) {
+      conditionsOutstanding = (condsRes.value.data || [])
+        .filter(c => c.status === 'outstanding').length;
+    }
+    if (cocsRes.status === 'fulfilled' && !cocsRes.value.error) {
+      openCocsCount = (cocsRes.value.data || [])
+        .filter(c => c.status === 'open' && c.coc_type === 'tolerance_bust').length;
+    }
+  } catch (err) {
+    body.innerHTML = '<div class="empty-state error">Could not load closings: ' +
+      escapeHtml(err.message || '') + '</div>';
+    tag.textContent = 'ERROR';
+    return;
+  }
+
+  const ACTIVE_STATUSES = ['scheduled', 'docs_out', 'signed', 'funded', 'recorded'];
+  const active = rows.find(c => ACTIVE_STATUSES.includes(c.status));
+  const history = rows.filter(c => !ACTIVE_STATUSES.includes(c.status));
+
+  if (active) {
+    tag.textContent = closingStatusLabel(active.status);
+    tag.className = 'panel-tag ' + closingStatusClass(active.status);
+  } else if (rows.length > 0) {
+    tag.textContent = 'HISTORY ONLY';
+    tag.className = 'panel-tag';
+  } else {
+    tag.textContent = 'NOT SCHEDULED';
+    tag.className = 'panel-tag';
+  }
+
+  let html = '';
+  if (!active) {
+    html += `
+      <div class="empty-state" style="padding:48px 24px">
+        <p style="font-size:15px;margin-bottom:8px">No closing scheduled.</p>
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px">
+          Schedule a closing once the loan has been approved and conditions are mostly cleared.
+        </p>
+        <button class="btn btn-primary" onclick="promptScheduleClosing()">Schedule closing</button>
+      </div>`;
+  } else {
+    html += renderActiveClosingCard(active, { conditionsOutstanding, openCocsCount });
+  }
+
+  if (history.length > 0) {
+    html += `
+      <div style="margin-top:24px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase">
+          History (${history.length})
+        </div>
+        ${history.map(renderClosingHistoryRow).join('')}
+      </div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+function closingStatusLabel(s) {
+  return ({
+    scheduled:   'SCHEDULED',
+    docs_out:    'DOCS OUT',
+    signed:      'SIGNED',
+    funded:      'FUNDED',
+    recorded:    'RECORDED',
+    complete:    'COMPLETE',
+    cancelled:   'CANCELLED',
+    rescheduled: 'RESCHEDULED',
+  })[s] || (s || '').toUpperCase();
+}
+
+function closingStatusClass(s) {
+  return ({
+    scheduled:   'cyan',
+    docs_out:    'amber',
+    signed:      'amber',
+    funded:      'green',
+    recorded:    'green',
+    complete:    'green',
+    cancelled:   'red',
+    rescheduled: 'red',
+  })[s] || '';
+}
+
+function settlementTypeLabel(t) {
+  return ({
+    wet:              'Wet (signing & funding same day)',
+    dry:              'Dry (signing; funding 1–3 days later)',
+    table_funded:     'Table-funded',
+    warehouse_funded: 'Warehouse-funded',
+  })[t] || '—';
+}
+
+function locationTypeLabel(t) {
+  return ({
+    title_office:    'Title company office',
+    attorney_office: 'Attorney office',
+    mobile_notary:   'Mobile notary',
+    remote_online:   'Remote online (RON)',
+    lender_office:   'Lender office',
+    other:           'Other',
+  })[t] || '—';
+}
+
+function renderActiveClosingCard(c, ctx) {
+  const cdEnvOut    = !!c.cd_envelope_id;
+  const cdSigned    = !!c.cd_signed_at;
+  const cdClearsAt  = c.cd_3day_clears_at ? new Date(c.cd_3day_clears_at).getTime() : null;
+  const cdCleared   = cdClearsAt != null && cdClearsAt <= Date.now();
+  const ptcClear    = ctx.conditionsOutstanding === 0;
+  const tolClear    = ctx.openCocsCount === 0;
+  const hasLocked   = !!c.locked_at;
+
+  const gates = [
+    { label: 'PTC conditions cleared',
+      ok: ptcClear,
+      detail: ptcClear ? 'All conditions resolved.' :
+              ctx.conditionsOutstanding + ' outstanding · clear before funding.' },
+    { label: 'CD 3-day waiting period',
+      ok: cdSigned && cdCleared,
+      detail: !cdSigned ? 'CD not signed yet.' :
+              cdCleared ? 'Waiting period elapsed.' :
+              'Clears ' + fmtDateTimeShort(c.cd_3day_clears_at) + '.' },
+    { label: 'Fee tolerance (no open bust)',
+      ok: tolClear,
+      detail: tolClear ? 'No open tolerance bust.' :
+              ctx.openCocsCount + ' open tolerance COC · resolve before funding.' },
+    { label: 'Locked terms snapshot',
+      ok: hasLocked,
+      detail: hasLocked ? 'Locked ' + fmtDateTimeShort(c.locked_at) + '.' :
+              'Will lock automatically when CD is signed.' },
+  ];
+  const allGatesOk = gates.every(g => g.ok);
+
+  // Available actions depend on status
+  const actions = [];
+  if (c.status === 'scheduled') {
+    if (!cdEnvOut) {
+      actions.push({ label: 'Send CD to borrower', primary: true,
+                     onclick: `promptSendCdFromClosing('${c.id}')` });
+    } else {
+      actions.push({ label: 'CD already dispatched', disabled: true });
+    }
+    actions.push({ label: 'Edit schedule',  onclick: `promptEditClosing('${c.id}')` });
+    actions.push({ label: 'Reschedule',     onclick: `promptRescheduleClosing('${c.id}')` });
+    actions.push({ label: 'Cancel closing', danger: true,
+                   onclick: `promptCancelClosing('${c.id}')` });
+  } else if (c.status === 'docs_out') {
+    actions.push({ label: 'Mark as signed', primary: true,
+                   onclick: `promptMarkClosingSigned('${c.id}')` });
+    actions.push({ label: 'Cancel closing', danger: true,
+                   onclick: `promptCancelClosing('${c.id}')` });
+  } else if (c.status === 'signed') {
+    actions.push({ label: 'Mark as funded',
+                   primary: allGatesOk, disabled: !allGatesOk,
+                   onclick: `promptMarkFunded('${c.id}')` });
+    if (!allGatesOk) {
+      actions.push({ label: 'Override + mark funded', danger: true,
+                     onclick: `promptMarkFunded('${c.id}', true)` });
+    }
+  } else if (c.status === 'funded') {
+    actions.push({ label: 'Mark as recorded', primary: true,
+                   onclick: `promptMarkRecorded('${c.id}')` });
+  } else if (c.status === 'recorded') {
+    actions.push({ label: 'Mark as complete', primary: true,
+                   onclick: `promptMarkComplete('${c.id}')` });
+  }
+
+  const actionRow = actions.map(a => {
+    if (a.disabled) {
+      return `<button class="btn" disabled style="opacity:0.5;cursor:not-allowed">${escapeHtml(a.label)}</button>`;
+    }
+    const cls = a.primary ? 'btn btn-primary' : a.danger ? 'btn btn-ghost' : 'btn btn-ghost';
+    const style = a.danger ? 'color:var(--red,#d96666);border-color:rgba(217,102,102,0.4)' : '';
+    return `<button class="${cls}" style="${style}" onclick="${a.onclick}">${escapeHtml(a.label)}</button>`;
+  }).join(' ');
+
+  return `
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-body" style="padding:24px">
+
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:24px;flex-wrap:wrap;margin-bottom:24px">
+          <div>
+            <div style="font-family:'DM Serif Display',serif;font-size:24px;line-height:1.2">
+              ${fmtDateLong(c.scheduled_at) || 'Date TBD'}
+            </div>
+            <div style="color:var(--text-dim);font-size:13px;margin-top:4px">
+              ${escapeHtml(settlementTypeLabel(c.settlement_type))}
+            </div>
+          </div>
+          <div class="panel-tag ${closingStatusClass(c.status)}" style="font-size:13px;padding:6px 12px">
+            ${closingStatusLabel(c.status)}
+          </div>
+        </div>
+
+        <!-- Timeline strip -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:28px;font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.06em">
+          ${renderTimelineStep('Scheduled', c.scheduled_at, c.scheduled_at)}
+          ${renderTimelineStep('Docs out',  c.cd_sent_at,   ['docs_out','signed','funded','recorded'].includes(c.status) || cdEnvOut)}
+          ${renderTimelineStep('Signed',    c.signed_at || c.cd_signed_at, ['signed','funded','recorded'].includes(c.status))}
+          ${renderTimelineStep('Funded',    c.funded_at,   ['funded','recorded'].includes(c.status))}
+          ${renderTimelineStep('Recorded',  c.recorded_at, c.status === 'recorded')}
+        </div>
+
+        <!-- Two-column detail grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase">
+              Title &amp; Closing
+            </div>
+            <div style="font-size:13px;line-height:1.7">
+              <div><span style="color:var(--text-dim)">Company:</span> ${escapeHtml(c.title_company_name || '—')}</div>
+              <div><span style="color:var(--text-dim)">File #:</span> ${escapeHtml(c.title_file_number || '—')}</div>
+              <div><span style="color:var(--text-dim)">Closing agent:</span> ${escapeHtml(c.closing_agent_name || '—')}</div>
+              <div><span style="color:var(--text-dim)">Email:</span> ${escapeHtml(c.closing_agent_email || '—')}</div>
+              <div><span style="color:var(--text-dim)">Location:</span> ${escapeHtml(locationTypeLabel(c.closing_location_type))}</div>
+              <div><span style="color:var(--text-dim)">Wires verified:</span>
+                ${c.wire_instructions_verified ? '✓ Yes' : c.wire_instructions_received ? 'Received, not verified' : '—'}</div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase">
+              CD status
+            </div>
+            <div style="font-size:13px;line-height:1.7">
+              <div><span style="color:var(--text-dim)">Sent:</span> ${fmtDateTimeShort(c.cd_sent_at) || '—'}</div>
+              <div><span style="color:var(--text-dim)">Signed:</span> ${fmtDateTimeShort(c.cd_signed_at) || '<em style="color:var(--text-dim)">Pending</em>'}</div>
+              <div><span style="color:var(--text-dim)">3-day clears:</span> ${fmtDateTimeShort(c.cd_3day_clears_at) || '—'}
+                ${cdCleared ? ' <span style="color:var(--green,#7dd87d)">✓ cleared</span>' : ''}</div>
+              <div><span style="color:var(--text-dim)">Revisions:</span> ${c.cd_revisions_count || 0}</div>
+            </div>
+          </div>
+
+        </div>
+
+        ${hasLocked ? `
+          <div style="margin-bottom:24px;padding:16px;background:rgba(125,216,125,0.06);border:1px solid rgba(125,216,125,0.2);border-radius:6px">
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--green,#7dd87d);margin-bottom:10px;text-transform:uppercase">
+              Locked terms · ${fmtDateTimeShort(c.locked_at)}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;font-size:13px">
+              <div>
+                <div style="color:var(--text-dim);font-size:11px">Loan amount</div>
+                <div style="font-size:16px;font-family:'Space Mono',monospace">${fmtMoney(c.locked_loan_amount_cents)}</div>
+              </div>
+              <div>
+                <div style="color:var(--text-dim);font-size:11px">Rate / Term</div>
+                <div style="font-size:16px;font-family:'Space Mono',monospace">${((c.locked_rate_bps || 0) / 100).toFixed(3)}% · ${Math.round((c.locked_term_months || 0) / 12)}yr</div>
+              </div>
+              <div>
+                <div style="color:var(--text-dim);font-size:11px">Monthly P&amp;I</div>
+                <div style="font-size:16px;font-family:'Space Mono',monospace">${fmtMoney(c.locked_monthly_pi_cents)}</div>
+              </div>
+              <div>
+                <div style="color:var(--text-dim);font-size:11px">APR</div>
+                <div style="font-size:16px;font-family:'Space Mono',monospace">${c.locked_apr_pct != null ? Number(c.locked_apr_pct).toFixed(3) + '%' : '—'}</div>
+              </div>
+            </div>
+          </div>` : ''}
+
+        <!-- Compliance gates -->
+        <div style="margin-bottom:24px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase">
+            Pre-funding compliance gates
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${gates.map(g => `
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:${g.ok ? 'rgba(125,216,125,0.06)' : 'rgba(217,160,102,0.06)'};border-radius:4px;font-size:12px">
+                <span style="color:${g.ok ? 'var(--green,#7dd87d)' : 'var(--amber,#d9a066)'};font-family:'Space Mono',monospace;font-size:14px">${g.ok ? '✓' : '○'}</span>
+                <span style="font-weight:500">${escapeHtml(g.label)}</span>
+                <span style="color:var(--text-dim);margin-left:auto">${escapeHtml(g.detail)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Action row -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:16px;border-top:1px solid var(--border)">
+          ${actionRow}
+        </div>
+
+      </div>
+    </div>`;
+}
+
+function renderTimelineStep(label, timestamp, isComplete) {
+  const filled = isComplete && timestamp;
+  const pending = isComplete && !timestamp;   // status reached but no timestamp
+  const color = filled ? 'var(--green,#7dd87d)' : pending ? 'var(--amber,#d9a066)' : 'var(--text-dim)';
+  const bg    = filled ? 'rgba(125,216,125,0.1)' : 'transparent';
+  return `
+    <div style="padding:10px;background:${bg};border:1px solid ${color === 'var(--text-dim)' ? 'var(--border)' : color};border-radius:4px;text-align:center">
+      <div style="color:${color};margin-bottom:4px">${escapeHtml(label)}</div>
+      <div style="font-size:9px;color:var(--text-dim)">${timestamp ? fmtDateTimeShort(timestamp) : '—'}</div>
+    </div>`;
+}
+
+function renderClosingHistoryRow(c) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(255,255,255,0.02);border-left:3px solid ${c.status === 'cancelled' ? 'var(--red,#d96666)' : 'var(--text-dim)'};border-radius:4px;margin-bottom:6px">
+      <div>
+        <div style="font-size:13px">${fmtDateLong(c.scheduled_at) || '(no date)'}
+          <span class="panel-tag ${closingStatusClass(c.status)}" style="margin-left:8px;font-size:10px;padding:2px 8px">
+            ${closingStatusLabel(c.status)}
+          </span>
+        </div>
+        ${c.cancellation_reason ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px">${escapeHtml(c.cancellation_reason)}</div>` : ''}
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);font-family:'Space Mono',monospace">
+        ${escapeHtml(settlementTypeLabel(c.settlement_type))}
+      </div>
+    </div>`;
+}
+
+// Compact date+time formatter used throughout the closings tab.
+// Returns "May 8 · 2:30 PM" for nearby dates, full date for distant ones.
+function fmtDateTimeShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const sameYear = d.getFullYear() === now.getFullYear();
+  const datePart = d.toLocaleDateString('en-US', sameYear
+    ? { month: 'short', day: 'numeric' }
+    : { month: 'short', day: 'numeric', year: 'numeric' });
+  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return datePart + ' · ' + timePart;
+}
+
+function fmtDateLong(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// ─── Action handlers ──────────────────────────────────────────────────────
+
+async function promptScheduleClosing() {
+  // Default to two weeks out, settlement-type wet (most common)
+  const defaultDate = new Date();
+  defaultDate.setDate(defaultDate.getDate() + 14);
+  const defaultDateStr = defaultDate.toISOString().slice(0, 16);   // YYYY-MM-DDTHH:MM
+
+  const result = await showModal({
+    title: 'Schedule closing',
+    body: `
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Closing date &amp; time</div>
+          <input type="datetime-local" id="cl-scheduled-at" value="${defaultDateStr}" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Settlement type</div>
+          <select id="cl-settlement-type" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)">
+            <option value="wet" selected>Wet — signing &amp; funding same day</option>
+            <option value="dry">Dry — funding 1–3 days after signing (CA/AZ/OR/WA)</option>
+            <option value="table_funded">Table-funded</option>
+            <option value="warehouse_funded">Warehouse-funded</option>
+          </select>
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Title company</div>
+          <input type="text" id="cl-title-co" placeholder="Acme Title Inc." style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Closing agent name</div>
+          <input type="text" id="cl-agent-name" placeholder="Jane Smith" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Closing agent email</div>
+          <input type="email" id="cl-agent-email" placeholder="jane@acmetitle.com" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Location type</div>
+          <select id="cl-location-type" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)">
+            <option value="title_office" selected>Title company office</option>
+            <option value="attorney_office">Attorney office</option>
+            <option value="mobile_notary">Mobile notary</option>
+            <option value="remote_online">Remote online (RON)</option>
+            <option value="lender_office">Lender office</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+      </div>`,
+    primary: 'Schedule',
+  });
+  if (!result) return;
+
+  const scheduledAt = document.getElementById('cl-scheduled-at').value;
+  if (!scheduledAt) { showToast('Closing date is required.', true); return; }
+
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    const { error } = await supa.from('closings').insert({
+      loan_id: loanId,
+      branch_id: loan.branch_id,
+      scheduled_at: new Date(scheduledAt).toISOString(),
+      settlement_type: document.getElementById('cl-settlement-type').value,
+      title_company_name: document.getElementById('cl-title-co').value || null,
+      closing_agent_name: document.getElementById('cl-agent-name').value || null,
+      closing_agent_email: document.getElementById('cl-agent-email').value || null,
+      closing_location_type: document.getElementById('cl-location-type').value,
+      status: 'scheduled',
+      scheduled_by: session?.user?.id || null,
+    });
+    if (error) throw error;
+    showToast('Closing scheduled.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Could not schedule: ' + err.message, true);
+  }
+}
+window.promptScheduleClosing = promptScheduleClosing;
+
+async function promptSendCdFromClosing(closingId) {
+  const ok = await showModal({
+    title: 'Send Closing Disclosure',
+    body: `
+      <p>Generate the CD and dispatch to the borrower via eSign.</p>
+      <p style="color:var(--text-dim);font-size:12px;margin-top:12px">
+        The 3-business-day waiting period starts when the borrower receives the CD.
+        Funding cannot occur until that period clears.
+      </p>`,
+    primary: 'Send CD',
+  });
+  if (!ok) return;
+
+  showToast('Generating CD…');
+  try {
+    if (typeof window.OF_sendForESign !== 'function') {
+      throw new Error('OF_sendForESign not loaded');
+    }
+    const result = await window.OF_sendForESign({
+      loanId, package_type: 'cd', closing_id: closingId,
+    });
+
+    // Stamp the envelope id onto the closing row so the link trigger
+    // can find it when the borrower signs.
+    if (result?.envelope_id) {
+      const { error: stampErr } = await supa.from('closings').update({
+        cd_envelope_id: result.envelope_id,
+        cd_sent_at: new Date().toISOString(),
+        cd_revisions_count: 0,   // first send; revisions++ on resend
+        status: 'docs_out',
+      }).eq('id', closingId);
+      if (stampErr) {
+        // Non-fatal: envelope is sent, just couldn't link. Surface so ops
+        // can fix manually. The trigger's RAISE NOTICE will fire when the
+        // borrower signs.
+        console.error('Could not stamp cd_envelope_id:', stampErr);
+        showToast('CD sent but closing row not updated. Check console.', true);
+      } else {
+        showToast('CD sent to borrower.');
+      }
+    } else {
+      showToast('CD dispatched but no envelope_id returned.', true);
+    }
+    TAB_LOADED.delete('closings');
+    TAB_LOADED.delete('disclosures');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Send failed: ' + (err.message || ''), true);
+  }
+}
+window.promptSendCdFromClosing = promptSendCdFromClosing;
+
+async function promptMarkClosingSigned(closingId) {
+  const ok = await showModal({
+    title: 'Mark closing as signed',
+    body: `
+      <p>Confirm the borrower has signed the full closing-doc package.</p>
+      <p style="color:var(--text-dim);font-size:12px;margin-top:12px">
+        Use this only when signing happens outside the eSign flow (e.g., in-person at the title company).
+        eSign-signed envelopes are linked automatically.
+      </p>`,
+    primary: 'Mark signed',
+  });
+  if (!ok) return;
+
+  try {
+    const { error } = await supa.from('closings').update({
+      status: 'signed',
+      signed_at: new Date().toISOString(),
+    }).eq('id', closingId);
+    if (error) throw error;
+    showToast('Marked signed.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Update failed: ' + err.message, true);
+  }
+}
+window.promptMarkClosingSigned = promptMarkClosingSigned;
+
+async function promptMarkFunded(closingId, override) {
+  const overrideMsg = override
+    ? `<div style="padding:12px;background:rgba(217,102,102,0.1);border:1px solid rgba(217,102,102,0.3);border-radius:4px;margin-bottom:16px">
+         <strong style="color:var(--red,#d96666)">Compliance gates failed.</strong>
+         <p style="font-size:12px;margin-top:6px">Overriding the gates is logged in the audit trail. Make sure you've documented the reason elsewhere (compliance file, COC closure, etc).</p>
+       </div>` : '';
+
+  const ok = await showModal({
+    title: override ? 'Override + mark funded' : 'Mark closing as funded',
+    body: `
+      ${overrideMsg}
+      <p>Confirm funds have been wired to the title company.</p>
+      <p style="color:var(--text-dim);font-size:12px;margin-top:12px">
+        This will roll loans.status forward to <code>funded</code>. Reversal requires a manual SQL update.
+      </p>`,
+    primary: override ? 'Override + mark funded' : 'Mark funded',
+  });
+  if (!ok) return;
+
+  try {
+    const { error } = await supa.from('closings').update({
+      status: 'funded',
+      funded_at: new Date().toISOString(),
+    }).eq('id', closingId);
+    if (error) throw error;
+    showToast('Marked funded.');
+    TAB_LOADED.delete('closings');
+    TAB_LOADED.delete('overview');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Update failed: ' + err.message, true);
+  }
+}
+window.promptMarkFunded = promptMarkFunded;
+
+async function promptMarkRecorded(closingId) {
+  const ok = await showModal({
+    title: 'Mark as recorded',
+    body: '<p>Confirm the mortgage/deed of trust has been recorded with the county.</p>',
+    primary: 'Mark recorded',
+  });
+  if (!ok) return;
+  try {
+    const { error } = await supa.from('closings').update({
+      status: 'recorded',
+      recorded_at: new Date().toISOString(),
+    }).eq('id', closingId);
+    if (error) throw error;
+    showToast('Marked recorded.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Update failed: ' + err.message, true);
+  }
+}
+window.promptMarkRecorded = promptMarkRecorded;
+
+async function promptMarkComplete(closingId) {
+  const ok = await showModal({
+    title: 'Mark as complete',
+    body: '<p>Confirm post-funding QC + audit is clean. This closes the loan file.</p>',
+    primary: 'Mark complete',
+  });
+  if (!ok) return;
+  try {
+    const { error } = await supa.from('closings').update({
+      status: 'complete',
+    }).eq('id', closingId);
+    if (error) throw error;
+    showToast('Loan complete.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Update failed: ' + err.message, true);
+  }
+}
+window.promptMarkComplete = promptMarkComplete;
+
+async function promptCancelClosing(closingId) {
+  const ok = await showModal({
+    title: 'Cancel closing',
+    body: `
+      <p>This will cancel the active closing. The audit trail is preserved.</p>
+      <label style="display:block;margin-top:12px">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Reason</div>
+        <textarea id="cl-cancel-reason" rows="3" placeholder="Borrower withdrew · property inspection failed · etc."
+          style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit"></textarea>
+      </label>`,
+    primary: 'Cancel closing',
+  });
+  if (!ok) return;
+  const reason = (document.getElementById('cl-cancel-reason').value || '').trim();
+  try {
+    const { error } = await supa.from('closings').update({
+      status: 'cancelled',
+      cancellation_reason: reason || null,
+    }).eq('id', closingId);
+    if (error) throw error;
+    showToast('Closing cancelled.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Cancel failed: ' + err.message, true);
+  }
+}
+window.promptCancelClosing = promptCancelClosing;
+
+async function promptRescheduleClosing(closingId) {
+  // Reschedule: mark current as 'rescheduled', insert a new active row.
+  // Pulls existing values as defaults so the LO only has to change what differs.
+  const { data: current, error: fetchErr } = await supa.from('closings')
+    .select('*').eq('id', closingId).maybeSingle();
+  if (fetchErr || !current) {
+    showToast('Could not load current closing.', true);
+    return;
+  }
+  const defaultDate = new Date(); defaultDate.setDate(defaultDate.getDate() + 7);
+
+  const ok = await showModal({
+    title: 'Reschedule closing',
+    body: `
+      <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px">
+        The current closing will be marked as rescheduled (preserved in history).
+        A new active closing will be created with the values below.
+      </p>
+      <label>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">New closing date</div>
+        <input type="datetime-local" id="cl-re-date" value="${defaultDate.toISOString().slice(0, 16)}"
+          style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+      </label>
+      <label style="display:block;margin-top:12px">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Reason</div>
+        <textarea id="cl-re-reason" rows="2" placeholder="Borrower travel conflict · title issue · etc."
+          style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:inherit"></textarea>
+      </label>`,
+    primary: 'Reschedule',
+  });
+  if (!ok) return;
+
+  const newDate = document.getElementById('cl-re-date').value;
+  const reason = (document.getElementById('cl-re-reason').value || '').trim();
+  if (!newDate) { showToast('New date required.', true); return; }
+
+  try {
+    // Step 1: mark current as rescheduled
+    const { error: cancelErr } = await supa.from('closings').update({
+      status: 'rescheduled',
+      cancellation_reason: reason ? 'Rescheduled: ' + reason : 'Rescheduled',
+    }).eq('id', closingId);
+    if (cancelErr) throw cancelErr;
+
+    // Step 2: insert a new active closing. Carry over title/agent info — the
+    // LO can edit afterward via the regular edit flow. CD envelope/timestamps
+    // are NOT carried over (a new CD will need to be sent).
+    const { data: { session } } = await supa.auth.getSession();
+    const { error: insertErr } = await supa.from('closings').insert({
+      loan_id: loanId,
+      branch_id: loan.branch_id,
+      scheduled_at: new Date(newDate).toISOString(),
+      settlement_type: current.settlement_type,
+      title_company_name: current.title_company_name,
+      title_file_number: current.title_file_number,
+      closing_agent_name: current.closing_agent_name,
+      closing_agent_email: current.closing_agent_email,
+      closing_agent_phone: current.closing_agent_phone,
+      closing_location_type: current.closing_location_type,
+      closing_location_address: current.closing_location_address,
+      status: 'scheduled',
+      scheduled_by: session?.user?.id || null,
+    });
+    if (insertErr) throw insertErr;
+
+    showToast('Closing rescheduled.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+    await refreshBadges();
+  } catch (err) {
+    showToast('Reschedule failed: ' + err.message, true);
+  }
+}
+window.promptRescheduleClosing = promptRescheduleClosing;
+
+async function promptEditClosing(closingId) {
+  const { data: c, error: fetchErr } = await supa.from('closings')
+    .select('*').eq('id', closingId).maybeSingle();
+  if (fetchErr || !c) {
+    showToast('Could not load closing.', true);
+    return;
+  }
+  const dt = c.scheduled_at ? new Date(c.scheduled_at).toISOString().slice(0, 16) : '';
+
+  const ok = await showModal({
+    title: 'Edit closing details',
+    body: `
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Closing date &amp; time</div>
+          <input type="datetime-local" id="cl-ed-date" value="${dt}" style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Title company</div>
+          <input type="text" id="cl-ed-title" value="${escapeHtml(c.title_company_name || '')}"
+            style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Closing agent</div>
+          <input type="text" id="cl-ed-agent" value="${escapeHtml(c.closing_agent_name || '')}"
+            style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label>
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.06em">Agent email</div>
+          <input type="email" id="cl-ed-email" value="${escapeHtml(c.closing_agent_email || '')}"
+            style="width:100%;padding:8px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--text)" />
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+          <input type="checkbox" id="cl-ed-wire-recv" ${c.wire_instructions_received ? 'checked' : ''} />
+          Wire instructions received
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px">
+          <input type="checkbox" id="cl-ed-wire-ver" ${c.wire_instructions_verified ? 'checked' : ''} />
+          Wire instructions verified by callback
+        </label>
+      </div>`,
+    primary: 'Save changes',
+  });
+  if (!ok) return;
+
+  try {
+    const newDate = document.getElementById('cl-ed-date').value;
+    const { error } = await supa.from('closings').update({
+      scheduled_at: newDate ? new Date(newDate).toISOString() : null,
+      title_company_name: document.getElementById('cl-ed-title').value || null,
+      closing_agent_name: document.getElementById('cl-ed-agent').value || null,
+      closing_agent_email: document.getElementById('cl-ed-email').value || null,
+      wire_instructions_received: document.getElementById('cl-ed-wire-recv').checked,
+      wire_instructions_verified: document.getElementById('cl-ed-wire-ver').checked,
+    }).eq('id', closingId);
+    if (error) throw error;
+    showToast('Closing updated.');
+    TAB_LOADED.delete('closings');
+    await renderTabClosings();
+  } catch (err) {
+    showToast('Update failed: ' + err.message, true);
+  }
+}
+window.promptEditClosing = promptEditClosing;
+
+// ═══════════════════════════════════════════════════════════════════════════
 // TAB · FINDINGS (DU/LP/GUS)
 // ═══════════════════════════════════════════════════════════════════════════
 async function renderTabFindings() {
@@ -4396,6 +5257,24 @@ function initRealtime() {
           const activeTab = document.querySelector('.loan-tab.active')?.dataset.tab;
           if (activeTab === 'coc')   await renderTabCoc();
           if (activeTab === 'fees')  await renderTabFees();   // banner reads coc row
+          if (activeTab === 'closings') await renderTabClosings();  // tolerance gate
+        }
+      ).subscribe()
+  );
+
+  // Closings — same propagation. The migration's trigger cascade may update
+  // multiple columns in one transaction (cd_signed_at + locked_* snapshot),
+  // and a single postgres_changes payload covers it.
+  realtimeChans.push(
+    supa.channel(`loan-closings:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'closings', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          await refreshBadges();
+          const activeTab = document.querySelector('.loan-tab.active')?.dataset.tab;
+          if (activeTab === 'closings')    await renderTabClosings();
+          if (activeTab === 'disclosures') await renderTabDisclosures();  // TRID timeline reads cd_*
+          if (activeTab === 'overview')    await renderTabOverview();     // header rate may update
         }
       ).subscribe()
   );
