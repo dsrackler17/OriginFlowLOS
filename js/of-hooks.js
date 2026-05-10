@@ -11,7 +11,7 @@
 //   • window.OF_applyExtractionAction — invokes apply-extraction-action
 //   • window.OF_getSignedUrl        — 1hr signed URL for previews
 //
-// ─── ROUND 4 hooks (eSign + AUS + Pricing) ────────────────────────────────
+// ─── ROUND 4 hooks (eSign + AUS + Pricing + Credit) ──────────────────────
 //   • window.OF_sendForESign        — generates LE/CD PDF, uploads, dispatches
 //                                     to Dropbox Sign via dispatch-esign edge fn.
 //                                     Accepts coc_id when used from the COC
@@ -23,11 +23,17 @@
 //                                     to load the active rate sheet, apply
 //                                     LLPAs, and generate scenarios.
 //                                     Returns rate range + count + warnings.
+//   • window.OF_pullCredit          — invokes pull-credit edge function
+//                                     (MeridianLink real path; falls back to
+//                                     deterministic mock if creds missing).
+//                                     Returns rep_score + bureau scores +
+//                                     trade-line summary.
 //
 // Pages that use eSign also need /js/disclosure-pdf.js, AUS pages need
 // /js/mismo-generator.js — both lazy-loaded by this file when first
-// invoked. Pricing is server-side (edge function does all the math), so
-// no client-side module to load. No HTML script-tag changes required.
+// invoked. Pricing and credit are fully server-side (edge function does
+// all the math), so no client-side module to load. No HTML script-tag
+// changes required.
 // ═══════════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -690,7 +696,118 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 7. PRICE SCENARIO — Round 4-10
+  // 7. PULL CREDIT — Round 4-11
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // Called from loan.html when the LO clicks "Pull credit" or "Re-pull"
+  // on the Borrowers tab. Invokes the pull-credit edge function which
+  // (a) verifies the borrower is on the loan, (b) inserts a pending
+  // credit_pulls row, (c) calls MeridianLink (or falls back to mock),
+  // (d) parses the response into flat columns + raw_response JSONB,
+  // (e) writes a loan_audit_event. Same orchestrator pattern as
+  // OF_runAus / OF_priceScenario.
+  //
+  // Input:
+  //   { loanId, borrowerId, vendor?, pull_type?, force_mock? }
+  //     • vendor: 'meridianlink' (default) | 'factual_data' | 'mock'.
+  //       Other vendors fall back to mock with a warning.
+  //     • pull_type: 'hard' (default) | 'soft' | 'mortgage' | 'qualifier' |
+  //       'reissue' | 'mock'. Drives the credit_pulls.pull_type column;
+  //       no functional difference to the orchestrator.
+  //     • force_mock: skip the vendor call entirely. Useful for demos
+  //       when MeridianLink credentials aren't configured.
+  //
+  // Output (matches the edge function's response):
+  //   { ok, pull_id, loan_id, borrower_id, vendor, is_mock, pull_type,
+  //     rep_score, scores: { equifax, experian, transunion },
+  //     summary: { open_trade_lines, derogs_2yr, collections_count,
+  //                bankruptcies_count, total_balance_cents,
+  //                revolving_utilization_pct },
+  //     warnings: string[], duration_ms, duration_ms_client }
+  //
+  // Errors are normalized to plain Error objects with .code set when the
+  // edge function returned a structured error code. Known codes:
+  //   • viewer_cannot_pull         — caller's role is 'viewer'
+  //   • borrower_not_on_loan       — borrower_id isn't on this loan
+  //   • loan_not_found_or_no_access — RLS blocked the lookup
+  //   • vendor_call_failed         — real vendor returned an error;
+  //                                  pull row is marked 'failed' on the server
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  window.OF_pullCredit = async function (opts) {
+    var opts_ = opts || {};
+    var loanId = opts_.loanId;
+    var borrowerId = opts_.borrowerId;
+    var forceMock = opts_.force_mock === true;
+
+    if (!loanId)     throw new Error('loanId is required');
+    if (!borrowerId) throw new Error('borrowerId is required');
+
+    var sb = supa();
+    if (!sb) throw new Error('Supabase client unavailable — getSupabase() returned null');
+
+    var clientStartedAt = Date.now();
+
+    var body = {
+      loan_id:     loanId,
+      borrower_id: borrowerId,
+    };
+    if (forceMock)        body.force_mock = true;
+    if (opts_.vendor)     body.vendor     = opts_.vendor;
+    if (opts_.pull_type)  body.pull_type  = opts_.pull_type;
+
+    var resp = await sb.functions.invoke('pull-credit', { body: body });
+    var data = resp.data;
+    var error = resp.error;
+
+    if (error) {
+      var msg = error.message || 'pull-credit invocation failed';
+      var detail = null;
+      var errCode = null;
+      try {
+        if (error.context && typeof error.context.json === 'function') {
+          var parsed = await error.context.json();
+          if (parsed && parsed.error)  errCode = parsed.error;
+          if (parsed && parsed.detail) detail  = parsed.detail;
+          if (parsed && parsed.error)  msg     = parsed.error;
+        }
+      } catch (_) { /* response wasn't JSON */ }
+
+      var thrown;
+      if (errCode === 'viewer_cannot_pull') {
+        thrown = new Error('Viewers cannot pull credit. Ask an LO or processor to do it.');
+      } else if (errCode === 'borrower_not_on_loan') {
+        thrown = new Error('That borrower is not on this loan. Refresh the page and try again.');
+      } else if (errCode === 'loan_not_found_or_no_access') {
+        thrown = new Error('Loan not found or your account does not have access to it.');
+      } else if (errCode === 'vendor_call_failed') {
+        // Real vendor error (timeout, 500, malformed response). The pending
+        // credit_pulls row was marked 'failed' on the server; the UI can
+        // show it as such. Provide enough detail for the LO to decide
+        // whether to retry.
+        thrown = new Error('Credit vendor returned an error: ' + (detail || msg) + '. The failed pull is recorded; you can retry, or contact the vendor.');
+      } else if (errCode === 'missing_authorization' || errCode === 'auth_failed') {
+        thrown = new Error('Your session expired. Refresh the page and sign in again.');
+      } else {
+        thrown = new Error('Credit pull failed: ' + msg);
+      }
+      thrown.code   = errCode;
+      thrown.detail = detail;
+      throw thrown;
+    }
+
+    if (!data || data.ok !== true) {
+      var unknownMsg = (data && (data.error || data.detail)) || 'unknown';
+      throw new Error('pull-credit returned non-ok: ' + unknownMsg);
+    }
+
+    return Object.assign({}, data, {
+      duration_ms_client: Date.now() - clientStartedAt,
+    });
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 8. PRICE SCENARIO — Round 4-10
   // ═══════════════════════════════════════════════════════════════════════════
   //
   // Called from loan.html when the LO clicks "Run pricing" (overview tab CTA
