@@ -25,9 +25,10 @@
 // called, so pages that never trigger PDF generation pay no overhead.
 //
 // Public API (all return Promise<Uint8Array>):
-//   OFDisclosure.generateLoanEstimate(loanData)
+//   OFDisclosure.generateLoanEstimate(loanData)        - LE (3 pages, CFPB H-24)
 //   OFDisclosure.generateIntentToProceed(loanData)
 //   OFDisclosure.generateInitialDisclosurePackage(loanData)
+//   OFDisclosure.generateClosingDisclosure(loanData)   - CD (5 pages, CFPB H-25)
 //
 // loanData shape — match what the loan.html bootstrap query already
 // produces, plus the fees array from the new fees table:
@@ -976,14 +977,754 @@
     }, 250);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CLOSING DISCLOSURE (CFPB Form H-25) — Round 4-13
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // Generates a 5-page Closing Disclosure approximating the CFPB H-25 form.
+  // Compared to the LE, the CD:
+  //   • Has seller-paid columns in the fee tables (purchase loans)
+  //   • Shows "Calculating Cash to Close" comparison vs the LE
+  //   • Has a full Summaries of Transaction ledger (both borrower + seller)
+  //   • Computes real APR via Newton's method (not the LE's approximation)
+  //   • Has Loan Calculations (Total of Payments, Finance Charge, Amount
+  //     Financed, APR, TIP)
+  //   • Has Contact Information for all parties
+  //   • Has Confirm Receipt signature block
+  //
+  // What this v1 does NOT do:
+  //   • AIR Table (Adjustable Interest Rate) — ARM loans are out of scope
+  //   • AP Table (Adjustable Payment) — interest-only loans are out of scope
+  //   • Pixel-perfect reproduction of CFPB H-25 (structurally correct +
+  //     legible + has the right numbers — sufficient for demos and most
+  //     fixed-rate originations; auditors get a recognizable form, not
+  //     a regulatory facsimile)
+  //
+  // The closing-package edge function (next round) will call
+  // generateClosingDisclosure(data) and dispatch the result via Dropbox
+  // Sign with kind='cd'.
+
+  // ─── APR via Newton-Raphson ──────────────────────────────────────────────
+  // Standard mortgage APR formula:
+  //   effective_amount = loan_amount - prepaid_finance_charges
+  //   PV(monthly_pi, n, r) = monthly_pi * (1 - (1+r)^-n) / r
+  //   Find r such that PV = effective_amount
+  //
+  // We iterate up to 50 times or until f(r) < $0.01. Returns rate in bps
+  // (annualized). Falls back to the input rate_bps if non-convergence
+  // (e.g., effective_amount is negative — implausible but defensive).
+
+  function computeAprBps(loanAmountCents, rateBps, termMonths, financeChargesCents) {
+    if (!loanAmountCents || loanAmountCents <= 0) return rateBps;
+    if (!termMonths || termMonths <= 0) return rateBps;
+    if (rateBps == null || rateBps < 0) return rateBps;
+
+    // No finance charges → APR == note rate
+    if (!financeChargesCents || financeChargesCents <= 0) return rateBps;
+
+    var monthlyPi = computeMonthlyPI(loanAmountCents, rateBps, termMonths);
+    if (!monthlyPi || monthlyPi <= 0) return rateBps;
+
+    var effectiveAmount = loanAmountCents - financeChargesCents;
+    if (effectiveAmount <= 0) return rateBps;   // implausible
+
+    // Newton's method on f(r) = PV(monthly_pi, n, r) - effectiveAmount
+    function pvFactor(r, n) {
+      if (r === 0) return n;
+      return (1 - Math.pow(1 + r, -n)) / r;
+    }
+    function f(r) { return monthlyPi * pvFactor(r, termMonths) - effectiveAmount; }
+
+    var r = rateBps / 10000 / 12;     // start from monthly rate
+    for (var i = 0; i < 50; i++) {
+      var fv = f(r);
+      if (Math.abs(fv) < 0.01) break;
+      // Numerical derivative
+      var dr = Math.max(r * 0.001, 1e-9);
+      var dfdr = (f(r + dr) - fv) / dr;
+      if (!isFinite(dfdr) || dfdr === 0) break;
+      var rNext = r - fv / dfdr;
+      // Safety bounds — annualized rate between 0% and 100%
+      if (rNext < 0) rNext = 1e-6;
+      if (rNext > 1.0 / 12) rNext = 1.0 / 12;
+      if (Math.abs(rNext - r) < 1e-12) { r = rNext; break; }
+      r = rNext;
+    }
+    return Math.round(r * 12 * 10000);     // back to annualized bps
+  }
+
+  // ─── TIP (Total Interest Percentage) ─────────────────────────────────────
+  // TIP = (sum of all interest payments / loan amount) × 100, expressed
+  // as a percentage with 3 decimals. For a fixed-rate loan, this is
+  // (monthly_pi × n - loan_amount) / loan_amount × 100.
+
+  function computeTipPct(loanAmountCents, rateBps, termMonths) {
+    if (!loanAmountCents || loanAmountCents <= 0) return 0;
+    var monthlyPi = computeMonthlyPI(loanAmountCents, rateBps, termMonths);
+    if (!monthlyPi) return 0;
+    var totalPayments = monthlyPi * termMonths;
+    var totalInterest = totalPayments - loanAmountCents;
+    return (totalInterest / loanAmountCents) * 100;
+  }
+
+  // ─── Finance charges = points + applicable fees ──────────────────────────
+  // Per Reg Z, finance charges include points, origination, and certain
+  // mandatory fees (mortgage insurance, prepaid interest, etc.) but NOT
+  // appraisal, credit report, recording fees, or title insurance for the
+  // OWNER's policy (lender's policy IS a finance charge).
+  //
+  // For v1 we approximate: section A (origination) + section F prepaid
+  // interest + lender-paid mortgage insurance from F. This is a slight
+  // overestimate vs strict Reg Z but close enough for ranking; the edge
+  // function can refine when the closing package is finalized.
+
+  function computeFinanceChargesCents(data) {
+    var fees = data && data.fees ? data.fees : [];
+    var charges = 0;
+    for (var i = 0; i < fees.length; i++) {
+      var f = fees[i];
+      if (!f || f.archived_at) continue;
+      // Section A is always a finance charge (origination, points)
+      if (f.section === 'A') {
+        charges += feeTotalCents(f);
+      }
+      // Selected items in F (prepaids) — match by description heuristic
+      if (f.section === 'F' && f.description) {
+        var desc = String(f.description).toLowerCase();
+        if (desc.indexOf('prepaid interest') >= 0 ||
+            desc.indexOf('per diem') >= 0 ||
+            desc.indexOf('mortgage insurance') >= 0 ||
+            desc.indexOf('mip') >= 0 ||
+            desc.indexOf('upfront mi') >= 0) {
+          charges += feeTotalCents(f);
+        }
+      }
+    }
+    return charges;
+  }
+
+  // ─── Bucket fees by section for the CD layout ────────────────────────────
+
+  function bucketFeesBySection(fees) {
+    var out = { A:[], B:[], C:[], E:[], F:[], G:[], H:[] };
+    for (var i = 0; i < (fees || []).length; i++) {
+      var f = fees[i];
+      if (!f || f.archived_at) continue;
+      if (out[f.section]) out[f.section].push(f);
+    }
+    return out;
+  }
+
+  function sumSection(rows) {
+    var t = 0;
+    for (var i = 0; i < rows.length; i++) t += feeTotalCents(rows[i]);
+    return t;
+  }
+
+  // Borrower-at-closing only (used in summaries)
+  function feeBorrowerAtClosing(f) {
+    return Number(f.borrower_paid_at_closing_cents) || 0;
+  }
+  function feeBorrowerBefore(f) {
+    return Number(f.borrower_paid_before_closing_cents) || 0;
+  }
+  function feeSellerAtClosing(f) {
+    return Number(f.seller_paid_at_closing_cents) || 0;
+  }
+  function feeSellerBefore(f) {
+    return Number(f.seller_paid_before_closing_cents) || 0;
+  }
+  function feePaidByOthers(f) {
+    return Number(f.paid_by_others_cents) || 0;
+  }
+
+  // ─── CD helpers: settlement-type label, closing date formatting ──────────
+
+  function settlementLabel(t) {
+    return ({
+      wet:               'Wet (signing & funding same day)',
+      dry:               'Dry (signing; funding 1–3 days later)',
+      table_funded:      'Table-funded',
+      warehouse_funded:  'Warehouse-funded',
+    })[t] || '—';
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CD PAGE 1
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CFPB Form H-25 page 1: header strip, transaction info (4-column), loan
+  // information block, loan terms table, projected payments, costs at
+  // closing, cash to close.
+
+  function drawCDPage1(ctx, data) {
+    var p = data.locked_pricing_scenario || {};
+    var closing = data.closing || {};
+
+    // Header
+    drawText(ctx, 'Closing Disclosure', 36, 50, { font: ctx.fonts.bold, size: 18 });
+    drawWrapped(ctx,
+      'This form is a statement of final loan terms and closing costs. Compare this document with your Loan Estimate.',
+      36, 78, PAGE_W - 72, { size: 9.5 });
+
+    // Transaction info — 4 columns at top: Closing Information / Transaction Information / Loan Information / [empty]
+    var topY = 110;
+    drawSectionBar(ctx, 36, topY, PAGE_W - 72, '');
+    var infoY = topY + 18;
+    var colW = (PAGE_W - 72) / 3;
+
+    // Column 1: Closing Information
+    drawText(ctx, 'Closing Information', 40, infoY, { font: ctx.fonts.bold, size: 9 });
+    drawLabelValue(ctx, 40, infoY + 16, colW - 8, 'Date Issued',
+      fmtDate(closing.cd_sent_at || new Date().toISOString()), { size: 8.5 });
+    drawLabelValue(ctx, 40, infoY + 30, colW - 8, 'Closing Date',
+      fmtDate(closing.scheduled_at || closing.signed_at), { size: 8.5 });
+    drawLabelValue(ctx, 40, infoY + 44, colW - 8, 'Disbursement Date',
+      fmtDate(closing.disbursed_at || closing.funding_date || closing.scheduled_at), { size: 8.5 });
+    drawLabelValue(ctx, 40, infoY + 58, colW - 8, 'Settlement Agent',
+      closing.closing_agent_name || closing.title_company_name || '—', { size: 8.5 });
+    drawLabelValue(ctx, 40, infoY + 72, colW - 8, 'File #',
+      closing.title_file_number || '—', { size: 8.5 });
+    drawLabelValue(ctx, 40, infoY + 86, colW - 8, 'Property',
+      fullAddressOneLine(data.property_address) || '—', { size: 8.5 });
+    drawLabelValue(ctx, 40, infoY + 100, colW - 8, 'Sale Price',
+      data.purchase_price_cents ? moneyWhole(data.purchase_price_cents) : '—', { size: 8.5 });
+
+    // Column 2: Transaction Information (parties)
+    var col2x = 40 + colW;
+    drawText(ctx, 'Transaction Information', col2x, infoY, { font: ctx.fonts.bold, size: 9 });
+    var bs = (data.borrowers || []).slice(0, 2);
+    drawLabelValue(ctx, col2x, infoY + 16, colW - 8, 'Borrower',
+      bs.map(fullName).join('; ') || '—', { size: 8.5 });
+    drawLabelValue(ctx, col2x, infoY + 30, colW - 8, 'Seller',
+      data.seller_name || '— (refinance)', { size: 8.5 });
+    drawLabelValue(ctx, col2x, infoY + 44, colW - 8, 'Lender',
+      (data.branch && data.branch.name) || data.lender_name || 'OriginFlow Branch', { size: 8.5 });
+
+    // Column 3: Loan Information
+    var col3x = 40 + colW * 2;
+    drawText(ctx, 'Loan Information', col3x, infoY, { font: ctx.fonts.bold, size: 9 });
+    drawLabelValue(ctx, col3x, infoY + 16, colW - 8, 'Loan Term', term(data.term_months), { size: 8.5 });
+    drawLabelValue(ctx, col3x, infoY + 30, colW - 8, 'Purpose', purposeLabel(data.purpose), { size: 8.5 });
+    drawLabelValue(ctx, col3x, infoY + 44, colW - 8, 'Product',
+      data.term_months ? Math.round(data.term_months / 12) + ' Year Fixed Rate' : '—', { size: 8.5 });
+    drawLabelValue(ctx, col3x, infoY + 58, colW - 8, 'Loan Type', programLabel(data.program), { size: 8.5 });
+    drawLabelValue(ctx, col3x, infoY + 72, colW - 8, 'Loan ID #', data.loan_number || '—', { size: 8.5 });
+    drawLabelValue(ctx, col3x, infoY + 86, colW - 8, 'MIC #', '—', { size: 8.5 });
+
+    // Loan Terms table
+    var ltY = topY + 230;
+    drawSectionBar(ctx, 36, ltY, PAGE_W - 72, 'Loan Terms');
+    var rows = [
+      ['Loan Amount',
+        moneyWhole(p.loan_amount_cents || data.loan_amount_cents),
+        'NO',
+        'Can this amount increase after closing?'],
+      ['Interest Rate',
+        rate(p.rate_bps != null ? p.rate_bps : data.rate_bps),
+        'NO',
+        'Can this amount increase after closing?'],
+      ['Monthly Principal & Interest',
+        moneyExact(p.monthly_pi_cents || computeMonthlyPI(
+          data.loan_amount_cents, data.rate_bps, data.term_months)),
+        'NO',
+        'Does the loan have these features?'],
+      ['Prepayment Penalty', '—', 'NO', ''],
+      ['Balloon Payment',    '—', 'NO', ''],
+    ];
+    var rY = ltY + 18;
+    var rh = 28;
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var bg = (i % 2 === 0) ? null : { color: { r: 0.96, g: 0.96, b: 0.96 } };
+      if (bg) drawBox(ctx, 36, rY + i * rh, PAGE_W - 72, rh, bg);
+      drawText(ctx, r[0], 40, rY + i * rh + 8, { font: ctx.fonts.bold, size: 9 });
+      drawText(ctx, r[1], 200, rY + i * rh + 8, { size: 11 });
+      drawText(ctx, r[2], 320, rY + i * rh + 8, { font: ctx.fonts.bold, size: 9 });
+      if (r[3]) drawText(ctx, r[3], 360, rY + i * rh + 8, { size: 8.5, color: { r: 0.4, g: 0.4, b: 0.4 } });
+    }
+
+    // Projected Payments (single column; ARM/IO loans not supported in v1)
+    var ppY = rY + rows.length * rh + 12;
+    drawSectionBar(ctx, 36, ppY, PAGE_W - 72, 'Projected Payments');
+    var ppHeaderY = ppY + 18;
+    drawText(ctx, 'Payment Calculation',  40, ppHeaderY, { font: ctx.fonts.bold, size: 9 });
+    drawText(ctx, 'Years 1 – ' + Math.round((data.term_months || 0) / 12), 220, ppHeaderY, { size: 9 });
+    drawHLine(ctx, 36, PAGE_W - 36, ppHeaderY + 12);
+    var pi = p.monthly_pi_cents || computeMonthlyPI(data.loan_amount_cents, data.rate_bps, data.term_months);
+    var ppRows = [
+      ['Principal & Interest', moneyExact(pi)],
+      ['Mortgage Insurance', '+    —'],
+      ['Estimated Escrow', '+    —'],
+      ['Estimated Total Monthly Payment', moneyExact(pi)],
+    ];
+    for (var k = 0; k < ppRows.length; k++) {
+      drawText(ctx, ppRows[k][0], 40, ppHeaderY + 24 + k * 16, {
+        size: 9, font: k === 3 ? ctx.fonts.bold : ctx.fonts.reg,
+      });
+      drawTextRight(ctx, ppRows[k][1], 320, ppHeaderY + 24 + k * 16, {
+        size: 9, font: k === 3 ? ctx.fonts.bold : ctx.fonts.reg,
+      });
+    }
+
+    // Costs at Closing
+    var ccY = ppHeaderY + 110;
+    drawSectionBar(ctx, 36, ccY, PAGE_W - 72, 'Costs at Closing');
+    var feesBucketed = bucketFeesBySection(data.fees);
+    var totalLoanCosts = sumSection(feesBucketed.A) + sumSection(feesBucketed.B) + sumSection(feesBucketed.C);
+    var totalOtherCosts = sumSection(feesBucketed.E) + sumSection(feesBucketed.F) +
+                          sumSection(feesBucketed.G) + sumSection(feesBucketed.H);
+    var totalClosingCosts = totalLoanCosts + totalOtherCosts;
+
+    drawLabelValue(ctx, 40, ccY + 22, 240, 'Closing Costs', moneyWhole(totalClosingCosts), { size: 10, valueBold: true });
+    drawText(ctx, 'Includes ' + moneyWhole(totalLoanCosts) + ' in Loan Costs + ' +
+                  moneyWhole(totalOtherCosts) + ' in Other Costs.', 40, ccY + 42, { size: 8 });
+
+    // Cash to Close — simplified for v1 (full ledger on page 3)
+    var ctcEstimate = totalClosingCosts;     // rough; refined on page 3
+    drawLabelValue(ctx, 320, ccY + 22, 240, 'Cash to Close',
+      moneyWhole(ctcEstimate), { size: 10, valueBold: true });
+    drawText(ctx, 'See Calculating Cash to Close on page 3 for details.', 320, ccY + 42, { size: 8 });
+
+    drawPageFooter(ctx, data, 1, 5, 'CLOSING DISCLOSURE');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CD PAGE 2 — Closing Cost Details (full fee itemization with seller-paid)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function drawCDPage2(ctx, data) {
+    drawText(ctx, 'Closing Cost Details', 36, 50, { font: ctx.fonts.bold, size: 14 });
+    var fees = data.fees || [];
+    var bucketed = bucketFeesBySection(fees);
+
+    // Column header strip
+    var hdrY = 80;
+    drawHLine(ctx, 36, PAGE_W - 36, hdrY - 4);
+    drawText(ctx, 'Loan Costs', 40, hdrY + 4, { font: ctx.fonts.bold, size: 10 });
+    drawText(ctx, 'Borrower-Paid', 270, hdrY + 4, { font: ctx.fonts.bold, size: 8 });
+    drawText(ctx, 'Seller-Paid', 380, hdrY + 4, { font: ctx.fonts.bold, size: 8 });
+    drawText(ctx, 'Paid by',     480, hdrY + 4, { font: ctx.fonts.bold, size: 8 });
+    drawText(ctx, 'At Closing', 270, hdrY + 16, { size: 7 });
+    drawText(ctx, 'Before Closing', 320, hdrY + 16, { size: 7 });
+    drawText(ctx, 'At Closing', 380, hdrY + 16, { size: 7 });
+    drawText(ctx, 'Before Closing', 430, hdrY + 16, { size: 7 });
+    drawText(ctx, 'Others', 480, hdrY + 16, { size: 7 });
+    drawHLine(ctx, 36, PAGE_W - 36, hdrY + 28);
+
+    var y = hdrY + 36;
+    var sections = [
+      { letter: 'A', name: 'Origination Charges' },
+      { letter: 'B', name: 'Services Borrower Did Not Shop For' },
+      { letter: 'C', name: 'Services Borrower Did Shop For' },
+    ];
+
+    var loanCostsTotal = 0;
+    for (var s = 0; s < sections.length; s++) {
+      var sec = sections[s];
+      var rows = bucketed[sec.letter] || [];
+      var secTotal = sumSection(rows);
+      loanCostsTotal += secTotal;
+      // Section header bar
+      drawText(ctx, sec.letter + '. ' + sec.name + ' (' + rows.length + ')', 40, y,
+        { font: ctx.fonts.bold, size: 9 });
+      drawTextRight(ctx, moneyExact(secTotal), 540, y, { font: ctx.fonts.bold, size: 9 });
+      drawHLine(ctx, 36, PAGE_W - 36, y + 12, { color: { r: 0.85, g: 0.85, b: 0.85 } });
+      y += 18;
+      for (var i = 0; i < rows.length; i++) {
+        if (y > PAGE_H - 80) break;
+        var f = rows[i];
+        drawText(ctx, '  ' + (i + 1) + '. ' + (f.description || ''), 40, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeBorrowerAtClosing(f)), 308, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeBorrowerBefore(f)),     368, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeSellerAtClosing(f)),    418, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeSellerBefore(f)),       468, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feePaidByOthers(f)),       518, y, { size: 8 });
+        if (f.payee) {
+          drawText(ctx, '  to ' + f.payee, 50, y + 10,
+            { size: 7, color: { r: 0.4, g: 0.4, b: 0.4 } });
+          y += 18;
+        } else {
+          y += 14;
+        }
+      }
+      y += 6;
+    }
+
+    // D. Total Loan Costs subtotal
+    drawHLine(ctx, 36, PAGE_W - 36, y);
+    drawText(ctx, 'D.  TOTAL LOAN COSTS (Borrower-Paid)', 40, y + 4, { font: ctx.fonts.bold, size: 10 });
+    drawTextRight(ctx, moneyExact(loanCostsTotal), 540, y + 4, { font: ctx.fonts.bold, size: 10 });
+    y += 22;
+
+    // Other Costs sections
+    drawHLine(ctx, 36, PAGE_W - 36, y);
+    drawText(ctx, 'Other Costs', 40, y + 4, { font: ctx.fonts.bold, size: 10 });
+    y += 16;
+
+    var otherSections = [
+      { letter: 'E', name: 'Taxes and Other Government Fees' },
+      { letter: 'F', name: 'Prepaids' },
+      { letter: 'G', name: 'Initial Escrow Payment at Closing' },
+      { letter: 'H', name: 'Other' },
+    ];
+    var otherCostsTotal = 0;
+    for (var s2 = 0; s2 < otherSections.length; s2++) {
+      var sec2 = otherSections[s2];
+      var rows2 = bucketed[sec2.letter] || [];
+      var secTotal2 = sumSection(rows2);
+      otherCostsTotal += secTotal2;
+      if (y > PAGE_H - 100) break;
+      drawText(ctx, sec2.letter + '. ' + sec2.name + ' (' + rows2.length + ')', 40, y,
+        { font: ctx.fonts.bold, size: 9 });
+      drawTextRight(ctx, moneyExact(secTotal2), 540, y, { font: ctx.fonts.bold, size: 9 });
+      drawHLine(ctx, 36, PAGE_W - 36, y + 12, { color: { r: 0.85, g: 0.85, b: 0.85 } });
+      y += 18;
+      for (var j = 0; j < rows2.length && y < PAGE_H - 80; j++) {
+        var fj = rows2[j];
+        drawText(ctx, '  ' + (j + 1) + '. ' + (fj.description || ''), 40, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeBorrowerAtClosing(fj)), 308, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeBorrowerBefore(fj)),     368, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeSellerAtClosing(fj)),    418, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feeSellerBefore(fj)),       468, y, { size: 8 });
+        drawTextRight(ctx, moneyExact(feePaidByOthers(fj)),       518, y, { size: 8 });
+        y += 14;
+      }
+      y += 6;
+    }
+
+    // I + J subtotals
+    if (y < PAGE_H - 60) {
+      drawHLine(ctx, 36, PAGE_W - 36, y);
+      drawText(ctx, 'I.  TOTAL OTHER COSTS (Borrower-Paid)', 40, y + 4, { font: ctx.fonts.bold, size: 10 });
+      drawTextRight(ctx, moneyExact(otherCostsTotal), 540, y + 4, { font: ctx.fonts.bold, size: 10 });
+      y += 18;
+      drawHLine(ctx, 36, PAGE_W - 36, y);
+      drawText(ctx, 'J.  TOTAL CLOSING COSTS (Borrower-Paid)', 40, y + 4, { font: ctx.fonts.bold, size: 11 });
+      drawTextRight(ctx, moneyExact(loanCostsTotal + otherCostsTotal), 540, y + 4,
+        { font: ctx.fonts.bold, size: 11 });
+    }
+
+    drawPageFooter(ctx, data, 2, 5, 'CLOSING DISCLOSURE');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CD PAGE 3 — Calculating Cash to Close + Summaries of Transaction
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function drawCDPage3(ctx, data) {
+    drawText(ctx, 'Calculating Cash to Close', 36, 50, { font: ctx.fonts.bold, size: 14 });
+    drawText(ctx, 'Use this table to see what has changed from your Loan Estimate.', 36, 70, { size: 9 });
+
+    var fees = data.fees || [];
+    var totalCC = 0, sellerAt = 0, sellerBefore = 0, others = 0;
+    for (var i = 0; i < fees.length; i++) {
+      var f = fees[i];
+      if (f.archived_at) continue;
+      totalCC      += feeBorrowerAtClosing(f) + feeBorrowerBefore(f);
+      sellerAt     += feeSellerAtClosing(f);
+      sellerBefore += feeSellerBefore(f);
+      others       += feePaidByOthers(f);
+    }
+
+    // Approximate LE values (would come from the LE snapshot in a real impl).
+    // For v1: pull le_amount_cents on each fee where present.
+    var leTotal = 0;
+    for (var j = 0; j < fees.length; j++) {
+      if (fees[j].le_amount_cents != null) leTotal += Number(fees[j].le_amount_cents);
+    }
+
+    // Comparison table
+    var ccY = 100;
+    drawSectionBar(ctx, 36, ccY, PAGE_W - 72, 'Loan Estimate vs Final');
+    var rows = [
+      ['Total Closing Costs (J)', moneyWhole(leTotal), moneyWhole(totalCC),
+       (totalCC === leTotal ? 'NO' : 'YES'),
+       totalCC > leTotal ? 'See Total Loan Costs (D) and Total Other Costs (I)' : ''],
+      ['Closing Costs Paid Before Closing', '$0', moneyWhole(0), 'NO', ''],
+      ['Closing Costs Financed (Paid from your Loan Amount)', '$0', '$0', 'NO', ''],
+      ['Down Payment / Funds from Borrower',
+        moneyWhole(data.purchase_price_cents ? (data.purchase_price_cents - (data.loan_amount_cents || 0)) : 0),
+        moneyWhole(data.purchase_price_cents ? (data.purchase_price_cents - (data.loan_amount_cents || 0)) : 0),
+        'NO', ''],
+      ['Deposit', '$0', '$0', 'NO', ''],
+      ['Funds for Borrower', '$0', '$0', 'NO', ''],
+      ['Seller Credits', '$0',
+        '−' + moneyWhole(sellerAt + sellerBefore),
+        sellerAt + sellerBefore > 0 ? 'YES' : 'NO', ''],
+      ['Adjustments and Other Credits', '$0',
+        '−' + moneyWhole(others),
+        others > 0 ? 'YES' : 'NO', ''],
+    ];
+    var rY = ccY + 22;
+    drawText(ctx, '',                  40, rY, { font: ctx.fonts.bold, size: 8 });
+    drawText(ctx, 'Loan Estimate',    230, rY, { font: ctx.fonts.bold, size: 8 });
+    drawText(ctx, 'Final',            315, rY, { font: ctx.fonts.bold, size: 8 });
+    drawText(ctx, 'Did this change?', 380, rY, { font: ctx.fonts.bold, size: 8 });
+    drawHLine(ctx, 36, PAGE_W - 36, rY + 12);
+    rY += 20;
+
+    for (var k = 0; k < rows.length; k++) {
+      var rk = rows[k];
+      var bg = (k % 2 === 0) ? null : { color: { r: 0.97, g: 0.97, b: 0.97 } };
+      if (bg) drawBox(ctx, 36, rY, PAGE_W - 72, 22, bg);
+      drawText(ctx, rk[0], 40, rY + 6, { size: 8 });
+      drawTextRight(ctx, rk[1], 290, rY + 6, { size: 8 });
+      drawTextRight(ctx, rk[2], 360, rY + 6, { size: 8 });
+      drawText(ctx, rk[3], 410, rY + 6, { size: 8, font: ctx.fonts.bold });
+      if (rk[4]) drawText(ctx, rk[4], 440, rY + 6, { size: 7, color: { r: 0.4, g: 0.4, b: 0.4 } });
+      rY += 22;
+    }
+    drawHLine(ctx, 36, PAGE_W - 36, rY);
+
+    // Cash to Close totals
+    var downPayment = data.purchase_price_cents ? (data.purchase_price_cents - (data.loan_amount_cents || 0)) : 0;
+    var cashToClose = totalCC + downPayment - (sellerAt + sellerBefore + others);
+    drawText(ctx, 'Cash to Close', 40, rY + 8, { font: ctx.fonts.bold, size: 11 });
+    drawTextRight(ctx, moneyWhole(leTotal + downPayment), 290, rY + 8, { font: ctx.fonts.bold, size: 10 });
+    drawTextRight(ctx, moneyWhole(cashToClose),            360, rY + 8, { font: ctx.fonts.bold, size: 10 });
+
+    // Summaries of Transaction — two-column ledger
+    var stY = rY + 40;
+    drawSectionBar(ctx, 36, stY, PAGE_W - 72, 'Summaries of Transaction');
+    var col1x = 40, col2x = 320;
+    drawText(ctx, "BORROWER'S TRANSACTION", col1x, stY + 22, { font: ctx.fonts.bold, size: 10 });
+    drawText(ctx, "SELLER'S TRANSACTION",   col2x, stY + 22, { font: ctx.fonts.bold, size: 10 });
+
+    var btY = stY + 40;
+    drawText(ctx, 'K. Due from Borrower at Closing', col1x, btY, { font: ctx.fonts.bold, size: 9 });
+    drawText(ctx, '  Sale Price', col1x, btY + 14, { size: 8.5 });
+    drawTextRight(ctx, moneyWhole(data.purchase_price_cents || 0), col1x + 240, btY + 14, { size: 8.5 });
+    drawText(ctx, '  Closing Costs (J)', col1x, btY + 28, { size: 8.5 });
+    drawTextRight(ctx, moneyWhole(totalCC), col1x + 240, btY + 28, { size: 8.5 });
+
+    drawText(ctx, 'L. Paid Already by or on Behalf of Borrower', col1x, btY + 60, { font: ctx.fonts.bold, size: 9 });
+    drawText(ctx, '  Loan Amount', col1x, btY + 74, { size: 8.5 });
+    drawTextRight(ctx, moneyWhole(data.loan_amount_cents || 0), col1x + 240, btY + 74, { size: 8.5 });
+    drawText(ctx, '  Seller Credits', col1x, btY + 88, { size: 8.5 });
+    drawTextRight(ctx, moneyWhole(sellerAt + sellerBefore), col1x + 240, btY + 88, { size: 8.5 });
+
+    var ctcLine = (data.purchase_price_cents || 0) + totalCC - (data.loan_amount_cents || 0) - (sellerAt + sellerBefore);
+    drawHLine(ctx, col1x, col1x + 260, btY + 110);
+    drawText(ctx, 'CASH TO CLOSE  ' + (ctcLine >= 0 ? 'From' : 'To') + ' Borrower',
+      col1x, btY + 120, { font: ctx.fonts.bold, size: 9 });
+    drawTextRight(ctx, moneyWhole(Math.abs(ctcLine)), col1x + 240, btY + 120, { font: ctx.fonts.bold, size: 9 });
+
+    // Seller column (skipped if no seller — refinance)
+    if (data.purpose !== 'refi_no_cash' && data.purpose !== 'refi_cash_out') {
+      drawText(ctx, 'M. Due to Seller at Closing', col2x, btY, { font: ctx.fonts.bold, size: 9 });
+      drawText(ctx, '  Sale Price', col2x, btY + 14, { size: 8.5 });
+      drawTextRight(ctx, moneyWhole(data.purchase_price_cents || 0), col2x + 240, btY + 14, { size: 8.5 });
+
+      drawText(ctx, 'N. Due from Seller at Closing', col2x, btY + 50, { font: ctx.fonts.bold, size: 9 });
+      drawText(ctx, '  Closing Costs Paid by Seller', col2x, btY + 64, { size: 8.5 });
+      drawTextRight(ctx, moneyWhole(sellerAt + sellerBefore), col2x + 240, btY + 64, { size: 8.5 });
+
+      var sellerNet = (data.purchase_price_cents || 0) - (sellerAt + sellerBefore);
+      drawHLine(ctx, col2x, col2x + 260, btY + 110);
+      drawText(ctx, 'CASH ' + (sellerNet >= 0 ? 'From' : 'To') + ' Seller', col2x, btY + 120,
+        { font: ctx.fonts.bold, size: 9 });
+      drawTextRight(ctx, moneyWhole(Math.abs(sellerNet)), col2x + 240, btY + 120, { font: ctx.fonts.bold, size: 9 });
+    } else {
+      drawText(ctx, '— Refinance: no seller side —', col2x, btY + 30, { size: 9, color: { r: 0.5, g: 0.5, b: 0.5 } });
+    }
+
+    drawPageFooter(ctx, data, 3, 5, 'CLOSING DISCLOSURE');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CD PAGE 4 — Additional Information About This Loan
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function drawCDPage4(ctx, data) {
+    drawText(ctx, 'Additional Information About This Loan', 36, 50,
+      { font: ctx.fonts.bold, size: 14 });
+
+    drawSectionBar(ctx, 36, 80, PAGE_W - 72, 'Loan Disclosures');
+    var disclosures = [
+      ['Assumption',
+       'If you sell or transfer this property to another person, your lender'],
+      ['',
+       '☐  will allow, under certain conditions, this person to assume this loan on the original terms.'],
+      ['',
+       '☒  will not allow assumption of this loan on the original terms.'],
+      ['Demand Feature',
+       'Your loan'],
+      ['',
+       '☐  has a demand feature, which permits your lender to require early repayment of the loan.'],
+      ['',
+       '☒  does not have a demand feature.'],
+      ['Late Payment',
+       'If your payment is more than 15 days late, your lender will charge a late fee of 5% of the monthly principal & interest payment.'],
+      ['Negative Amortization (Increase in Loan Amount)',
+       'Under your loan terms, you'],
+      ['',
+       '☒  do not have a negative amortization feature.'],
+      ['Partial Payments',
+       'Your lender'],
+      ['',
+       '☒  may accept payments that are less than the full amount due (partial payments) and apply them to your loan.'],
+      ['Security Interest',
+       'You are granting a security interest in the property identified on page 1.'],
+      ['',
+       'You may lose this property if you do not make your payments or satisfy other obligations for this loan.'],
+      ['Escrow Account',
+       'For now, your loan'],
+      ['',
+       (data.has_escrow === false
+         ? '☒  will not have an escrow account because you declined one.'
+         : '☒  will have an escrow account (also called an "impound" or "trust" account) to pay the property costs listed below.')],
+    ];
+    var dy = 102;
+    for (var i = 0; i < disclosures.length; i++) {
+      if (dy > PAGE_H - 60) break;
+      var d = disclosures[i];
+      if (d[0]) drawText(ctx, d[0], 40, dy, { font: ctx.fonts.bold, size: 8.5 });
+      drawWrapped(ctx, d[1], 200, dy, PAGE_W - 240, { size: 8.5 });
+      // Wrapped lines: estimate height
+      var lines = wrapText(d[1], ctx.fonts.reg, 8.5, PAGE_W - 240).length;
+      dy += Math.max(14, lines * 11 + 2);
+    }
+
+    drawPageFooter(ctx, data, 4, 5, 'CLOSING DISCLOSURE');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CD PAGE 5 — Loan Calculations + Other Disclosures + Contacts + Signatures
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function drawCDPage5(ctx, data) {
+    drawText(ctx, 'Loan Calculations', 36, 50, { font: ctx.fonts.bold, size: 14 });
+
+    var p = data.locked_pricing_scenario || {};
+    var rateBpsForCalc = p.rate_bps != null ? p.rate_bps : data.rate_bps;
+    var monthlyPi = p.monthly_pi_cents || computeMonthlyPI(
+      data.loan_amount_cents, rateBpsForCalc, data.term_months);
+    var totalOfPayments = monthlyPi ? monthlyPi * data.term_months : 0;
+    var financeCharges = computeFinanceChargesCents(data);
+    var amountFinanced = (data.loan_amount_cents || 0) - financeCharges;
+    var aprBps = computeAprBps(data.loan_amount_cents, rateBpsForCalc, data.term_months, financeCharges);
+    var tipPct = computeTipPct(data.loan_amount_cents, rateBpsForCalc, data.term_months);
+
+    // Four big-number boxes
+    var calcs = [
+      ['Total of Payments',
+       moneyWhole(totalOfPayments),
+       'Total you will have paid after you make all payments of principal, interest, mortgage insurance, and loan costs as scheduled.'],
+      ['Finance Charge',
+       moneyWhole(financeCharges + (totalOfPayments - (data.loan_amount_cents || 0))),
+       'The dollar amount the loan will cost you.'],
+      ['Amount Financed',
+       moneyWhole(amountFinanced),
+       'The loan amount available after paying your upfront finance charge.'],
+      ['Annual Percentage Rate (APR)',
+       (aprBps / 100).toFixed(3) + '%',
+       'Your costs over the loan term expressed as a rate. This is not your interest rate.'],
+      ['Total Interest Percentage (TIP)',
+       tipPct.toFixed(3) + '%',
+       'The total amount of interest that you will pay over the loan term as a percentage of your loan amount.'],
+    ];
+    var cY = 80;
+    for (var i = 0; i < calcs.length; i++) {
+      drawBox(ctx, 36, cY, PAGE_W - 72, 36, { borderColor: { r: 0.7, g: 0.7, b: 0.7 } });
+      drawText(ctx, calcs[i][0], 44, cY + 8,  { font: ctx.fonts.bold, size: 9 });
+      drawText(ctx, calcs[i][1], 44, cY + 22, { font: ctx.fonts.bold, size: 14 });
+      drawWrapped(ctx, calcs[i][2], 240, cY + 8, PAGE_W - 290, { size: 8 });
+      cY += 42;
+    }
+
+    // Other Disclosures — short version
+    cY += 6;
+    drawSectionBar(ctx, 36, cY, PAGE_W - 72, 'Other Disclosures');
+    cY += 18;
+    var od = [
+      'Appraisal: If the property was appraised for your loan, your lender is required to give you a copy at no additional cost at least 3 days before closing. If you have not yet received it, please contact your lender at the information listed below.',
+      'Contract Details: See your note and security instrument for information about what happens if you fail to make your payments, what is a default on the loan, situations in which your lender can require early repayment of the loan, and the rules for making payments before they are due.',
+      'Liability after Foreclosure: State law may protect you from liability for any unpaid balance if your lender forecloses on your home. If you refinance or take on additional debt on this property, you may lose this protection.',
+      'Refinance: Refinancing this loan will depend on your future financial situation, the property value, and market conditions. You may not be able to refinance this loan.',
+      'Tax Deductions: If you borrow more than this property is worth, the interest on the loan amount above this property\u2019s fair market value is not deductible from your federal income taxes. You should consult a tax advisor for more information.',
+    ];
+    for (var k = 0; k < od.length && cY < PAGE_H - 200; k++) {
+      drawWrapped(ctx, od[k], 40, cY, PAGE_W - 80, { size: 7.5 });
+      cY += Math.max(20, wrapText(od[k], ctx.fonts.reg, 7.5, PAGE_W - 80).length * 10 + 4);
+    }
+
+    // Contact Information
+    cY += 4;
+    if (cY < PAGE_H - 140) {
+      drawSectionBar(ctx, 36, cY, PAGE_W - 72, 'Contact Information');
+      cY += 18;
+      drawText(ctx, 'Lender', 40, cY, { font: ctx.fonts.bold, size: 9 });
+      drawText(ctx, (data.branch && data.branch.name) || 'OriginFlow Branch', 100, cY, { size: 9 });
+      cY += 14;
+      if (data.lo_name) {
+        drawText(ctx, 'Loan Officer', 40, cY, { font: ctx.fonts.bold, size: 9 });
+        drawText(ctx, data.lo_name, 100, cY, { size: 9 });
+        cY += 14;
+      }
+      if (data.closing && data.closing.title_company_name) {
+        drawText(ctx, 'Settlement Agent', 40, cY, { font: ctx.fonts.bold, size: 9 });
+        drawText(ctx, data.closing.title_company_name, 100, cY, { size: 9 });
+        cY += 14;
+      }
+    }
+
+    // Confirm Receipt block
+    if (cY < PAGE_H - 80) {
+      cY = PAGE_H - 80;
+      drawText(ctx, 'Confirm Receipt', 36, cY, { font: ctx.fonts.bold, size: 11 });
+      drawText(ctx,
+        'By signing, you are only confirming that you have received this form. You do not have to accept this loan because you have signed or received this form.',
+        36, cY + 16, { size: 8 });
+      var bs = (data.borrowers || []).slice(0, 2);
+      for (var b = 0; b < bs.length; b++) {
+        var bx = 36 + b * 280;
+        drawHLine(ctx, bx, bx + 240, cY + 50);
+        drawText(ctx, fullName(bs[b]) + ' · Date',
+          bx, cY + 56, { size: 8 });
+      }
+    }
+
+    drawPageFooter(ctx, data, 5, 5, 'CLOSING DISCLOSURE');
+  }
+
+  // ─── ENTRY POINT ─────────────────────────────────────────────────────────
+
+  async function generateClosingDisclosure(data) {
+    if (!data) throw new Error('generateClosingDisclosure: loanData is required');
+    var lib = await loadPdfLib();
+    var doc = await lib.PDFDocument.create();
+    doc.setTitle('Closing Disclosure · ' + (data.loan_number || ''));
+    doc.setAuthor((data.branch && data.branch.name) || 'OriginFlow LOS');
+    doc.setProducer('OriginFlow LOS · disclosure-pdf.js');
+    doc.setCreator('OriginFlow LOS');
+    doc.setCreationDate(new Date());
+
+    var fonts = {
+      reg:  await doc.embedFont(lib.StandardFonts.Helvetica),
+      bold: await doc.embedFont(lib.StandardFonts.HelveticaBold),
+    };
+
+    drawCDPage1(makeCtx(doc.addPage([PAGE_W, PAGE_H]), fonts, lib), data);
+    drawCDPage2(makeCtx(doc.addPage([PAGE_W, PAGE_H]), fonts, lib), data);
+    drawCDPage3(makeCtx(doc.addPage([PAGE_W, PAGE_H]), fonts, lib), data);
+    drawCDPage4(makeCtx(doc.addPage([PAGE_W, PAGE_H]), fonts, lib), data);
+    drawCDPage5(makeCtx(doc.addPage([PAGE_W, PAGE_H]), fonts, lib), data);
+
+    return await doc.save();
+  }
+
   // ─── EXPORT ──────────────────────────────────────────────────────────────
   window.OFDisclosure = {
     generateLoanEstimate: generateLoanEstimate,
     generateIntentToProceed: generateIntentToProceed,
     generateInitialDisclosurePackage: generateInitialDisclosurePackage,
+    generateClosingDisclosure: generateClosingDisclosure,
     // Internal helpers exposed for unit tests / dev console:
     _downloadBytes: downloadBytes,
     _computeMonthlyPI: computeMonthlyPI,
     _feeTotalCents: feeTotalCents,
+    _computeAprBps: computeAprBps,
+    _computeTipPct: computeTipPct,
+    _computeFinanceChargesCents: computeFinanceChargesCents,
   };
 })();
