@@ -286,6 +286,78 @@ main { flex:1; display:flex; flex-direction:column; min-height:0; }
 .finding-list li { color:var(--text); }
 .finding-list li::marker { color:var(--muted); }
 
+/* ─── PRICING TAB (Round 4-10) ────────────────────────────────────────
+   Grid of scenario cards. Active locked scenario gets a green border
+   and a top-of-tab status banner. Each card shows rate (big), points
+   (medium), monthly P&I + APR + total cost, with an expandable LLPA
+   breakdown. Lock action is a single-row UPDATE that the migration's
+   trigger picks up to roll the rate forward to loans.rate_bps. */
+
+.pricing-meta-strip { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; padding:0.85rem 1.1rem; background:var(--surface); border:1px solid var(--border); margin-bottom:1.1rem; }
+.pricing-meta-info { flex:1; font-family:var(--mono); font-size:0.62rem; color:var(--muted); letter-spacing:0.04em; line-height:1.6; }
+.pricing-meta-info strong { color:var(--text); font-weight:400; }
+.pricing-meta-info .mock-tag { color:var(--amber); font-weight:700; margin-left:0.4rem; }
+.pricing-meta-actions { display:flex; gap:0.45rem; flex-wrap:wrap; flex-shrink:0; }
+
+.pricing-locked-banner { display:flex; align-items:center; gap:0.85rem; background:rgba(0,255,157,0.06); border:1px solid rgba(0,255,157,0.3); border-left:3px solid var(--accent2); padding:0.85rem 1.1rem; margin-bottom:1.1rem; }
+.pricing-locked-banner-icon { font-family:var(--mono); font-size:1.2rem; color:var(--accent2); flex-shrink:0; }
+.pricing-locked-banner-mid { flex:1; min-width:0; }
+.pricing-locked-banner-title { font-family:var(--serif); font-size:1.05rem; color:var(--white); line-height:1.2; }
+.pricing-locked-banner-meta { font-family:var(--mono); font-size:0.62rem; color:var(--muted); letter-spacing:0.04em; margin-top:0.2rem; }
+.pricing-locked-banner-meta strong { color:var(--accent2); font-weight:700; }
+.pricing-locked-banner-meta strong.warn { color:var(--amber); }
+.pricing-locked-banner-meta strong.urgent { color:var(--red); }
+
+.pricing-grid { display:grid; gap:0.85rem; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); }
+.pricing-card { background:var(--surface); border:1px solid var(--border); padding:0.95rem 1rem; display:flex; flex-direction:column; gap:0.6rem; transition:border-color 0.15s; position:relative; }
+.pricing-card:hover { border-color:rgba(0,212,255,0.35); }
+.pricing-card.recommended { border-color:rgba(0,212,255,0.5); box-shadow:inset 0 0 0 1px rgba(0,212,255,0.2); }
+.pricing-card.locked { border-color:var(--accent2); background:rgba(0,255,157,0.04); box-shadow:inset 0 0 0 1px rgba(0,255,157,0.3); }
+
+.pricing-card-tag { position:absolute; top:0.6rem; right:0.65rem; font-family:var(--mono); font-size:0.5rem; letter-spacing:0.12em; padding:0.15rem 0.4rem; border:1px solid; }
+.pricing-card-tag.recommended { color:var(--accent); border-color:rgba(0,212,255,0.4); background:rgba(0,212,255,0.08); }
+.pricing-card-tag.locked { color:var(--accent2); border-color:rgba(0,255,157,0.4); background:rgba(0,255,157,0.1); font-weight:700; }
+
+.pricing-card-rate { display:flex; align-items:baseline; gap:0.55rem; margin-top:0.2rem; }
+.pricing-card-rate-big { font-family:var(--serif); font-size:1.85rem; color:var(--white); line-height:1; }
+.pricing-card-rate-points { font-family:var(--mono); font-size:0.7rem; color:var(--muted); letter-spacing:0.04em; }
+.pricing-card-rate-points.credit { color:var(--accent2); }
+.pricing-card-rate-points.cost { color:var(--amber); }
+.pricing-card-rate-points strong { color:var(--white); font-weight:700; }
+
+.pricing-card-pi { font-family:var(--serif); font-size:1.2rem; color:var(--accent); line-height:1.1; }
+.pricing-card-pi-sub { font-family:var(--mono); font-size:0.55rem; color:var(--muted); letter-spacing:0.05em; margin-top:0.1rem; }
+
+.pricing-card-stats { display:grid; grid-template-columns:1fr 1fr; gap:0.45rem 0.85rem; padding-top:0.5rem; border-top:1px dotted var(--border); font-size:0.72rem; }
+.pricing-card-stat-row { display:flex; justify-content:space-between; align-items:baseline; gap:0.5rem; }
+.pricing-card-stat-label { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.06em; color:var(--muted); text-transform:uppercase; }
+.pricing-card-stat-val { font-family:var(--mono); font-size:0.7rem; color:var(--white); white-space:nowrap; }
+.pricing-card-stat-val.muted { color:var(--muted); }
+
+.pricing-card-llpa-toggle { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; padding:0.3rem 0.55rem; background:transparent; border:1px solid var(--border); color:var(--muted); margin-top:0.4rem; align-self:flex-start; }
+.pricing-card-llpa-toggle:hover { color:var(--accent); border-color:var(--accent); }
+.pricing-card-llpa-list { display:none; flex-direction:column; gap:0.2rem; padding:0.5rem 0.65rem; background:var(--panel); border:1px solid var(--border); margin-top:0.4rem; font-family:var(--mono); font-size:0.6rem; color:var(--text); line-height:1.7; }
+.pricing-card-llpa-list.open { display:flex; }
+.pricing-card-llpa-row { display:flex; justify-content:space-between; gap:0.65rem; }
+.pricing-card-llpa-row span:last-child { color:var(--amber); }
+.pricing-card-llpa-list-empty { color:var(--accent2); font-size:0.6rem; }
+
+.pricing-card-actions { display:flex; gap:0.4rem; margin-top:0.5rem; padding-top:0.5rem; border-top:1px dotted var(--border); }
+.pricing-card-actions button, .pricing-card-actions a { flex:1; font-family:var(--mono); font-size:0.6rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; padding:0.45rem 0.65rem; border:1px solid var(--border); background:transparent; color:var(--text); text-align:center; text-decoration:none; transition:all 0.15s; }
+.pricing-card-actions button:hover { border-color:var(--accent); color:var(--accent); }
+.pricing-card-actions button.primary { background:var(--accent2); border-color:var(--accent2); color:var(--navy); font-weight:700; }
+.pricing-card-actions button.primary:hover { background:var(--white); border-color:var(--white); }
+.pricing-card-actions button.danger { color:var(--muted); }
+.pricing-card-actions button.danger:hover { color:var(--red); border-color:var(--red); }
+.pricing-card-actions button:disabled { opacity:0.4; cursor:not-allowed; }
+.pricing-card-actions .locked-msg { flex:1; font-family:var(--mono); font-size:0.6rem; color:var(--accent2); padding:0.45rem 0; text-align:center; letter-spacing:0.06em; font-weight:700; }
+
+@media (max-width: 720px) {
+  .pricing-grid { grid-template-columns:1fr; }
+  .pricing-meta-strip { flex-direction:column; align-items:stretch; }
+  .pricing-meta-actions { justify-content:flex-end; }
+}
+
 /* ─── COC TAB (Round 4-9) ─────────────────────────────────────────────
    Change-of-circumstance UI. Open COCs render as alert-styled cards with
    the busting details and a live countdown to the 3-business-day TRID
@@ -662,6 +734,7 @@ footer a:hover { color:var(--accent); }
       <button class="loan-tab active" data-tab="overview"><span>Overview</span></button>
       <button class="loan-tab" data-tab="borrowers"><span>Borrowers</span><span class="loan-tab-badge" id="badge-borrowers">—</span></button>
       <button class="loan-tab" data-tab="property"><span>Property</span></button>
+      <button class="loan-tab" data-tab="pricing"><span>Pricing</span><span class="loan-tab-badge" id="badge-pricing">—</span></button>
       <button class="loan-tab" data-tab="disclosures"><span>Disclosures</span><span class="loan-tab-badge" id="badge-disclosures">—</span></button>
       <button class="loan-tab" data-tab="conditions"><span>Conditions</span><span class="loan-tab-badge" id="badge-conditions">—</span></button>
       <button class="loan-tab" data-tab="fees"><span>Fees</span><span class="loan-tab-badge" id="badge-fees">—</span></button>
@@ -690,6 +763,16 @@ footer a:hover { color:var(--accent); }
         <div class="section-grid">
           <div class="panel"><div class="panel-head"><span class="panel-title">Subject property</span></div><div class="panel-body" id="property-body"><div class="empty-state">Loading…</div></div></div>
           <div class="panel"><div class="panel-head"><span class="panel-title">Appraisal</span><span class="panel-tag" id="appraisal-tag">—</span></div><div class="panel-body" id="appraisal-body"><div class="empty-state">Loading…</div></div></div>
+        </div>
+      </section>
+
+      <section class="tab-section" id="tab-pricing">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Pricing scenarios</span>
+            <span class="panel-tag" id="pricing-status-tag">—</span>
+          </div>
+          <div class="panel-body" id="pricing-body"><div class="empty-state">Loading…</div></div>
         </div>
       </section>
 
@@ -1131,6 +1214,7 @@ const TAB_LOADERS = {
   overview: renderTabOverview, borrowers: renderTabBorrowers, property: renderTabProperty,
   disclosures: renderTabDisclosures, conditions: renderTabConditions, fees: renderTabFees,
   coc: renderTabCoc,
+  pricing: renderTabPricing,
   findings: renderTabFindings, docs: renderTabDocs, activity: renderTabActivity, chat: renderTabChat,
 };
 const TAB_LOADED = new Set(['overview']);
@@ -1222,6 +1306,30 @@ async function refreshBadges() {
   } catch (_) {
     $('#badge-coc').textContent = '—';
     $('#badge-coc').className = 'loan-tab-badge';
+  }
+
+  // Pricing badge — green if a scenario is locked, count otherwise.
+  // Tolerates missing table.
+  try {
+    const { data: scen } = await supa.from('pricing_scenarios')
+      .select('id, locked_at')
+      .eq('loan_id', loanId).is('archived_at', null)
+      .order('created_at', { ascending: false }).limit(50);
+    const all = scen || [];
+    const locked = all.filter(s => s.locked_at).length;
+    if (locked > 0) {
+      $('#badge-pricing').textContent = '✓';
+      $('#badge-pricing').className = 'loan-tab-badge green';
+    } else if (all.length > 0) {
+      $('#badge-pricing').textContent = all.length;
+      $('#badge-pricing').className = 'loan-tab-badge';
+    } else {
+      $('#badge-pricing').textContent = '0';
+      $('#badge-pricing').className = 'loan-tab-badge';
+    }
+  } catch (_) {
+    $('#badge-pricing').textContent = '—';
+    $('#badge-pricing').className = 'loan-tab-badge';
   }
 
   try {
@@ -2334,6 +2442,484 @@ async function writeAuditEvent({ operation, table_name, field_changes }) {
   } catch (err) {
     console.warn('audit event:', err);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB · PRICING (Round 4-10)
+//
+// Compares pricing scenarios as cards. The most recent batch of scenarios
+// (by created_at) is displayed; older batches collapse into history.
+// Locking a scenario UPDATEs locked_at on its row — the migration's
+// pricing_scenarios_after_lock_trg picks that up and rolls the rate
+// forward to loans.rate_bps in the same transaction.
+//
+// Lock/unlock rules:
+//   • Lock: requires not-viewer + no other locked scenario (unique index
+//     enforces this at schema level)
+//   • Unlock: only allowed when loan.cd_sent_at is null (after the CD goes
+//     out, unlocking has TRID consequences)
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _pricingCache = [];
+
+async function renderTabPricing() {
+  let scenarios = [];
+  let fetchError = null;
+
+  try {
+    const { data, error } = await supa.from('pricing_scenarios')
+      .select(`id, rate_sheet_id, base_rate_bps, llpa_bps, rate_bps,
+               points_pct, points_amount_cents, comp_bps,
+               monthly_pi_cents, total_interest_cents, apr_pct,
+               lock_days, lock_expires_at, total_cost_cents, scenario_label,
+               is_recommended, llpa_breakdown,
+               locked_at, locked_by, created_at, created_by,
+               rate_sheet:rate_sheet_id ( source, label, effective_at, expires_at ),
+               creator:created_by ( full_name ),
+               locker:locked_by ( full_name )`)
+      .eq('loan_id', loanId).is('archived_at', null)
+      .order('created_at', { ascending: false }).limit(50);
+    if (error) throw error;
+    scenarios = data || [];
+    _pricingCache = scenarios;
+  } catch (err) {
+    fetchError = err;
+    _pricingCache = [];
+  }
+
+  const body = $('#pricing-body');
+  const tagEl = $('#pricing-status-tag');
+
+  if (fetchError) {
+    tagEl.textContent = 'NOT CONFIGURED';
+    tagEl.className = 'panel-tag amber';
+    body.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">$</span>
+        Pricing tables not deployed yet.<br>
+        <small style="opacity:0.7; display:block; margin-top:0.5rem;">
+          Run migration <code style="font-family:var(--mono); color:var(--accent);">20260509040000_pricing_tables.sql</code>
+          and deploy the <code style="font-family:var(--mono); color:var(--accent);">price-scenario</code> edge function.
+        </small>
+      </div>`;
+    return;
+  }
+
+  const canEdit = me.role !== 'viewer';
+  const lockedScenario = scenarios.find(s => s.locked_at);
+
+  if (scenarios.length === 0) {
+    tagEl.textContent = 'NOT RUN';
+    tagEl.className = 'panel-tag';
+    body.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">$</span>
+        No pricing scenarios on this loan yet.<br>
+        ${canEdit ? `<button class="empty-cta" onclick="promptRunPricing()">Run pricing →</button>` : ''}
+      </div>`;
+    return;
+  }
+
+  // Group by created_at "batch" — scenarios within 60s of each other are
+  // a single run. The latest batch is what we render as cards; older
+  // batches are accessible via a "history" toggle.
+  const batches = groupPricingBatches(scenarios);
+  const currentBatch = batches[0] || [];
+  const olderBatches = batches.slice(1);
+
+  // Status tag rollup
+  if (lockedScenario) {
+    tagEl.textContent = 'LOCKED';
+    tagEl.className = 'panel-tag green';
+  } else {
+    tagEl.textContent = `${currentBatch.length} SCENARIOS`;
+    tagEl.className = 'panel-tag cyan';
+  }
+
+  // Locked-scenario banner (always at top when something's locked)
+  let lockedBannerHtml = '';
+  if (lockedScenario) {
+    const expiresAt = lockedScenario.lock_expires_at
+      ? new Date(lockedScenario.lock_expires_at)
+      : null;
+    const daysLeft = expiresAt
+      ? Math.ceil((expiresAt.getTime() - Date.now()) / 86400000)
+      : null;
+    let urgencyCls = '';
+    let urgencyText = '';
+    if (daysLeft != null) {
+      if (daysLeft < 0) { urgencyCls = 'urgent'; urgencyText = `EXPIRED ${-daysLeft}d ago`; }
+      else if (daysLeft <= 3) { urgencyCls = 'urgent'; urgencyText = `expires in ${daysLeft}d`; }
+      else if (daysLeft <= 7) { urgencyCls = 'warn'; urgencyText = `expires in ${daysLeft}d`; }
+      else { urgencyText = `expires in ${daysLeft}d (${dateOnly(expiresAt)})`; }
+    }
+    const cdSent = !!loan.cd_sent_at;
+    const canUnlock = canEdit && !cdSent;
+    lockedBannerHtml = `
+      <div class="pricing-locked-banner">
+        <span class="pricing-locked-banner-icon">🔒</span>
+        <div class="pricing-locked-banner-mid">
+          <div class="pricing-locked-banner-title">${escapeHtml(lockedScenario.scenario_label)} · LOCKED</div>
+          <div class="pricing-locked-banner-meta">
+            Locked ${timeAgo(lockedScenario.locked_at)} by ${escapeHtml(lockedScenario.locker?.full_name || 'unknown')}
+            ${urgencyText ? ` · <strong class="${urgencyCls}">${escapeHtml(urgencyText)}</strong>` : ''}
+            · ${moneyFull(lockedScenario.monthly_pi_cents)}/mo · APR ${Number(lockedScenario.apr_pct).toFixed(3)}%
+          </div>
+        </div>
+        ${canUnlock
+          ? `<button class="lh-action danger" onclick="promptUnlockScenario('${escapeHtml(lockedScenario.id)}')">Unlock</button>`
+          : (cdSent ? `<span style="font-family:var(--mono); font-size:0.6rem; color:var(--muted); padding:0.45rem 0.6rem;">CD sent · cannot unlock</span>` : '')
+        }
+      </div>
+    `;
+  }
+
+  // Meta strip — sheet info + actions
+  const firstInBatch = currentBatch[0];
+  const isMock = !firstInBatch?.rate_sheet_id;
+  const sheetMeta = firstInBatch?.rate_sheet
+    ? `${escapeHtml(firstInBatch.rate_sheet.label || '(unlabeled)')} · ${escapeHtml(firstInBatch.rate_sheet.source || 'manual')}`
+    : (isMock ? `<span class="mock-tag">⚠ Synthetic mock sheet</span>` : '—');
+  const metaStripHtml = `
+    <div class="pricing-meta-strip">
+      <div class="pricing-meta-info">
+        <strong>Last priced:</strong> ${timeAgo(firstInBatch?.created_at)} by ${escapeHtml(firstInBatch?.creator?.full_name || 'unknown')}
+        · <strong>Sheet:</strong> ${sheetMeta}
+        ${currentBatch.length > 0 ? `<br>${currentBatch.length} scenarios · base ${(firstInBatch.base_rate_bps/100).toFixed(3)}% · LLPAs +${firstInBatch.llpa_bps}bps` : ''}
+      </div>
+      <div class="pricing-meta-actions">
+        ${canEdit ? `<button class="lh-action primary" onclick="promptRunPricing()">↻ Re-price</button>` : ''}
+      </div>
+    </div>
+  `;
+
+  // Scenario cards (current batch)
+  const cardsHtml = `
+    <div class="pricing-grid">
+      ${currentBatch.map(s => renderPricingCard(s, !!lockedScenario, canEdit, !!loan.cd_sent_at)).join('')}
+    </div>
+  `;
+
+  // Older batches as compact history rows
+  const historyHtml = olderBatches.length === 0 ? '' : `
+    <div class="coc-history-section">
+      <div class="coc-history-title">Earlier pricing runs · ${olderBatches.length} batch${olderBatches.length === 1 ? '' : 'es'}</div>
+      ${olderBatches.flatMap((batch, i) => {
+        const head = batch[0];
+        return [`
+          <div class="coc-history-row" style="grid-template-columns:auto 1fr auto;">
+            <span class="coc-card-type">Run ${i + 2}</span>
+            <div class="coc-history-mid">
+              <div class="coc-history-desc">${batch.length} scenarios · base ${(head.base_rate_bps/100).toFixed(3)}% · LLPAs +${head.llpa_bps}bps</div>
+              <div class="coc-history-meta">${timeAgo(head.created_at)} by ${escapeHtml(head.creator?.full_name || 'unknown')}</div>
+            </div>
+            <span style="font-family:var(--mono); font-size:0.6rem; color:var(--muted);">${moneyFull(Math.min(...batch.map(s => s.monthly_pi_cents)))}–${moneyFull(Math.max(...batch.map(s => s.monthly_pi_cents)))}/mo</span>
+          </div>
+        `];
+      }).join('')}
+    </div>
+  `;
+
+  body.innerHTML = lockedBannerHtml + metaStripHtml + cardsHtml + historyHtml;
+
+  // Wire LLPA toggles
+  body.querySelectorAll('[data-llpa-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const list = $('#llpa-' + btn.dataset.llpaToggle);
+      if (list) {
+        list.classList.toggle('open');
+        btn.textContent = list.classList.contains('open') ? 'Hide LLPAs ▴' : 'Show LLPAs ▾';
+      }
+    });
+  });
+
+  // Wire lock buttons
+  body.querySelectorAll('[data-lock-scenario]').forEach(btn => {
+    btn.addEventListener('click', () => promptLockScenario(btn.dataset.lockScenario));
+  });
+}
+
+// Group scenarios into "batches" — runs within 60s of each other. The
+// edge function inserts 5-7 rows in one transaction so they share a
+// timestamp within milliseconds; later runs are minutes or hours apart.
+function groupPricingBatches(scenariosDescByDate) {
+  const batches = [];
+  let current = [];
+  let lastTime = null;
+  for (const s of scenariosDescByDate) {
+    const t = new Date(s.created_at).getTime();
+    if (lastTime != null && (lastTime - t) > 60_000) {
+      if (current.length > 0) batches.push(current);
+      current = [];
+    }
+    current.push(s);
+    lastTime = t;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
+
+function renderPricingCard(s, anyLocked, canEdit, cdSent) {
+  const isLocked = !!s.locked_at;
+  const isRecommended = s.is_recommended && !isLocked;
+
+  const ptsCls = s.points_pct === 0 ? '' : (s.points_pct > 0 ? 'cost' : 'credit');
+  const ptsLabel = s.points_pct === 0
+    ? 'par'
+    : (s.points_pct > 0
+        ? `<strong>+${Number(s.points_pct).toFixed(2)}pt</strong> (${moneyCents(s.points_amount_cents)} borrower paid)`
+        : `<strong>${Number(s.points_pct).toFixed(2)}pt</strong> (${moneyCents(-s.points_amount_cents)} lender credit)`);
+
+  const llpas = Array.isArray(s.llpa_breakdown) ? s.llpa_breakdown : [];
+
+  let actionsHtml = '';
+  if (isLocked) {
+    actionsHtml = `<span class="locked-msg">🔒 LOCKED · ${s.lock_days}d</span>`;
+  } else if (canEdit && !anyLocked) {
+    actionsHtml = `<button class="primary" data-lock-scenario="${escapeHtml(s.id)}">Lock this rate</button>`;
+  } else if (canEdit && anyLocked) {
+    actionsHtml = `<button disabled title="Unlock the current scenario first">Lock</button>`;
+  } else {
+    actionsHtml = `<button disabled>Lock</button>`;
+  }
+
+  const tagHtml = isLocked
+    ? '<span class="pricing-card-tag locked">LOCKED</span>'
+    : (isRecommended ? '<span class="pricing-card-tag recommended">★ RECOMMENDED</span>' : '');
+
+  return `
+    <div class="pricing-card ${isLocked ? 'locked' : ''} ${isRecommended ? 'recommended' : ''}">
+      ${tagHtml}
+      <div class="pricing-card-rate">
+        <span class="pricing-card-rate-big">${(s.rate_bps / 100).toFixed(3)}%</span>
+      </div>
+      <div class="pricing-card-rate-points ${ptsCls}">${ptsLabel}</div>
+      <div>
+        <div class="pricing-card-pi">${moneyFull(s.monthly_pi_cents)}/mo</div>
+        <div class="pricing-card-pi-sub">P&amp;I · ${s.lock_days}-day lock</div>
+      </div>
+      <div class="pricing-card-stats">
+        <div class="pricing-card-stat-row">
+          <span class="pricing-card-stat-label">APR</span>
+          <span class="pricing-card-stat-val">${s.apr_pct != null ? Number(s.apr_pct).toFixed(3) + '%' : '—'}</span>
+        </div>
+        <div class="pricing-card-stat-row">
+          <span class="pricing-card-stat-label">Total Cost</span>
+          <span class="pricing-card-stat-val">${moneyFull(s.total_cost_cents)}</span>
+        </div>
+        <div class="pricing-card-stat-row">
+          <span class="pricing-card-stat-label">Total Int.</span>
+          <span class="pricing-card-stat-val muted">${moneyFull(s.total_interest_cents)}</span>
+        </div>
+        <div class="pricing-card-stat-row">
+          <span class="pricing-card-stat-label">Base + LLPA</span>
+          <span class="pricing-card-stat-val muted">${(s.base_rate_bps/100).toFixed(3)}% +${s.llpa_bps}bps</span>
+        </div>
+      </div>
+      <button class="pricing-card-llpa-toggle" data-llpa-toggle="${escapeHtml(s.id)}">Show LLPAs ▾</button>
+      <div class="pricing-card-llpa-list" id="llpa-${escapeHtml(s.id)}">
+        ${llpas.length === 0
+          ? '<span class="pricing-card-llpa-list-empty">✓ No LLPAs applied (clean file)</span>'
+          : llpas.map(l => `
+            <div class="pricing-card-llpa-row">
+              <span>${escapeHtml(l.name)}</span>
+              <span>+${l.bps}bps</span>
+            </div>
+          `).join('')}
+      </div>
+      <div class="pricing-card-actions">
+        ${actionsHtml}
+      </div>
+    </div>
+  `;
+}
+
+// ─── PRICING ACTIONS ─────────────────────────────────────────────────────
+
+// Run pricing — replaces the older promptPriceScenario. Adds force_mock
+// toggle for demos.
+function promptRunPricing() {
+  if (typeof window.OF_priceScenario !== 'function') {
+    showToast('Pricing engine not configured. Implement window.OF_priceScenario.', true);
+    return;
+  }
+  if (me.role === 'viewer') { showToast('Viewers cannot run pricing.', true); return; }
+
+  openModal({
+    title: 'Run pricing',
+    prompt: `Generate scenarios for ${loan.loan_number}?`,
+    detail: `Loads the active rate sheet for your branch + program + term, applies LLPAs based on the loan's LTV, FICO, occupancy, purpose, and property type, and generates 5-7 scenarios across the rate-to-points table.`,
+    extra: `
+      <div class="modal-field">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-family:var(--sans); text-transform:none; letter-spacing:0; color:var(--text);">
+          <input type="checkbox" id="pricing-force-mock" style="width:auto; margin:0;">
+          <span style="font-size:0.8rem;">Force mock (use synthetic rate sheet — no live vendor feed even if configured)</span>
+        </label>
+      </div>`,
+    confirmLabel: 'Run pricing',
+    onConfirm: async () => {
+      const forceMock = $('#pricing-force-mock').checked;
+      closeModal();
+      showToast('Loading rate sheet & computing scenarios…');
+      try {
+        const result = await window.OF_priceScenario({ loanId, force_mock: forceMock });
+        // result: { ok, scenarios_count, recommended_scenario_id, rate_range,
+        //           base_rate_bps, llpa_bps, fico_used, ltv_used, is_mock,
+        //           warnings, duration_ms_client }
+        const summary = `${result.scenarios_count} scenarios · ${(result.rate_range.min_bps/100).toFixed(3)}–${(result.rate_range.max_bps/100).toFixed(3)}% · LLPAs +${result.llpa_bps}bps${result.is_mock ? ' · MOCK' : ''}`;
+        showToast(summary);
+
+        TAB_LOADED.delete('pricing');
+        TAB_LOADED.delete('overview');
+        if (document.querySelector('.loan-tab.active')?.dataset.tab === 'pricing') {
+          await renderTabPricing();
+        }
+        await refreshBadges();
+
+        // Surface warnings if any
+        if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+          console.warn('Pricing warnings:', result.warnings);
+          // Show first warning as toast; full list in console
+          if (result.warnings.length === 1) {
+            setTimeout(() => showToast('⚠ ' + result.warnings[0], false), 1500);
+          } else {
+            setTimeout(() => showToast(`⚠ ${result.warnings.length} pricing warnings — see console`, false), 1500);
+          }
+        }
+      } catch (err) {
+        // err.code may be set when the edge function returned a structured
+        // error (e.g., 'no_active_rate_sheet'). The hook rewrites these
+        // into actionable English so we just show err.message.
+        showToast(err.message, true);
+      }
+    },
+  });
+}
+
+// Lock a scenario. The migration's pricing_scenarios_after_lock_trg picks
+// up locked_at and rolls rate_bps + lock_expires_at to the parent loan
+// in the same transaction.
+function promptLockScenario(scenarioId) {
+  const s = _pricingCache.find(x => x.id === scenarioId);
+  if (!s) { showToast('Scenario not found.', true); return; }
+  if (me.role === 'viewer') { showToast('Viewers cannot lock rates.', true); return; }
+
+  const lockDays = s.lock_days || 30;
+  const expiresAt = new Date(Date.now() + lockDays * 86400 * 1000);
+
+  openModal({
+    title: 'Lock this rate',
+    prompt: `Lock <strong style="color:var(--white);">${escapeHtml(s.scenario_label)}</strong>?`,
+    detail: `
+      <div style="margin-bottom:0.5rem;">
+        <strong style="color:var(--white);">${(s.rate_bps/100).toFixed(3)}%</strong> ·
+        <strong style="color:var(--white);">${moneyFull(s.monthly_pi_cents)}/mo</strong> ·
+        APR ${Number(s.apr_pct).toFixed(3)}%
+      </div>
+      <div>
+        Locking sets the loan's rate to ${(s.rate_bps/100).toFixed(3)}% and starts a <strong>${lockDays}-day lock period</strong>
+        (expires ${dateOnly(expiresAt)}). The lock auto-rolls forward to the loan record via the database trigger.
+      </div>
+      <div style="margin-top:0.75rem; font-size:0.75rem; color:var(--muted);">
+        Only one scenario can be locked per loan. To lock a different rate, unlock the current one first.
+      </div>
+    `,
+    confirmLabel: 'Lock rate',
+    onConfirm: async () => {
+      closeModal();
+      try {
+        // The unique partial index will reject the update if another lock
+        // already exists. We surface the error with a helpful hint.
+        const { error } = await supa.from('pricing_scenarios').update({
+          locked_at: new Date().toISOString(),
+          locked_by: me.id,
+          // lock_expires_at gets set by the migration's trigger — don't
+          // pass it here; let the DB compute it from lock_days
+        }).eq('id', s.id);
+        if (error) {
+          if (/duplicate key|unique/i.test(error.message)) {
+            showToast('Another scenario is already locked. Unlock it first.', true);
+          } else {
+            showToast('Lock failed: ' + error.message, true);
+          }
+          return;
+        }
+        await writeAuditEvent({
+          operation: 'update',
+          table_name: 'pricing_scenarios',
+          field_changes: [
+            { field: 'locked_at', before: null, after: 'now' },
+            { field: 'loans.rate_bps (via trigger)', before: loan.rate_bps, after: s.rate_bps },
+            { field: 'scenario', before: null, after: s.scenario_label },
+          ],
+        });
+        showToast(`Locked at ${(s.rate_bps/100).toFixed(3)}%`);
+        await renderTabPricing();
+        await refreshBadges();
+        // The header reads loan.rate_bps; reload the loan so it updates
+        await loadLoan();
+        renderHeader();
+      } catch (err) {
+        showToast('Lock failed: ' + err.message, true);
+      }
+    },
+  });
+}
+
+// Unlock — only when CD hasn't been sent yet. Post-CD unlock is a TRID
+// issue (the CD locked in pricing for the borrower) so we block it from
+// the UI. If a TRID-savvy user really needs to do it, they can do it
+// via SQL with their eyes wide open.
+function promptUnlockScenario(scenarioId) {
+  const s = _pricingCache.find(x => x.id === scenarioId);
+  if (!s) { showToast('Scenario not found.', true); return; }
+  if (me.role === 'viewer') { showToast('Viewers cannot unlock rates.', true); return; }
+  if (loan.cd_sent_at) {
+    showToast('Cannot unlock after CD has been sent. Issue a revised CD instead.', true);
+    return;
+  }
+
+  openModal({
+    title: 'Unlock this rate',
+    prompt: `<span style="color:var(--amber);">Unlock ${escapeHtml(s.scenario_label)}?</span>`,
+    detail: `
+      <div style="margin-bottom:0.5rem;">
+        Currently locked at <strong style="color:var(--white);">${(s.rate_bps/100).toFixed(3)}%</strong>
+        ${s.lock_expires_at ? ` · expires ${dateOnly(s.lock_expires_at)}` : ''}
+      </div>
+      <strong style="color:var(--amber);">Warning:</strong>
+      <ul style="margin-top:0.4rem; padding-left:1rem; color:var(--text); font-size:0.8rem; line-height:1.6;">
+        <li>The loan's locked rate persists until you lock a new one</li>
+        <li>If rates have moved against the borrower, re-locking will be more expensive</li>
+        <li>Re-pricing creates new scenarios that reflect today's rate sheet</li>
+      </ul>
+    `,
+    confirmLabel: 'Unlock',
+    onConfirm: async () => {
+      closeModal();
+      try {
+        const { error } = await supa.from('pricing_scenarios').update({
+          locked_at: null,
+          locked_by: null,
+          lock_expires_at: null,
+        }).eq('id', s.id);
+        if (error) throw error;
+        await writeAuditEvent({
+          operation: 'update',
+          table_name: 'pricing_scenarios',
+          field_changes: [
+            { field: 'locked_at', before: 'locked', after: null },
+            { field: 'scenario', before: s.scenario_label, after: '(unlocked)' },
+          ],
+        });
+        showToast('Unlocked.');
+        await renderTabPricing();
+        await refreshBadges();
+      } catch (err) {
+        showToast('Unlock failed: ' + err.message, true);
+      }
+    },
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3600,29 +4186,11 @@ function showAusResultModal(result) {
   });
 }
 
+// promptPriceScenario is the header-action-row entry point; the richer
+// flow with force_mock toggle + better post-run feedback lives in
+// promptRunPricing (defined in the Pricing tab section above). Delegate.
 function promptPriceScenario() {
-  if (typeof window.OF_priceScenario !== 'function') {
-    showToast('Pricing engine not configured. Implement window.OF_priceScenario.', true);
-    return;
-  }
-  openModal({
-    title: 'Price scenario',
-    prompt: `Run pricing for ${loan.loan_number}?`,
-    detail: 'Pulls live rate sheet and computes the rate/point/payment grid. Writes scenarios to <code style="font-family:var(--mono); color:var(--accent);">pricing_scenarios</code>.',
-    confirmLabel: 'Run pricing',
-    onConfirm: async () => {
-      closeModal();
-      showToast('Running pricing…');
-      try {
-        await window.OF_priceScenario({ loanId });
-        showToast('Pricing complete.');
-        TAB_LOADED.delete('overview');
-        await renderTabOverview();
-      } catch (err) {
-        showToast('Pricing failed: ' + err.message, true);
-      }
-    },
-  });
+  promptRunPricing();
 }
 
 function promptESign() {
@@ -3831,6 +4399,23 @@ function initRealtime() {
         }
       ).subscribe()
   );
+
+  // Pricing scenarios — refresh on insert (re-price) and update (lock/unlock).
+  // Locking a scenario also fires a loan UPDATE via the migration trigger,
+  // which the loan-channel subscription above will pick up to refresh the
+  // header rate. Belt + suspenders.
+  realtimeChans.push(
+    supa.channel(`loan-pricing:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'pricing_scenarios', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          await refreshBadges();
+          const activeTab = document.querySelector('.loan-tab.active')?.dataset.tab;
+          if (activeTab === 'pricing')  await renderTabPricing();
+          if (activeTab === 'overview') await renderTabOverview();
+        }
+      ).subscribe()
+  );
 }
 
 window.addEventListener('beforeunload', () => {
@@ -3860,6 +4445,9 @@ window.promptPriceScenario = promptPriceScenario;
 window.promptESign = promptESign;
 window.promptMoveStage = promptMoveStage;
 window.promptLogManualCoc = promptLogManualCoc;
+window.promptRunPricing = promptRunPricing;
+window.promptLockScenario = promptLockScenario;
+window.promptUnlockScenario = promptUnlockScenario;
 // Round 4-7: closeModal + activateTab are referenced by inline onclick
 // handlers inside the AUS post-run summary modal, so they need to be
 // reachable from window scope.
