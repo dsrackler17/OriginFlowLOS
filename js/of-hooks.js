@@ -11,16 +11,23 @@
 //   • window.OF_applyExtractionAction — invokes apply-extraction-action
 //   • window.OF_getSignedUrl        — 1hr signed URL for previews
 //
-// ─── ROUND 4 hooks (eSign + AUS) ───────────────────────────────────────────
+// ─── ROUND 4 hooks (eSign + AUS + Pricing) ────────────────────────────────
 //   • window.OF_sendForESign        — generates LE/CD PDF, uploads, dispatches
-//                                     to Dropbox Sign via dispatch-esign edge fn
+//                                     to Dropbox Sign via dispatch-esign edge fn.
+//                                     Accepts coc_id when used from the COC
+//                                     tab to dispatch a revised LE.
 //   • window.OF_runAus              — generates MISMO 3.4 XML, dispatches to
 //                                     run-aus edge function, returns
 //                                     recommendation + outcome
+//   • window.OF_priceScenario       — invokes price-scenario edge function
+//                                     to load the active rate sheet, apply
+//                                     LLPAs, and generate scenarios.
+//                                     Returns rate range + count + warnings.
 //
 // Pages that use eSign also need /js/disclosure-pdf.js, AUS pages need
 // /js/mismo-generator.js — both lazy-loaded by this file when first
-// invoked. No HTML script-tag changes required.
+// invoked. Pricing is server-side (edge function does all the math), so
+// no client-side module to load. No HTML script-tag changes required.
 // ═══════════════════════════════════════════════════════════════════════════
 
 (function () {
@@ -201,6 +208,11 @@
     const opts_ = opts || {};
     const loanId = opts_.loanId;
     const kind = opts_.package_type;
+    // coc_id is optional — when present, the dispatch-esign edge function
+    // stores it in the envelope's metadata so we have an audit-trail link
+    // from the envelope back to the COC that triggered it. Used by the
+    // revised_le path; null/undefined for initial_disclosures + cd.
+    const cocId = opts_.coc_id || null;
 
     if (!loanId) throw new Error('loanId is required');
     if (!kind || !VALID_PACKAGE_TYPES.includes(kind)) {
@@ -226,7 +238,12 @@
 
     const { data: dispatchResult, error: dispatchErr } = await supa()
       .functions.invoke('dispatch-esign', {
-        body: { loan_id: loanId, kind, source_pdf_path: sourcePath },
+        body: {
+          loan_id: loanId,
+          kind,
+          source_pdf_path: sourcePath,
+          coc_id: cocId,
+        },
       });
 
     if (dispatchErr) {
@@ -671,5 +688,120 @@
       document.head.appendChild(s);
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 7. PRICE SCENARIO — Round 4-10
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // Called from loan.html when the LO clicks "Run pricing" (overview tab CTA
+  // or, soon, the dedicated Pricing tab). Invokes the price-scenario edge
+  // function which loads the active rate sheet, applies LLPAs, generates 5-7
+  // scenarios, and inserts them into pricing_scenarios. UI re-reads the
+  // table after invocation completes.
+  //
+  // Input:
+  //   { loanId, force_mock?, override_terms? }
+  //     • force_mock: skip the rate_sheets lookup and use the synthetic grid
+  //       baked into the edge function. Useful for demos when no rate sheet
+  //       has been seeded for the branch yet.
+  //     • override_terms: { loan_amount_cents?, term_months?, program?, fico?,
+  //       ltv_pct? } for "what-if" pricing — overrides the live loan record.
+  //
+  // Output (matches the edge function's response):
+  //   { ok: true, loan_id, rate_sheet_id, is_mock, scenarios_count,
+  //     recommended_scenario_id, rate_range: { min_bps, max_bps },
+  //     base_rate_bps, llpa_bps, fico_used, ltv_used, duration_ms,
+  //     warnings: string[], duration_ms_client }
+  //
+  // Errors are normalized to plain Error objects with .code set when the
+  // edge function returned a structured error code. The UI can branch on
+  // err.code === 'no_active_rate_sheet' to show a tailored prompt
+  // ("Upload a rate sheet OR retry with force_mock") rather than a
+  // generic toast.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  window.OF_priceScenario = async function (opts) {
+    var opts_ = opts || {};
+    var loanId = opts_.loanId;
+    var forceMock = opts_.force_mock === true;
+    var overrideTerms = opts_.override_terms || null;
+
+    if (!loanId) throw new Error('loanId is required');
+
+    var sb = supa();
+    if (!sb) throw new Error('Supabase client unavailable — getSupabase() returned null');
+
+    var clientStartedAt = Date.now();
+
+    var body = { loan_id: loanId };
+    if (forceMock) body.force_mock = true;
+    if (overrideTerms && typeof overrideTerms === 'object') {
+      // Whitelist override keys so we don't accidentally forward random
+      // properties to the edge function. The edge function would ignore
+      // unknown fields, but being explicit is cheap insurance.
+      var allowed = ['loan_amount_cents', 'term_months', 'program', 'fico', 'ltv_pct'];
+      var clean = {};
+      for (var i = 0; i < allowed.length; i++) {
+        var k = allowed[i];
+        if (overrideTerms[k] !== undefined && overrideTerms[k] !== null) {
+          clean[k] = overrideTerms[k];
+        }
+      }
+      if (Object.keys(clean).length > 0) body.override_terms = clean;
+    }
+
+    var resp = await sb.functions.invoke('price-scenario', { body: body });
+    var data = resp.data;
+    var error = resp.error;
+
+    if (error) {
+      // Pull structured error info out of the response body when present.
+      // Supabase's FunctionsHttpError exposes the response via error.context;
+      // a non-2xx with a JSON body lands here.
+      var msg = error.message || 'price-scenario invocation failed';
+      var detail = null;
+      var errCode = null;
+      try {
+        if (error.context && typeof error.context.json === 'function') {
+          var parsed = await error.context.json();
+          if (parsed && parsed.error)  errCode = parsed.error;
+          if (parsed && parsed.detail) detail  = parsed.detail;
+          if (parsed && parsed.error)  msg     = parsed.error;
+        }
+      } catch (_) { /* response wasn't JSON; keep msg as-is */ }
+
+      var thrown;
+      if (errCode === 'no_active_rate_sheet') {
+        thrown = new Error(
+          'No rate sheet configured for this loan\'s program/term in your branch. ' +
+          'Either upload a rate sheet (see migration seed-data note) or retry with force_mock=true for a synthetic rate.'
+        );
+      } else if (errCode === 'viewer_cannot_price') {
+        thrown = new Error('Viewers cannot run pricing. Ask an LO or admin to price this loan.');
+      } else if (errCode === 'rate_sheet_invalid_shape') {
+        thrown = new Error('The active rate sheet has an invalid shape (missing base_rate_bps or rate_to_points). Fix the rate_grid JSON and try again.');
+      } else if (errCode === 'loan_not_found_or_no_access') {
+        thrown = new Error('Loan not found or your account does not have access to it.');
+      } else {
+        thrown = new Error('Pricing failed: ' + msg);
+      }
+      thrown.code   = errCode;
+      thrown.detail = detail;
+      throw thrown;
+    }
+
+    if (!data || data.ok !== true) {
+      var unknownMsg = (data && (data.error || data.detail)) || 'unknown';
+      throw new Error('price-scenario returned non-ok: ' + unknownMsg);
+    }
+
+    // Normalize warnings: edge function returns string[]; preserve as-is.
+    var warnings = Array.isArray(data.warnings) ? data.warnings : [];
+
+    return Object.assign({}, data, {
+      warnings: warnings,
+      duration_ms_client: Date.now() - clientStartedAt,
+    });
+  };
 
 })();
