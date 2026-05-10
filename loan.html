@@ -286,6 +286,65 @@ main { flex:1; display:flex; flex-direction:column; min-height:0; }
 .finding-list li { color:var(--text); }
 .finding-list li::marker { color:var(--muted); }
 
+/* ─── AUS FINDINGS (Round 4-7) ─────────────────────────────────────────
+   The "MOCK" badge is loud on purpose. Mock runs feel real but are
+   deterministic stubs — users must never confuse them for actual DU/LP/GUS
+   responses. Severity dots map: info=muted, warning=amber, required=cyan,
+   error=red. Required findings get an inline link to the condition they
+   were promoted into. */
+
+.aus-mock-badge { display:inline-flex; align-items:center; gap:0.3rem; font-family:var(--mono); font-size:0.55rem; letter-spacing:0.14em; text-transform:uppercase; padding:0.2rem 0.55rem; border:1px solid var(--amber); background:rgba(245,166,35,0.12); color:var(--amber); font-weight:700; }
+.aus-mock-badge::before { content:'⚠'; }
+.aus-outcome-pill { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.1em; text-transform:uppercase; padding:0.2rem 0.5rem; border:1px solid; }
+.aus-outcome-pill.approve { color:var(--accent2); border-color:rgba(0,255,157,0.4); background:rgba(0,255,157,0.06); }
+.aus-outcome-pill.refer { color:var(--amber); border-color:rgba(245,166,35,0.4); background:rgba(245,166,35,0.06); }
+.aus-outcome-pill.ineligible, .aus-outcome-pill.error { color:var(--red); border-color:rgba(255,68,68,0.4); background:rgba(255,68,68,0.06); }
+
+.aus-run-summary { background:var(--panel); border:1px solid var(--border); padding:0.95rem 1.1rem; margin-bottom:1rem; }
+.aus-run-summary.bust { border-color:rgba(255,68,68,0.4); background:rgba(255,68,68,0.04); }
+.aus-run-summary.mock { border-color:rgba(245,166,35,0.4); }
+.aus-run-summary-head { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.55rem; }
+.aus-run-summary-head-left { display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap; }
+.aus-run-summary-engine { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.12em; color:var(--accent); font-weight:700; }
+.aus-run-summary-rec { font-family:var(--serif); font-size:1.25rem; color:var(--white); line-height:1.1; }
+.aus-run-summary-meta { font-family:var(--mono); font-size:0.6rem; color:var(--muted); letter-spacing:0.04em; }
+.aus-run-summary-counts { display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.5rem; font-family:var(--mono); font-size:0.65rem; color:var(--text); letter-spacing:0.04em; }
+.aus-run-summary-counts strong { color:var(--white); font-weight:700; margin-right:0.25rem; }
+
+.aus-findings-list { margin-top:0.85rem; }
+.aus-finding-row { display:grid; grid-template-columns:auto 1fr auto; gap:0.7rem; align-items:start; padding:0.55rem 0.8rem; background:var(--panel); border:1px solid var(--border); margin-bottom:0.35rem; font-size:0.78rem; }
+.aus-finding-row.error { border-left:2px solid var(--red); }
+.aus-finding-row.required { border-left:2px solid var(--accent); }
+.aus-finding-row.warning { border-left:2px solid var(--amber); }
+.aus-finding-row.info { border-left:2px solid var(--border); opacity:0.85; }
+.aus-finding-sev-dot { width:0.6rem; height:0.6rem; border-radius:50%; margin-top:0.4rem; flex-shrink:0; }
+.aus-finding-sev-dot.error { background:var(--red); }
+.aus-finding-sev-dot.required { background:var(--accent); }
+.aus-finding-sev-dot.warning { background:var(--amber); }
+.aus-finding-sev-dot.info { background:var(--muted); }
+.aus-finding-mid { min-width:0; }
+.aus-finding-title { color:var(--white); line-height:1.3; }
+.aus-finding-row.info .aus-finding-title { color:var(--text); }
+.aus-finding-desc { font-family:var(--mono); font-size:0.6rem; color:var(--muted); margin-top:0.2rem; letter-spacing:0.03em; line-height:1.5; }
+.aus-finding-meta { display:flex; flex-direction:column; gap:0.2rem; align-items:flex-end; font-family:var(--mono); font-size:0.55rem; color:var(--muted); letter-spacing:0.05em; white-space:nowrap; }
+.aus-finding-meta-cat { padding:0.1rem 0.4rem; border:1px solid var(--border); }
+.aus-finding-meta-cond { color:var(--accent); cursor:pointer; }
+
+.aus-history-toggle { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; padding:0.4rem 0.7rem; background:transparent; border:1px solid var(--border); color:var(--muted); margin-top:0.85rem; }
+.aus-history-toggle:hover { color:var(--accent); border-color:var(--accent); }
+.aus-history-list { margin-top:0.5rem; display:none; }
+.aus-history-list.open { display:block; }
+.aus-history-row { display:grid; grid-template-columns:auto 1fr auto auto; gap:0.6rem; align-items:center; padding:0.45rem 0.7rem; background:var(--panel); border:1px solid var(--border); margin-bottom:0.3rem; font-size:0.72rem; }
+.aus-history-row .cond-cat { padding:0.15rem 0.45rem; }
+.aus-history-mid { min-width:0; font-family:var(--mono); font-size:0.65rem; color:var(--text); }
+.aus-history-mid small { color:var(--muted); display:block; margin-top:0.15rem; font-size:0.55rem; }
+
+/* AUS post-run summary modal extras (warnings list) */
+.aus-warnings-block { margin-top:1rem; padding:0.7rem 0.9rem; background:rgba(245,166,35,0.06); border-left:2px solid var(--amber); font-size:0.78rem; }
+.aus-warnings-title { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--amber); margin-bottom:0.4rem; }
+.aus-warnings-list { font-family:var(--mono); font-size:0.65rem; color:var(--text); line-height:1.7; padding-left:1rem; }
+.aus-warnings-list li { color:var(--text); margin-bottom:0.15rem; }
+
 /* ─── FEES TAB ──────────────────────────────────────────────────────────
    TRID closing-cost itemization. Sections A/B/C/E/F/G/H map to LE/CD form
    layout. Tolerance buckets compute live; bust state is the loud signal. */
@@ -2131,10 +2190,17 @@ async function writeAuditEvent({ operation, table_name, field_changes }) {
 async function renderTabFindings() {
   let runs = [];
   try {
+    // Round 4-7: pull the new fields run-aus writes — outcome (normalized
+    // approve|refer|ineligible|error), is_mock (loud signal), decision_score,
+    // error_message, vendor (which engine actually answered if real).
     const { data, error } = await supa.from('aus_runs')
-      .select(`id, engine, recommendation, ran_at, ran_by, findings_url, findings_summary,
+      .select(`id, engine, recommendation, outcome, decision_score,
+               is_mock, vendor, error_message, ran_at, ran_by,
+               findings_url, findings_summary,
                ran_by_profile:ran_by ( full_name, role )`)
-      .eq('loan_id', loanId).order('ran_at', { ascending: false }).limit(10);
+      .eq('loan_id', loanId)
+      .is('archived_at', null)
+      .order('ran_at', { ascending: false }).limit(10);
     if (error) throw error;
     runs = data || [];
   } catch (err) {
@@ -2143,7 +2209,7 @@ async function renderTabFindings() {
       <div class="empty-state">
         <span class="empty-icon">⚙</span>
         AUS findings table not deployed yet.<br>
-        <small style="opacity:0.7;">Implement <code style="font-family:var(--mono); color:var(--accent);">window.OF_runAus</code> and create the <code style="font-family:var(--mono); color:var(--accent);">aus_runs</code> table to enable.</small>
+        <small style="opacity:0.7;">Run the <code style="font-family:var(--mono); color:var(--accent);">aus_runs</code> migration and deploy the <code style="font-family:var(--mono); color:var(--accent);">run-aus</code> edge function to enable.</small>
         ${me.role !== 'viewer' ? `<button class="empty-cta" onclick="promptRunAus()">Run AUS anyway →</button>` : ''}
       </div>`;
     return;
@@ -2161,35 +2227,147 @@ async function renderTabFindings() {
   }
 
   const latest = runs[0];
-  const recCls = ({
-    'approve_eligible': 'green', 'accept': 'green', 'approve_ineligible': 'amber',
-    'refer_eligible': 'amber', 'refer_with_caution': 'amber', 'refer': 'amber',
-    'caution': 'red', 'error_out': 'red', 'ineligible': 'red',
-  })[String(latest.recommendation || '').toLowerCase().replace(/[\/\s-]+/g, '_')] || 'cyan';
-  $('#findings-status-tag').className = 'panel-tag ' + recCls;
-  $('#findings-status-tag').textContent = (latest.recommendation || 'UNKNOWN').toUpperCase();
+
+  // Outcome maps to color. The recommendation might be vendor-specific
+  // ('approve_eligible' on DU, 'accept' on LP, 'refer_with_caution' on GUS),
+  // but outcome is normalized.
+  const outcomeCls = ({
+    approve: 'approve', refer: 'refer',
+    ineligible: 'ineligible', error: 'error',
+  })[latest.outcome] || 'approve';
+  const tagCls = outcomeCls === 'approve' ? 'green'
+               : outcomeCls === 'refer' ? 'amber'
+               : 'red';
+  $('#findings-status-tag').className = 'panel-tag ' + tagCls;
+  $('#findings-status-tag').textContent = (latest.recommendation || latest.outcome || 'UNKNOWN').toUpperCase();
+
+  // Fetch findings for the latest run only — drilldown is the most useful
+  // interaction; older runs collapse into history.
+  let findings = [];
+  try {
+    const { data: f, error: fErr } = await supa.from('aus_findings')
+      .select('id, finding_code, category, severity, title, description, condition_id')
+      .eq('aus_run_id', latest.id)
+      .order('severity', { ascending: false })   // error→required→warning→info per Postgres ordering
+      .order('created_at', { ascending: true });
+    if (!fErr) findings = f || [];
+  } catch (_) { /* findings table may not exist yet */ }
+
+  // Severity sort fallback (Postgres order is alphabetical, not severity).
+  const SEVERITY_ORDER = { error: 0, required: 1, warning: 2, info: 3 };
+  findings.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+  const counts = {
+    error:    findings.filter(f => f.severity === 'error').length,
+    required: findings.filter(f => f.severity === 'required').length,
+    warning:  findings.filter(f => f.severity === 'warning').length,
+    info:     findings.filter(f => f.severity === 'info').length,
+  };
+  const promoted = findings.filter(f => f.severity === 'required' && f.condition_id).length;
+
+  // Latest run summary card. The mock badge is high-contrast — users
+  // should never confuse a stub run for a real DU/LP/GUS approval.
+  const summaryClasses = [];
+  if (latest.outcome === 'ineligible' || latest.outcome === 'error') summaryClasses.push('bust');
+  if (latest.is_mock) summaryClasses.push('mock');
+
+  const summaryHtml = `
+    <div class="aus-run-summary ${summaryClasses.join(' ')}">
+      <div class="aus-run-summary-head">
+        <div class="aus-run-summary-head-left">
+          <span class="aus-run-summary-engine">${escapeHtml((latest.engine || 'DU').toUpperCase())}</span>
+          <span class="aus-run-summary-rec">${escapeHtml(latest.recommendation || 'UNKNOWN')}</span>
+          <span class="aus-outcome-pill ${outcomeCls}">${escapeHtml(latest.outcome || 'unknown')}</span>
+          ${latest.is_mock ? `<span class="aus-mock-badge">Mock run</span>` : ''}
+          ${latest.decision_score != null ? `<span class="finding-meta">score ${latest.decision_score}</span>` : ''}
+        </div>
+        ${me.role !== 'viewer' ? `<button class="lh-action primary" onclick="promptRunAus()">Re-run AUS</button>` : ''}
+      </div>
+      <div class="aus-run-summary-meta">
+        ${escapeHtml(latest.findings_summary || '—')}
+      </div>
+      <div class="aus-run-summary-meta" style="margin-top:0.25rem;">
+        Ran ${timeAgo(latest.ran_at)} by ${escapeHtml(latest.ran_by_profile?.full_name || 'system')}${
+          latest.vendor ? ' · vendor ' + escapeHtml(latest.vendor) : ''
+        }${latest.error_message ? ' · <span style="color:var(--red);">error: ' + escapeHtml(latest.error_message) + '</span>' : ''}
+      </div>
+      <div class="aus-run-summary-counts">
+        ${counts.error > 0 ? `<span><strong>${counts.error}</strong>error${counts.error === 1 ? '' : 's'}</span>` : ''}
+        <span><strong>${counts.required}</strong>required${counts.required === 1 ? '' : 's'} ${promoted > 0 ? `(${promoted} → conditions)` : ''}</span>
+        ${counts.warning > 0 ? `<span><strong>${counts.warning}</strong>warning${counts.warning === 1 ? '' : 's'}</span>` : ''}
+        <span><strong>${counts.info}</strong>info</span>
+        ${latest.findings_url ? `<a href="${escapeHtml(latest.findings_url)}" target="_blank" rel="noopener" style="margin-left:auto; color:var(--accent); text-decoration:none;">Open vendor PDF ↗</a>` : ''}
+      </div>
+    </div>
+  `;
+
+  // Findings drilldown. Group by severity bucket; required findings link
+  // to their promoted condition (if any) so the user can jump straight
+  // there to clear it.
+  const findingsHtml = findings.length === 0
+    ? `<div class="empty-state" style="padding:1.25rem;"><small>No individual findings recorded for this run. The run may have used a vendor that doesn't return per-finding detail, or pre-dates the aus_findings table being deployed.</small></div>`
+    : `
+      <div class="aus-findings-list">
+        ${findings.map(f => `
+          <div class="aus-finding-row ${escapeHtml(f.severity)}">
+            <span class="aus-finding-sev-dot ${escapeHtml(f.severity)}"></span>
+            <div class="aus-finding-mid">
+              <div class="aus-finding-title">${escapeHtml(f.title)}</div>
+              ${f.description ? `<div class="aus-finding-desc">${escapeHtml(f.description)}</div>` : ''}
+            </div>
+            <div class="aus-finding-meta">
+              ${f.category ? `<span class="aus-finding-meta-cat">${escapeHtml((f.category || '').replace(/_/g, ' '))}</span>` : ''}
+              ${f.finding_code ? `<span>${escapeHtml(f.finding_code)}</span>` : ''}
+              ${f.condition_id
+                ? `<a class="aus-finding-meta-cond" href="#tab=conditions" onclick="activateTab('conditions'); return false;">→ condition</a>`
+                : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+  // History — older runs, collapsed by default.
+  const olderRuns = runs.slice(1);
+  const historyHtml = olderRuns.length === 0 ? '' : `
+    <button class="aus-history-toggle" id="aus-history-toggle">
+      Show ${olderRuns.length} earlier run${olderRuns.length === 1 ? '' : 's'} ▾
+    </button>
+    <div class="aus-history-list" id="aus-history-list">
+      ${olderRuns.map(r => {
+        const oc = ({ approve:'approve', refer:'refer', ineligible:'ineligible', error:'error' })[r.outcome] || 'approve';
+        const oCls = oc === 'approve' ? 'green' : oc === 'refer' ? 'amber' : 'red';
+        return `
+          <div class="aus-history-row">
+            <span class="cond-cat ${oCls}">${escapeHtml((r.engine || 'DU').toUpperCase())}</span>
+            <div class="aus-history-mid">
+              ${escapeHtml(r.recommendation || '—')}
+              ${r.is_mock ? `<span class="aus-mock-badge" style="margin-left:0.5rem;">Mock</span>` : ''}
+              <small>${escapeHtml(r.findings_summary || '')} · ${timeAgo(r.ran_at)} by ${escapeHtml(r.ran_by_profile?.full_name || 'system')}</small>
+            </div>
+            <span class="aus-outcome-pill ${oc}">${escapeHtml(r.outcome || 'unknown')}</span>
+            ${r.findings_url
+              ? `<a class="cond-clear-btn" href="${escapeHtml(r.findings_url)}" target="_blank" rel="noopener">PDF ↗</a>`
+              : `<span></span>`}
+          </div>`;
+      }).join('')}
+    </div>
+  `;
 
   $('#findings-body').innerHTML = `
-    <div style="margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
-      <div style="font-family:var(--mono); font-size:0.65rem; color:var(--muted); letter-spacing:0.06em;">
-        ${runs.length} run${runs.length === 1 ? '' : 's'} on this file · most recent ${timeAgo(latest.ran_at)}
-      </div>
-      ${me.role !== 'viewer' ? `<button class="lh-action primary" onclick="promptRunAus()">Re-run AUS</button>` : ''}
-    </div>
-    ${runs.map((r, i) => `
-      <div class="cond-row" style="grid-template-columns: auto 1fr auto auto;">
-        <span class="cond-cat ${recCls}" style="padding:0.25rem 0.55rem;">${escapeHtml((r.engine || 'DU').toUpperCase())}</span>
-        <div class="cond-mid">
-          <div class="cond-title">${escapeHtml(r.recommendation || 'UNKNOWN')} ${i === 0 ? '<small style="color:var(--accent2);">· LATEST</small>' : ''}</div>
-          <div class="cond-desc">
-            ${escapeHtml(r.findings_summary || '')} · ran ${timeAgo(r.ran_at)} by ${escapeHtml(r.ran_by_profile?.full_name || 'system')}
-          </div>
-        </div>
-        ${r.findings_url
-          ? `<a class="cond-clear-btn" href="${escapeHtml(r.findings_url)}" target="_blank" rel="noopener">Open report ↗</a>`
-          : `<span></span>`}
-      </div>
-    `).join('')}`;
+    ${summaryHtml}
+    ${findingsHtml}
+    ${historyHtml}
+  `;
+
+  // Wire history toggle
+  const toggle = $('#aus-history-toggle');
+  if (toggle) toggle.addEventListener('click', () => {
+    $('#aus-history-list').classList.toggle('open');
+    toggle.textContent = $('#aus-history-list').classList.contains('open')
+      ? `Hide earlier runs ▴`
+      : `Show ${olderRuns.length} earlier run${olderRuns.length === 1 ? '' : 's'} ▾`;
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2514,7 +2692,7 @@ function promptRunAus() {
   openModal({
     title: 'Run AUS',
     prompt: `Run automated underwriting on ${loan.loan_number}?`,
-    detail: 'Submits the file to DU/LP/GUS via MISMO 3.4 and writes the recommendation + findings PDF back to <code style="font-family:var(--mono); color:var(--accent);">aus_runs</code>.',
+    detail: 'Submits the file to DU/LP/GUS via MISMO 3.4 and writes the recommendation + findings PDF back to <code style="font-family:var(--mono); color:var(--accent);">aus_runs</code>. Required findings auto-promote to conditions.',
     extra: `
       <div class="modal-field">
         <label for="aus-engine">Engine</label>
@@ -2523,24 +2701,98 @@ function promptRunAus() {
           <option value="lp">LP (Freddie Mac)</option>
           <option value="gus" ${engineDefault === 'gus' ? 'selected' : ''}>GUS (USDA)</option>
         </select>
+      </div>
+      <div class="modal-field">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-family:var(--sans); text-transform:none; letter-spacing:0; color:var(--text);">
+          <input type="checkbox" id="aus-force-mock" style="width:auto; margin:0;">
+          <span style="font-size:0.8rem;">Force mock engine (deterministic stub for demos — won't call real vendor even if configured)</span>
+        </label>
       </div>`,
     confirmLabel: 'Run AUS',
     onConfirm: async () => {
       const engine = $('#aus-engine').value;
+      const forceMock = $('#aus-force-mock').checked;
       closeModal();
       showToast(`Running ${engine.toUpperCase()}…`);
       try {
-        await window.OF_runAus({ loanId, engine });
-        showToast('AUS run complete.');
+        const result = await window.OF_runAus({ loanId, engine, force_mock: forceMock });
+        // Result shape: { run_id, engine, recommendation, outcome,
+        //                 findings_summary, findings_count,
+        //                 required_findings_count, promoted_conditions_count,
+        //                 is_mock, duration_ms, warnings: [...] }
         TAB_LOADED.delete('findings');
         if (document.querySelector('.loan-tab.active').dataset.tab === 'findings') {
           await renderTabFindings();
         }
+        // Conditions tab refresh too — required findings just got promoted
+        TAB_LOADED.delete('conditions');
+        if (document.querySelector('.loan-tab.active').dataset.tab === 'conditions') {
+          await renderTabConditions();
+        }
         await refreshBadges();
+        showAusResultModal(result);
       } catch (err) {
         showToast('AUS run failed: ' + err.message, true);
       }
     },
+  });
+}
+
+// Post-run summary modal. Surfaces the things a 1-line toast would lose:
+//   • outcome (color-coded) + recommendation
+//   • mock badge if applicable (so the user can't miss it)
+//   • findings count breakdown + how many became conditions
+//   • validation warnings (these are browser-side OFMismo checks; the AUS
+//     also did its own checks, but warnings here flag data quality issues
+//     the AUS would have caught regardless of vendor)
+function showAusResultModal(result) {
+  if (!result) return;
+  const outcomeCls = ({ approve:'approve', refer:'refer', ineligible:'ineligible', error:'error' })[result.outcome] || 'approve';
+  const headlineCls = outcomeCls === 'approve' ? 'green'
+                    : outcomeCls === 'refer' ? 'amber'
+                    : 'red';
+
+  const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+  const warningsHtml = warnings.length === 0 ? '' : `
+    <div class="aus-warnings-block">
+      <div class="aus-warnings-title">${warnings.length} data-quality warning${warnings.length === 1 ? '' : 's'}</div>
+      <ul class="aus-warnings-list">
+        ${warnings.slice(0, 12).map(w => `<li>${escapeHtml(w)}</li>`).join('')}
+        ${warnings.length > 12 ? `<li style="color:var(--muted);">+${warnings.length - 12} more — see browser console</li>` : ''}
+      </ul>
+    </div>`;
+
+  const promoted = result.promoted_conditions_count || 0;
+  const required = result.required_findings_count || 0;
+  const findings = result.findings_count || 0;
+  const dur = result.duration_ms ? Math.round(result.duration_ms / 100) / 10 + 's' : '—';
+
+  openModal({
+    title: 'AUS run complete',
+    prompt: `<span style="color:var(--${headlineCls === 'green' ? 'accent2' : headlineCls === 'amber' ? 'amber' : 'red'});">${escapeHtml((result.recommendation || result.outcome || 'unknown').toUpperCase())}</span>${result.is_mock ? ' <span class="aus-mock-badge" style="margin-left:0.5rem;">Mock run</span>' : ''}`,
+    detail: `
+      <div style="margin-bottom:0.85rem;">
+        <strong>${escapeHtml((result.engine || 'DU').toUpperCase())}</strong> ·
+        <span class="aus-outcome-pill ${outcomeCls}" style="margin-left:0.4rem;">${escapeHtml(result.outcome || 'unknown')}</span>
+        <span style="margin-left:0.6rem; font-family:var(--mono); color:var(--muted); font-size:0.6rem;">in ${dur}</span>
+      </div>
+      <div style="font-family:var(--mono); font-size:0.7rem; line-height:1.8; color:var(--text); margin-bottom:0.85rem;">
+        <div><strong style="color:var(--white);">${findings}</strong> total findings</div>
+        <div><strong style="color:var(--white);">${required}</strong> required <span style="color:var(--muted);">→</span> <strong style="color:var(--accent);">${promoted}</strong> promoted to conditions</div>
+        ${result.is_mock
+          ? `<div style="color:var(--amber); margin-top:0.4rem;">⚠ Mock run — not from a real underwriting engine. ${$('#aus-force-mock')?.checked ? 'Force-mock was enabled.' : 'Configure vendor credentials (FANNIE_DU_API_KEY, etc.) for live runs.'}</div>`
+          : ''}
+      </div>
+    `,
+    extra: warningsHtml + `
+      <div style="margin-top:1rem; padding-top:0.85rem; border-top:1px dotted var(--border); display:flex; gap:0.5rem; justify-content:flex-end;">
+        <button class="lh-action" onclick="closeModal(); activateTab('conditions');">View conditions</button>
+        <button class="lh-action primary" onclick="closeModal(); activateTab('findings');">Review findings</button>
+      </div>
+    `,
+    confirmLabel: 'Close',
+    hideCancel: true,
+    onConfirm: () => closeModal(),
   });
 }
 
@@ -2674,13 +2926,17 @@ function initModal() {
   });
 }
 
-function openModal({ title, prompt, detail, extra, confirmLabel, onConfirm, wide }) {
+function openModal({ title, prompt, detail, extra, confirmLabel, onConfirm, wide, hideCancel }) {
   $('#modal-title').textContent = title || 'Confirm';
   $('#modal-prompt').innerHTML = prompt || '';
   $('#modal-detail').innerHTML = detail || '';
   $('#modal-extra').innerHTML = extra || '';
   $('#modal-confirm').textContent = confirmLabel || 'Confirm';
   $('#modal-tertiary').style.display = 'none';
+  // Reset cancel visibility on every open — the AUS post-run summary
+  // hides it (only "Close" makes sense for a result modal); the next
+  // openModal() call must reset it so the next confirm/cancel modal works.
+  $('#modal-cancel').style.display = hideCancel ? 'none' : '';
   $('#modal-shell').classList.toggle('wide', !!wide);
   _modalOnConfirm = onConfirm || null;
   $('#modal-overlay').classList.add('open');
@@ -2783,6 +3039,11 @@ window.promptRunAus = promptRunAus;
 window.promptPriceScenario = promptPriceScenario;
 window.promptESign = promptESign;
 window.promptMoveStage = promptMoveStage;
+// Round 4-7: closeModal + activateTab are referenced by inline onclick
+// handlers inside the AUS post-run summary modal, so they need to be
+// reachable from window scope.
+window.closeModal = closeModal;
+window.activateTab = activateTab;
 
 document.addEventListener('DOMContentLoaded', bootstrap);
 </script>
