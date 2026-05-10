@@ -621,6 +621,8 @@ let allCocs = [];
 let allPulls = [];
 let allScenarios = [];
 let allClosings = [];
+let allViolations = [];      // open compliance violations (Round 4-17)
+let complianceEngineAvailable = false;
 let loProfiles = new Map();  // id → {full_name}
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -782,10 +784,17 @@ async function loadAll() {
     .select('loan_id, scheduled_at, signed_at, funded_at, recorded_at, status')
     .is('archived_at', null);
 
+  // Compliance violations — server-side rule engine output (Round 4-17).
+  // Tolerates missing table for installations pre-engine.
+  const violationsP = supa.from('compliance_violations')
+    .select('id, loan_id, rule_code, severity, message, detected_at')
+    .is('archived_at', null)
+    .is('resolved_at', null);
+
   // Run all in parallel; tolerate any single failure (table not yet
   // deployed on this branch's DB).
-  const [loansR, ausR, condsR, cocsR, pullsR, pricingR, closingsR] = await Promise.allSettled([
-    loansP, ausP, condsP, cocsP, pullsP, pricingP, closingsP,
+  const [loansR, ausR, condsR, cocsR, pullsR, pricingR, closingsR, violationsR] = await Promise.allSettled([
+    loansP, ausP, condsP, cocsP, pullsP, pricingP, closingsP, violationsP,
   ]);
 
   if (loansR.status !== 'fulfilled' || loansR.value.error) {
@@ -809,6 +818,20 @@ async function loadAll() {
   if (pullsR.status === 'fulfilled' && !pullsR.value.error) allPulls = pullsR.value.data || [];
   if (pricingR.status === 'fulfilled' && !pricingR.value.error) allScenarios = pricingR.value.data || [];
   if (closingsR.status === 'fulfilled' && !closingsR.value.error) allClosings = closingsR.value.data || [];
+
+  // Compliance engine: if the table responds (even with zero rows), the
+  // engine is deployed and we trust its data. If the table errors (e.g.,
+  // does not exist), fall back to heuristics in the compliance card.
+  if (violationsR.status === 'fulfilled' && !violationsR.value.error) {
+    allViolations = violationsR.value.data || [];
+    complianceEngineAvailable = true;
+  } else {
+    complianceEngineAvailable = false;
+    if (violationsR.status === 'fulfilled' && violationsR.value.error) {
+      console.warn('compliance_violations not available, using heuristics:',
+                   violationsR.value.error.message);
+    }
+  }
 
   // LO profiles for the leaderboard
   const loIds = [...new Set(allLoans.map(l => l.lo_id).filter(Boolean))];
@@ -1172,47 +1195,50 @@ function renderFicoHistogram() {
 // ─── 7. COMPLIANCE & RISK ─────────────────────────────────────────────────
 
 function renderCompliance() {
-  // TRID checks (proxies — server-side compliance engine would replace these):
-  //   • LE-3 day rule violation: loans where le_sent_at > created_at + 3 days
-  //   • Open conditions: total count + average age
-  //   • COC counts by type
-  //
-  // The "violations" are best-effort detections — a real compliance audit
-  // would need many more checks (state-level rules, ECOA, RESPA, etc).
+  // Round 4-17: prefer the compliance engine's output. Fall back to
+  // heuristic counts only when the engine isn't deployed (e.g., a fresh
+  // dev DB without the latest migration). The fallback path is intentionally
+  // simpler — it shows the same headline numbers but loses severity
+  // breakdown and detail metadata.
 
-  const cocByType = {};
-  for (const c of allCocs) {
-    cocByType[c.coc_type] = (cocByType[c.coc_type] || 0) + 1;
+  if (complianceEngineAvailable) {
+    renderComplianceFromEngine();
+  } else {
+    renderComplianceHeuristic();
   }
-  const tolerance = cocByType.tolerance_bust || 0;
-  const otherCoc = Object.entries(cocByType).filter(([k]) => k !== 'tolerance_bust')
-    .reduce((s, [, v]) => s + v, 0);
+}
 
-  const openConds = allConds.filter(c => c.status === 'outstanding');
-  const condAges = openConds.map(c => (Date.now() - new Date(c.created_at).getTime()) / 86400000);
-  const avgCondAge = condAges.length > 0
-    ? condAges.reduce((a,b) => a+b, 0) / condAges.length
-    : null;
-  const stale = openConds.filter(c =>
-    (Date.now() - new Date(c.created_at).getTime()) / 86400000 > 14
-  ).length;
+function renderComplianceFromEngine() {
+  // Group open violations by rule_code, count by severity
+  const byRule = new Map();
+  for (const v of allViolations) {
+    if (!byRule.has(v.rule_code)) {
+      byRule.set(v.rule_code, { violation: 0, warning: 0, info: 0 });
+    }
+    const b = byRule.get(v.rule_code);
+    b[v.severity] = (b[v.severity] || 0) + 1;
+  }
+  const ruleCount = (code, sev) => (byRule.get(code) || {})[sev || 'violation'] || 0;
 
-  // LE-3-day proxy
-  const lateLE = allLoans.filter(l => {
-    if (!l.le_sent_at || !l.created_at) return false;
-    const days = (new Date(l.le_sent_at).getTime() - new Date(l.created_at).getTime()) / 86400000;
-    return days > 3;
-  }).length;
+  // Severity rollups (for the tag at top of card)
+  const totalViolations = allViolations.filter(v => v.severity === 'violation').length;
+  const totalWarnings   = allViolations.filter(v => v.severity === 'warning').length;
+  const totalInfo       = allViolations.filter(v => v.severity === 'info').length;
 
-  const totalCocs = Object.values(cocByType).reduce((s, v) => s + v, 0);
-  $('#compliance-tag').textContent = `${$count(totalCocs)} COCs · ${$count(openConds.length)} open conds`;
+  $('#compliance-tag').textContent =
+    `${totalViolations} violations · ${totalWarnings} warnings · ${totalInfo} info`;
+
+  const lateLE   = ruleCount('trid_le_3day_late', 'violation');
+  const tolerance = ruleCount('trid_tolerance_bust_open', 'violation');
+  const cdWait   = ruleCount('trid_cd_waiting_period', 'violation');
+  const dti43    = ruleCount('qm_dti_over_43', 'warning');
 
   $('#compliance-body').innerHTML = `
     <div class="kv-grid">
       <div class="kv-cell">
         <div class="kv-label">LE 3-day rule</div>
         <div class="kv-value ${lateLE === 0 ? 'green' : 'red'}">${$count(lateLE)}</div>
-        <div class="kv-sub">loans with LE sent &gt; 3d after app</div>
+        <div class="kv-sub">loans late on initial disclosure</div>
       </div>
       <div class="kv-cell">
         <div class="kv-label">Tolerance busts (open)</div>
@@ -1220,15 +1246,73 @@ function renderCompliance() {
         <div class="kv-sub">section A/B fees over LE budget</div>
       </div>
       <div class="kv-cell">
-        <div class="kv-label">Open conditions</div>
-        <div class="kv-value ${openConds.length === 0 ? 'green' : openConds.length < 20 ? 'cyan' : 'amber'}">${$count(openConds.length)}</div>
-        <div class="kv-sub">avg age ${$days(avgCondAge)} · ${$count(stale)} stale (&gt;14d)</div>
+        <div class="kv-label">CD waiting period</div>
+        <div class="kv-value ${cdWait === 0 ? 'green' : 'red'}">${$count(cdWait)}</div>
+        <div class="kv-sub">closings signed before 3-day clear</div>
       </div>
       <div class="kv-cell">
-        <div class="kv-label">Other COCs</div>
-        <div class="kv-value">${$count(otherCoc)}</div>
-        <div class="kv-sub">borrower-requested, lock changes, etc.</div>
+        <div class="kv-label">DTI over QM threshold</div>
+        <div class="kv-value ${dti43 === 0 ? 'green' : 'amber'}">${$count(dti43)}</div>
+        <div class="kv-sub">loans &gt; 43% back-end DTI</div>
       </div>
+    </div>
+    <div style="margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:0.04em;">
+      ● ENGINE · Server-side rule engine · live updates via triggers
+    </div>
+  `;
+}
+
+// Fallback for installations without the compliance engine migration.
+// Shows the same shape of card but computed from raw loan data — no
+// severity breakdown, no auto-resolution metadata. Identical to the
+// pre-Round-4-17 implementation.
+function renderComplianceHeuristic() {
+  const cocByType = {};
+  for (const c of allCocs) {
+    cocByType[c.coc_type] = (cocByType[c.coc_type] || 0) + 1;
+  }
+  const tolerance = cocByType.tolerance_bust || 0;
+
+  // LE-3-day proxy (calendar days, not business days — the engine does it
+  // correctly with add_business_days(); the heuristic is rough).
+  const lateLE = allLoans.filter(l => {
+    if (!l.le_sent_at || !l.created_at) return false;
+    const days = (new Date(l.le_sent_at).getTime() - new Date(l.created_at).getTime()) / 86400000;
+    return days > 3;
+  }).length;
+
+  const dti43 = allLoans.filter(l =>
+    Number(l.dti_back_pct) > 43 && l.status === 'funded'
+  ).length;
+
+  const totalCocs = Object.values(cocByType).reduce((s, v) => s + v, 0);
+  $('#compliance-tag').textContent = `${$count(totalCocs)} COCs · heuristic mode`;
+
+  $('#compliance-body').innerHTML = `
+    <div class="kv-grid">
+      <div class="kv-cell">
+        <div class="kv-label">LE 3-day rule</div>
+        <div class="kv-value ${lateLE === 0 ? 'green' : 'red'}">${$count(lateLE)}</div>
+        <div class="kv-sub">loans late on initial disclosure</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Tolerance busts (open)</div>
+        <div class="kv-value ${tolerance === 0 ? 'green' : 'amber'}">${$count(tolerance)}</div>
+        <div class="kv-sub">section A/B fees over LE budget</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">CD waiting period</div>
+        <div class="kv-value">—</div>
+        <div class="kv-sub">requires compliance engine migration</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">DTI over QM threshold</div>
+        <div class="kv-value ${dti43 === 0 ? 'green' : 'amber'}">${$count(dti43)}</div>
+        <div class="kv-sub">funded loans &gt; 43% back-end DTI</div>
+      </div>
+    </div>
+    <div style="margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:0.58rem;color:var(--amber);letter-spacing:0.04em;">
+      ● HEURISTIC · Compliance engine not deployed · run migration 20260509080000 for accurate counts
     </div>
   `;
 }
@@ -1362,9 +1446,20 @@ function renderOps() {
     : null;
   const lockedCount = allScenarios.filter(s => s.locked_at).length;
 
+  // Open conditions — operational metric (workload), moved here from the
+  // compliance card in Round 4-17 since it isn't a compliance violation
+  // per se. Stale = open > 14 days, a useful staffing signal.
+  const openConds = allConds.filter(c => c.status === 'outstanding');
+  const condAges = openConds.map(c => (Date.now() - new Date(c.created_at).getTime()) / 86400000);
+  const avgCondAge = condAges.length > 0
+    ? condAges.reduce((a,b) => a+b, 0) / condAges.length
+    : null;
+  const stale = openConds.filter(c =>
+    (Date.now() - new Date(c.created_at).getTime()) / 86400000 > 14
+  ).length;
+
   // Closings — funding-cycle subset
   const fundedClosings = allClosings.filter(c => c.status === 'funded' || c.status === 'recorded' || c.status === 'complete');
-  const wetCount = allClosings.filter(c => c.status !== 'cancelled' && c.status !== 'rescheduled').length;
 
   $('#ops-body').innerHTML = `
     <div class="kv-grid" style="grid-template-columns:repeat(4,1fr)">
@@ -1379,9 +1474,9 @@ function renderOps() {
         <div class="kv-sub">${$count(scenCounts.size)} loans priced · ${$count(lockedCount)} scenarios locked</div>
       </div>
       <div class="kv-cell">
-        <div class="kv-label">Closings on the books</div>
-        <div class="kv-value">${$count(wetCount)}</div>
-        <div class="kv-sub">scheduled, signed, or funded</div>
+        <div class="kv-label">Open conditions</div>
+        <div class="kv-value ${openConds.length === 0 ? 'green' : openConds.length < 20 ? 'cyan' : 'amber'}">${$count(openConds.length)}</div>
+        <div class="kv-sub">avg age ${$days(avgCondAge)} · ${$count(stale)} stale (&gt;14d)</div>
       </div>
       <div class="kv-cell">
         <div class="kv-label">Closings funded</div>
