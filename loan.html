@@ -286,6 +286,73 @@ main { flex:1; display:flex; flex-direction:column; min-height:0; }
 .finding-list li { color:var(--text); }
 .finding-list li::marker { color:var(--muted); }
 
+/* ─── COC TAB (Round 4-9) ─────────────────────────────────────────────
+   Change-of-circumstance UI. Open COCs render as alert-styled cards with
+   the busting details and a live countdown to the 3-business-day TRID
+   deadline. Resolved/voided COCs collapse into a history list. The
+   countdown turns red when ≤24h remaining. */
+
+.coc-card { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--red); padding:1.1rem 1.25rem; margin-bottom:1rem; }
+.coc-card.resolved { border-left-color:var(--accent2); background:rgba(0,255,157,0.03); }
+.coc-card.voided { border-left-color:var(--muted); opacity:0.85; }
+
+.coc-card-head { display:flex; align-items:center; justify-content:space-between; gap:0.85rem; flex-wrap:wrap; margin-bottom:0.6rem; }
+.coc-card-head-left { display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; }
+.coc-card-icon { font-family:var(--mono); font-size:1rem; color:var(--red); }
+.coc-card.resolved .coc-card-icon { color:var(--accent2); }
+.coc-card.voided .coc-card-icon { color:var(--muted); }
+.coc-card-title { font-family:var(--serif); font-size:1.15rem; color:var(--white); line-height:1.2; }
+.coc-card-type { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.12em; text-transform:uppercase; padding:0.2rem 0.5rem; border:1px solid var(--border); color:var(--text); }
+
+.coc-status-pill { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.1em; text-transform:uppercase; padding:0.2rem 0.5rem; border:1px solid; }
+.coc-status-pill.open { color:var(--red); border-color:rgba(255,68,68,0.4); background:rgba(255,68,68,0.08); }
+.coc-status-pill.revised_le_dispatched { color:var(--amber); border-color:rgba(245,166,35,0.4); background:rgba(245,166,35,0.08); }
+.coc-status-pill.revised_le_signed { color:var(--accent2); border-color:rgba(0,255,157,0.4); background:rgba(0,255,157,0.08); }
+.coc-status-pill.resolved_no_action { color:var(--accent); border-color:rgba(0,212,255,0.3); background:rgba(0,212,255,0.06); }
+.coc-status-pill.voided { color:var(--muted); border-color:var(--border); }
+
+.coc-card-desc { font-size:0.88rem; color:var(--text); margin-bottom:0.7rem; line-height:1.5; }
+
+.coc-busted-list { background:var(--panel); border:1px solid var(--border); padding:0.6rem 0.85rem; margin-bottom:0.85rem; font-family:var(--mono); font-size:0.7rem; color:var(--text); line-height:1.7; }
+.coc-busted-list-title { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:0.4rem; }
+.coc-busted-row { display:grid; grid-template-columns:1fr auto auto; gap:0.5rem; padding:0.15rem 0; }
+.coc-busted-row strong { color:var(--white); font-weight:400; }
+.coc-busted-row .delta { color:var(--red); font-weight:700; }
+
+.coc-deadline { display:flex; align-items:center; gap:0.85rem; padding:0.7rem 0.95rem; background:rgba(255,68,68,0.06); border:1px solid rgba(255,68,68,0.3); margin-bottom:0.85rem; }
+.coc-deadline.warn { background:rgba(245,166,35,0.06); border-color:rgba(245,166,35,0.3); }
+.coc-deadline.ok { background:rgba(0,212,255,0.04); border-color:rgba(0,212,255,0.3); }
+.coc-deadline.passed { background:rgba(255,68,68,0.12); border-color:var(--red); }
+.coc-deadline-icon { font-family:var(--mono); font-size:1rem; color:var(--red); }
+.coc-deadline.warn .coc-deadline-icon { color:var(--amber); }
+.coc-deadline.ok .coc-deadline-icon { color:var(--accent); }
+.coc-deadline-mid { flex:1; min-width:0; }
+.coc-deadline-label { font-family:var(--mono); font-size:0.55rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:0.15rem; }
+.coc-deadline-value { font-family:var(--mono); font-size:0.85rem; color:var(--white); font-weight:700; line-height:1.2; }
+.coc-deadline.passed .coc-deadline-value { color:var(--red); }
+.coc-deadline-relative { font-family:var(--mono); font-size:0.65rem; color:var(--muted); margin-top:0.2rem; letter-spacing:0.04em; }
+.coc-deadline-relative.urgent { color:var(--red); font-weight:700; }
+.coc-deadline-relative.warn { color:var(--amber); font-weight:700; }
+
+.coc-card-actions { display:flex; gap:0.5rem; flex-wrap:wrap; padding-top:0.5rem; border-top:1px dotted var(--border); margin-top:0.5rem; }
+
+.coc-card-resolution { font-family:var(--mono); font-size:0.62rem; color:var(--muted); letter-spacing:0.04em; margin-top:0.6rem; padding:0.5rem 0.7rem; background:var(--panel); border-left:2px solid var(--accent2); line-height:1.6; }
+.coc-card-resolution strong { color:var(--text); font-weight:400; }
+
+.coc-history-section { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); }
+.coc-history-title { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); margin-bottom:0.7rem; }
+.coc-history-row { display:grid; grid-template-columns:auto 1fr auto auto; gap:0.7rem; align-items:center; padding:0.55rem 0.85rem; background:var(--panel); border:1px solid var(--border); margin-bottom:0.35rem; font-size:0.78rem; }
+.coc-history-mid { min-width:0; }
+.coc-history-desc { color:var(--text); line-height:1.3; }
+.coc-history-meta { font-family:var(--mono); font-size:0.55rem; color:var(--muted); margin-top:0.15rem; letter-spacing:0.04em; }
+
+/* Enhance the existing fees-coc-banner to add a deadline + CTA */
+.fees-coc-banner-actions { display:flex; flex-direction:column; gap:0.4rem; flex-shrink:0; align-items:flex-end; }
+.fees-coc-banner-deadline { font-family:var(--mono); font-size:0.6rem; color:var(--red); letter-spacing:0.04em; font-weight:700; }
+.fees-coc-banner-deadline.warn { color:var(--amber); }
+.fees-coc-banner-cta { font-family:var(--mono); font-size:0.6rem; letter-spacing:0.08em; text-transform:uppercase; padding:0.35rem 0.7rem; background:var(--red); color:var(--white); border:1px solid var(--red); cursor:pointer; font-weight:700; text-decoration:none; }
+.fees-coc-banner-cta:hover { background:var(--white); color:var(--red); }
+
 /* ─── AUS FINDINGS (Round 4-7) ─────────────────────────────────────────
    The "MOCK" badge is loud on purpose. Mock runs feel real but are
    deterministic stubs — users must never confuse them for actual DU/LP/GUS
@@ -598,6 +665,7 @@ footer a:hover { color:var(--accent); }
       <button class="loan-tab" data-tab="disclosures"><span>Disclosures</span><span class="loan-tab-badge" id="badge-disclosures">—</span></button>
       <button class="loan-tab" data-tab="conditions"><span>Conditions</span><span class="loan-tab-badge" id="badge-conditions">—</span></button>
       <button class="loan-tab" data-tab="fees"><span>Fees</span><span class="loan-tab-badge" id="badge-fees">—</span></button>
+      <button class="loan-tab" data-tab="coc"><span>COC</span><span class="loan-tab-badge" id="badge-coc">—</span></button>
       <button class="loan-tab" data-tab="findings"><span>AUS Findings</span><span class="loan-tab-badge" id="badge-findings">—</span></button>
       <button class="loan-tab" data-tab="docs"><span>Docs</span><span class="loan-tab-badge" id="badge-docs">—</span></button>
       <button class="loan-tab" data-tab="activity"><span>Activity</span></button>
@@ -640,6 +708,16 @@ footer a:hover { color:var(--accent); }
             <span class="panel-tag" id="fees-status-tag">—</span>
           </div>
           <div class="panel-body" id="fees-body"><div class="empty-state">Loading…</div></div>
+        </div>
+      </section>
+
+      <section class="tab-section" id="tab-coc">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Change of circumstance · TRID 12 CFR § 1026.19(e)(3)</span>
+            <span class="panel-tag" id="coc-status-tag">—</span>
+          </div>
+          <div class="panel-body" id="coc-body"><div class="empty-state">Loading…</div></div>
         </div>
       </section>
 
@@ -1052,6 +1130,7 @@ function onAction(act) {
 const TAB_LOADERS = {
   overview: renderTabOverview, borrowers: renderTabBorrowers, property: renderTabProperty,
   disclosures: renderTabDisclosures, conditions: renderTabConditions, fees: renderTabFees,
+  coc: renderTabCoc,
   findings: renderTabFindings, docs: renderTabDocs, activity: renderTabActivity, chat: renderTabChat,
 };
 const TAB_LOADED = new Set(['overview']);
@@ -1112,6 +1191,37 @@ async function refreshBadges() {
   } catch (_) {
     $('#badge-fees').textContent = '—';
     $('#badge-fees').className = 'loan-tab-badge';
+  }
+
+  // COC badge — count of open COCs. Tolerates missing table (pre-migration).
+  try {
+    const { data: cocRows } = await supa.from('change_of_circumstance')
+      .select('id, status, revised_le_due_at')
+      .eq('loan_id', loanId).is('archived_at', null);
+    const openCount = (cocRows || []).filter(c => c.status === 'open').length;
+    const dispatchedCount = (cocRows || []).filter(c => c.status === 'revised_le_dispatched').length;
+    if (openCount > 0) {
+      // Red if any open COC is past deadline OR within 24h
+      const now = Date.now();
+      const urgent = (cocRows || []).some(c =>
+        c.status === 'open' && c.revised_le_due_at &&
+        (new Date(c.revised_le_due_at).getTime() - now) < 24 * 3600 * 1000
+      );
+      $('#badge-coc').textContent = openCount;
+      $('#badge-coc').className = 'loan-tab-badge ' + (urgent ? 'red' : 'amber');
+    } else if (dispatchedCount > 0) {
+      $('#badge-coc').textContent = dispatchedCount;
+      $('#badge-coc').className = 'loan-tab-badge amber';
+    } else if ((cocRows || []).length > 0) {
+      $('#badge-coc').textContent = (cocRows || []).length;
+      $('#badge-coc').className = 'loan-tab-badge green';
+    } else {
+      $('#badge-coc').textContent = '0';
+      $('#badge-coc').className = 'loan-tab-badge';
+    }
+  } catch (_) {
+    $('#badge-coc').textContent = '—';
+    $('#badge-coc').className = 'loan-tab-badge';
   }
 
   try {
@@ -1584,9 +1694,51 @@ async function renderTabFees() {
     const bustParts = [];
     if (buckets.zero.bust) bustParts.push(`<strong>Zero-tolerance bust</strong>: ${escapeHtml(buckets.zero.bustReason)}`);
     if (buckets.ten_pct.bust) bustParts.push(`<strong>10% bucket bust</strong>: ${escapeHtml(buckets.ten_pct.bustReason)}`);
-    $('#fees-coc-banner-text').innerHTML = `
-      ${bustParts.join('. ')}.
-      <small>Change of circumstance (COC) required. A revised LE must be issued within 3 business days of the change.</small>
+
+    // Look up the matching open tolerance_bust COC. It will exist if the
+    // database trigger has run since the bust appeared (which it should
+    // have — the trigger fires on every fee change). When found, surface
+    // the live deadline and a one-click "Send Revised LE" button.
+    let cocActions = '';
+    let deadlineMeta = '';
+    try {
+      const { data: openCoc } = await supa.from('change_of_circumstance')
+        .select('id, revised_le_due_at, status')
+        .eq('loan_id', loanId)
+        .eq('coc_type', 'tolerance_bust')
+        .eq('status', 'open')
+        .is('archived_at', null)
+        .maybeSingle();
+
+      if (openCoc?.revised_le_due_at) {
+        const deadline = computeCocDeadline(openCoc.revised_le_due_at);
+        const dlCls = deadline.cls === 'passed' ? '' : (deadline.cls === 'warn' ? 'warn' : '');
+        deadlineMeta = `<div class="fees-coc-banner-deadline ${dlCls}">⏱ ${escapeHtml(deadline.relText)} · due ${escapeHtml(deadline.absText)}</div>`;
+      }
+      if (openCoc?.id && me.role !== 'viewer' && typeof window.OF_sendForESign === 'function') {
+        cocActions = `
+          <button class="fees-coc-banner-cta" onclick="activateTab('coc')">Open COC tab →</button>
+        `;
+      } else if (openCoc?.id) {
+        cocActions = `<button class="fees-coc-banner-cta" onclick="activateTab('coc')">View COC →</button>`;
+      }
+    } catch (_) {
+      // change_of_circumstance table not deployed yet — fall back to the
+      // static banner text. The trigger isn't running either, so this is
+      // expected on pre-migration loans.
+      deadlineMeta = `<div class="fees-coc-banner-deadline warn">⚠ COC table not deployed — trigger not active</div>`;
+    }
+
+    $('#fees-coc-banner').innerHTML = `
+      <span class="fees-coc-banner-icon">⚠</span>
+      <div class="fees-coc-banner-text">
+        ${bustParts.join('. ')}.
+        <small>Change of circumstance (COC) required. A revised LE must be issued within 3 business days of the change.</small>
+      </div>
+      <div class="fees-coc-banner-actions">
+        ${deadlineMeta}
+        ${cocActions}
+      </div>
     `;
     cocEl.style.display = 'flex';
   } else {
@@ -2182,6 +2334,658 @@ async function writeAuditEvent({ operation, table_name, field_changes }) {
   } catch (err) {
     console.warn('audit event:', err);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TAB · COC (Change of Circumstance, Round 4-9)
+//
+// Reads `change_of_circumstance` rows for this loan. Each open COC renders
+// as a full alert card with the busting details and a live deadline; closed
+// (revised_le_signed / resolved_no_action / voided) collapse into compact
+// history rows. The deadline timer relies on revised_le_due_at, which the
+// Postgres trigger sets to detected_at + 3 business days under TRID
+// 12 CFR § 1026.19(e)(3)(iv).
+//
+// Lifecycle the UI exposes:
+//   • open                  → Send Revised LE  (primary)
+//                           → Mark resolved (no LE)
+//                           → Void (admin only)
+//   • revised_le_dispatched → Resend / open envelope · waiting for signature
+//   • revised_le_signed     → no actions; shows resolution timestamp
+//   • resolved_no_action    → no actions; shows reason
+//   • voided                → no actions; admin override visible
+//
+// "Send Revised LE" calls OF_sendForESign('revised_le') and stamps the
+// returned envelope id back onto the COC row, which flips its status
+// to 'revised_le_dispatched'. The reverse-link trigger on esign_envelopes
+// (added in the COC migration) flips status to 'revised_le_signed' when
+// the envelope reaches 'signed' downstream.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const COC_TYPE_LABEL = {
+  tolerance_bust:        'Tolerance bust',
+  borrower_requested:    'Borrower requested',
+  rate_lock_change:      'Rate lock change',
+  property_value_change: 'Property value change',
+  borrower_change:       'Borrower added/removed',
+  closing_date_change:   'Closing date change',
+  eligibility_change:    'Eligibility change',
+  other:                 'Other',
+};
+
+const COC_STATUS_LABEL = {
+  open:                   'Open',
+  revised_le_dispatched:  'Revised LE sent',
+  revised_le_signed:      'Revised LE signed',
+  resolved_no_action:     'Resolved · no LE',
+  voided:                 'Voided',
+};
+
+let _cocCache = [];
+let _cocTimerInterval = null;   // re-renders deadlines every 60s while tab is open
+
+async function renderTabCoc() {
+  let cocs = [];
+  let fetchError = null;
+
+  try {
+    const { data, error } = await supa.from('change_of_circumstance')
+      .select(`id, coc_type, detection_source, description, detail,
+               detected_at, revised_le_due_at, status,
+               revised_le_envelope_id, resolved_at, resolved_by, resolution_notes,
+               detected_by, created_at,
+               detected_by_profile:detected_by ( full_name ),
+               resolved_by_profile:resolved_by ( full_name )`)
+      .eq('loan_id', loanId).is('archived_at', null)
+      .order('status', { ascending: true })           // open first
+      .order('detected_at', { ascending: false });
+    if (error) throw error;
+    cocs = data || [];
+    _cocCache = cocs;
+  } catch (err) {
+    fetchError = err;
+    _cocCache = [];
+  }
+
+  const body = $('#coc-body');
+  const tagEl = $('#coc-status-tag');
+
+  if (fetchError) {
+    tagEl.textContent = 'NOT CONFIGURED';
+    tagEl.className = 'panel-tag amber';
+    body.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">⚠</span>
+        Change-of-circumstance table not deployed yet.<br>
+        <small style="opacity:0.7; display:block; margin-top:0.5rem;">
+          Run migration <code style="font-family:var(--mono); color:var(--accent);">20260509030000_change_of_circumstance.sql</code>.
+          Once the <code style="font-family:var(--mono); color:var(--accent);">change_of_circumstance</code> table exists,
+          this tab activates automatically. The fee-bust detection trigger
+          will start firing on subsequent fee edits.
+        </small>
+      </div>`;
+    stopCocTimer();
+    return;
+  }
+
+  const openCocs    = cocs.filter(c => c.status === 'open');
+  const inFlightCocs = cocs.filter(c => c.status === 'revised_le_dispatched');
+  const historyCocs = cocs.filter(c => ['revised_le_signed','resolved_no_action','voided'].includes(c.status));
+
+  // Status tag rollup
+  const now = Date.now();
+  const anyUrgent = openCocs.some(c =>
+    c.revised_le_due_at && (new Date(c.revised_le_due_at).getTime() - now) < 24 * 3600 * 1000
+  );
+  if (openCocs.length > 0) {
+    tagEl.textContent = `${openCocs.length} OPEN${anyUrgent ? ' · URGENT' : ''}`;
+    tagEl.className = 'panel-tag ' + (anyUrgent ? 'red' : 'amber');
+  } else if (inFlightCocs.length > 0) {
+    tagEl.textContent = `${inFlightCocs.length} REVISED LE OUT`;
+    tagEl.className = 'panel-tag amber';
+  } else if (cocs.length > 0) {
+    tagEl.textContent = 'ALL RESOLVED';
+    tagEl.className = 'panel-tag green';
+  } else {
+    tagEl.textContent = 'NONE';
+    tagEl.className = 'panel-tag';
+  }
+
+  if (cocs.length === 0) {
+    body.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">✓</span>
+        No change-of-circumstance events on this loan.<br>
+        <small style="opacity:0.7; display:block; margin-top:0.5rem;">
+          The Postgres trigger watches the fees table — any tolerance bust
+          will auto-create an event here. You can also log non-fee changes
+          (rate lock change, property value change, etc) manually.
+        </small>
+        ${me.role !== 'viewer' ? `
+          <button class="empty-cta" onclick="promptLogManualCoc()" style="margin-top:0.85rem;">
+            + Log a manual COC
+          </button>
+        ` : ''}
+      </div>`;
+    stopCocTimer();
+    return;
+  }
+
+  const openHtml      = [...openCocs, ...inFlightCocs].map(c => renderCocCard(c)).join('');
+  const historyHtml   = historyCocs.length === 0 ? '' : `
+    <div class="coc-history-section">
+      <div class="coc-history-title">History · ${historyCocs.length} resolved</div>
+      ${historyCocs.map(c => renderCocHistoryRow(c)).join('')}
+    </div>
+  `;
+
+  // Bar at top with action: log manual COC. Resists the temptation to put
+  // it inside an open COC card — the action is loan-scoped, not COC-scoped.
+  const headerBar = me.role !== 'viewer' ? `
+    <div style="display:flex; justify-content:flex-end; margin-bottom:0.85rem;">
+      <button class="lh-action" onclick="promptLogManualCoc()">+ Log a manual COC</button>
+    </div>
+  ` : '';
+
+  body.innerHTML = headerBar + openHtml + historyHtml;
+
+  // Wire per-card action buttons
+  body.querySelectorAll('[data-coc-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.cocAction;
+      const cocId = btn.dataset.cocId;
+      const coc = _cocCache.find(c => c.id === cocId);
+      if (!coc) return;
+      if (action === 'send-revised-le') sendRevisedLeFromCoc(coc);
+      else if (action === 'mark-resolved') promptMarkCocResolved(coc);
+      else if (action === 'void') promptVoidCoc(coc);
+    });
+  });
+
+  // Start the deadline-refresh timer if any open COC has a deadline
+  if (openCocs.some(c => c.revised_le_due_at)) startCocTimer();
+  else stopCocTimer();
+}
+
+function renderCocCard(coc) {
+  const isOpen = coc.status === 'open';
+  const isDispatched = coc.status === 'revised_le_dispatched';
+  const cardCls = isOpen ? '' : (isDispatched ? '' : 'resolved');
+
+  // Deadline block (open only)
+  let deadlineHtml = '';
+  if (isOpen && coc.revised_le_due_at) {
+    const deadline = computeCocDeadline(coc.revised_le_due_at);
+    deadlineHtml = `
+      <div class="coc-deadline ${deadline.cls}">
+        <span class="coc-deadline-icon">${deadline.icon}</span>
+        <div class="coc-deadline-mid">
+          <div class="coc-deadline-label">Revised LE due by · TRID 3 business days</div>
+          <div class="coc-deadline-value">${escapeHtml(deadline.absText)}</div>
+          <div class="coc-deadline-relative ${deadline.relCls}">${escapeHtml(deadline.relText)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Bust details (tolerance_bust only) — read from detail jsonb
+  let bustHtml = '';
+  if (coc.coc_type === 'tolerance_bust' && coc.detail) {
+    const d = coc.detail;
+    const busters = Array.isArray(d.zero_busters) ? d.zero_busters : [];
+    const bucketParts = [];
+    if (Array.isArray(d.busted_buckets) && d.busted_buckets.includes('zero') && Number(d.zero_overage_cents) > 0) {
+      bucketParts.push(`Zero-tolerance overage: <strong style="color:var(--red);">${moneyCents(d.zero_overage_cents)}</strong>`);
+    }
+    if (Array.isArray(d.busted_buckets) && d.busted_buckets.includes('ten_pct') && Number(d.ten_pct_overage_cents) > 0) {
+      bucketParts.push(`10% bucket overage: <strong style="color:var(--red);">${moneyCents(d.ten_pct_overage_cents)}</strong> (current ${moneyCents(d.ten_pct_current_cents)} vs cap ${moneyCents(Math.floor(Number(d.ten_pct_le_cents) * 1.10))})`);
+    }
+    const bustersHtml = busters.length === 0 ? '' : `
+      <div class="coc-busted-list">
+        <div class="coc-busted-list-title">Specific fees over LE</div>
+        ${busters.map(b => `
+          <div class="coc-busted-row">
+            <strong>${escapeHtml(b.description || '—')}</strong>
+            <span>LE ${moneyCents(b.le_cents)} → now ${moneyCents(b.current_cents)}</span>
+            <span class="delta">+${moneyCents(b.overage_cents)}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    bustHtml = `
+      ${bucketParts.length > 0 ? `<div class="coc-card-desc">${bucketParts.join(' · ')}</div>` : ''}
+      ${bustersHtml}
+    `;
+  } else if (coc.detail && Object.keys(coc.detail).length > 0) {
+    // Generic detail dump for non-tolerance-bust types — ugly but informative
+    bustHtml = `
+      <div class="coc-busted-list">
+        <div class="coc-busted-list-title">Detail</div>
+        <pre style="margin:0; font-family:var(--mono); font-size:0.65rem; color:var(--text); white-space:pre-wrap; word-break:break-word;">${escapeHtml(JSON.stringify(coc.detail, null, 2))}</pre>
+      </div>
+    `;
+  }
+
+  // Action buttons
+  let actionsHtml = '';
+  if (isOpen && me.role !== 'viewer') {
+    const sendDisabled = typeof window.OF_sendForESign !== 'function';
+    actionsHtml = `
+      <div class="coc-card-actions">
+        ${coc.coc_type === 'tolerance_bust' ? `
+          <button class="lh-action primary"
+                  data-coc-action="send-revised-le" data-coc-id="${escapeHtml(coc.id)}"
+                  ${sendDisabled ? 'disabled title="OF_sendForESign not configured"' : ''}>
+            ✎ Send Revised LE
+          </button>` : ''}
+        <button class="lh-action" data-coc-action="mark-resolved" data-coc-id="${escapeHtml(coc.id)}">
+          ✓ Mark resolved (no LE)
+        </button>
+        ${me.role === 'admin' ? `
+          <button class="lh-action" data-coc-action="void" data-coc-id="${escapeHtml(coc.id)}"
+                  style="color:var(--muted); border-color:rgba(255,68,68,0.3);">
+            × Void
+          </button>` : ''}
+      </div>
+    `;
+  } else if (isDispatched) {
+    actionsHtml = `
+      <div class="coc-card-actions">
+        <span style="font-family:var(--mono); font-size:0.65rem; color:var(--amber); padding:0.45rem 0;">
+          ⏳ Revised LE sent · awaiting borrower signature
+        </span>
+      </div>
+    `;
+  }
+
+  // Resolution metadata (closed COCs)
+  let resolutionHtml = '';
+  if (coc.resolved_at) {
+    const who = coc.resolved_by_profile?.full_name || 'system';
+    resolutionHtml = `
+      <div class="coc-card-resolution">
+        <strong>Resolved ${dateOnly(coc.resolved_at)}</strong> by ${escapeHtml(who)}.
+        ${coc.resolution_notes ? `<br>${escapeHtml(coc.resolution_notes)}` : ''}
+      </div>
+    `;
+  }
+
+  // Detected-by metadata
+  const detectedBy = coc.detection_source === 'auto_trigger'
+    ? 'auto-detected on fee change'
+    : (coc.detected_by_profile?.full_name
+        ? `logged by ${coc.detected_by_profile.full_name}`
+        : `source: ${coc.detection_source}`);
+
+  return `
+    <div class="coc-card ${cardCls}">
+      <div class="coc-card-head">
+        <div class="coc-card-head-left">
+          <span class="coc-card-icon">${isOpen ? '⚠' : (isDispatched ? '⏳' : '✓')}</span>
+          <span class="coc-card-title">${escapeHtml(COC_TYPE_LABEL[coc.coc_type] || coc.coc_type)}</span>
+          <span class="coc-card-type">${escapeHtml((coc.coc_type || '').replace(/_/g, ' '))}</span>
+        </div>
+        <span class="coc-status-pill ${escapeHtml(coc.status)}">${escapeHtml(COC_STATUS_LABEL[coc.status] || coc.status)}</span>
+      </div>
+      <div class="coc-card-desc">${escapeHtml(coc.description || '')}</div>
+      <div style="font-family:var(--mono); font-size:0.6rem; color:var(--muted); margin-bottom:0.5rem; letter-spacing:0.04em;">
+        Detected ${timeAgo(coc.detected_at)} · ${escapeHtml(detectedBy)}
+      </div>
+      ${deadlineHtml}
+      ${bustHtml}
+      ${resolutionHtml}
+      ${actionsHtml}
+    </div>
+  `;
+}
+
+function renderCocHistoryRow(coc) {
+  const dur = coc.resolved_at && coc.detected_at
+    ? Math.round((new Date(coc.resolved_at) - new Date(coc.detected_at)) / 86400000)
+    : null;
+  return `
+    <div class="coc-history-row">
+      <span class="coc-card-type">${escapeHtml((coc.coc_type || '').replace(/_/g, ' '))}</span>
+      <div class="coc-history-mid">
+        <div class="coc-history-desc">${escapeHtml(coc.description || '—')}</div>
+        <div class="coc-history-meta">
+          Detected ${dateOnly(coc.detected_at)} · resolved ${coc.resolved_at ? dateOnly(coc.resolved_at) : '—'}${dur != null ? ` · ${dur}d` : ''}
+          ${coc.resolved_by_profile?.full_name ? ' by ' + escapeHtml(coc.resolved_by_profile.full_name) : ''}
+        </div>
+      </div>
+      <span class="coc-status-pill ${escapeHtml(coc.status)}">${escapeHtml(COC_STATUS_LABEL[coc.status] || coc.status)}</span>
+      <span></span>
+    </div>
+  `;
+}
+
+// Compute relative deadline state for a COC. Returns label + CSS class
+// hints. The "warn" threshold is 1 business day; "urgent" is the day-of.
+function computeCocDeadline(dueAtIso) {
+  const due = new Date(dueAtIso);
+  const now = new Date();
+  const diffMs = due.getTime() - now.getTime();
+  const absText = due.toLocaleString('en-US', { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+
+  if (diffMs < 0) {
+    const daysOver = Math.floor(-diffMs / 86400000);
+    const hoursOver = Math.floor(-diffMs / 3600000);
+    return {
+      cls: 'passed', icon: '⚠', relCls: 'urgent',
+      absText,
+      relText: daysOver >= 1
+        ? `PAST DUE · TRID violation · ${daysOver}d overdue`
+        : `PAST DUE · TRID violation · ${hoursOver}h overdue`,
+    };
+  }
+  const hours = Math.floor(diffMs / 3600000);
+  const days  = Math.floor(diffMs / 86400000);
+  if (hours < 24) {
+    return {
+      cls: '', icon: '⏱', relCls: 'urgent',
+      absText, relText: `${hours}h remaining · URGENT`,
+    };
+  }
+  if (days < 2) {
+    return {
+      cls: 'warn', icon: '⏱', relCls: 'warn',
+      absText, relText: `${days}d ${hours - days * 24}h remaining`,
+    };
+  }
+  return {
+    cls: 'ok', icon: '⏱', relCls: '',
+    absText, relText: `${days} business day${days === 1 ? '' : 's'} remaining`,
+  };
+}
+
+// Refresh deadline timers without reloading data. Cheap because we only
+// re-render the deadline blocks; nothing else moves. Stops itself when
+// no open COC with a deadline remains visible.
+function startCocTimer() {
+  stopCocTimer();
+  _cocTimerInterval = setInterval(() => {
+    const cards = document.querySelectorAll('.coc-card .coc-deadline');
+    if (cards.length === 0) { stopCocTimer(); return; }
+    // Easiest: just re-render the whole tab if it's active
+    if (document.querySelector('.loan-tab.active')?.dataset.tab === 'coc') {
+      renderTabCoc();
+    } else {
+      stopCocTimer();
+    }
+  }, 60_000);
+}
+function stopCocTimer() {
+  if (_cocTimerInterval) { clearInterval(_cocTimerInterval); _cocTimerInterval = null; }
+}
+
+// ─── COC ACTIONS ──────────────────────────────────────────────────────────
+
+// Send revised LE: dispatches via OF_sendForESign('revised_le') and stamps
+// the resulting envelope id back onto the COC, flipping its status to
+// 'revised_le_dispatched'. The downstream esign trigger will flip to
+// 'revised_le_signed' when the borrower signs.
+async function sendRevisedLeFromCoc(coc) {
+  if (typeof window.OF_sendForESign !== 'function') {
+    showToast('eSign not configured. Implement window.OF_sendForESign.', true);
+    return;
+  }
+  openModal({
+    title: 'Send Revised LE',
+    prompt: `Send a revised Loan Estimate to satisfy this COC?`,
+    detail: `
+      Generates a new LE PDF and dispatches via Dropbox Sign to all borrowers.
+      The envelope id will be stamped onto this COC.
+      <strong>This is the action that closes the TRID 3-business-day clock</strong> — the LE is considered "delivered" when the eSign envelope is created (mailbox rule;
+      borrower needs 7 business days post-delivery to receive before consummation may be calculated).
+    `,
+    confirmLabel: 'Generate & Send',
+    onConfirm: async () => {
+      closeModal();
+      showToast('Generating revised LE…');
+      try {
+        // Hook contract: returns { envelope_id, vendor_request_id, status, ... }
+        const result = await window.OF_sendForESign({
+          loanId,
+          package_type: 'revised_le',
+          coc_id: coc.id,                  // hint to of-hooks for audit narrative
+        });
+
+        // Stamp envelope onto COC + flip status. If OF_sendForESign already
+        // updated the row (via run-coc edge function or similar), this is a
+        // harmless no-op idempotent write.
+        if (result?.envelope_id) {
+          const { error } = await supa.from('change_of_circumstance').update({
+            revised_le_envelope_id: result.envelope_id,
+            status: 'revised_le_dispatched',
+            updated_at: new Date().toISOString(),
+          }).eq('id', coc.id).eq('status', 'open');
+          if (error) console.warn('coc envelope link update:', error);
+        }
+
+        await writeAuditEvent({
+          operation: 'update',
+          table_name: 'change_of_circumstance',
+          field_changes: [
+            { field: 'status', before: 'open', after: 'revised_le_dispatched' },
+            { field: 'revised_le_envelope_id', before: null, after: result?.envelope_id || '(missing)' },
+          ],
+        });
+        showToast('Revised LE sent for signature.');
+        await renderTabCoc();
+        await refreshBadges();
+      } catch (err) {
+        showToast('Send failed: ' + err.message, true);
+      }
+    },
+  });
+}
+
+// Mark resolved (no LE): the user determined a revised LE isn't required.
+// E.g., the change qualified as a "valid changed circumstance" under
+// 12 CFR § 1026.19(e)(3)(iv)(A) which allows the LE baseline to reset
+// without dispatching a new LE. Notes are required so the audit trail
+// captures the reasoning.
+function promptMarkCocResolved(coc) {
+  openModal({
+    title: 'Mark resolved (no revised LE)',
+    prompt: `Resolve this COC without sending a revised LE?`,
+    detail: `
+      Use this when a revised LE isn't required — e.g., a valid changed
+      circumstance that resets the LE baseline, or the bust was corrected
+      back under tolerance before the deadline. <strong>Resolution notes
+      are required</strong> for the audit trail.
+    `,
+    extra: `
+      <div class="modal-field">
+        <label for="coc-resolve-notes">Resolution notes (required)</label>
+        <input type="text" id="coc-resolve-notes" maxlength="2000"
+               placeholder="e.g., Borrower-requested loan amount change qualifies as valid CC under § 1026.19(e)(3)(iv)(C)">
+      </div>
+    `,
+    confirmLabel: 'Mark resolved',
+    onConfirm: async () => {
+      const notes = $('#coc-resolve-notes').value.trim();
+      if (!notes || notes.length < 10) {
+        showToast('Resolution notes are required (min 10 chars).', true);
+        return;
+      }
+      closeModal();
+      try {
+        const { error } = await supa.from('change_of_circumstance').update({
+          status: 'resolved_no_action',
+          resolved_at: new Date().toISOString(),
+          resolved_by: me.id,
+          resolution_notes: notes,
+          updated_at: new Date().toISOString(),
+        }).eq('id', coc.id);
+        if (error) throw error;
+        await writeAuditEvent({
+          operation: 'update', table_name: 'change_of_circumstance',
+          field_changes: [
+            { field: 'status', before: coc.status, after: 'resolved_no_action' },
+            { field: 'resolution_notes', before: null, after: notes },
+          ],
+        });
+        showToast('COC marked resolved.');
+        await renderTabCoc();
+        await refreshBadges();
+      } catch (err) {
+        showToast("Couldn't resolve: " + err.message, true);
+      }
+    },
+  });
+}
+
+// Void: admin-only. Used when a COC was created in error (e.g., a snapshot
+// drift detected as a bust but the LE was never actually sent, so no
+// tolerance applies). Auditors will scrutinize voids — reason is required.
+function promptVoidCoc(coc) {
+  if (me.role !== 'admin') { showToast('Only admins can void COCs.', true); return; }
+  openModal({
+    title: 'Void this COC',
+    prompt: `<span style="color:var(--red);">Void this change-of-circumstance event?</span>`,
+    detail: `
+      <strong style="color:var(--red);">Auditors will scrutinize voided COCs.</strong>
+      Use only when the COC was created in error — e.g., a misconfigured snapshot or
+      a duplicate detection. The original record remains in the database (status=voided)
+      but won't count against TRID compliance. Reason is required.
+    `,
+    extra: `
+      <div class="modal-field">
+        <label for="coc-void-notes">Reason for void (required)</label>
+        <input type="text" id="coc-void-notes" maxlength="2000"
+               placeholder="e.g., Snapshot was taken before LE actually issued; no real tolerance bust">
+      </div>
+    `,
+    confirmLabel: 'Void',
+    onConfirm: async () => {
+      const notes = $('#coc-void-notes').value.trim();
+      if (!notes || notes.length < 10) {
+        showToast('Void reason is required (min 10 chars).', true);
+        return;
+      }
+      closeModal();
+      try {
+        const { error } = await supa.from('change_of_circumstance').update({
+          status: 'voided',
+          resolved_at: new Date().toISOString(),
+          resolved_by: me.id,
+          resolution_notes: notes,
+          updated_at: new Date().toISOString(),
+        }).eq('id', coc.id);
+        if (error) throw error;
+        await writeAuditEvent({
+          operation: 'update', table_name: 'change_of_circumstance',
+          field_changes: [
+            { field: 'status', before: coc.status, after: 'voided' },
+            { field: 'resolution_notes', before: null, after: notes },
+          ],
+        });
+        showToast('COC voided.');
+        await renderTabCoc();
+        await refreshBadges();
+      } catch (err) {
+        showToast("Couldn't void: " + err.message, true);
+      }
+    },
+  });
+}
+
+// Manual COC log: user creates a COC for a non-tolerance-bust trigger
+// (rate lock change, property value change, borrower added, etc).
+// Mirrors the auto-trigger path but with detection_source='manual'.
+function promptLogManualCoc() {
+  if (me.role === 'viewer') { showToast('Viewers cannot log COCs.', true); return; }
+  const typeOptions = Object.entries(COC_TYPE_LABEL)
+    .filter(([k]) => k !== 'tolerance_bust')   // bust is auto-detected only
+    .map(([k, l]) => `<option value="${k}">${escapeHtml(l)}</option>`)
+    .join('');
+
+  openModal({
+    title: 'Log manual COC',
+    prompt: 'Record a change-of-circumstance event',
+    detail: `
+      Use this for changes the auto-detector can't see — borrower-requested
+      changes, rate lock changes, property value changes, etc. Tolerance
+      busts on fees are detected automatically and shouldn't be logged here.
+    `,
+    extra: `
+      <div class="modal-field">
+        <label for="coc-manual-type">Type</label>
+        <select id="coc-manual-type">${typeOptions}</select>
+      </div>
+      <div class="modal-field">
+        <label for="coc-manual-desc">Description</label>
+        <input type="text" id="coc-manual-desc" maxlength="500"
+               placeholder="e.g., Borrower requested $25K loan amount increase">
+      </div>
+      <div class="modal-field">
+        <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-family:var(--sans); text-transform:none; letter-spacing:0; color:var(--text);">
+          <input type="checkbox" id="coc-manual-needs-le" checked style="width:auto; margin:0;">
+          <span style="font-size:0.8rem;">Revised LE required (sets 3-business-day deadline)</span>
+        </label>
+      </div>
+    `,
+    confirmLabel: 'Log COC',
+    onConfirm: async () => {
+      const cocType  = $('#coc-manual-type').value;
+      const desc     = $('#coc-manual-desc').value.trim();
+      const needsLe  = $('#coc-manual-needs-le').checked;
+      if (!desc || desc.length < 5) {
+        showToast('Description is required (min 5 chars).', true);
+        return;
+      }
+      closeModal();
+      try {
+        // We compute the deadline client-side to mirror what the trigger
+        // does for auto-busts; the SQL helper is the source of truth but
+        // this is good enough for a manual entry. The COC trigger doesn't
+        // fire for INSERTs from the client because we're not editing fees.
+        const detected = new Date();
+        const due = needsLe ? addBusinessDaysClient(detected, 3) : null;
+
+        const { error } = await supa.from('change_of_circumstance').insert({
+          loan_id: loanId,
+          branch_id: me.branch_id,
+          coc_type: cocType,
+          detection_source: 'manual',
+          description: desc,
+          detail: { logged_via: 'loan.html#coc-tab' },
+          detected_at: detected.toISOString(),
+          revised_le_due_at: due ? due.toISOString() : null,
+          status: 'open',
+          detected_by: me.id,
+        });
+        if (error) throw error;
+        await writeAuditEvent({
+          operation: 'insert', table_name: 'change_of_circumstance',
+          field_changes: [
+            { field: 'coc_type', before: null, after: cocType },
+            { field: 'description', before: null, after: desc },
+          ],
+        });
+        showToast('COC logged.');
+        await renderTabCoc();
+        await refreshBadges();
+      } catch (err) {
+        showToast('Log failed: ' + err.message, true);
+      }
+    },
+  });
+}
+
+// Client-side approximation of public.add_business_days(). The SQL helper
+// is the source of truth; this matches its weekday-only logic so the UI's
+// preview deadline aligns with what gets inserted.
+function addBusinessDaysClient(date, n) {
+  const d = new Date(date);
+  let added = 0;
+  while (added < n) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return d;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3011,6 +3815,22 @@ function initRealtime() {
         }
       ).subscribe()
   );
+
+  // Change-of-circumstance — when the trigger inserts/updates a COC row,
+  // refresh badge + COC tab + fees-tab banner. The fees-tab banner reads
+  // the COC row to surface the deadline + CTA.
+  realtimeChans.push(
+    supa.channel(`loan-coc:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'change_of_circumstance', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          await refreshBadges();
+          const activeTab = document.querySelector('.loan-tab.active')?.dataset.tab;
+          if (activeTab === 'coc')   await renderTabCoc();
+          if (activeTab === 'fees')  await renderTabFees();   // banner reads coc row
+        }
+      ).subscribe()
+  );
 }
 
 window.addEventListener('beforeunload', () => {
@@ -3039,6 +3859,7 @@ window.promptRunAus = promptRunAus;
 window.promptPriceScenario = promptPriceScenario;
 window.promptESign = promptESign;
 window.promptMoveStage = promptMoveStage;
+window.promptLogManualCoc = promptLogManualCoc;
 // Round 4-7: closeModal + activateTab are referenced by inline onclick
 // handlers inside the AUS post-run summary modal, so they need to be
 // reachable from window scope.
