@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Reports · OriginFlow LOS</title>
-<meta name="description" content="Pipeline velocity, funded volume, fair lending — the metrics Encompass hides three menus deep.">
+<meta name="description" content="Branch-wide KPIs — pipeline, velocity, compliance, quality, LO leaderboard.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,8 +37,7 @@ body {
   font-size: 16px;
   line-height: 1.6;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
 }
 body::before {
   content: '';
@@ -76,23 +75,6 @@ nav {
 }
 .nav-center a:hover, .nav-center a.active { color: var(--accent); }
 
-.nav-search {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
-  color: var(--muted);
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 0.4rem 0.7rem; cursor: pointer;
-  transition: all 0.15s;
-  min-width: 220px;
-}
-.nav-search:hover { border-color: var(--accent); color: var(--text); }
-.nav-search-icon { color: var(--accent); }
-.nav-search-text { flex: 1; text-align: left; }
-.nav-search-kbd {
-  font-size: 0.55rem; padding: 0.1rem 0.35rem;
-  border: 1px solid var(--border); border-radius: 2px;
-  color: var(--muted);
-}
 .nav-newloan {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
   text-transform: uppercase; font-weight: 700;
@@ -125,9 +107,11 @@ nav {
 
 /* ─── PAGE HEADER ──────────────────────────────────────────────────── */
 .page-head {
-  padding: 1.75rem 2rem 0;
+  padding: 1.75rem 2rem 1.25rem;
   border-bottom: 1px solid var(--border);
   background: var(--deep);
+  display: flex; align-items: end; justify-content: space-between;
+  gap: 2rem; flex-wrap: wrap;
 }
 .page-eyebrow {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
@@ -141,324 +125,196 @@ nav {
   color: var(--muted); margin-top: 0.35rem; max-width: 720px;
   font-size: 0.92rem;
 }
-
-/* ─── DATE RANGE BAR ───────────────────────────────────────────────── */
-.range-bar {
-  display: flex; align-items: center; gap: 0.5rem;
-  margin-top: 1.25rem; padding-bottom: 1rem;
-  flex-wrap: wrap;
+.range-toggle {
+  display: inline-flex; gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
 }
-.range-label {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--muted);
-  margin-right: 0.5rem;
-}
-.range-preset {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+.range-toggle button {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--muted); padding: 0.4rem 0.8rem;
+  background: var(--surface); color: var(--muted);
+  border: none; padding: 0.5rem 0.8rem;
   cursor: pointer; transition: all 0.15s;
 }
-.range-preset:hover { color: var(--text); border-color: rgba(0,212,255,0.4); }
-.range-preset.active {
-  background: var(--accent); color: var(--navy);
-  border-color: var(--accent); font-weight: 700;
+.range-toggle button:hover { color: var(--text); }
+.range-toggle button.active {
+  background: var(--accent); color: var(--navy); font-weight: 700;
 }
-.range-divider {
-  color: var(--muted); font-family: var(--mono); font-size: 0.65rem;
-  margin: 0 0.25rem;
-}
-.range-input {
-  font-family: var(--mono); font-size: 0.62rem;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 0.4rem 0.6rem; outline: none;
-  transition: border-color 0.15s;
-  color-scheme: dark;
-}
-.range-input:focus { border-color: var(--accent); }
-.range-info {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  letter-spacing: 0.04em; margin-left: 0.5rem;
-}
-.range-print {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
-  text-transform: uppercase; font-weight: 700;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); padding: 0.4rem 0.8rem;
-  cursor: pointer; transition: all 0.15s;
-  display: inline-flex; align-items: center;
-}
-.range-print:hover { color: var(--accent); border-color: var(--accent); }
-.range-print:active { background: var(--accent); color: var(--navy); }
 
-/* ─── TABS ─────────────────────────────────────────────────────────── */
-.tab-bar {
-  display: flex; gap: 0;
-  border-bottom: 1px solid var(--border);
-  margin: 0 -2rem; padding: 0 2rem;
-  background: var(--deep);
-}
-.tab-btn {
-  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
-  text-transform: uppercase; font-weight: 700;
-  background: none; border: none;
-  color: var(--muted); padding: 0.95rem 1.25rem;
-  cursor: pointer; transition: all 0.15s;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-.tab-btn:hover { color: var(--text); }
-.tab-btn.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-.tab-btn-sub {
-  display: block;
-  font-family: var(--sans); font-size: 0.6rem; font-weight: 400;
-  color: var(--muted); text-transform: none; letter-spacing: 0;
-  margin-top: 0.2rem; line-height: 1.2;
-}
-.tab-btn.active .tab-btn-sub { color: var(--text); }
-
-/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
-.metric-strip {
+/* ─── METRIC HERO STRIP ────────────────────────────────────────────── */
+.hero-strip {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 1px; background: var(--border);
   border-bottom: 1px solid var(--border);
 }
-.metric-cell { background: var(--surface); padding: 1.1rem 1.25rem; }
-.metric-label {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+.hero-cell { background: var(--surface); padding: 1.4rem 1.5rem; }
+.hero-label {
+  font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
 }
-.metric-value { font-family: var(--serif); font-size: 1.7rem; line-height: 1.1; color: var(--white); }
-.metric-value.cyan  { color: var(--accent); }
-.metric-value.green { color: var(--accent2); }
-.metric-value.amber { color: var(--amber); }
-.metric-value.red   { color: var(--red); }
-.metric-sub {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
-  color: var(--muted); margin-top: 0.3rem;
+.hero-value {
+  font-family: var(--serif); font-size: 2rem; line-height: 1.05;
+  color: var(--white);
 }
-.metric-sub .delta-up   { color: var(--accent2); }
-.metric-sub .delta-down { color: var(--red); }
+.hero-value.cyan  { color: var(--accent); }
+.hero-value.green { color: var(--accent2); }
+.hero-value.amber { color: var(--amber); }
+.hero-value.red   { color: var(--red); }
+.hero-sub {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  margin-top: 0.3rem; letter-spacing: 0.04em;
+}
 
-/* ─── REPORT GRID ──────────────────────────────────────────────────── */
-.tab-pane { display: none; flex: 1; flex-direction: column; }
-.tab-pane.active { display: flex; }
-
+/* ─── REPORT CONTAINER ─────────────────────────────────────────────── */
+main { flex: 1; padding: 1.5rem 2rem 3rem; }
 .report-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1px;
-  background: var(--border);
-  flex: 1;
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  max-width: 1400px; margin: 0 auto;
 }
-.report-panel {
-  background: var(--surface);
-  display: flex; flex-direction: column;
-  min-height: 280px;
+.report-card {
+  grid-column: span 1;
+  background: var(--surface); border: 1px solid var(--border);
 }
-.panel-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 1rem 1.25rem 0.85rem;
+.report-card.full { grid-column: span 2; }
+.card-head {
+  padding: 0.85rem 1.25rem;
   border-bottom: 1px solid var(--border);
-}
-.panel-title-block { flex: 1; min-width: 0; }
-.panel-title {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--text);
-  margin-bottom: 0.25rem;
-}
-.panel-sub {
-  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
-  line-height: 1.4;
-}
-.panel-export {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: transparent; border: 1px solid var(--border);
-  color: var(--muted); padding: 0.3rem 0.6rem;
-  cursor: pointer; transition: all 0.15s;
-  margin-left: 0.75rem; flex-shrink: 0;
-}
-.panel-export:hover { color: var(--accent); border-color: var(--accent); }
-.panel-export:disabled { opacity: 0.3; cursor: not-allowed; }
-.panel-body {
-  flex: 1; padding: 1.25rem;
-  overflow-x: auto;
-  display: flex; flex-direction: column;
-}
-
-/* Wide / full-width panels */
-.report-panel.wide { grid-column: 1 / -1; }
-
-/* ─── BAR CHARTS (HTML/CSS) ────────────────────────────────────────── */
-.bar-chart { display: flex; flex-direction: column; gap: 0.55rem; }
-.bar-row {
-  display: grid;
-  grid-template-columns: 130px 1fr 90px;
-  align-items: center;
-  gap: 0.85rem;
-  font-size: 0.78rem;
-}
-.bar-label {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.06em;
-  color: var(--text); text-transform: uppercase;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.bar-track {
-  height: 22px;
   background: var(--deep);
-  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent);
+}
+.card-tag {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.15rem 0.55rem;
+}
+.card-body { padding: 1.1rem 1.25rem; }
+.card-empty {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  text-align: center; padding: 2rem 1rem; letter-spacing: 0.04em;
+}
+
+/* ─── BAR ROWS ─────────────────────────────────────────────────────── */
+.bar-row {
+  display: grid; grid-template-columns: 130px 1fr 90px 80px;
+  gap: 0.75rem; align-items: center;
+  padding: 0.5rem 0;
+  font-family: var(--mono); font-size: 0.7rem;
+}
+.bar-row + .bar-row { border-top: 1px dotted var(--border); }
+.bar-label { color: var(--text); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.62rem; }
+.bar-track {
+  height: 18px; background: var(--deep); border: 1px solid var(--border);
   position: relative; overflow: hidden;
 }
 .bar-fill {
-  position: absolute; top: 0; left: 0; bottom: 0;
-  background: linear-gradient(90deg, var(--accent), rgba(0,212,255,0.5));
-  transition: width 0.4s ease-out;
-}
-.bar-fill.green { background: linear-gradient(90deg, var(--accent2), rgba(0,255,157,0.5)); }
-.bar-fill.amber { background: linear-gradient(90deg, var(--amber), rgba(245,166,35,0.5)); }
-.bar-fill.red   { background: linear-gradient(90deg, var(--red), rgba(255,68,68,0.5)); }
-.bar-value {
-  font-family: var(--mono); font-size: 0.72rem; color: var(--white);
-  text-align: right;
-}
-.bar-value-sub {
-  display: block;
-  font-size: 0.55rem; color: var(--muted);
-  letter-spacing: 0.04em; margin-top: 0.1rem;
-}
-
-/* ─── FUNNEL ───────────────────────────────────────────────────────── */
-.funnel { display: flex; flex-direction: column; gap: 0.4rem; }
-.funnel-row {
-  display: grid;
-  grid-template-columns: 130px 1fr 130px;
-  align-items: center;
-  gap: 0.85rem;
-}
-.funnel-stage {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text);
-}
-.funnel-bar-wrap {
-  height: 32px; background: var(--deep);
-  border: 1px solid var(--border); position: relative;
-  display: flex; align-items: center;
-}
-.funnel-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), rgba(0,212,255,0.4));
-  display: flex; align-items: center;
-  padding-left: 0.65rem;
-  font-family: var(--mono); font-size: 0.7rem; color: var(--navy);
-  font-weight: 700;
-  transition: width 0.4s ease-out;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  transition: width 0.3s;
 }
-.funnel-meta {
-  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
-  text-align: right;
-  letter-spacing: 0.04em;
-}
-.funnel-meta strong { color: var(--white); font-weight: 700; }
-.funnel-meta .drop { color: var(--red); }
+.bar-fill.amber { background: var(--amber); }
+.bar-fill.red   { background: var(--red); }
+.bar-fill.green { background: linear-gradient(90deg, var(--accent2) 0%, var(--accent) 100%); }
+.bar-count { color: var(--white); font-size: 0.75rem; text-align: right; }
+.bar-amt { color: var(--muted); font-size: 0.68rem; text-align: right; }
 
-/* ─── TABLE ────────────────────────────────────────────────────────── */
-.report-table {
+/* ─── VELOCITY SPARK (12-month bar chart) ──────────────────────────── */
+.spark-grid {
+  display: grid; grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  height: 140px;
+  align-items: end;
+}
+.spark-bar {
+  background: var(--accent); position: relative;
+  min-height: 2px;
+  transition: opacity 0.2s;
+  cursor: default;
+}
+.spark-bar:hover { opacity: 0.7; }
+.spark-bar.dim { background: var(--border); }
+.spark-axis {
+  display: grid; grid-template-columns: repeat(12, 1fr);
+  gap: 4px; margin-top: 6px;
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; text-align: center;
+}
+
+/* ─── KEYVAL GRID ──────────────────────────────────────────────────── */
+.kv-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem 1.5rem;
+}
+.kv-cell { padding: 0.55rem 0; border-bottom: 1px dotted var(--border); }
+.kv-cell:last-child, .kv-cell:nth-last-child(2) { border-bottom: none; }
+.kv-label {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.2rem;
+}
+.kv-value { font-family: var(--mono); font-size: 0.95rem; color: var(--white); }
+.kv-value.cyan  { color: var(--accent); }
+.kv-value.green { color: var(--accent2); }
+.kv-value.amber { color: var(--amber); }
+.kv-value.red   { color: var(--red); }
+.kv-sub {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  margin-top: 0.15rem; letter-spacing: 0.04em;
+}
+
+/* ─── LEADERBOARD TABLE ────────────────────────────────────────────── */
+.lo-table {
   width: 100%; border-collapse: collapse;
-  font-size: 0.8rem;
+  font-family: var(--mono); font-size: 0.7rem;
 }
-.report-table th, .report-table td {
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-}
-.report-table th {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+.lo-table th {
+  font-size: 0.55rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted);
-  font-weight: 400;
+  text-align: left; padding: 0.5rem 0.6rem;
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  user-select: none;
 }
-.report-table th:hover { color: var(--text); }
-.report-table th.sorted-asc::after  { content: ' ↑'; color: var(--accent); }
-.report-table th.sorted-desc::after { content: ' ↓'; color: var(--accent); }
-.report-table td {
-  color: var(--text);
-  font-family: var(--sans);
+.lo-table th.right { text-align: right; }
+.lo-table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px dotted var(--border);
 }
-.report-table td.num {
-  font-family: var(--mono); font-size: 0.75rem;
-  text-align: right;
-  color: var(--white);
+.lo-table td.right { text-align: right; color: var(--white); font-size: 0.78rem; }
+.lo-table td.name { color: var(--white); }
+.lo-table td.rank {
+  font-family: var(--serif); font-size: 1.1rem; color: var(--accent);
+  width: 36px;
 }
-.report-table td.num.green { color: var(--accent2); }
-.report-table td.num.amber { color: var(--amber); }
-.report-table td.num.red   { color: var(--red); }
-.report-table tr:last-child td { border-bottom: none; }
-.report-table tr:hover td { background: rgba(0,212,255,0.03); }
+.lo-table tr:hover td { background: rgba(0,212,255,0.03); }
 
-/* ─── BIG STAT ─────────────────────────────────────────────────────── */
-.big-stat {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; flex: 1; padding: 1rem;
+/* ─── HISTOGRAM ────────────────────────────────────────────────────── */
+.histogram {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  height: 90px; align-items: end;
 }
-.big-stat-value {
-  font-family: var(--serif); font-size: 3rem; line-height: 1;
-  color: var(--white); margin-bottom: 0.5rem;
+.hist-bar { background: var(--accent2); position: relative; min-height: 2px; }
+.hist-bar.subprime { background: var(--red); }
+.hist-bar.nearprime { background: var(--amber); }
+.hist-bar.prime { background: var(--accent); }
+.hist-bar.superprime { background: var(--accent2); }
+.hist-axis {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 4px; margin-top: 6px;
+  font-family: var(--mono); font-size: 0.5rem; color: var(--muted);
+  letter-spacing: 0.04em; text-align: center;
 }
-.big-stat-value.cyan { color: var(--accent); }
-.big-stat-value.green { color: var(--accent2); }
-.big-stat-value.amber { color: var(--amber); }
-.big-stat-value.red { color: var(--red); }
-.big-stat-label {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--muted);
+.hist-summary {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 0.85rem; padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono); font-size: 0.62rem;
 }
-.big-stat-sub {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  margin-top: 0.5rem; text-align: center; letter-spacing: 0.04em;
-}
-
-/* ─── EMPTY ────────────────────────────────────────────────────────── */
-.panel-empty {
-  flex: 1;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 2rem 1rem; text-align: center;
-}
-.panel-empty-icon {
-  font-family: var(--mono); font-size: 1.6rem; color: var(--border);
-  margin-bottom: 0.5rem;
-}
-.panel-empty-text {
-  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
-  letter-spacing: 0.04em;
-}
-.panel-empty-sub {
-  font-family: var(--sans); font-size: 0.78rem; color: var(--muted);
-  margin-top: 0.4rem; max-width: 320px;
-}
-
-/* ─── HMDA NOTE ────────────────────────────────────────────────────── */
-.hmda-banner {
-  background: rgba(245,166,35,0.06);
-  border: 1px solid rgba(245,166,35,0.3);
-  border-left-width: 3px;
-  padding: 0.85rem 1rem;
-  margin: 1rem 2rem 0;
-  font-family: var(--mono); font-size: 0.66rem;
-  color: var(--text); letter-spacing: 0.03em; line-height: 1.6;
-}
-.hmda-banner strong { color: var(--amber); }
-.hmda-banner.error {
-  background: rgba(255,68,68,0.06);
-  border-color: rgba(255,68,68,0.3);
-}
-.hmda-banner.error strong { color: var(--red); }
+.hist-summary div { color: var(--muted); }
+.hist-summary strong { color: var(--white); font-size: 0.85rem; display: block; }
 
 /* ─── STATE SCREENS ────────────────────────────────────────────────── */
 .state-screen {
@@ -478,8 +334,7 @@ nav {
 .state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
 .spinner {
   width: 32px; height: 32px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  border: 2px solid var(--border); border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 1.25rem;
@@ -495,293 +350,35 @@ nav {
 }
 .btn:hover { border-color: var(--accent); color: var(--accent); }
 .btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
 
-/* ─── TOAST ────────────────────────────────────────────────────────── */
-.toast {
-  position: fixed; bottom: 1.5rem; right: 1.5rem;
-  background: var(--surface); border: 1px solid var(--border);
-  border-left: 3px solid var(--accent2);
-  padding: 0.85rem 1.1rem;
-  font-family: var(--mono); font-size: 0.7rem;
-  color: var(--text); letter-spacing: 0.04em;
-  z-index: 200;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  display: none;
-  max-width: 400px;
-}
-.toast.error { border-left-color: var(--red); color: var(--red); }
-.toast.show { display: block; animation: toastIn 0.2s ease both; }
-@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-
-/* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep);
-}
-.footer-disclaimer {
-  padding: 0.75rem 2rem;
-  text-align: center;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.55rem;
-  letter-spacing: 0.06em;
-  line-height: 1.5;
-  color: var(--muted);
-}
-.footer-disclaimer strong { color: var(--text); }
-.footer-bottom {
-  padding: 0.75rem 2rem;
+  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 1rem;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
 
-/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
-.cookie-banner {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--deep);
-  border-top: 1px solid var(--accent);
-  padding: 1rem 2rem;
-  display: none;
-  align-items: center; justify-content: space-between;
-  gap: 1.5rem; flex-wrap: wrap;
-  z-index: 500;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
-}
-.cookie-banner.show { display: flex; }
-.cookie-banner-text {
-  flex: 1; min-width: 240px;
-  font-family: var(--sans); font-size: 0.82rem;
-  color: var(--text); line-height: 1.5;
-  letter-spacing: 0;
-}
-.cookie-banner-text a {
-  color: var(--accent); text-decoration: none;
-}
-.cookie-banner-text a:hover { text-decoration: underline; }
-.cookie-banner-actions {
-  display: flex; gap: 0.5rem; flex-shrink: 0;
-}
-.cookie-btn {
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
-  text-transform: uppercase; font-weight: 700;
-  padding: 0.55rem 1rem;
-  border: 1px solid var(--border);
-  background: transparent; color: var(--text);
-  cursor: pointer; transition: all 0.15s;
-}
-.cookie-btn:hover { border-color: var(--accent); color: var(--accent); }
-.cookie-btn.primary {
-  background: var(--accent); color: var(--navy);
-  border-color: var(--accent);
-}
-.cookie-btn.primary:hover {
-  background: var(--accent2); border-color: var(--accent2);
-}
-
-/* ─── PRINT / PDF EXPORT ───────────────────────────────────────────── */
-@media print {
-  @page {
-    size: letter portrait;
-    margin: 0.5in;
-  }
-  @page :first { margin-top: 0.5in; }
-  @page :left  { margin-left: 0.5in; margin-right: 0.5in; }
-  @page :right { margin-left: 0.5in; margin-right: 0.5in; }
-
-  #reports-active {
-    padding: 0 0.25in !important;
-  }
-
-  :root, body {
-    --navy: #ffffff;
-    --deep: #ffffff;
-    --surface: #ffffff;
-    --panel: #ffffff;
-    --border: #cccccc;
-    --text: #1a1a1a;
-    --muted: #555555;
-    --white: #000000;
-    --accent: #0066cc;
-    --accent2: #008844;
-    --amber: #cc7700;
-    --red: #cc0000;
-    background: white !important;
-    color: #1a1a1a !important;
-  }
-  body::before { display: none !important; }
-
-  nav, footer,
-  .nav-search, .nav-newloan, .nav-signout, .nav-branch, .nav-user-role,
-  .range-preset, .range-input, .range-divider, .range-print,
-  .panel-export, .tab-btn, .tab-bar,
-  .toast, .modal-overlay, .cookie-banner,
-  .state-screen,
-  .nav-search-btn,
-  .print-only-section-header
-   {
-    display: none !important;
-  }
-  h2.print-only-section-header {
-    display: block !important;
-    font-family: 'DM Serif Display', Georgia, serif;
-    font-size: 18pt;
-    color: #1a1a1a;
-    margin: 0 0 0.25in 0;
-    padding-bottom: 0.1in;
-    border-bottom: 2px solid #0066cc;
-  }
-
-  .tab-pane {
-    display: block !important;
-    page-break-before: always;
-  }
-  .tab-pane:first-of-type {
-    page-break-before: auto;
-  }
-
-  .page-head {
-    padding: 0 0 0.2in 0 !important;
-    border-bottom: 1px solid #999 !important;
-    background: white !important;
-    margin-bottom: 0.25in;
-  }
-  .page-eyebrow { color: #0066cc !important; font-size: 8pt !important; }
-  .page-title { color: #1a1a1a !important; font-size: 22pt !important; }
-  .page-sub {
-    color: #555 !important; font-size: 9pt !important;
-  }
-  .page-sub::after {
-    content: " · Printed " attr(data-printed-on);
-    font-style: italic;
-  }
-
-  #reports-active {
-    display: block !important;
-    background: white !important;
-  }
-
-  .report-panel,
-  .report-grid > * {
-    page-break-inside: avoid;
-    background: white !important;
-    border: 1px solid #ccc !important;
-    margin-bottom: 0.2in !important;
-    box-shadow: none !important;
-  }
-  .panel-head {
-    background: #f4f4f4 !important;
-    border-bottom: 1px solid #ccc !important;
-    padding: 0.1in 0.15in !important;
-  }
-  .panel-title { color: #1a1a1a !important; font-size: 11pt !important; }
-  .panel-sub { color: #555 !important; font-size: 8pt !important; }
-  .panel-body { padding: 0.15in !important; }
-
-  .metric-strip {
-    background: white !important;
-    border: 1px solid #ccc !important;
-    border-bottom: none !important;
-    page-break-inside: avoid;
-    margin-bottom: 0.15in;
-  }
-  .metric-cell {
-    background: white !important;
-    border-right: 1px solid #ccc;
-  }
-  .metric-cell:last-child { border-right: none; }
-  .metric-label { color: #555 !important; }
-  .metric-value { color: #1a1a1a !important; }
-  .metric-value.cyan { color: #0066cc !important; }
-  .metric-value.green { color: #008844 !important; }
-  .metric-value.amber { color: #cc7700 !important; }
-  .metric-value.red { color: #cc0000 !important; }
-
-  .bar-fill { background: #0066cc !important; }
-  .bar-row, .funnel-row {
-    color: #1a1a1a !important;
-  }
-  .bar-label, .funnel-stage { color: #555 !important; }
-  .bar-value { color: #1a1a1a !important; font-weight: 700; }
-
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    page-break-inside: auto;
-  }
-  thead { display: table-header-group; }
-  th, td {
-    border: 1px solid #ccc !important;
-    padding: 0.05in 0.08in !important;
-    color: #1a1a1a !important;
-    background: white !important;
-    font-size: 9pt !important;
-  }
-  th {
-    background: #f4f4f4 !important;
-    font-weight: 700;
-  }
-  tr { page-break-inside: avoid; }
-
-  .report-grid {
-    display: block !important;
-  }
-
-  .range-bar { display: none !important; }
-
-  #reports-active::after {
-    content: "OriginFlow LOS · Confidential";
-    display: block;
-    text-align: center;
-    font-family: 'Space Mono', monospace;
-    font-size: 7pt;
-    color: #999;
-    margin-top: 0.3in;
-    padding-top: 0.1in;
-    border-top: 1px solid #ddd;
-  }
-
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-}
-
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .nav-center { display: none; }
-  .nav-search { display: none; }
   .report-grid { grid-template-columns: 1fr; }
-  .metric-strip { grid-template-columns: repeat(2, 1fr); }
-  .bar-row { grid-template-columns: 100px 1fr 70px; gap: 0.5rem; }
-  .funnel-row { grid-template-columns: 100px 1fr 90px; gap: 0.5rem; }
+  .report-card.full { grid-column: span 1; }
+  .hero-strip { grid-template-columns: repeat(2, 1fr); }
+  .bar-row { grid-template-columns: 100px 1fr 70px 70px; gap: 0.5rem; }
 }
 @media (max-width: 540px) {
   nav { padding: 0.85rem 1rem; gap: 0.5rem; }
   .nav-branch { display: none; }
-  .nav-user-role { display: none; }
-  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
-  .page-head { padding: 1.25rem 1rem 0; }
+  .page-head { padding: 1.25rem 1rem; }
   .page-title { font-size: 1.4rem; }
-  .tab-bar { margin: 0 -1rem; padding: 0 1rem; overflow-x: auto; flex-wrap: nowrap; }
-  .tab-btn { white-space: nowrap; }
-  .tab-btn-sub { display: none; }
-  .panel-body { padding: 1rem; }
-  .bar-row { grid-template-columns: 70px 1fr 60px; gap: 0.4rem; font-size: 0.7rem; }
-  .bar-label { font-size: 0.55rem; }
-  .bar-value { font-size: 0.65rem; }
-  .funnel-row { grid-template-columns: 70px 1fr 80px; gap: 0.4rem; }
-  .funnel-stage { font-size: 0.55rem; }
-  .hmda-banner { margin: 0.75rem 1rem 0; }
-  .footer-disclaimer { padding: 0.65rem 1rem; }
-  .footer-bottom { padding: 0.65rem 1rem; }
-  .cookie-banner { padding: 0.85rem 1rem; gap: 0.75rem; }
-  .cookie-banner-text { font-size: 0.75rem; min-width: 100%; }
-  .cookie-banner-actions { width: 100%; }
-  .cookie-btn { flex: 1; }
+  main { padding: 1rem; }
+  .hero-strip { grid-template-columns: 1fr 1fr; }
+  .hero-cell { padding: 1rem 1.1rem; }
+  .hero-value { font-size: 1.5rem; }
+  .kv-grid { grid-template-columns: 1fr; }
 }
 </style>
 
@@ -810,19 +407,13 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
-  <li><a href="/home.html">Home</a></li>
-  <li><a href="/dashboard.html">Pipeline</a></li>
-  <li><a href="/branch-library.html">Library</a></li>
-  <li><a href="/documents.html">Documents</a></li>
-  <li><a href="/reports.html">Reports</a></li>
-  <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
-</ul>
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html" class="active">Reports</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
+  </ul>
   <div class="nav-right">
-    <button class="nav-search" id="nav-search-btn" type="button">
-      <span class="nav-search-icon">⌕</span>
-      <span class="nav-search-text">Search loans, borrowers…</span>
-      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
-    </button>
     <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
     <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
@@ -838,543 +429,220 @@ footer a:hover { color: var(--accent); }
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <main id="main">
 
-  <!-- LOADING -->
   <div class="state-screen" id="state-loading">
     <div class="spinner"></div>
-    <div class="state-eyebrow">Authenticating</div>
-    <div class="state-heading" style="font-size:1.4rem;">Loading reports…</div>
+    <div class="state-eyebrow">Loading reports</div>
+    <div class="state-heading" style="font-size:1.4rem;">Crunching the numbers…</div>
   </div>
 
-  <!-- SIGNED OUT -->
   <div class="state-screen" id="state-signed-out" style="display:none;">
     <div class="state-eyebrow">Sign in required</div>
     <h1 class="state-heading">Reports are branch-scoped.</h1>
-    <p class="state-text">Sign in to see your branch's analytics.</p>
+    <p class="state-text">Sign in to see your branch's KPIs.</p>
     <a href="/login.html" class="btn primary">Sign in →</a>
   </div>
 
-  <!-- PROFILE PENDING -->
   <div class="state-screen" id="state-pending" style="display:none;">
     <div class="state-eyebrow">Account pending</div>
     <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
-    <p class="state-text">You'll get an email from <strong>dsrackler@gmail.com</strong> when it's live.</p>
+    <p class="state-text">You'll get an email from <strong>davis@originflowlos.com</strong> when it's live.</p>
     <a href="/home.html" class="btn">Back to Home</a>
   </div>
 
-  <!-- ─── ACTIVE ─── -->
-  <div id="reports-active" style="display:none; flex: 1; display: flex; flex-direction: column; min-height: 0;">
+  <div id="reports-active" style="display:none;">
 
     <!-- PAGE HEADER -->
     <header class="page-head">
-      <div class="page-eyebrow">BRANCH ANALYTICS</div>
-      <h1 class="page-title">Reports</h1>
-      <p class="page-sub">The numbers Encompass hides three menus deep. Pipeline velocity, funded volume, fair lending — refreshed live, exportable to CSV.</p>
-
-      <!-- DATE RANGE BAR -->
-      <div class="range-bar">
-        <span class="range-label">Period</span>
-        <button class="range-preset" data-preset="today">Today</button>
-        <button class="range-preset" data-preset="7d">7 days</button>
-        <button class="range-preset active" data-preset="30d">30 days</button>
-        <button class="range-preset" data-preset="qtd">QTD</button>
-        <button class="range-preset" data-preset="ytd">YTD</button>
-        <button class="range-preset" data-preset="all">All time</button>
-        <span class="range-divider">|</span>
-        <input type="date" class="range-input" id="range-from" aria-label="From date">
-        <span class="range-divider">→</span>
-        <input type="date" class="range-input" id="range-to" aria-label="To date">
-        <span class="range-info" id="range-info">—</span>
-        <span class="range-spacer" style="flex:1;"></span>
-        <button class="range-print" id="btn-export-full" type="button" title="Export every loan in period as one comprehensive CSV (paginates through the database, not just the in-memory sample)">
-          <span style="margin-right:0.35rem;">⇣</span>Full data CSV
-        </button>
-        <button class="range-print" id="btn-print" type="button" title="Print or save as PDF (⌘P)">
-          <span style="margin-right:0.35rem;">⎙</span>Print PDF
-        </button>
+      <div>
+        <div class="page-eyebrow" id="page-eyebrow">BRANCH REPORTS</div>
+        <h1 class="page-title">Pipeline &amp; Performance</h1>
+        <p class="page-sub" id="page-sub">Live data. Updates as loans progress through the pipeline.</p>
       </div>
-
-      <!-- TABS -->
-      <div class="tab-bar">
-        <button class="tab-btn active" data-tab="operational">
-          Operational
-          <span class="tab-btn-sub">velocity, funnel, conditions</span>
-        </button>
-        <button class="tab-btn" data-tab="financial">
-          Financial
-          <span class="tab-btn-sub">funded volume, per-LO, fall-out</span>
-        </button>
-        <button class="tab-btn" data-tab="compliance">
-          Compliance · HMDA
-          <span class="tab-btn-sub">fair lending, declination, ECOA</span>
-        </button>
+      <div class="range-toggle" id="range-toggle">
+        <button data-range="30">Last 30d</button>
+        <button data-range="90">Last 90d</button>
+        <button data-range="365" class="active">Last year</button>
+        <button data-range="ytd">YTD</button>
+        <button data-range="all">All time</button>
       </div>
     </header>
 
-    <!-- ─── TAB: OPERATIONAL ─── -->
-    <section class="tab-pane active" id="tab-operational">
-
-      <div class="metric-strip" id="op-metrics">
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-      </div>
-
-      <div class="report-grid">
-
-        <div class="report-panel wide" data-panel="op-funnel">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Conversion funnel</div>
-              <div class="panel-sub">Of every 100 leads, how many made it to each stage during the period?</div>
-            </div>
-            <button class="panel-export" data-export="op-funnel">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="op-funnel-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="op-velocity">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Days in stage (avg)</div>
-              <div class="panel-sub">How long files sit at each step. Anything over 5 days deserves attention.</div>
-            </div>
-            <button class="panel-export" data-export="op-velocity">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="op-velocity-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="op-snapshot">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Pipeline snapshot · today</div>
-              <div class="panel-sub">Where every active loan currently sits. Independent of date range.</div>
-            </div>
-            <button class="panel-export" data-export="op-snapshot">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="op-snapshot-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="op-conditions">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Conditions · clear time</div>
-              <div class="panel-sub">From condition added to cleared. Faster = fewer days in conditional.</div>
-            </div>
-            <button class="panel-export" data-export="op-conditions">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="op-conditions-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="op-throughput">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Throughput</div>
-              <div class="panel-sub">Stage transitions in this period. Where the work actually happened.</div>
-            </div>
-            <button class="panel-export" data-export="op-throughput">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="op-throughput-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-      </div>
+    <!-- HERO METRICS -->
+    <section class="hero-strip" id="hero-strip">
+      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
+      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
+      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
+      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
     </section>
 
-    <!-- ─── TAB: FINANCIAL ─── -->
-    <section class="tab-pane" id="tab-financial">
+    <!-- REPORT GRID -->
+    <div class="report-grid">
 
-      <div class="metric-strip" id="fin-metrics">
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="report-card full" id="card-velocity">
+        <div class="card-head">
+          <span class="card-title">Velocity · Funded loans by month</span>
+          <span class="card-tag" id="velocity-tag">last 12 months</span>
+        </div>
+        <div class="card-body" id="velocity-body"><div class="card-empty">Loading…</div></div>
       </div>
 
-      <div class="report-grid">
-
-        <div class="report-panel" data-panel="fin-volume">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Funded volume</div>
-              <div class="panel-sub">Total $ funded in period.</div>
-            </div>
-            <button class="panel-export" data-export="fin-volume">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="fin-volume-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+      <div class="report-card" id="card-pipeline">
+        <div class="card-head">
+          <span class="card-title">Pipeline by status</span>
+          <span class="card-tag" id="pipeline-tag">—</span>
         </div>
-
-        <div class="report-panel" data-panel="fin-purpose">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Funded by purpose</div>
-              <div class="panel-sub">Purchase vs refinance vs cash-out, by count and dollars.</div>
-            </div>
-            <button class="panel-export" data-export="fin-purpose">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="fin-purpose-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel wide" data-panel="fin-leaderboard">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Per-LO leaderboard</div>
-              <div class="panel-sub">Funded loans by loan officer in period. Click a column to sort.</div>
-            </div>
-            <button class="panel-export" data-export="fin-leaderboard">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="fin-leaderboard-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="fin-fallout">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Fall-out · denial · withdrawal</div>
-              <div class="panel-sub">Loans that entered the pipeline in the period and didn't fund.</div>
-            </div>
-            <button class="panel-export" data-export="fin-fallout">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="fin-fallout-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="fin-pipeline-value">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Pipeline value · today</div>
-              <div class="panel-sub">$ in active pipeline right now, by stage.</div>
-            </div>
-            <button class="panel-export" data-export="fin-pipeline-value">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="fin-pipeline-value-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ─── TAB: COMPLIANCE / HMDA ─── -->
-    <section class="tab-pane" id="tab-compliance">
-
-      <div class="hmda-banner">
-        <strong>NOTE:</strong> These reports are an internal sanity-check, not a substitute for your annual HMDA-LAR submission. Disparate-treatment metrics surface possible patterns; they do not establish discrimination. "Information not provided" is a valid HMDA category and is reported separately.
+        <div class="card-body" id="pipeline-body"><div class="card-empty">Loading…</div></div>
       </div>
 
-      <!-- Schema warning banner — shown when borrowers.hmda_* columns are missing -->
-      <div class="hmda-banner error" id="hmda-schema-banner" style="display:none;">
-        <strong>SCHEMA NOT READY:</strong>
-        Your <code>borrowers</code> table is missing the HMDA demographic columns
-        (<code>hmda_race</code>, <code>hmda_ethnicity</code>, <code>hmda_sex</code>).
-        These reports are showing empty until the columns are added — see the bottom of the
-        <code>/reports.html</code> source for the migration SQL.
+      <div class="report-card" id="card-program">
+        <div class="card-head">
+          <span class="card-title">Funded by program</span>
+          <span class="card-tag" id="program-tag">—</span>
+        </div>
+        <div class="card-body" id="program-body"><div class="card-empty">Loading…</div></div>
       </div>
 
-      <div class="metric-strip" id="comp-metrics">
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
-        <div class="metric-cell"><div class="metric-label">— </div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="report-card" id="card-quality">
+        <div class="card-head">
+          <span class="card-title">Quality of book</span>
+          <span class="card-tag">funded loans</span>
+        </div>
+        <div class="card-body" id="quality-body"><div class="card-empty">Loading…</div></div>
       </div>
 
-      <div class="report-grid">
-
-        <div class="report-panel" data-panel="comp-race">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Applications by race</div>
-              <div class="panel-sub">URLA Section 7 demographic breakdown of borrowers in period.</div>
-            </div>
-            <button class="panel-export" data-export="comp-race">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="comp-race-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
+      <div class="report-card" id="card-fico">
+        <div class="card-head">
+          <span class="card-title">FICO distribution</span>
+          <span class="card-tag">funded loans</span>
         </div>
-
-        <div class="report-panel" data-panel="comp-ethnicity">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Applications by ethnicity</div>
-              <div class="panel-sub">Hispanic / Not Hispanic / Information not provided.</div>
-            </div>
-            <button class="panel-export" data-export="comp-ethnicity">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="comp-ethnicity-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel wide" data-panel="comp-approval">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Approval rate by demographic</div>
-              <div class="panel-sub">Funded ÷ (funded + denied + withdrawn). Disparities &gt; 20% warrant fair-lending review.</div>
-            </div>
-            <button class="panel-export" data-export="comp-approval">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="comp-approval-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="comp-adverse">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Adverse action timing</div>
-              <div class="panel-sub">ECOA requires notice within 30 days. Anything over 25 is a flag.</div>
-            </div>
-            <button class="panel-export" data-export="comp-adverse">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="comp-adverse-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
-        <div class="report-panel" data-panel="comp-missing">
-          <div class="panel-head">
-            <div class="panel-title-block">
-              <div class="panel-title">Missing demographic data</div>
-              <div class="panel-sub">Applications where Section 7 was not collected at all. HMDA requires you ask, even if borrower declines.</div>
-            </div>
-            <button class="panel-export" data-export="comp-missing">CSV ↓</button>
-          </div>
-          <div class="panel-body" id="comp-missing-body"><div class="panel-empty"><div class="panel-empty-icon">⌬</div><div class="panel-empty-text">Computing…</div></div></div>
-        </div>
-
+        <div class="card-body" id="fico-body"><div class="card-empty">Loading…</div></div>
       </div>
-    </section>
 
+      <div class="report-card" id="card-compliance">
+        <div class="card-head">
+          <span class="card-title">Compliance &amp; risk</span>
+          <span class="card-tag" id="compliance-tag">—</span>
+        </div>
+        <div class="card-body" id="compliance-body"><div class="card-empty">Loading…</div></div>
+      </div>
+
+      <div class="report-card" id="card-aus">
+        <div class="card-head">
+          <span class="card-title">AUS outcomes</span>
+          <span class="card-tag" id="aus-tag">most-recent run per loan</span>
+        </div>
+        <div class="card-body" id="aus-body"><div class="card-empty">Loading…</div></div>
+      </div>
+
+      <div class="report-card full" id="card-leaderboard">
+        <div class="card-head">
+          <span class="card-title">Loan officer leaderboard</span>
+          <span class="card-tag" id="leaderboard-tag">funded volume</span>
+        </div>
+        <div class="card-body" id="leaderboard-body"><div class="card-empty">Loading…</div></div>
+      </div>
+
+      <div class="report-card full" id="card-ops">
+        <div class="card-head">
+          <span class="card-title">Operations</span>
+          <span class="card-tag">credit + AUS + pricing spend</span>
+        </div>
+        <div class="card-body" id="ops-body"><div class="card-empty">Loading…</div></div>
+      </div>
+
+    </div>
   </div>
 
 </main>
-
-<!-- toast -->
-<div class="toast" id="toast" role="status"></div>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- COOKIE BANNER                                                        -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="cookie-banner" id="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent">
-  <div class="cookie-banner-text">
-    We use essential cookies to keep you signed in and analytics cookies to understand how the LOS is used. See our <a href="/privacy.html">Privacy Policy</a> for details.
-  </div>
-  <div class="cookie-banner-actions">
-    <button class="cookie-btn" id="cookie-reject" type="button">Reject analytics</button>
-    <button class="cookie-btn primary" id="cookie-accept" type="button">Accept all</button>
-  </div>
-</div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <div class="footer-disclaimer">
-    <strong>OriginFlow LOS</strong> · Confidential branch data — authorized personnel only · Subject to your organization's information security and HMDA/ECOA compliance policies
-  </div>
-  <div class="footer-bottom">
-    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-    <span>v0.2 · Reports · Refreshed at <span id="footer-refreshed">—</span></span>
-    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
-      <a href="/home.html">Home</a>
-      <a href="/dashboard.html">Pipeline</a>
-      <a href="/branch-library.html">Library</a>
-      <a href="/documents.html">Documents</a>
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-    </div>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · Reports · Round 4-16</span>
+  <div style="display:flex;gap:1.25rem;">
+    <a href="/home.html">Home</a>
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/documents.html">Documents</a>
   </div>
 </footer>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// COOKIE CONSENT — IIFE
+// /reports.html — Branch-wide KPI dashboard (Round 4-16)
 //
-// Reads localStorage.of_cookie_consent. If unset, shows the banner and sets
-// gtag consent default to denied. On user choice, records the decision and
-// updates gtag consent. The gtag() call no-ops silently if GA isn't loaded
-// on this page; once you wire up GA later, the existing decision is honored
-// automatically.
-// ═══════════════════════════════════════════════════════════════════════════
-(function() {
-  var KEY = 'of_cookie_consent';
-  var banner = document.getElementById('cookie-banner');
-  var existing = null;
-  try { existing = localStorage.getItem(KEY); } catch (e) { /* localStorage disabled */ }
-
-  // gtag stub — silently no-ops if GA isn't loaded on this page
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){ window.dataLayer.push(arguments); }
-
-  function applyConsent(decision) {
-    if (typeof window.gtag === 'function') {
-      window.gtag('consent', 'update', {
-        analytics_storage: decision === 'accepted' ? 'granted' : 'denied',
-        ad_storage: 'denied',
-      });
-    }
-  }
-
-  if (!existing) {
-    // Default: deny analytics until user decides
-    if (typeof window.gtag === 'function') {
-      window.gtag('consent', 'default', {
-        analytics_storage: 'denied',
-        ad_storage: 'denied',
-      });
-    }
-    setTimeout(function() { banner.classList.add('show'); }, 600);
-  } else {
-    applyConsent(existing);
-  }
-
-  function record(decision) {
-    try { localStorage.setItem(KEY, decision); } catch (e) { /* localStorage disabled */ }
-    applyConsent(decision);
-    banner.classList.remove('show');
-  }
-
-  document.getElementById('cookie-accept').addEventListener('click', function() { record('accepted'); });
-  document.getElementById('cookie-reject').addEventListener('click', function() { record('rejected'); });
-})();
-</script>
-
-<script>
-// ═══════════════════════════════════════════════════════════════════════════
-// /reports.html — Branch analytics: operational, financial, compliance/HMDA
+// Single-page report. All queries against existing tables (no new schema).
+// Branch-scoped via RLS; aggregations are client-side (which is fine for
+// branches up to ~5,000 active loans). For larger branches we'd push the
+// aggregations into Postgres views or RPC functions, but the simple path
+// covers the current footprint.
 //
-// Architecture:
-//   • One bulk fetch per date-range change (loans + stage_changes + conditions
-//     + borrowers, all branch-scoped). Computed metrics are derived
-//     client-side. A branch with even 5,000 loans/year is well under any
-//     practical limit for in-browser aggregation.
-//   • Three tabs (operational/financial/compliance) read from the same
-//     dataset — switching tabs is free, no refetch.
-//   • Each panel exposes a CSV export button driven by a per-panel
-//     data extractor function.
+// Data sources:
+//   - loans                 — pipeline + funded volume + cycle time
+//   - aus_runs              — approval rate
+//   - conditions            — open count, avg age
+//   - change_of_circumstance — TRID/COC counts by type
+//   - credit_pulls          — cost, avg rep score
+//   - pricing_scenarios     — average scenarios shopped per loan
+//   - closings              — funding-cycle metrics
+//   - profiles              — LO names for leaderboard
 //
-// Schema-resilience (the v0.2 fix):
-//   The bulk fetch SELECT used to hard-code two things that aren't guaranteed
-//   to exist in every deployment:
-//     • `officer:loan_officer_id ( full_name, role )` — embeds via FK from
-//       loans.loan_officer_id to profiles.id. If that FK is missing or named
-//       differently, PostgREST returns 400 with a "could not find a
-//       relationship" error, taking the entire page down.
-//     • `borrowers.hmda_race / hmda_ethnicity / hmda_sex` — optional HMDA
-//       demographic columns. If they're not added yet, the SELECT 400s on
-//       "column does not exist" before any rendering happens.
+// Cards:
+//   1. Hero strip           — 4 big numbers (active pipeline $, funded N,
+//                              avg days to fund, conversion %)
+//   2. Velocity             — funded count by month (last 12 months)
+//   3. Pipeline by status   — bars
+//   4. Funded by program    — bars
+//   5. Quality of book      — avg FICO/DTI/LTV/loan amount
+//   6. FICO distribution    — histogram
+//   7. Compliance & risk    — TRID milestones, COC counts
+//   8. AUS outcomes         — approve/refer/ineligible split
+//   9. LO leaderboard       — top 10 by funded volume
+//  10. Operations           — credit spend, scenarios shopped, etc.
 //
-//   We now probe both at startup (detectSchema), cache the flags, and build
-//   the SELECT string dynamically. The page works with whatever subset of
-//   schema you have — the compliance tab shows a banner if HMDA columns
-//   aren't present, the LO leaderboard falls back to a separate profiles
-//   fetch if the FK isn't registered.
-//
-// Honest flags worth reading:
-//   1. Stage-velocity and throughput depend on the `stage_changes` audit
-//      table populated by /dashboard.html drag-and-drop. Branches that did
-//      bulk imports without going through the UI will have no history;
-//      panels show "no data" rather than fabricating numbers.
-//   2. "Funded" is detected by `loans.status = 'funded'` AND the period
-//      either matches `funded_at` (if you have that column) or
-//      `stage_entered_at` (the timestamp used by dashboard.html).
-//   3. "Days in stage (avg)" uses stage_changes deltas only — loans
-//      currently sitting in a stage are excluded from the average so
-//      one ancient stuck file doesn't skew it.
-//
-// HMDA migration SQL (run if compliance tab is showing the schema banner):
-//   ALTER TABLE borrowers
-//     ADD COLUMN IF NOT EXISTS hmda_race TEXT,
-//     ADD COLUMN IF NOT EXISTS hmda_ethnicity TEXT,
-//     ADD COLUMN IF NOT EXISTS hmda_sex TEXT;
-//
-// Officer FK (run if the LO leaderboard isn't populating):
-//   ALTER TABLE loans
-//     ADD CONSTRAINT loans_loan_officer_id_fkey
-//     FOREIGN KEY (loan_officer_id) REFERENCES profiles(id);
+// Date-range filter applies to ALL "funded" / time-window cards.
+// "Active pipeline" is always current (snapshot).
 // ═══════════════════════════════════════════════════════════════════════════
 
-const $ = (s, root) => (root || document).querySelector(s);
-const $$ = (s, root) => Array.from((root || document).querySelectorAll(s));
-const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+const $ = (s) => document.querySelector(s);
 
-// ─── State ───────────────────────────────────────────────────────────────
 let supa = null;
 let me = null;
 let branch = null;
+let rangeDays = 365;        // default: last year
+let rangeMode = '365';      // for the toggle UI
 
-// Schema feature flags. Each is null until detectSchema() probes the DB,
-// then true if the column/relationship is usable, false if missing.
-// All hard-coded queries that previously 400'd are now gated on these.
-//
-// Three-state for officer info because they can fail independently:
-//   loans_officer_col=false → don't reference the column anywhere
-//   loans_officer_col=true, loans_officer_fk=false → use column, fetch
-//                                                   profile names separately
-//   loans_officer_col=true, loans_officer_fk=true  → use both directly
-//
-// loans_cols is a per-column map for OPTIONAL loans columns that some
-// deployments have and some don't. We probe each one independently and
-// only include the available ones in SELECT. Renderers tolerate undefined
-// values (CSV exports become empty strings, filters fall back to
-// updated_at, etc.).
-//
-// tables tracks optional auxiliary tables. These don't crash the page when
-// missing — affected panels just render empty states explaining what's
-// needed for them to work.
-let SCHEMA = {
-  borrowers_hmda:    null,  // hmda_race, hmda_ethnicity, hmda_sex columns
-  loans_officer_col: null,  // loans.loan_officer_id column exists
-  loans_officer_fk:  null,  // loans.loan_officer_id → profiles FK registered
-  loans_cols: {
-    stage_entered_at: null, // optional — used by velocity / funded-detection
-    archived_at:      null, // optional — used by soft-delete WHERE filter
-  },
-  tables: {
-    stage_changes: null,    // audit table for stage transitions
-    conditions:    null,    // underwriting conditions / clear-time tracking
-  },
-};
-
-// Date range
-let range = { preset: '30d', from: null, to: null };
-
-// Active tab
-let activeTab = 'operational';
-
-// Cached datasets for the current period
-let dataset = null;
-
-// Profile cache for officer name lookup when SCHEMA.loans_officer_fk is false.
-// Populated lazily by ensureProfilesCache().
-let profilesById = null;
-
-// Fetched once, used by stage labels everywhere
-const STAGES = [
-  { key: 'lead',           label: 'Lead' },
-  { key: 'application',    label: 'Application' },
-  { key: 'submitted',      label: 'Submitted' },
-  { key: 'processing',     label: 'Processing' },
-  { key: 'underwriting',   label: 'Underwriting' },
-  { key: 'conditional',    label: 'Conditional' },
-  { key: 'clear_to_close', label: 'Clear-to-close' },
-  { key: 'docs_out',       label: 'Docs out' },
-  { key: 'funded',         label: 'Funded' },
-];
-const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
-
-const TERMINAL_STATUSES = new Set(['funded', 'denied', 'withdrawn']);
-
-// HMDA category labels
-const RACE_LABELS = {
-  amerindian: 'American Indian / Alaska Native',
-  asian:      'Asian',
-  black:      'Black or African American',
-  pacific:    'Native Hawaiian / Other Pacific Islander',
-  white:      'White',
-  multiple:   'Two or more races',
-  declined:   'Information not provided',
-};
-const ETHNICITY_LABELS = {
-  hispanic:     'Hispanic or Latino',
-  not_hispanic: 'Not Hispanic or Latino',
-  declined:     'Information not provided',
-};
-
-// Per-panel CSV export functions (registered as we render panels)
-const exporters = {};
+// All loans in branch (loaded once)
+let allLoans = [];
+let allAus = new Map();      // loan_id → most recent aus_run
+let allConds = [];
+let allCocs = [];
+let allPulls = [];
+let allScenarios = [];
+let allClosings = [];
+let loProfiles = new Map();  // id → {full_name}
 
 // ═══════════════════════════════════════════════════════════════════════════
-// HELPERS
+// FORMATTERS
 // ═══════════════════════════════════════════════════════════════════════════
+
+function $money(c) {
+  if (c == null) return '—';
+  if (Math.abs(c) >= 1_000_000_00) return '$' + (c / 100_000_000).toFixed(1) + 'M';
+  if (Math.abs(c) >= 100_000_00)   return '$' + Math.round(c / 100_000) + 'K';
+  if (Math.abs(c) >= 1_000_00)     return '$' + (c / 100_000).toFixed(0) + 'K';
+  return '$' + Math.round(c / 100).toLocaleString();
+}
+function $count(n) { return (n ?? 0).toLocaleString(); }
+function $pct(n, digits = 1) {
+  if (n == null || !isFinite(n)) return '—';
+  return n.toFixed(digits) + '%';
+}
+function $days(d) {
+  if (d == null || !isFinite(d)) return '—';
+  return Math.round(d) + 'd';
+}
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -1382,288 +650,18 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// ─── Last-seen tracking ─────────────────────────────────────────────────
-async function touchLastSeen() {
-  try {
-    if (!supa || !me?.id) return;
-    const KEY = 'of_last_seen_touched_at';
-    const last = parseInt(localStorage.getItem(KEY) || '0', 10);
-    const now = Date.now();
-    if (now - last < 60000) return;
-    localStorage.setItem(KEY, String(now));
-    supa.from('profiles')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', me.id)
-      .then(({ error }) => { if (error) console.warn('last_seen update:', error.message); });
-  } catch (err) {
-    console.warn('touchLastSeen:', err);
+// Date-window utility. Returns true if `iso` falls within the active range.
+function inRange(iso) {
+  if (!iso) return false;
+  if (rangeMode === 'all') return true;
+  const t = new Date(iso).getTime();
+  const now = Date.now();
+  if (rangeMode === 'ytd') {
+    const yStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    return t >= yStart;
   }
-}
-function fmtMoney(cents, opts) {
-  if (cents == null) return '—';
-  const dollars = Number(cents) / 100;
-  if (opts && opts.compact) {
-    if (dollars >= 1e9) return '$' + (dollars / 1e9).toFixed(2) + 'B';
-    if (dollars >= 1e6) return '$' + (dollars / 1e6).toFixed(2) + 'M';
-    if (dollars >= 1e3) return '$' + (dollars / 1e3).toFixed(0) + 'K';
-  }
-  return '$' + dollars.toLocaleString('en-US', { maximumFractionDigits: 0 });
-}
-function fmtNum(n) {
-  if (n == null) return '—';
-  return Number(n).toLocaleString('en-US');
-}
-function fmtPct(n, dp) {
-  if (n == null || !isFinite(n)) return '—';
-  return Number(n).toFixed(dp != null ? dp : 1) + '%';
-}
-function fmtDays(n) {
-  if (n == null || !isFinite(n)) return '—';
-  if (n < 1) return '<1 d';
-  return Math.round(n) + ' d';
-}
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-function daysBetween(a, b) {
-  return (new Date(b) - new Date(a)) / 86400000;
-}
-function showToast(msg, isError) {
-  const el = $('#toast');
-  el.textContent = msg;
-  el.classList.toggle('error', !!isError);
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 3500);
-}
-function startOfDayISO(date) {
-  const d = (date instanceof Date) ? date : new Date(date);
-  d.setHours(0,0,0,0);
-  return d.toISOString();
-}
-function endOfDayISO(date) {
-  const d = (date instanceof Date) ? date : new Date(date);
-  d.setHours(23,59,59,999);
-  return d.toISOString();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SCHEMA DETECTION
-//
-// Runs once before the first fetch. Probes whether optional schema features
-// exist by issuing minimal SELECTs and inspecting the error code. Both
-// flags get cached on SCHEMA — we don't re-probe on subsequent refreshes.
-//
-// Why this approach: PostgREST returns very specific error messages for
-// missing columns (PGRST204 / "column not found") and missing relationships
-// (PGRST200 / "Could not find a relationship"). We could match on those,
-// but the error CODES vary across PostgREST versions. Treating any error
-// from the probe as "feature missing" is conservative — false negatives
-// (think feature missing when it's there) just means we use the simpler
-// query, which still works.
-// ═══════════════════════════════════════════════════════════════════════════
-
-async function detectSchema() {
-  if (SCHEMA.borrowers_hmda !== null &&
-      SCHEMA.loans_officer_col !== null &&
-      SCHEMA.loans_officer_fk !== null &&
-      Object.values(SCHEMA.loans_cols).every(v => v !== null) &&
-      Object.values(SCHEMA.tables).every(v => v !== null)) return;
-
-  // Probe 1: borrowers.hmda_race column
-  try {
-    const { error } = await supa.from('borrowers')
-      .select('id, hmda_race')
-      .limit(1);
-    if (error) {
-      console.info('[reports] HMDA columns missing on borrowers — compliance tab will show migration banner. Error:', error.message);
-      SCHEMA.borrowers_hmda = false;
-    } else {
-      SCHEMA.borrowers_hmda = true;
-    }
-  } catch (e) {
-    SCHEMA.borrowers_hmda = false;
-  }
-
-  // Probe 2: loans.loan_officer_id column itself.
-  // This is separate from the FK embed because the column can exist without
-  // the FK being registered with PostgREST. If THIS probe fails, the column
-  // doesn't exist at all and we must omit it from every SELECT.
-  try {
-    const { error } = await supa.from('loans')
-      .select('id, loan_officer_id')
-      .limit(1);
-    if (error) {
-      console.info('[reports] loans.loan_officer_id column missing — LO leaderboard will show "Unassigned" for everyone. Error:', error.message);
-      SCHEMA.loans_officer_col = false;
-    } else {
-      SCHEMA.loans_officer_col = true;
-    }
-  } catch (e) {
-    SCHEMA.loans_officer_col = false;
-  }
-
-  // Probe 3: loans → profiles FK via loan_officer_id.
-  // Only meaningful if the column itself exists.
-  if (SCHEMA.loans_officer_col) {
-    try {
-      const { error } = await supa.from('loans')
-        .select('id, officer:loan_officer_id ( full_name )')
-        .limit(1);
-      if (error) {
-        console.info('[reports] loans→profiles officer FK not registered — using standalone profiles fetch. Error:', error.message);
-        SCHEMA.loans_officer_fk = false;
-      } else {
-        SCHEMA.loans_officer_fk = true;
-      }
-    } catch (e) {
-      SCHEMA.loans_officer_fk = false;
-    }
-  } else {
-    SCHEMA.loans_officer_fk = false;
-  }
-
-  // Probe 4: optional loans columns (stage_entered_at, archived_at).
-  // Probed in parallel since they're independent. Each just needs a yes/no.
-  await Promise.all(
-    Object.keys(SCHEMA.loans_cols).map(async (col) => {
-      try {
-        const { error } = await supa.from('loans')
-          .select(`id, ${col}`)
-          .limit(1);
-        if (error) {
-          console.info(`[reports] loans.${col} column missing — page will work without it but some metrics may degrade. Error:`, error.message);
-          SCHEMA.loans_cols[col] = false;
-        } else {
-          SCHEMA.loans_cols[col] = true;
-        }
-      } catch (e) {
-        SCHEMA.loans_cols[col] = false;
-      }
-    })
-  );
-
-  // Probe 5: optional auxiliary tables (stage_changes, conditions).
-  // We use the same minimal `select('id').limit(1)` pattern as the column
-  // probes — it reliably surfaces 404s through `error`. (Earlier we tried
-  // `head: true, count: 'exact'` mode but Supabase JS swallowed 404s in
-  // that path, leaving the flag falsely set to true.)
-  await Promise.all(
-    Object.keys(SCHEMA.tables).map(async (tbl) => {
-      try {
-        const { error } = await supa.from(tbl).select('id').limit(1);
-        if (error) {
-          console.warn(`[reports] ${tbl} table not found — affected panels will show empty states. Error:`, error.message);
-          SCHEMA.tables[tbl] = false;
-        } else {
-          SCHEMA.tables[tbl] = true;
-        }
-      } catch (e) {
-        console.warn(`[reports] ${tbl} probe threw:`, e.message);
-        SCHEMA.tables[tbl] = false;
-      }
-    })
-  );
-
-  // Loud diagnostic — if you don't see this in the console, you're running
-  // a cached version of this file. Hard-reload (Cmd/Ctrl+Shift+R).
-  console.warn('[reports] Schema detection complete:', {
-    'borrowers.hmda_*':       SCHEMA.borrowers_hmda      ? '✓ available' : '✗ missing',
-    'loans.loan_officer_id':  SCHEMA.loans_officer_col   ? '✓ available' : '✗ missing',
-    'loans→profiles FK':      SCHEMA.loans_officer_fk    ? '✓ available' : '✗ missing',
-    'loans.stage_entered_at': SCHEMA.loans_cols.stage_entered_at ? '✓ available' : '✗ missing',
-    'loans.archived_at':      SCHEMA.loans_cols.archived_at      ? '✓ available' : '✗ missing',
-    'stage_changes table':    SCHEMA.tables.stage_changes        ? '✓ available' : '✗ missing',
-    'conditions table':       SCHEMA.tables.conditions           ? '✓ available' : '✗ missing',
-  });
-}
-
-// Build the SELECT string for the bulk loans fetch dynamically. Includes
-// only the embeds and columns that the schema actually supports. Both
-// branches return the same field NAMES for the consuming code (we
-// hand-stitch officer + hmda_* in afterward when the FK/columns are absent),
-// so renderers don't have to care which path was taken.
-function buildLoanSelect() {
-  const borrowerCols = SCHEMA.borrowers_hmda
-    ? 'id, first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex'
-    : 'id, first_name, last_name';
-
-  // Three states for officer info, evaluated independently:
-  //   col + FK   → include both the column and the embed (full data in one go)
-  //   col only   → include the column, embed will fail so we fetch profiles separately
-  //   neither    → omit completely; LO leaderboard shows everyone as "Unassigned"
-  let officerPart = '';
-  if (SCHEMA.loans_officer_fk) {
-    officerPart = 'loan_officer_id, officer:loan_officer_id ( full_name, role ),';
-  } else if (SCHEMA.loans_officer_col) {
-    officerPart = 'loan_officer_id,';
-  }
-
-  // Optional loans columns — include only those that exist
-  const optionalCols = Object.entries(SCHEMA.loans_cols)
-    .filter(([_, present]) => present === true)
-    .map(([col]) => col)
-    .join(', ');
-  const optionalPart = optionalCols ? optionalCols + ',' : '';
-
-  return `
-    id, branch_id, loan_number, status, purpose, loan_amount_cents,
-    created_at, updated_at,
-    ${optionalPart}
-    ${officerPart}
-    loan_borrowers ( position, borrower:borrower_id ( ${borrowerCols} ) )
-  `;
-}
-
-// Apply the optional `archived_at IS NULL` filter only if the column exists.
-// Some deployments don't have soft-delete on loans yet — in that case there's
-// nothing to filter and including the WHERE clause would 400.
-function applyArchivedFilter(query) {
-  if (SCHEMA.loans_cols.archived_at) {
-    return query.is('archived_at', null);
-  }
-  return query;
-}
-
-// When the officer FK isn't registered, fetch profiles for this branch
-// once and stitch officer.full_name + officer.role onto loans manually.
-async function ensureProfilesCache() {
-  if (profilesById) return;
-  profilesById = new Map();
-  try {
-    const { data, error } = await supa.from('profiles')
-      .select('id, full_name, role')
-      .eq('branch_id', me.branch_id);
-    if (error) {
-      console.warn('[reports] profiles fetch for officer-cache failed:', error.message);
-      return;
-    }
-    (data || []).forEach(p => profilesById.set(p.id, p));
-  } catch (e) {
-    console.warn('[reports] profiles fetch threw:', e);
-  }
-}
-
-function attachOfficerToLoan(loan) {
-  if (loan.officer) return loan;
-  if (!loan.loan_officer_id || !profilesById) {
-    loan.officer = null;
-    return loan;
-  }
-  const p = profilesById.get(loan.loan_officer_id);
-  loan.officer = p ? { full_name: p.full_name, role: p.role } : null;
-  return loan;
-}
-
-// Borrowers may be missing hmda_* fields if the columns don't exist. Make
-// sure the property is at least present (as null) so renderers' `borrower[v]`
-// reads don't blow up on undefined.
-function normalizeBorrower(b) {
-  if (!b) return b;
-  if (!('hmda_race' in b)) b.hmda_race = null;
-  if (!('hmda_ethnicity' in b)) b.hmda_ethnicity = null;
-  if (!('hmda_sex' in b)) b.hmda_sex = null;
-  return b;
+  const cutoff = now - rangeDays * 86400 * 1000;
+  return t >= cutoff;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1671,8 +669,6 @@ function normalizeBorrower(b) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function bootstrap() {
-  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
-
   supa = (typeof getSupabase === 'function') ? getSupabase() : null;
   if (!supa) { showState('state-signed-out'); return; }
 
@@ -1680,72 +676,35 @@ async function bootstrap() {
   try {
     session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
   } catch (err) { console.warn('session error:', err); }
-
   if (!session) { showState('state-signed-out'); return; }
 
-  const { data: profile, error: profErr } = await supa
+  const { data: profile } = await supa
     .from('profiles')
     .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
     .eq('id', session.user.id)
     .maybeSingle();
 
-  if (profErr || !profile) { showState('state-pending'); return; }
+  if (!profile) { showState('state-pending'); return; }
   if (!profile.branch_id) {
     $('#nav-user-name').textContent = session.user.email || 'Signed in';
-    showState('state-pending');
-    return;
+    showState('state-pending'); return;
   }
 
-  me = {
-    id: profile.id, branch_id: profile.branch_id, role: profile.role,
-    full_name: profile.full_name || session.user.email,
-    email: profile.email || session.user.email,
-  };
+  me = profile;
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
 
-  touchLastSeen();
-
-  $('#nav-user-name').textContent  = me.full_name;
-  $('#nav-user-role').textContent  = (me.role || '').toUpperCase();
+  $('#nav-user-name').textContent  = profile.full_name || profile.email;
+  $('#nav-user-role').textContent  = (profile.role || '').toUpperCase();
   $('#nav-user-role').style.display = 'inline-block';
   $('#nav-branch-name').textContent = branch.name;
   $('#nav-branch-pill').style.display = 'inline-flex';
-  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
-  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+  if (profile.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (profile.role === 'viewer') $('#nav-newloan').style.display = 'none';
 
   showActive();
-
-  // Initial state from URL
-  const url = new URL(window.location);
-  const urlPreset = url.searchParams.get('range');
-  const urlFrom = url.searchParams.get('from');
-  const urlTo = url.searchParams.get('to');
-  const urlTab = (window.location.hash || '').replace('#', '');
-
-  if (urlPreset) {
-    applyPreset(urlPreset, false);
-  } else if (urlFrom && urlTo) {
-    range = { preset: 'custom', from: urlFrom, to: urlTo };
-  } else {
-    applyPreset('30d', false);
-  }
-
-  if (['operational','financial','compliance'].includes(urlTab)) {
-    activeTab = urlTab;
-  }
-
-  initUI();
-
-  // Probe schema BEFORE first refresh so the bulk fetch uses the correct
-  // SELECT shape. detectSchema is idempotent, so this is safe to call again.
-  await detectSchema();
-
-  // Show schema banner on compliance tab if HMDA columns are missing
-  if (SCHEMA.borrowers_hmda === false) {
-    $('#hmda-schema-banner').style.display = 'block';
-  }
-
-  await refresh();
+  initRangeToggle();
+  await loadAll();
+  renderAll();
 }
 
 function handleSignOut() {
@@ -1763,1479 +722,721 @@ function showActive() {
   ['state-loading','state-signed-out','state-pending'].forEach(s => {
     document.getElementById(s).style.display = 'none';
   });
-  $('#reports-active').style.display = 'flex';
-  switchTab(activeTab, false);
+  $('#reports-active').style.display = 'block';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UI WIRING
-// ═══════════════════════════════════════════════════════════════════════════
-
-function initUI() {
-  $$('.range-preset').forEach(btn => {
-    btn.addEventListener('click', () => applyPreset(btn.dataset.preset, true));
-  });
-
-  $('#range-from').addEventListener('change', onCustomRangeChange);
-  $('#range-to').addEventListener('change', onCustomRangeChange);
-
-  $$('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab, true));
-  });
-
-  $('#btn-print').addEventListener('click', () => {
-    stampPrintMetadata();
-    requestAnimationFrame(() => window.print());
-  });
-  window.addEventListener('beforeprint', stampPrintMetadata);
-
-  $('#btn-export-full').addEventListener('click', exportFullDataset);
-
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('.panel-export');
+function initRangeToggle() {
+  $('#range-toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-range]');
     if (!btn) return;
-    const key = btn.dataset.export;
-    if (exporters[key]) {
-      try {
-        exporters[key]();
-      } catch (err) {
-        console.error('export err:', err);
-        showToast('Export failed: ' + err.message, true);
-      }
-    } else {
-      showToast('Nothing to export yet.', true);
-    }
-  });
-
-  $('#nav-search-btn').addEventListener('click', () => {
-    window.location.href = '/home.html';
-  });
-  document.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      window.location.href = '/home.html';
-    }
-  });
-}
-
-function applyPreset(preset, refetch) {
-  const today = new Date();
-  let from, to;
-  switch (preset) {
-    case 'today':
-      from = new Date(today);
-      to = new Date(today);
-      break;
-    case '7d':
-      from = new Date(today); from.setDate(from.getDate() - 7);
-      to = today;
-      break;
-    case '30d':
-      from = new Date(today); from.setDate(from.getDate() - 30);
-      to = today;
-      break;
-    case 'qtd': {
-      const q = Math.floor(today.getMonth() / 3);
-      from = new Date(today.getFullYear(), q * 3, 1);
-      to = today;
-      break;
-    }
-    case 'ytd':
-      from = new Date(today.getFullYear(), 0, 1);
-      to = today;
-      break;
-    case 'all':
-      from = new Date(2000, 0, 1);
-      to = today;
-      break;
-    default:
-      return;
-  }
-  range = {
-    preset,
-    from: from.toISOString().slice(0, 10),
-    to: to.toISOString().slice(0, 10),
-  };
-
-  $$('.range-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
-  $('#range-from').value = range.from;
-  $('#range-to').value = range.to;
-  updateRangeInfo();
-  syncURL();
-
-  if (refetch) refresh();
-}
-
-function onCustomRangeChange() {
-  const from = $('#range-from').value;
-  const to = $('#range-to').value;
-  if (!from || !to) return;
-  if (new Date(from) > new Date(to)) {
-    showToast('From date is after To date.', true);
-    return;
-  }
-  range = { preset: 'custom', from, to };
-  $$('.range-preset').forEach(b => b.classList.remove('active'));
-  updateRangeInfo();
-  syncURL();
-  refresh();
-}
-
-function updateRangeInfo() {
-  const days = Math.round(daysBetween(range.from, range.to)) + 1;
-  $('#range-info').textContent = `(${days} day${days === 1 ? '' : 's'})`;
-}
-
-function stampPrintMetadata() {
-  const sub = $('.page-sub');
-  if (!sub) return;
-  const days = Math.round(daysBetween(range.from, range.to)) + 1;
-  const fromFmt = new Date(range.from).toLocaleDateString();
-  const toFmt = new Date(range.to).toLocaleDateString();
-  const printedOn = new Date().toLocaleString();
-  sub.textContent = `${branch?.name || 'Branch'} · ${fromFmt} → ${toFmt} (${days} day${days === 1 ? '' : 's'})`;
-  sub.setAttribute('data-printed-on', printedOn);
-
-  const sectionTitles = {
-    'tab-operational': 'Operational Reports',
-    'tab-financial':   'Financial Reports',
-    'tab-compliance':  'Compliance & HMDA',
-  };
-  Object.entries(sectionTitles).forEach(([id, title]) => {
-    const pane = document.getElementById(id);
-    if (!pane) return;
-    let h = pane.querySelector('h2.print-only-section-header');
-    if (!h) {
-      h = document.createElement('h2');
-      h.className = 'print-only-section-header';
-      pane.insertBefore(h, pane.firstChild);
-    }
-    h.textContent = title;
-  });
-
-  const restore = () => {
-    sub.textContent = 'The numbers Encompass hides three menus deep. Pipeline velocity, funded volume, fair lending — refreshed live, exportable to CSV.';
-    sub.removeAttribute('data-printed-on');
-    document.querySelectorAll('h2.print-only-section-header').forEach(el => el.remove());
-    window.removeEventListener('afterprint', restore);
-  };
-  window.addEventListener('afterprint', restore);
-}
-
-function syncURL() {
-  const url = new URL(window.location);
-  if (range.preset !== 'custom') {
-    url.searchParams.set('range', range.preset);
-    url.searchParams.delete('from');
-    url.searchParams.delete('to');
-  } else {
-    url.searchParams.set('from', range.from);
-    url.searchParams.set('to', range.to);
-    url.searchParams.delete('range');
-  }
-  url.hash = activeTab;
-  history.replaceState({}, '', url);
-}
-
-function switchTab(tab, push) {
-  activeTab = tab;
-  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  $$('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
-  if (push) syncURL();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// REFRESH = FETCH + RENDER
-// ═══════════════════════════════════════════════════════════════════════════
-
-async function refresh() {
-  ['op','fin','comp'].forEach(prefix => {
-    $('#' + prefix + '-metrics').querySelectorAll('.metric-cell').forEach(c => {
-      c.querySelector('.metric-value').textContent = '…';
-      c.querySelector('.metric-sub').textContent = 'computing';
-    });
-  });
-
-  try {
-    // Make sure schema is probed (idempotent — no-ops if already done)
-    await detectSchema();
-    dataset = await fetchDataset();
+    document.querySelectorAll('#range-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rangeMode = btn.dataset.range;
+    rangeDays = rangeMode === 'all' ? 99999 :
+                rangeMode === 'ytd' ? 365 :
+                Number(rangeMode);
     renderAll();
-    $('#footer-refreshed').textContent = new Date().toLocaleTimeString();
-  } catch (err) {
-    console.error('refresh err:', err);
-    showToast('Couldn\'t load data: ' + err.message, true);
-  }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FETCH
-//
-// One bulk fetch returning everything we need to compute every panel for the
-// current period. We deliberately fetch slightly more than the period
-// (currently-active loans regardless of created_at, so the snapshot panels
-// are accurate) and then filter client-side.
-//
-// Uses buildLoanSelect() so the SELECT shape adapts to whatever the schema
-// supports. If the officer FK isn't registered, we backfill officer.full_name
-// and officer.role onto each loan from a separate profiles fetch.
+// DATA LOAD
 // ═══════════════════════════════════════════════════════════════════════════
+// One pass at startup. RLS scopes everything to the user's branch.
 
-async function fetchDataset() {
-  const fromISO = startOfDayISO(range.from);
-  const toISO = endOfDayISO(range.to);
-  const SELECT = buildLoanSelect();
+async function loadAll() {
+  // Loans — main dataset
+  const loansP = supa.from('loans')
+    .select('id, loan_number, status, loan_amount_cents, program, purpose, occupancy, ltv_pct, dti_back_pct, lo_id, created_at, le_sent_at, cd_sent_at, cd_signed_at, intent_to_proceed_at, funded_at')
+    .is('archived_at', null)
+    .limit(5000);
 
-  const [createdRes, activeRes] = await Promise.all([
-    applyArchivedFilter(supa.from('loans').select(SELECT))
-      .eq('branch_id', me.branch_id)
-      .gte('created_at', fromISO)
-      .lte('created_at', toISO)
-      .limit(2000),
-    applyArchivedFilter(supa.from('loans').select(SELECT))
-      .eq('branch_id', me.branch_id)
-      .not('status', 'in', '(funded,denied,withdrawn)')
-      .limit(2000),
+  // AUS runs — most-recent per loan
+  const ausP = supa.from('aus_runs')
+    .select('loan_id, outcome, decision_score, is_mock, created_at')
+    .order('created_at', { ascending: false });
+
+  // Conditions
+  const condsP = supa.from('conditions')
+    .select('loan_id, status, created_at')
+    .is('archived_at', null);
+
+  // COCs
+  const cocsP = supa.from('change_of_circumstance')
+    .select('loan_id, coc_type, status, created_at')
+    .is('archived_at', null);
+
+  // Credit pulls — cost + scores
+  const pullsP = supa.from('credit_pulls')
+    .select('loan_id, vendor, cost_cents, pulled_at, rep_score, status')
+    .eq('status', 'completed')
+    .is('archived_at', null);
+
+  // Pricing scenarios — count per loan
+  const pricingP = supa.from('pricing_scenarios')
+    .select('loan_id, locked_at, created_at')
+    .is('archived_at', null);
+
+  // Closings — cycle metrics
+  const closingsP = supa.from('closings')
+    .select('loan_id, scheduled_at, signed_at, funded_at, recorded_at, status')
+    .is('archived_at', null);
+
+  // Run all in parallel; tolerate any single failure (table not yet
+  // deployed on this branch's DB).
+  const [loansR, ausR, condsR, cocsR, pullsR, pricingR, closingsR] = await Promise.allSettled([
+    loansP, ausP, condsP, cocsP, pullsP, pricingP, closingsP,
   ]);
 
-  if (createdRes.error) throw createdRes.error;
-  if (activeRes.error)  throw activeRes.error;
-
-  // Merge unique
-  const loanMap = new Map();
-  (createdRes.data || []).forEach(l => loanMap.set(l.id, l));
-  (activeRes.data  || []).forEach(l => { if (!loanMap.has(l.id)) loanMap.set(l.id, l); });
-  let loans = [...loanMap.values()];
-
-  // If the officer FK isn't registered (but the column is), backfill officer
-  // info from a separate profiles fetch. Single round-trip per refresh
-  // (cached). If the column is missing entirely, there's nothing to look up.
-  if (SCHEMA.loans_officer_col && !SCHEMA.loans_officer_fk) {
-    await ensureProfilesCache();
-    loans.forEach(attachOfficerToLoan);
-  } else if (!SCHEMA.loans_officer_col) {
-    // Column missing — make officer null on every loan so renderers can
-    // safely read `l.officer?.full_name` without surprises.
-    loans.forEach(l => { l.officer = null; });
+  if (loansR.status !== 'fulfilled' || loansR.value.error) {
+    const err = loansR.status === 'fulfilled' ? loansR.value.error : loansR.reason;
+    showFatalError('Could not load loans: ' + (err?.message || err));
+    return;
   }
+  allLoans = loansR.value.data || [];
 
-  // Normalize borrower objects so renderers can read hmda_* unconditionally
-  loans.forEach(l => {
-    (l.loan_borrowers || []).forEach(lb => normalizeBorrower(lb.borrower));
-  });
-
-  // 2. Stage changes — used for velocity, throughput, and app→CTC time.
-  // Skip entirely if the table doesn't exist; affected panels show empty states.
-  let stageChanges = [];
-  let stageChangesPeriod = [];
-  if (SCHEMA.tables.stage_changes) {
-    try {
-      const bufferStart = new Date(fromISO);
-      bufferStart.setDate(bufferStart.getDate() - 90);
-      const bufferStartISO = bufferStart.toISOString().slice(0, 10);
-      const { data, error } = await supa.from('stage_changes')
-        .select('id, loan_id, from_status, to_status, changed_by, actor_role, created_at')
-        .eq('branch_id', me.branch_id)
-        .gte('created_at', bufferStartISO)
-        .lte('created_at', toISO)
-        .order('created_at', { ascending: true })
-        .limit(20000);
-      if (error) throw error;
-      stageChanges = data || [];
-      stageChangesPeriod = stageChanges.filter(c =>
-        c.created_at >= fromISO && c.created_at <= toISO + 'T23:59:59'
-      );
-    } catch (err) {
-      console.warn('stage_changes fetch failed:', err.message);
+  // AUS — keep only the most recent run per loan
+  if (ausR.status === 'fulfilled' && !ausR.value.error) {
+    const seen = new Set();
+    for (const r of (ausR.value.data || [])) {
+      if (seen.has(r.loan_id)) continue;
+      seen.add(r.loan_id);
+      allAus.set(r.loan_id, r);
     }
   }
+  if (condsR.status === 'fulfilled' && !condsR.value.error) allConds = condsR.value.data || [];
+  if (cocsR.status === 'fulfilled' && !cocsR.value.error) allCocs = cocsR.value.data || [];
+  if (pullsR.status === 'fulfilled' && !pullsR.value.error) allPulls = pullsR.value.data || [];
+  if (pricingR.status === 'fulfilled' && !pricingR.value.error) allScenarios = pricingR.value.data || [];
+  if (closingsR.status === 'fulfilled' && !closingsR.value.error) allClosings = closingsR.value.data || [];
 
-  // 3. Conditions — used for clear-time analysis.
-  // Skip if the table doesn't exist; conditions panel shows empty state.
-  let conditions = [];
-  if (SCHEMA.tables.conditions && loans.length > 0) {
-    const loanIds = loans.map(l => l.id);
-    try {
-      const { data, error } = await supa.from('conditions')
-        .select('id, loan_id, status, created_at, cleared_at, title')
-        .in('loan_id', loanIds)
-        .limit(10000);
-      if (error) throw error;
-      conditions = data || [];
-    } catch (err) {
-      console.warn('conditions fetch failed:', err.message);
-    }
+  // LO profiles for the leaderboard
+  const loIds = [...new Set(allLoans.map(l => l.lo_id).filter(Boolean))];
+  if (loIds.length > 0) {
+    const { data: prs } = await supa.from('profiles')
+      .select('id, full_name, role')
+      .in('id', loIds);
+    (prs || []).forEach(p => loProfiles.set(p.id, p));
   }
+}
 
-  return { loans, stageChanges, stageChangesPeriod, conditions, range: { ...range, fromISO, toISO } };
+function showFatalError(msg) {
+  const main = $('#main');
+  main.innerHTML = `<div class="state-screen"><div class="state-eyebrow">Error</div>
+    <h1 class="state-heading" style="font-size:1.4rem">${escapeHtml(msg)}</h1>
+    <p class="state-text">Try refreshing. If it persists, check the browser console.</p></div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RENDER ALL TABS
+// RENDER (orchestrator)
 // ═══════════════════════════════════════════════════════════════════════════
 
 function renderAll() {
-  renderOperational();
-  renderFinancial();
+  renderHero();
+  renderVelocity();
+  renderPipeline();
+  renderProgram();
+  renderQuality();
+  renderFicoHistogram();
   renderCompliance();
+  renderAus();
+  renderLeaderboard();
+  renderOps();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// OPERATIONAL TAB
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── 1. HERO STRIP ────────────────────────────────────────────────────────
 
-function renderOperational() {
-  const { loans, stageChanges, stageChangesPeriod, conditions } = dataset;
+function renderHero() {
+  // Active pipeline = loans NOT in {funded, complete, archived} status.
+  const ACTIVE = ['draft','application','processing','underwriting','approved','clear_to_close','docs_out','signed'];
+  const active = allLoans.filter(l => ACTIVE.includes(l.status));
+  const activeAmt = active.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
 
-  const newLeads = loans.filter(l => isInPeriod(l.created_at)).length;
-  const submittedTransitions = stageChangesPeriod.filter(c => c.to_status === 'submitted').length;
-  const fundedTransitions = stageChangesPeriod.filter(c => c.to_status === 'funded').length;
-  const conversion = newLeads > 0 ? (fundedTransitions / newLeads * 100) : null;
+  // Funded in window
+  const fundedInRange = allLoans.filter(l =>
+    l.status === 'funded' && l.funded_at && inRange(l.funded_at)
+  );
+  const fundedAmt = fundedInRange.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
 
-  const appToCtcDays = computeAppToCtcDays(stageChanges, dataset.range.fromISO, dataset.range.toISO);
+  // Avg days to fund (created_at → funded_at)
+  const cycleDays = fundedInRange
+    .map(l => (new Date(l.funded_at).getTime() - new Date(l.created_at).getTime()) / 86400000)
+    .filter(d => isFinite(d) && d >= 0 && d < 365);
+  const avgCycle = cycleDays.length > 0
+    ? cycleDays.reduce((a,b) => a+b, 0) / cycleDays.length
+    : null;
 
-  $('#op-metrics').innerHTML = `
-    ${metricCell('New leads', fmtNum(newLeads), 'in selected period')}
-    ${metricCell('Submitted', fmtNum(submittedTransitions), 'app → submitted', 'cyan')}
-    ${metricCell('Funded', fmtNum(fundedTransitions), 'closings recorded', 'green')}
-    ${metricCell('App → CTC', fmtDays(appToCtcDays.median), appToCtcDays.n + ' loans · median', appToCtcDays.median != null && appToCtcDays.median < 21 ? 'green' : 'amber')}
-  `;
+  // Conversion = funded / loans-started in window.
+  // "Started" = loans with created_at in window.
+  const startedInRange = allLoans.filter(l => inRange(l.created_at));
+  const startedFunded = startedInRange.filter(l => l.status === 'funded').length;
+  const conversionPct = startedInRange.length > 0
+    ? (startedFunded / startedInRange.length) * 100
+    : null;
 
-  renderFunnel(loans, stageChanges);
-  renderVelocity(stageChanges);
-  renderSnapshot(loans);
-  renderConditions(conditions);
-  renderThroughput(stageChangesPeriod);
-}
-
-function isInPeriod(iso) {
-  if (!iso) return false;
-  const t = new Date(iso).getTime();
-  return t >= new Date(dataset.range.fromISO).getTime() &&
-         t <= new Date(dataset.range.toISO).getTime();
-}
-
-function computeAppToCtcDays(stageChanges, fromISO, toISO) {
-  const byLoan = {};
-  stageChanges.forEach(c => {
-    if (!byLoan[c.loan_id]) byLoan[c.loan_id] = {};
-    if (c.to_status === 'application' && !byLoan[c.loan_id].app) byLoan[c.loan_id].app = c.created_at;
-    if (c.to_status === 'clear_to_close' && !byLoan[c.loan_id].ctc) byLoan[c.loan_id].ctc = c.created_at;
-  });
-  const days = Object.values(byLoan)
-    .filter(b => b.app && b.ctc)
-    .filter(b => b.ctc >= fromISO && b.ctc <= toISO + 'T23:59:59')
-    .map(b => daysBetween(b.app, b.ctc))
-    .filter(d => d >= 0);
-
-  if (days.length === 0) return { median: null, mean: null, n: 0 };
-  days.sort((a,b) => a-b);
-  const median = days[Math.floor(days.length / 2)];
-  const mean = days.reduce((a,b) => a+b, 0) / days.length;
-  return { median, mean, n: days.length };
-}
-
-// ─── Funnel ──────────────────────────────────────────────────────────────
-function renderFunnel(loans, stageChanges) {
-  const cohort = loans.filter(l => isInPeriod(l.created_at));
-  const cohortIds = new Set(cohort.map(l => l.id));
-
-  const reached = {};
-  STAGES.forEach(s => reached[s.key] = new Set());
-
-  cohort.forEach(l => {
-    reached.lead.add(l.id);
-    const currentIdx = STAGES.findIndex(s => s.key === l.status);
-    if (currentIdx >= 0) {
-      for (let i = 0; i <= currentIdx; i++) {
-        reached[STAGES[i].key].add(l.id);
-      }
-    }
-  });
-
-  stageChanges.forEach(c => {
-    if (!cohortIds.has(c.loan_id)) return;
-    const idx = STAGES.findIndex(s => s.key === c.to_status);
-    if (idx >= 0) {
-      for (let i = 0; i <= idx; i++) {
-        reached[STAGES[i].key].add(c.loan_id);
-      }
-    }
-  });
-
-  const counts = STAGES.map(s => ({ key: s.key, label: s.label, count: reached[s.key].size }));
-  const top = counts[0].count;
-
-  const body = $('#op-funnel-body');
-  if (top === 0) {
-    body.innerHTML = renderEmpty('No applications in this period.', 'Try expanding the date range or check back tomorrow.');
-    delete exporters['op-funnel'];
-    return;
-  }
-
-  body.innerHTML = `
-    <div class="funnel">
-      ${counts.map((c, i) => {
-        const pct = top > 0 ? (c.count / top * 100) : 0;
-        const prev = i > 0 ? counts[i-1].count : c.count;
-        const drop = (prev > 0 && i > 0) ? ((prev - c.count) / prev * 100) : 0;
-        return `
-          <div class="funnel-row">
-            <div class="funnel-stage">${escapeHtml(c.label)}</div>
-            <div class="funnel-bar-wrap">
-              <div class="funnel-bar" style="width: ${pct.toFixed(1)}%;">
-                ${c.count > 0 ? c.count : ''}
-              </div>
-            </div>
-            <div class="funnel-meta">
-              <strong>${fmtPct(pct, 0)}</strong>
-              ${i > 0 && drop > 0 ? `<br><span class="drop">−${fmtPct(drop, 0)}</span>` : ''}
-            </div>
-          </div>
-        `;
-      }).join('')}
+  $('#hero-strip').innerHTML = `
+    <div class="hero-cell">
+      <div class="hero-label">Active Pipeline</div>
+      <div class="hero-value cyan">${$money(activeAmt)}</div>
+      <div class="hero-sub">${$count(active.length)} loans · current snapshot</div>
     </div>
-    <div style="margin-top: 1rem; font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em;">
-      Cohort: ${cohort.length} loan${cohort.length === 1 ? '' : 's'} created in period · stages reflect each loan's progress to date
+    <div class="hero-cell">
+      <div class="hero-label">Funded · ${rangeLabel()}</div>
+      <div class="hero-value green">${$money(fundedAmt)}</div>
+      <div class="hero-sub">${$count(fundedInRange.length)} loans</div>
+    </div>
+    <div class="hero-cell">
+      <div class="hero-label">Avg Cycle</div>
+      <div class="hero-value ${avgCycle == null ? '' : avgCycle <= 35 ? 'green' : avgCycle <= 50 ? 'amber' : 'red'}">${$days(avgCycle)}</div>
+      <div class="hero-sub">application → funded · funded loans only</div>
+    </div>
+    <div class="hero-cell">
+      <div class="hero-label">Conversion</div>
+      <div class="hero-value ${conversionPct == null ? '' : conversionPct >= 60 ? 'green' : conversionPct >= 40 ? 'amber' : 'red'}">${$pct(conversionPct, 0)}</div>
+      <div class="hero-sub">${$count(startedFunded)} of ${$count(startedInRange.length)} started</div>
     </div>
   `;
-
-  exporters['op-funnel'] = () => exportCSV('funnel-' + range.preset, [
-    ['stage', 'count', 'percent_of_leads', 'drop_from_prev_pct'],
-    ...counts.map((c, i) => [
-      c.label,
-      c.count,
-      top > 0 ? (c.count / top * 100).toFixed(2) : '',
-      i > 0 && counts[i-1].count > 0 ? ((counts[i-1].count - c.count) / counts[i-1].count * 100).toFixed(2) : '',
-    ]),
-  ]);
 }
 
-// ─── Velocity ────────────────────────────────────────────────────────────
-function renderVelocity(stageChanges) {
-  const byLoan = {};
-  stageChanges.forEach(c => {
-    if (!byLoan[c.loan_id]) byLoan[c.loan_id] = [];
-    byLoan[c.loan_id].push(c);
-  });
+function rangeLabel() {
+  return ({
+    '30':  'last 30d', '90':  'last 90d',
+    '365': 'last year', 'ytd': 'YTD', 'all': 'all time',
+  })[rangeMode] || 'last year';
+}
 
-  const stageDurations = {};
-  STAGES.forEach(s => stageDurations[s.key] = []);
+// ─── 2. VELOCITY (12-month bar chart) ─────────────────────────────────────
 
-  Object.values(byLoan).forEach(events => {
-    events.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    for (let i = 0; i < events.length - 1; i++) {
-      const stage = events[i].to_status;
-      const days = daysBetween(events[i].created_at, events[i+1].created_at);
-      if (stageDurations[stage] && days >= 0) {
-        stageDurations[stage].push(days);
-      }
-    }
-  });
-
-  const rows = STAGES
-    .filter(s => s.key !== 'funded')
-    .map(s => {
-      const arr = stageDurations[s.key].slice().sort((a, b) => a - b);
-      if (arr.length === 0) {
-        return { key: s.key, label: s.label, median: null, p90: null, n: 0 };
-      }
-      const median = arr[Math.floor(arr.length / 2)];
-      const p90 = arr[Math.floor(arr.length * 0.9)];
-      return { key: s.key, label: s.label, median, p90, n: arr.length };
+function renderVelocity() {
+  // Always show last 12 calendar months regardless of date-range filter
+  // (the velocity card answers "is the branch trending up or down?",
+  // which the date filter would obscure).
+  const now = new Date();
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      label: d.toLocaleString('en-US', { month: 'short' }),
+      count: 0, amount: 0,
     });
+  }
 
-  const max = Math.max(1, ...rows.map(r => r.median || 0));
+  for (const l of allLoans) {
+    if (l.status !== 'funded' || !l.funded_at) continue;
+    const d = new Date(l.funded_at);
+    const idx = months.findIndex(m => m.year === d.getFullYear() && m.month === d.getMonth());
+    if (idx >= 0) {
+      months[idx].count++;
+      months[idx].amount += Number(l.loan_amount_cents) || 0;
+    }
+  }
 
-  const body = $('#op-velocity-body');
-  const anyData = rows.some(r => r.median != null);
-  if (!anyData) {
-    body.innerHTML = renderEmpty(
-      'No stage transitions yet.',
-      'Velocity needs the stage_changes audit table populated. It fills in automatically as files move through the pipeline.'
-    );
-    delete exporters['op-velocity'];
+  const max = Math.max(1, ...months.map(m => m.count));
+  const totalCount = months.reduce((s, m) => s + m.count, 0);
+  const totalAmt = months.reduce((s, m) => s + m.amount, 0);
+
+  $('#velocity-tag').textContent = `${$count(totalCount)} loans · ${$money(totalAmt)} · last 12 months`;
+
+  $('#velocity-body').innerHTML = `
+    <div class="spark-grid">
+      ${months.map(m => {
+        const h = (m.count / max) * 100;
+        const dim = m.count === 0 ? 'dim' : '';
+        return `<div class="spark-bar ${dim}" style="height:${Math.max(2, h)}%" title="${m.label}: ${m.count} loans · ${$money(m.amount)}"></div>`;
+      }).join('')}
+    </div>
+    <div class="spark-axis">
+      ${months.map(m => `<div>${m.label}</div>`).join('')}
+    </div>
+  `;
+}
+
+// ─── 3. PIPELINE BY STATUS ────────────────────────────────────────────────
+
+function renderPipeline() {
+  const STATUS_ORDER = [
+    'draft', 'application', 'processing', 'underwriting',
+    'approved', 'clear_to_close', 'docs_out', 'signed',
+    'funded', 'recorded', 'complete',
+  ];
+  const STATUS_LABELS = {
+    draft:'Draft', application:'Application', processing:'Processing',
+    underwriting:'Underwriting', approved:'Approved',
+    clear_to_close:'Clear to close', docs_out:'Docs out', signed:'Signed',
+    funded:'Funded', recorded:'Recorded', complete:'Complete',
+  };
+
+  const buckets = {};
+  for (const s of STATUS_ORDER) buckets[s] = { count: 0, amount: 0 };
+  for (const l of allLoans) {
+    if (!buckets[l.status]) buckets[l.status] = { count: 0, amount: 0 };
+    buckets[l.status].count++;
+    buckets[l.status].amount += Number(l.loan_amount_cents) || 0;
+  }
+  const visibleStatuses = STATUS_ORDER.filter(s => buckets[s].count > 0);
+  const totalCount = visibleStatuses.reduce((s, k) => s + buckets[k].count, 0);
+  const max = Math.max(1, ...visibleStatuses.map(k => buckets[k].count));
+
+  $('#pipeline-tag').textContent = `${$count(totalCount)} loans · all statuses`;
+
+  if (visibleStatuses.length === 0) {
+    $('#pipeline-body').innerHTML = `<div class="card-empty">No loans in this branch yet.</div>`;
     return;
   }
 
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = r.median != null ? (r.median / max * 100) : 0;
-        let cls = '';
-        if (r.median != null) {
-          if (r.median > 10) cls = 'red';
-          else if (r.median > 5) cls = 'amber';
-          else cls = 'green';
-        }
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(r.label)}</div>
-            <div class="bar-track">
-              ${r.median != null ? `<div class="bar-fill ${cls}" style="width: ${pct.toFixed(1)}%;"></div>` : ''}
-            </div>
-            <div class="bar-value">
-              ${fmtDays(r.median)}
-              <span class="bar-value-sub">${r.n} sample${r.n === 1 ? '' : 's'}</span>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-    <div style="margin-top: 0.85rem; font-family: var(--mono); font-size: 0.55rem; color: var(--muted); letter-spacing: 0.04em;">
-      Median days per stage · sample window includes 90 days before the selected period for accuracy
-    </div>
-  `;
-
-  exporters['op-velocity'] = () => exportCSV('velocity-' + range.preset, [
-    ['stage', 'median_days', 'p90_days', 'sample_size'],
-    ...rows.map(r => [
-      r.label,
-      r.median != null ? r.median.toFixed(2) : '',
-      r.p90 != null ? r.p90.toFixed(2) : '',
-      r.n
-    ]),
-  ]);
+  $('#pipeline-body').innerHTML = visibleStatuses.map(s => {
+    const b = buckets[s];
+    const pct = (b.count / max) * 100;
+    const cls = s === 'funded' || s === 'complete' || s === 'recorded' ? 'green'
+              : s === 'underwriting' || s === 'docs_out' ? 'amber' : '';
+    return `
+      <div class="bar-row">
+        <div class="bar-label">${STATUS_LABELS[s] || s}</div>
+        <div class="bar-track"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+        <div class="bar-count">${$count(b.count)}</div>
+        <div class="bar-amt">${$money(b.amount)}</div>
+      </div>
+    `;
+  }).join('');
 }
 
-// ─── Snapshot ────────────────────────────────────────────────────────────
-function renderSnapshot(loans) {
-  const counts = {};
-  STAGES.forEach(s => counts[s.key] = 0);
-  loans.forEach(l => {
-    if (counts[l.status] != null && !TERMINAL_STATUSES.has(l.status)) counts[l.status]++;
-  });
-  const rows = STAGES.filter(s => s.key !== 'funded').map(s => ({ key: s.key, label: s.label, count: counts[s.key] || 0 }));
-  const total = rows.reduce((a, r) => a + r.count, 0);
-  const max = Math.max(1, ...rows.map(r => r.count));
+// ─── 4. FUNDED BY PROGRAM ─────────────────────────────────────────────────
 
-  const body = $('#op-snapshot-body');
-  if (total === 0) {
-    body.innerHTML = renderEmpty('Pipeline is empty right now.', 'No active loans on the board. Start a new file to populate this view.');
-    delete exporters['op-snapshot'];
+function renderProgram() {
+  const PROG_LABELS = {
+    conventional:'Conventional', fha:'FHA', va:'VA', usda:'USDA',
+    jumbo:'Jumbo', non_qm:'Non-QM',
+  };
+  const buckets = {};
+  const fundedInRange = allLoans.filter(l =>
+    l.status === 'funded' && l.funded_at && inRange(l.funded_at)
+  );
+  for (const l of fundedInRange) {
+    const key = l.program || 'unknown';
+    if (!buckets[key]) buckets[key] = { count: 0, amount: 0 };
+    buckets[key].count++;
+    buckets[key].amount += Number(l.loan_amount_cents) || 0;
+  }
+  const keys = Object.keys(buckets).sort((a, b) => buckets[b].count - buckets[a].count);
+  const max = Math.max(1, ...keys.map(k => buckets[k].count));
+
+  $('#program-tag').textContent = `${$count(fundedInRange.length)} funded · ${rangeLabel()}`;
+
+  if (keys.length === 0) {
+    $('#program-body').innerHTML = `<div class="card-empty">No funded loans in this window.</div>`;
     return;
   }
 
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = (r.count / max * 100);
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(r.label)}</div>
-            <div class="bar-track">
-              ${r.count > 0 ? `<div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>` : ''}
-            </div>
-            <div class="bar-value">${r.count}</div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-    <div style="margin-top: 1rem; font-family: var(--mono); font-size: 0.62rem; color: var(--muted); letter-spacing: 0.04em;">
-      ${total} active · funded loans excluded
-    </div>
-  `;
-
-  exporters['op-snapshot'] = () => exportCSV('snapshot-today', [
-    ['stage', 'active_count'],
-    ...rows.map(r => [r.label, r.count]),
-  ]);
+  $('#program-body').innerHTML = keys.map(k => {
+    const b = buckets[k];
+    const pct = (b.count / max) * 100;
+    return `
+      <div class="bar-row">
+        <div class="bar-label">${PROG_LABELS[k] || k}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-count">${$count(b.count)}</div>
+        <div class="bar-amt">${$money(b.amount)}</div>
+      </div>
+    `;
+  }).join('');
 }
 
-// ─── Conditions ──────────────────────────────────────────────────────────
-function renderConditions(conditions) {
-  const cleared = conditions.filter(c => c.cleared_at && c.created_at);
-  const open = conditions.filter(c => c.status === 'open' || (!c.cleared_at && c.status !== 'waived'));
+// ─── 5. QUALITY OF BOOK ───────────────────────────────────────────────────
 
-  const clearTimes = cleared.map(c => daysBetween(c.created_at, c.cleared_at)).filter(d => d >= 0);
-  clearTimes.sort((a,b) => a-b);
-  const median = clearTimes.length ? clearTimes[Math.floor(clearTimes.length / 2)] : null;
-  const mean = clearTimes.length ? clearTimes.reduce((a,b) => a+b, 0) / clearTimes.length : null;
+function renderQuality() {
+  const fundedInRange = allLoans.filter(l =>
+    l.status === 'funded' && l.funded_at && inRange(l.funded_at)
+  );
+  if (fundedInRange.length === 0) {
+    $('#quality-body').innerHTML = `<div class="card-empty">No funded loans in this window.</div>`;
+    return;
+  }
+
+  // Average rep score on funded loans — pull from credit_pulls.
+  // For each funded loan, find the most recent completed pull and use
+  // its rep_score. Borrowers with thin files / no pull get skipped.
+  const loanLastPull = new Map();
+  for (const p of allPulls) {
+    if (!p.rep_score) continue;
+    const prev = loanLastPull.get(p.loan_id);
+    if (!prev || new Date(p.pulled_at) > new Date(prev.pulled_at)) {
+      loanLastPull.set(p.loan_id, p);
+    }
+  }
+  const ficoScores = fundedInRange
+    .map(l => loanLastPull.get(l.id)?.rep_score)
+    .filter(s => s != null);
+  const avgFico = ficoScores.length > 0
+    ? ficoScores.reduce((a,b) => a+b, 0) / ficoScores.length
+    : null;
+
+  const dtis = fundedInRange.map(l => Number(l.dti_back_pct)).filter(n => isFinite(n) && n > 0);
+  const avgDti = dtis.length > 0 ? dtis.reduce((a,b)=>a+b,0) / dtis.length : null;
+
+  const ltvs = fundedInRange.map(l => Number(l.ltv_pct)).filter(n => isFinite(n) && n > 0);
+  const avgLtv = ltvs.length > 0 ? ltvs.reduce((a,b)=>a+b,0) / ltvs.length : null;
+
+  const amounts = fundedInRange.map(l => Number(l.loan_amount_cents)).filter(n => isFinite(n) && n > 0);
+  const avgAmount = amounts.length > 0 ? amounts.reduce((a,b)=>a+b,0) / amounts.length : null;
+
+  $('#quality-body').innerHTML = `
+    <div class="kv-grid">
+      <div class="kv-cell">
+        <div class="kv-label">Avg rep FICO</div>
+        <div class="kv-value ${avgFico == null ? '' : avgFico >= 740 ? 'green' : avgFico >= 680 ? 'cyan' : avgFico >= 620 ? 'amber' : 'red'}">${avgFico ? Math.round(avgFico) : '—'}</div>
+        <div class="kv-sub">${ficoScores.length} of ${fundedInRange.length} loans</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Avg DTI (back)</div>
+        <div class="kv-value ${avgDti == null ? '' : avgDti <= 36 ? 'green' : avgDti <= 43 ? 'amber' : 'red'}">${$pct(avgDti)}</div>
+        <div class="kv-sub">across ${dtis.length} loans</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Avg LTV</div>
+        <div class="kv-value ${avgLtv == null ? '' : avgLtv <= 80 ? 'green' : avgLtv <= 95 ? 'amber' : 'red'}">${$pct(avgLtv)}</div>
+        <div class="kv-sub">across ${ltvs.length} loans</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Avg loan amount</div>
+        <div class="kv-value cyan">${$money(avgAmount)}</div>
+        <div class="kv-sub">across ${amounts.length} loans</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── 6. FICO DISTRIBUTION HISTOGRAM ───────────────────────────────────────
+
+function renderFicoHistogram() {
+  const fundedInRange = allLoans.filter(l =>
+    l.status === 'funded' && l.funded_at && inRange(l.funded_at)
+  );
+  const loanLastPull = new Map();
+  for (const p of allPulls) {
+    if (!p.rep_score) continue;
+    const prev = loanLastPull.get(p.loan_id);
+    if (!prev || new Date(p.pulled_at) > new Date(prev.pulled_at)) {
+      loanLastPull.set(p.loan_id, p);
+    }
+  }
+  const scores = fundedInRange
+    .map(l => loanLastPull.get(l.id)?.rep_score)
+    .filter(s => s != null);
+
+  if (scores.length === 0) {
+    $('#fico-body').innerHTML = `<div class="card-empty">No FICO data — need credit pulls on funded loans.</div>`;
+    return;
+  }
 
   const buckets = [
-    { label: '< 1 day',   match: d => d < 1 },
-    { label: '1–3 days',  match: d => d >= 1 && d < 3 },
-    { label: '3–7 days',  match: d => d >= 3 && d < 7 },
-    { label: '7–14 days', match: d => d >= 7 && d < 14 },
-    { label: '14+ days',  match: d => d >= 14 },
+    { label: '< 620', min: 0, max: 619, count: 0, cls: 'subprime' },
+    { label: '620-679', min: 620, max: 679, count: 0, cls: 'nearprime' },
+    { label: '680-719', min: 680, max: 719, count: 0, cls: 'nearprime' },
+    { label: '720-759', min: 720, max: 759, count: 0, cls: 'prime' },
+    { label: '760-799', min: 760, max: 799, count: 0, cls: 'superprime' },
+    { label: '≥ 800', min: 800, max: 850, count: 0, cls: 'superprime' },
   ];
-  buckets.forEach(b => b.count = clearTimes.filter(b.match).length);
+  for (const s of scores) {
+    const b = buckets.find(x => s >= x.min && s <= x.max);
+    if (b) b.count++;
+  }
   const max = Math.max(1, ...buckets.map(b => b.count));
 
-  const body = $('#op-conditions-body');
-  if (clearTimes.length === 0 && open.length === 0) {
-    body.innerHTML = renderEmpty('No conditions in the pipeline.', 'Conditions appear when underwriting flags missing items on a file.');
-    delete exporters['op-conditions'];
-    return;
-  }
+  // Quick stats
+  scores.sort((a, b) => a - b);
+  const min = scores[0], maxS = scores[scores.length - 1];
+  const median = scores[Math.floor(scores.length / 2)];
+  const mean = Math.round(scores.reduce((a,b) => a+b, 0) / scores.length);
 
-  body.innerHTML = `
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
-        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Median clear time</div>
-        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${median != null && median < 2 ? 'var(--accent2)' : 'var(--white)'};">${fmtDays(median)}</div>
-        <div style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); margin-top: 0.2rem;">${clearTimes.length} cleared</div>
-      </div>
-      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
-        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Open right now</div>
-        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${open.length > 10 ? 'var(--amber)' : 'var(--white)'};">${open.length}</div>
-        <div style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); margin-top: 0.2rem;">across all loans</div>
-      </div>
-    </div>
-    ${clearTimes.length > 0 ? `
-      <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;">Clear time distribution</div>
-      <div class="bar-chart">
-        ${buckets.map(b => `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(b.label)}</div>
-            <div class="bar-track">${b.count > 0 ? `<div class="bar-fill green" style="width: ${(b.count / max * 100).toFixed(1)}%;"></div>` : ''}</div>
-            <div class="bar-value">${b.count}</div>
-          </div>
-        `).join('')}
-      </div>
-    ` : ''}
-  `;
-
-  exporters['op-conditions'] = () => exportCSV('conditions-' + range.preset, [
-    ['metric', 'value'],
-    ['median_clear_days', median != null ? median.toFixed(2) : ''],
-    ['mean_clear_days', mean != null ? mean.toFixed(2) : ''],
-    ['cleared_count', clearTimes.length],
-    ['open_count', open.length],
-    ...buckets.map(b => ['cleared_' + b.label.replace(/[^a-z0-9]+/gi, '_'), b.count]),
-  ]);
-}
-
-// ─── Throughput ──────────────────────────────────────────────────────────
-function renderThroughput(stageChanges) {
-  const counts = {};
-  STAGES.forEach(s => counts[s.key] = 0);
-  stageChanges.forEach(c => {
-    if (counts[c.to_status] != null) counts[c.to_status]++;
-  });
-
-  const rows = STAGES
-    .filter(s => s.key !== 'lead')
-    .map(s => ({ key: s.key, label: '→ ' + s.label, count: counts[s.key] || 0 }));
-  const max = Math.max(1, ...rows.map(r => r.count));
-
-  const body = $('#op-throughput-body');
-  if (rows.every(r => r.count === 0)) {
-    body.innerHTML = renderEmpty('No stage transitions in this period.', 'Transitions are recorded when files are dragged between columns on the pipeline board.');
-    delete exporters['op-throughput'];
-    return;
-  }
-
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = r.count > 0 ? (r.count / max * 100) : 0;
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(r.label)}</div>
-            <div class="bar-track">${r.count > 0 ? `<div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
-            <div class="bar-value">${r.count}</div>
-          </div>
-        `;
+  $('#fico-body').innerHTML = `
+    <div class="histogram">
+      ${buckets.map(b => {
+        const h = (b.count / max) * 100;
+        return `<div class="hist-bar ${b.cls}" style="height:${Math.max(2, h)}%" title="${b.label}: ${b.count} loans"></div>`;
       }).join('')}
     </div>
+    <div class="hist-axis">
+      ${buckets.map(b => `<div>${b.label}</div>`).join('')}
+    </div>
+    <div class="hist-summary">
+      <div>Min<br><strong>${min}</strong></div>
+      <div>Median<br><strong>${median}</strong></div>
+      <div>Mean<br><strong>${mean}</strong></div>
+      <div>Max<br><strong>${maxS}</strong></div>
+    </div>
   `;
-
-  exporters['op-throughput'] = () => exportCSV('throughput-' + range.preset, [
-    ['transition', 'count'],
-    ...rows.map(r => [r.label, r.count]),
-  ]);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FINANCIAL TAB
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── 7. COMPLIANCE & RISK ─────────────────────────────────────────────────
 
-function renderFinancial() {
-  const { loans, stageChangesPeriod } = dataset;
+function renderCompliance() {
+  // TRID checks (proxies — server-side compliance engine would replace these):
+  //   • LE-3 day rule violation: loans where le_sent_at > created_at + 3 days
+  //   • Open conditions: total count + average age
+  //   • COC counts by type
+  //
+  // The "violations" are best-effort detections — a real compliance audit
+  // would need many more checks (state-level rules, ECOA, RESPA, etc).
 
-  const fundedTransitions = stageChangesPeriod.filter(c => c.to_status === 'funded');
-  const fundedLoanIds = new Set(fundedTransitions.map(c => c.loan_id));
-  const fundedLoans = loans.filter(l => fundedLoanIds.has(l.id) || (l.status === 'funded' && isInPeriod(l.stage_entered_at || l.updated_at)));
-
-  const fundedCount = fundedLoans.length;
-  const fundedVolumeCents = fundedLoans.reduce((sum, l) => sum + (l.loan_amount_cents || 0), 0);
-  const avgLoanSize = fundedCount > 0 ? fundedVolumeCents / fundedCount : null;
-
-  const activeLoans = loans.filter(l => !TERMINAL_STATUSES.has(l.status));
-  const pipelineValueCents = activeLoans.reduce((sum, l) => sum + (l.loan_amount_cents || 0), 0);
-
-  const periodLoans = loans.filter(l => isInPeriod(l.created_at));
-  const denied = periodLoans.filter(l => l.status === 'denied').length;
-  const withdrawn = periodLoans.filter(l => l.status === 'withdrawn').length;
-  const totalEntered = periodLoans.length;
-  const fallOutRate = totalEntered > 0 ? ((denied + withdrawn) / totalEntered * 100) : null;
-
-  $('#fin-metrics').innerHTML = `
-    ${metricCell('Funded volume', fmtMoney(fundedVolumeCents, { compact: true }), fundedCount + ' loans', 'green')}
-    ${metricCell('Avg loan size', fmtMoney(avgLoanSize, { compact: true }), 'per funded loan', 'cyan')}
-    ${metricCell('Pipeline value', fmtMoney(pipelineValueCents, { compact: true }), activeLoans.length + ' active', 'cyan')}
-    ${metricCell('Fall-out rate', fmtPct(fallOutRate), denied + ' denied · ' + withdrawn + ' withdrawn', fallOutRate != null && fallOutRate > 20 ? 'amber' : '')}
-  `;
-
-  renderFundedVolumeStat(fundedLoans, fundedVolumeCents);
-  renderFundedByPurpose(fundedLoans);
-  renderLOLeaderboard(fundedLoans);
-  renderFallOut(periodLoans);
-  renderPipelineValue(activeLoans);
-}
-
-function renderFundedVolumeStat(fundedLoans, totalCents) {
-  const body = $('#fin-volume-body');
-  if (fundedLoans.length === 0) {
-    body.innerHTML = renderEmpty('No closings in this period.', 'When loans hit "funded", they show up here.');
-    delete exporters['fin-volume'];
-    return;
+  const cocByType = {};
+  for (const c of allCocs) {
+    cocByType[c.coc_type] = (cocByType[c.coc_type] || 0) + 1;
   }
+  const tolerance = cocByType.tolerance_bust || 0;
+  const otherCoc = Object.entries(cocByType).filter(([k]) => k !== 'tolerance_bust')
+    .reduce((s, [, v]) => s + v, 0);
 
-  const amounts = fundedLoans.map(l => l.loan_amount_cents || 0).filter(a => a > 0).sort((a,b) => a-b);
-  const median = amounts.length ? amounts[Math.floor(amounts.length / 2)] : 0;
-  const min = amounts[0] || 0;
-  const max = amounts[amounts.length - 1] || 0;
+  const openConds = allConds.filter(c => c.status === 'outstanding');
+  const condAges = openConds.map(c => (Date.now() - new Date(c.created_at).getTime()) / 86400000);
+  const avgCondAge = condAges.length > 0
+    ? condAges.reduce((a,b) => a+b, 0) / condAges.length
+    : null;
+  const stale = openConds.filter(c =>
+    (Date.now() - new Date(c.created_at).getTime()) / 86400000 > 14
+  ).length;
 
-  body.innerHTML = `
-    <div class="big-stat">
-      <div class="big-stat-value green">${fmtMoney(totalCents, { compact: true })}</div>
-      <div class="big-stat-label">${fundedLoans.length} loans funded</div>
-      <div class="big-stat-sub">
-        Median ${fmtMoney(median, { compact: true })} ·
-        Range ${fmtMoney(min, { compact: true })}–${fmtMoney(max, { compact: true })}
+  // LE-3-day proxy
+  const lateLE = allLoans.filter(l => {
+    if (!l.le_sent_at || !l.created_at) return false;
+    const days = (new Date(l.le_sent_at).getTime() - new Date(l.created_at).getTime()) / 86400000;
+    return days > 3;
+  }).length;
+
+  const totalCocs = Object.values(cocByType).reduce((s, v) => s + v, 0);
+  $('#compliance-tag').textContent = `${$count(totalCocs)} COCs · ${$count(openConds.length)} open conds`;
+
+  $('#compliance-body').innerHTML = `
+    <div class="kv-grid">
+      <div class="kv-cell">
+        <div class="kv-label">LE 3-day rule</div>
+        <div class="kv-value ${lateLE === 0 ? 'green' : 'red'}">${$count(lateLE)}</div>
+        <div class="kv-sub">loans with LE sent &gt; 3d after app</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Tolerance busts (open)</div>
+        <div class="kv-value ${tolerance === 0 ? 'green' : 'amber'}">${$count(tolerance)}</div>
+        <div class="kv-sub">section A/B fees over LE budget</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Open conditions</div>
+        <div class="kv-value ${openConds.length === 0 ? 'green' : openConds.length < 20 ? 'cyan' : 'amber'}">${$count(openConds.length)}</div>
+        <div class="kv-sub">avg age ${$days(avgCondAge)} · ${$count(stale)} stale (&gt;14d)</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Other COCs</div>
+        <div class="kv-value">${$count(otherCoc)}</div>
+        <div class="kv-sub">borrower-requested, lock changes, etc.</div>
       </div>
     </div>
   `;
-
-  exporters['fin-volume'] = () => exportCSV('funded-volume-' + range.preset, [
-    ['metric', 'value'],
-    ['funded_count', fundedLoans.length],
-    ['funded_volume_dollars', (totalCents / 100).toFixed(2)],
-    ['avg_loan_dollars', (totalCents / fundedLoans.length / 100).toFixed(2)],
-    ['median_loan_dollars', (median / 100).toFixed(2)],
-    ['min_loan_dollars', (min / 100).toFixed(2)],
-    ['max_loan_dollars', (max / 100).toFixed(2)],
-  ]);
 }
 
-function renderFundedByPurpose(fundedLoans) {
-  const body = $('#fin-purpose-body');
-  if (fundedLoans.length === 0) {
-    body.innerHTML = renderEmpty('No funded loans yet.');
-    delete exporters['fin-purpose'];
+// ─── 8. AUS OUTCOMES ──────────────────────────────────────────────────────
+
+function renderAus() {
+  const buckets = { approve: 0, refer: 0, ineligible: 0, error: 0, no_run: 0 };
+  let mockCount = 0;
+  for (const l of allLoans) {
+    const r = allAus.get(l.id);
+    if (!r) { buckets.no_run++; continue; }
+    if (r.is_mock) mockCount++;
+    buckets[r.outcome] = (buckets[r.outcome] || 0) + 1;
+  }
+
+  const totalRuns = buckets.approve + buckets.refer + buckets.ineligible + buckets.error;
+  const approvalPct = totalRuns > 0 ? (buckets.approve / totalRuns) * 100 : null;
+
+  $('#aus-tag').textContent = `${$count(totalRuns)} runs · ${$count(mockCount)} mock`;
+
+  if (totalRuns === 0) {
+    $('#aus-body').innerHTML = `<div class="card-empty">No AUS runs yet.</div>`;
     return;
   }
 
-  const byPurpose = {};
-  fundedLoans.forEach(l => {
-    const p = l.purpose || 'unknown';
-    if (!byPurpose[p]) byPurpose[p] = { count: 0, volume: 0 };
-    byPurpose[p].count++;
-    byPurpose[p].volume += (l.loan_amount_cents || 0);
-  });
+  const max = Math.max(1, buckets.approve, buckets.refer, buckets.ineligible, buckets.error);
+  const order = [
+    { k: 'approve',    label: 'Approve / Eligible', cls: 'green' },
+    { k: 'refer',      label: 'Refer / Caution',    cls: 'amber' },
+    { k: 'ineligible', label: 'Ineligible',         cls: 'red' },
+    { k: 'error',      label: 'Error',              cls: 'red' },
+  ];
 
-  const rows = Object.entries(byPurpose)
-    .map(([k, v]) => ({ purpose: k, ...v }))
-    .sort((a, b) => b.volume - a.volume);
-  const maxVol = Math.max(1, ...rows.map(r => r.volume));
-
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = (r.volume / maxVol * 100);
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(formatPurpose(r.purpose))}</div>
-            <div class="bar-track">${r.volume > 0 ? `<div class="bar-fill green" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
-            <div class="bar-value">
-              ${fmtMoney(r.volume, { compact: true })}
-              <span class="bar-value-sub">${r.count} loan${r.count === 1 ? '' : 's'}</span>
-            </div>
-          </div>
-        `;
-      }).join('')}
+  $('#aus-body').innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <div class="kv-label">Approval rate</div>
+      <div class="kv-value ${approvalPct >= 70 ? 'green' : approvalPct >= 50 ? 'amber' : 'red'}" style="font-size:1.5rem;">${$pct(approvalPct, 0)}</div>
     </div>
+    ${order.map(({ k, label, cls }) => `
+      <div class="bar-row" style="grid-template-columns: 130px 1fr 60px;">
+        <div class="bar-label">${label}</div>
+        <div class="bar-track"><div class="bar-fill ${cls}" style="width:${(buckets[k] / max) * 100}%"></div></div>
+        <div class="bar-count">${$count(buckets[k])}</div>
+      </div>
+    `).join('')}
   `;
-
-  exporters['fin-purpose'] = () => exportCSV('funded-by-purpose-' + range.preset, [
-    ['purpose', 'count', 'volume_dollars'],
-    ...rows.map(r => [formatPurpose(r.purpose), r.count, (r.volume / 100).toFixed(2)]),
-  ]);
 }
 
-function formatPurpose(p) {
-  return ({
-    purchase: 'Purchase',
-    refinance: 'Refinance',
-    rate_term_refi: 'Rate/term refi',
-    cash_out_refi: 'Cash-out refi',
-    construction: 'Construction',
-    home_equity: 'Home equity',
-    unknown: 'Unspecified',
-  }[p] || p);
-}
+// ─── 9. LO LEADERBOARD ────────────────────────────────────────────────────
 
-function renderLOLeaderboard(fundedLoans) {
-  const body = $('#fin-leaderboard-body');
-  if (fundedLoans.length === 0) {
-    body.innerHTML = renderEmpty('No closings in this period.', 'The leaderboard fills in as loan officers hit "funded".');
-    delete exporters['fin-leaderboard'];
-    return;
+function renderLeaderboard() {
+  const fundedInRange = allLoans.filter(l =>
+    l.status === 'funded' && l.funded_at && inRange(l.funded_at)
+  );
+  const startedInRange = allLoans.filter(l => inRange(l.created_at));
+
+  const stats = new Map();
+  function ensureRow(loId) {
+    if (!stats.has(loId)) {
+      stats.set(loId, {
+        lo_id: loId,
+        name: loProfiles.get(loId)?.full_name || (loId ? `LO ${loId.slice(0, 6)}` : 'Unassigned'),
+        fundedCount: 0, fundedAmt: 0, startedCount: 0,
+      });
+    }
+    return stats.get(loId);
+  }
+  for (const l of fundedInRange) {
+    const r = ensureRow(l.lo_id);
+    r.fundedCount++;
+    r.fundedAmt += Number(l.loan_amount_cents) || 0;
+  }
+  for (const l of startedInRange) {
+    ensureRow(l.lo_id).startedCount++;
   }
 
-  const byLO = {};
-  fundedLoans.forEach(l => {
-    const id = l.loan_officer_id || 'unassigned';
-    const name = l.officer?.full_name || 'Unassigned';
-    if (!byLO[id]) byLO[id] = { id, name, count: 0, volume: 0 };
-    byLO[id].count++;
-    byLO[id].volume += (l.loan_amount_cents || 0);
-  });
+  const rows = [...stats.values()].sort((a, b) => b.fundedAmt - a.fundedAmt).slice(0, 20);
+  if (rows.length === 0) {
+    $('#leaderboard-body').innerHTML = `<div class="card-empty">No LO activity in this window.</div>`;
+    return;
+  }
+  $('#leaderboard-tag').textContent = `top ${rows.length} of ${stats.size} · ${rangeLabel()}`;
 
-  const rows = Object.values(byLO).sort((a, b) => b.volume - a.volume);
-  const totalVol = rows.reduce((a, x) => a + x.volume, 0);
-
-  body.innerHTML = `
-    <table class="report-table">
+  $('#leaderboard-body').innerHTML = `
+    <table class="lo-table">
       <thead>
         <tr>
+          <th style="width:36px">#</th>
           <th>Loan officer</th>
-          <th class="num" style="text-align:right;">Funded</th>
-          <th class="num" style="text-align:right;">Volume</th>
-          <th class="num" style="text-align:right;">Avg loan</th>
-          <th class="num" style="text-align:right;">% of total</th>
+          <th class="right">Funded count</th>
+          <th class="right">Funded volume</th>
+          <th class="right">Pull-through</th>
         </tr>
       </thead>
       <tbody>
-        ${rows.map(r => {
-          const pct = totalVol > 0 ? (r.volume / totalVol * 100) : 0;
-          const avg = r.count > 0 ? r.volume / r.count : 0;
+        ${rows.map((r, i) => {
+          const conv = r.startedCount > 0 ? (r.fundedCount / r.startedCount) * 100 : null;
           return `
             <tr>
-              <td>${escapeHtml(r.name)}</td>
-              <td class="num">${r.count}</td>
-              <td class="num green">${fmtMoney(r.volume, { compact: true })}</td>
-              <td class="num">${fmtMoney(avg, { compact: true })}</td>
-              <td class="num">${fmtPct(pct, 0)}</td>
+              <td class="rank">${i + 1}</td>
+              <td class="name">${escapeHtml(r.name)}</td>
+              <td class="right">${$count(r.fundedCount)}</td>
+              <td class="right">${$money(r.fundedAmt)}</td>
+              <td class="right">${$pct(conv, 0)}</td>
             </tr>
           `;
         }).join('')}
       </tbody>
     </table>
   `;
-
-  exporters['fin-leaderboard'] = () => exportCSV('lo-leaderboard-' + range.preset, [
-    ['loan_officer', 'funded_count', 'volume_dollars', 'avg_loan_dollars'],
-    ...rows.map(r => [
-      r.name,
-      r.count,
-      (r.volume / 100).toFixed(2),
-      r.count > 0 ? (r.volume / r.count / 100).toFixed(2) : '0',
-    ]),
-  ]);
 }
 
-function renderFallOut(periodLoans) {
-  const body = $('#fin-fallout-body');
-  if (periodLoans.length === 0) {
-    body.innerHTML = renderEmpty('No applications in this period.');
-    delete exporters['fin-fallout'];
-    return;
+// ─── 10. OPERATIONS ───────────────────────────────────────────────────────
+
+function renderOps() {
+  // Credit-pull spend (mock pulls cost $0; real ones populate cost_cents).
+  const pullsInRange = allPulls.filter(p => inRange(p.pulled_at));
+  const pullSpend = pullsInRange.reduce((s, p) => s + (Number(p.cost_cents) || 0), 0);
+  const realPulls = pullsInRange.filter(p => p.vendor !== 'mock').length;
+  const mockPulls = pullsInRange.filter(p => p.vendor === 'mock').length;
+
+  // Pricing: avg scenarios per loan. A loan with many scenarios = lots of
+  // shopping / re-pricing; useful pulse for ops.
+  const scenCounts = new Map();
+  for (const s of allScenarios) {
+    scenCounts.set(s.loan_id, (scenCounts.get(s.loan_id) || 0) + 1);
   }
+  const avgScenarios = scenCounts.size > 0
+    ? [...scenCounts.values()].reduce((a, b) => a + b, 0) / scenCounts.size
+    : null;
+  const lockedCount = allScenarios.filter(s => s.locked_at).length;
 
-  const denied = periodLoans.filter(l => l.status === 'denied');
-  const withdrawn = periodLoans.filter(l => l.status === 'withdrawn');
-  const funded = periodLoans.filter(l => l.status === 'funded');
-  const inProgress = periodLoans.filter(l => !TERMINAL_STATUSES.has(l.status));
+  // Closings — funding-cycle subset
+  const fundedClosings = allClosings.filter(c => c.status === 'funded' || c.status === 'recorded' || c.status === 'complete');
+  const wetCount = allClosings.filter(c => c.status !== 'cancelled' && c.status !== 'rescheduled').length;
 
-  const total = periodLoans.length;
-  const rows = [
-    { label: 'Funded',      count: funded.length,    cls: 'green' },
-    { label: 'In progress', count: inProgress.length, cls: 'cyan' },
-    { label: 'Denied',      count: denied.length,    cls: 'red' },
-    { label: 'Withdrawn',   count: withdrawn.length, cls: 'amber' },
-  ];
-  const max = Math.max(1, ...rows.map(r => r.count));
-
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = (r.count / max * 100);
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(r.label)}</div>
-            <div class="bar-track">${r.count > 0 ? `<div class="bar-fill ${r.cls}" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
-            <div class="bar-value">
-              ${r.count}
-              <span class="bar-value-sub">${total > 0 ? fmtPct(r.count / total * 100, 0) : '—'}</span>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-
-  exporters['fin-fallout'] = () => exportCSV('fallout-' + range.preset, [
-    ['outcome', 'count', 'pct_of_period_total'],
-    ...rows.map(r => [r.label, r.count, total > 0 ? (r.count / total * 100).toFixed(2) : '0']),
-  ]);
-}
-
-function renderPipelineValue(activeLoans) {
-  const body = $('#fin-pipeline-value-body');
-  if (activeLoans.length === 0) {
-    body.innerHTML = renderEmpty('Pipeline is empty.', 'Once you have active loans, this shows the dollar value at each stage.');
-    delete exporters['fin-pipeline-value'];
-    return;
-  }
-
-  const byStage = {};
-  STAGES.forEach(s => byStage[s.key] = 0);
-  activeLoans.forEach(l => {
-    if (byStage[l.status] != null) byStage[l.status] += (l.loan_amount_cents || 0);
-  });
-
-  const rows = STAGES
-    .filter(s => s.key !== 'funded')
-    .map(s => ({ key: s.key, label: s.label, volume: byStage[s.key] || 0 }))
-    .filter(r => r.volume > 0);
-  const max = Math.max(1, ...rows.map(r => r.volume));
-
-  if (rows.length === 0) {
-    body.innerHTML = renderEmpty('Pipeline value is zero.', 'Active loans don\'t have loan amounts set yet.');
-    delete exporters['fin-pipeline-value'];
-    return;
-  }
-
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = (r.volume / max * 100);
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(r.label)}</div>
-            <div class="bar-track">${r.volume > 0 ? `<div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>` : ''}</div>
-            <div class="bar-value">${fmtMoney(r.volume, { compact: true })}</div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-
-  exporters['fin-pipeline-value'] = () => exportCSV('pipeline-value-today', [
-    ['stage', 'volume_dollars'],
-    ...rows.map(r => [r.label, (r.volume / 100).toFixed(2)]),
-  ]);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// COMPLIANCE / HMDA TAB
-// ═══════════════════════════════════════════════════════════════════════════
-
-function renderCompliance() {
-  const { loans } = dataset;
-  const periodLoans = loans.filter(l => isInPeriod(l.created_at));
-
-  // If HMDA columns aren't in the schema yet, the panels render their own
-  // "schema not ready" empty states. The metric strip still works for
-  // application/decisioning counts since those don't depend on demographics.
-  const hmdaReady = SCHEMA.borrowers_hmda === true;
-
-  const periodPrimary = periodLoans.map(l => {
-    const lb = (l.loan_borrowers || []).find(b => b.position === 1) || (l.loan_borrowers || [])[0];
-    return { loan: l, borrower: lb?.borrower || null };
-  }).filter(x => x.borrower);
-
-  const totalApps = periodPrimary.length;
-  const missingDemo = hmdaReady
-    ? periodPrimary.filter(x => !x.borrower.hmda_race && !x.borrower.hmda_ethnicity && !x.borrower.hmda_sex).length
-    : totalApps;
-  const collected = totalApps - missingDemo;
-
-  const fundedCount = periodLoans.filter(l => l.status === 'funded').length;
-  const deniedCount = periodLoans.filter(l => l.status === 'denied').length;
-  const decisioned = fundedCount + deniedCount + periodLoans.filter(l => l.status === 'withdrawn').length;
-  const approvalRate = decisioned > 0 ? (fundedCount / decisioned * 100) : null;
-
-  $('#comp-metrics').innerHTML = `
-    ${metricCell('Applications', fmtNum(totalApps), 'in selected period')}
-    ${metricCell(
-      'Demographics collected',
-      hmdaReady ? fmtPct(totalApps > 0 ? collected / totalApps * 100 : 0, 0) : 'n/a',
-      hmdaReady ? (collected + ' of ' + totalApps) : 'schema missing',
-      hmdaReady && totalApps > 0 && collected / totalApps >= 0.95 ? 'green' : (hmdaReady ? 'amber' : 'red')
-    )}
-    ${metricCell('Decisioned', fmtNum(decisioned), 'funded + denied + withdrawn')}
-    ${metricCell('Approval rate', fmtPct(approvalRate), 'across decisioned apps', approvalRate != null && approvalRate >= 60 ? 'green' : '')}
-  `;
-
-  if (!hmdaReady) {
-    // Render schema-not-ready empty states for all demographic panels
-    const schemaEmpty = renderEmpty(
-      'HMDA columns missing.',
-      'Add hmda_race, hmda_ethnicity, hmda_sex to the borrowers table. Migration SQL is in the source comments at the top of /reports.html.'
-    );
-    $('#comp-race-body').innerHTML = schemaEmpty;
-    $('#comp-ethnicity-body').innerHTML = schemaEmpty;
-    $('#comp-approval-body').innerHTML = schemaEmpty;
-    $('#comp-missing-body').innerHTML = schemaEmpty;
-    delete exporters['comp-race'];
-    delete exporters['comp-ethnicity'];
-    delete exporters['comp-approval'];
-    delete exporters['comp-missing'];
-    // Adverse-action panel doesn't need HMDA columns — render normally
-    renderAdverseAction(periodLoans);
-    return;
-  }
-
-  renderRaceBreakdown(periodPrimary);
-  renderEthnicityBreakdown(periodPrimary);
-  renderApprovalByDemo(periodPrimary, periodLoans);
-  renderAdverseAction(periodLoans);
-  renderMissingDemo(periodPrimary);
-}
-
-function renderDemographicChart(bodyId, primaryArr, fieldName, labels, exportKey) {
-  const body = $(bodyId);
-  const total = primaryArr.length;
-  if (total === 0) {
-    body.innerHTML = renderEmpty('No applications in this period.');
-    delete exporters[exportKey];
-    return;
-  }
-
-  const counts = {};
-  Object.keys(labels).forEach(k => counts[k] = 0);
-  let unset = 0;
-  let unrecognized = 0;
-  primaryArr.forEach(({ borrower }) => {
-    const v = borrower[fieldName];
-    if (!v) { unset++; return; }
-    if (counts[v] != null) counts[v]++;
-    else if (counts.declined != null) counts.declined++;
-    else unrecognized++;
-  });
-
-  const rows = [
-    ...Object.entries(counts).map(([k, v]) => ({ key: k, label: labels[k], count: v })),
-  ];
-  if (unset > 0) rows.push({ key: 'unset', label: 'Demographic not collected', count: unset });
-  if (unrecognized > 0) rows.push({ key: 'unrecognized', label: 'Other / unrecognized value', count: unrecognized });
-
-  const max = Math.max(1, ...rows.map(r => r.count));
-  body.innerHTML = `
-    <div class="bar-chart">
-      ${rows.map(r => {
-        const pct = total > 0 ? (r.count / total * 100) : 0;
-        const barPct = (r.count / max * 100);
-        const cls = r.key === 'unset' ? 'amber' : '';
-        return `
-          <div class="bar-row">
-            <div class="bar-label">${escapeHtml(r.label)}</div>
-            <div class="bar-track">${r.count > 0 ? `<div class="bar-fill ${cls}" style="width: ${barPct.toFixed(1)}%;"></div>` : ''}</div>
-            <div class="bar-value">
-              ${r.count}
-              <span class="bar-value-sub">${fmtPct(pct, 0)}</span>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-
-  exporters[exportKey] = () => exportCSV(exportKey + '-' + range.preset, [
-    ['category', 'count', 'pct_of_period_apps'],
-    ...rows.map(r => [r.label, r.count, total > 0 ? (r.count / total * 100).toFixed(2) : '0']),
-  ]);
-}
-
-function renderRaceBreakdown(primaryArr) {
-  renderDemographicChart('#comp-race-body', primaryArr, 'hmda_race', RACE_LABELS, 'comp-race');
-}
-function renderEthnicityBreakdown(primaryArr) {
-  renderDemographicChart('#comp-ethnicity-body', primaryArr, 'hmda_ethnicity', ETHNICITY_LABELS, 'comp-ethnicity');
-}
-
-function renderApprovalByDemo(periodPrimary, periodLoans) {
-  const body = $('#comp-approval-body');
-  if (periodPrimary.length === 0) {
-    body.innerHTML = renderEmpty('No applications in this period.');
-    delete exporters['comp-approval'];
-    return;
-  }
-
-  function bucketize(field, labels) {
-    const buckets = {};
-    Object.keys(labels).forEach(k => buckets[k] = { funded: 0, denied: 0, withdrawn: 0, total: 0 });
-    const unrecognized = { funded: 0, denied: 0, withdrawn: 0, total: 0 };
-    periodPrimary.forEach(({ loan, borrower }) => {
-      const v = borrower[field];
-      let b;
-      if (v && buckets[v]) b = buckets[v];
-      else if (buckets.declined) b = buckets.declined;
-      else b = unrecognized;
-      b.total++;
-      if (loan.status === 'funded') b.funded++;
-      else if (loan.status === 'denied') b.denied++;
-      else if (loan.status === 'withdrawn') b.withdrawn++;
-    });
-    if (unrecognized.total > 0) buckets._unrecognized = unrecognized;
-    return buckets;
-  }
-
-  const raceBuckets = bucketize('hmda_race', RACE_LABELS);
-  const ethBuckets  = bucketize('hmda_ethnicity', ETHNICITY_LABELS);
-
-  function rateRow(label, b) {
-    const decisioned = b.funded + b.denied + b.withdrawn;
-    const rate = decisioned > 0 ? (b.funded / decisioned * 100) : null;
-    let cls = '';
-    if (rate != null) {
-      if (rate >= 70) cls = 'green';
-      else if (rate < 50) cls = 'amber';
-    }
-    return `
-      <tr>
-        <td>${escapeHtml(label)}</td>
-        <td class="num">${b.total}</td>
-        <td class="num green">${b.funded}</td>
-        <td class="num red">${b.denied}</td>
-        <td class="num amber">${b.withdrawn}</td>
-        <td class="num ${cls}">${fmtPct(rate, 0)}</td>
-      </tr>
-    `;
-  }
-
-  const labelFor = (k, labels) => k === '_unrecognized' ? 'Other / unrecognized' : (labels[k] || k);
-
-  body.innerHTML = `
-    <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;">By race</div>
-    <table class="report-table" style="margin-bottom: 1.2rem;">
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th class="num" style="text-align:right;">Apps</th>
-          <th class="num" style="text-align:right;">Funded</th>
-          <th class="num" style="text-align:right;">Denied</th>
-          <th class="num" style="text-align:right;">Withdrawn</th>
-          <th class="num" style="text-align:right;">Approval rate</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Object.entries(raceBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => rateRow(labelFor(k, RACE_LABELS), b)).join('')}
-      </tbody>
-    </table>
-    <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem;">By ethnicity</div>
-    <table class="report-table">
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th class="num" style="text-align:right;">Apps</th>
-          <th class="num" style="text-align:right;">Funded</th>
-          <th class="num" style="text-align:right;">Denied</th>
-          <th class="num" style="text-align:right;">Withdrawn</th>
-          <th class="num" style="text-align:right;">Approval rate</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Object.entries(ethBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => rateRow(labelFor(k, ETHNICITY_LABELS), b)).join('')}
-      </tbody>
-    </table>
-  `;
-
-  exporters['comp-approval'] = () => exportCSV('approval-by-demo-' + range.preset, [
-    ['dimension', 'category', 'apps', 'funded', 'denied', 'withdrawn', 'approval_rate_pct'],
-    ...Object.entries(raceBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => {
-      const dec = b.funded + b.denied + b.withdrawn;
-      return ['race', labelFor(k, RACE_LABELS), b.total, b.funded, b.denied, b.withdrawn, dec > 0 ? (b.funded/dec*100).toFixed(2) : ''];
-    }),
-    ...Object.entries(ethBuckets).filter(([_, b]) => b.total > 0).map(([k, b]) => {
-      const dec = b.funded + b.denied + b.withdrawn;
-      return ['ethnicity', labelFor(k, ETHNICITY_LABELS), b.total, b.funded, b.denied, b.withdrawn, dec > 0 ? (b.funded/dec*100).toFixed(2) : ''];
-    }),
-  ]);
-}
-
-function renderAdverseAction(periodLoans) {
-  const body = $('#comp-adverse-body');
-  const denied = periodLoans.filter(l => l.status === 'denied');
-
-  if (denied.length === 0) {
-    body.innerHTML = renderEmpty('No adverse-action loans in this period.', 'When loans hit "denied", this measures days from application to denial notice. ECOA cap is 30 days.');
-    delete exporters['comp-adverse'];
-    return;
-  }
-
-  const days = denied.map(l => {
-    const start = l.created_at;
-    const end = l.updated_at || todayISO();
-    return { id: l.id, num: l.loan_number, days: daysBetween(start, end) };
-  });
-  const overCap = days.filter(d => d.days > 30).length;
-  const median = days.map(d => d.days).sort((a,b) => a-b)[Math.floor(days.length / 2)];
-
-  body.innerHTML = `
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
-        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Median days · app to denial</div>
-        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${median > 25 ? 'var(--amber)' : 'var(--white)'};">${fmtDays(median)}</div>
+  $('#ops-body').innerHTML = `
+    <div class="kv-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kv-cell">
+        <div class="kv-label">Credit-pull spend</div>
+        <div class="kv-value cyan">${$money(pullSpend)}</div>
+        <div class="kv-sub">${$count(realPulls)} real · ${$count(mockPulls)} mock · ${rangeLabel()}</div>
       </div>
-      <div style="border:1px solid var(--border); padding: 0.75rem 1rem;">
-        <div style="font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;">Over 30-day ECOA cap</div>
-        <div style="font-family: var(--serif); font-size: 1.5rem; color: ${overCap > 0 ? 'var(--red)' : 'var(--accent2)'};">${overCap}</div>
-        <div style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); margin-top: 0.2rem;">of ${denied.length} denials</div>
+      <div class="kv-cell">
+        <div class="kv-label">Avg scenarios / loan</div>
+        <div class="kv-value">${avgScenarios ? avgScenarios.toFixed(1) : '—'}</div>
+        <div class="kv-sub">${$count(scenCounts.size)} loans priced · ${$count(lockedCount)} scenarios locked</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Closings on the books</div>
+        <div class="kv-value">${$count(wetCount)}</div>
+        <div class="kv-sub">scheduled, signed, or funded</div>
+      </div>
+      <div class="kv-cell">
+        <div class="kv-label">Closings funded</div>
+        <div class="kv-value green">${$count(fundedClosings.length)}</div>
+        <div class="kv-sub">past funding</div>
       </div>
     </div>
-    <div style="font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em; line-height: 1.5;">
-      <strong style="color: var(--amber);">Approximation:</strong>
-      Uses created_at → updated_at as proxy for application → adverse-action notice.
-      For audit-grade precision, add <code>application_received_at</code> and
-      <code>adverse_action_sent_at</code> columns to the loans table.
-    </div>
   `;
-
-  exporters['comp-adverse'] = () => exportCSV('adverse-action-' + range.preset, [
-    ['loan_number', 'days_app_to_denial_proxy', 'over_30_day_cap'],
-    ...days.map(d => [d.num, d.days.toFixed(1), d.days > 30 ? 'YES' : 'no']),
-  ]);
-}
-
-function renderMissingDemo(primaryArr) {
-  const body = $('#comp-missing-body');
-  const missing = primaryArr.filter(({ borrower }) =>
-    !borrower.hmda_race && !borrower.hmda_ethnicity && !borrower.hmda_sex
-  );
-
-  if (primaryArr.length === 0) {
-    body.innerHTML = renderEmpty('No applications in this period.');
-    delete exporters['comp-missing'];
-    return;
-  }
-
-  if (missing.length === 0) {
-    body.innerHTML = `
-      <div class="big-stat">
-        <div class="big-stat-value green">0</div>
-        <div class="big-stat-label">All apps have demographics</div>
-        <div class="big-stat-sub">Section 7 collected on every borrower in period.</div>
-      </div>
-    `;
-    exporters['comp-missing'] = () => exportCSV('missing-demo-' + range.preset, [['loan_number','borrower'], ['(none)','']]);
-    return;
-  }
-
-  body.innerHTML = `
-    <div style="margin-bottom: 0.85rem;">
-      <span style="font-family: var(--serif); font-size: 1.5rem; color: var(--amber);">${missing.length}</span>
-      <span style="font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin-left: 0.5rem;">of ${primaryArr.length} apps</span>
-    </div>
-    <table class="report-table">
-      <thead>
-        <tr>
-          <th>Loan #</th>
-          <th>Borrower</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${missing.slice(0, 50).map(({ loan, borrower }) => `
-          <tr>
-            <td><a href="/dashboard.html#${escapeHtml(loan.id)}" style="color:var(--accent); text-decoration:none;">${escapeHtml(loan.loan_number)}</a></td>
-            <td>${escapeHtml(borrower.last_name + ', ' + borrower.first_name)}</td>
-            <td style="font-family: var(--mono); font-size: 0.65rem; color: var(--muted);">${escapeHtml(loan.status)}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-    ${missing.length > 50 ? `<div style="margin-top: 0.5rem; font-family: var(--mono); font-size: 0.6rem; color: var(--muted);">… and ${missing.length - 50} more (export for full list)</div>` : ''}
-  `;
-
-  exporters['comp-missing'] = () => exportCSV('missing-demo-' + range.preset, [
-    ['loan_number', 'borrower', 'status'],
-    ...missing.map(({ loan, borrower }) => [loan.loan_number, borrower.last_name + ', ' + borrower.first_name, loan.status]),
-  ]);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SHARED RENDER HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-function metricCell(label, value, sub, cls) {
-  return `
-    <div class="metric-cell">
-      <div class="metric-label">${escapeHtml(label)}</div>
-      <div class="metric-value ${cls || ''}">${value}</div>
-      <div class="metric-sub">${escapeHtml(sub || '')}</div>
-    </div>
-  `;
-}
-
-function renderEmpty(text, sub) {
-  return `
-    <div class="panel-empty">
-      <div class="panel-empty-icon">⌬</div>
-      <div class="panel-empty-text">${escapeHtml(text)}</div>
-      ${sub ? `<div class="panel-empty-sub">${escapeHtml(sub)}</div>` : ''}
-    </div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CSV EXPORT
-// ═══════════════════════════════════════════════════════════════════════════
-
-function exportCSV(filename, rows) {
-  if (!rows || rows.length === 0) {
-    showToast('Nothing to export.');
-    return;
-  }
-  const csv = rows.map(row => row.map(cell => {
-    const s = String(cell ?? '');
-    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-    return s;
-  }).join(',')).join('\n');
-
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${branch.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${filename}-${todayISO()}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  showToast('Exported ' + a.download);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// FULL DATASET EXPORT (paginated)
-//
-// Uses the same dynamic SELECT shape as the bulk fetch — adapts to whatever
-// schema features are present. Officer name is backfilled from the profile
-// cache when the FK isn't registered. HMDA columns export as empty strings
-// when the columns don't exist yet.
-// ═══════════════════════════════════════════════════════════════════════════
-async function exportFullDataset() {
-  const btn = $('#btn-export-full');
-  const originalLabel = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<span style="margin-right:0.35rem;">⏳</span>Exporting…';
-  try {
-    // Make sure schema + profile cache are ready
-    await detectSchema();
-    if (!SCHEMA.loans_officer_fk) await ensureProfilesCache();
-
-    const fromISO = range.from;
-    const toISO = range.to;
-    const PAGE = 1000;
-    const HARD_CAP = 10000;
-    const all = [];
-    let from = 0;
-
-    // Build a slimmer SELECT for the export (we don't need every column).
-    // Same three-state officer logic as buildLoanSelect, plus optional cols.
-    const borrowerCols = SCHEMA.borrowers_hmda
-      ? 'first_name, last_name, hmda_race, hmda_ethnicity, hmda_sex'
-      : 'first_name, last_name';
-    let officerPart = '';
-    if (SCHEMA.loans_officer_fk) {
-      officerPart = 'loan_officer_id, officer:loan_officer_id ( full_name ),';
-    } else if (SCHEMA.loans_officer_col) {
-      officerPart = 'loan_officer_id,';
-    }
-    const optionalCols = Object.entries(SCHEMA.loans_cols)
-      .filter(([_, present]) => present === true)
-      .map(([col]) => col)
-      .join(', ');
-    const optionalPart = optionalCols ? optionalCols + ',' : '';
-    const SELECT = `
-      id, loan_number, status, purpose, loan_amount_cents,
-      ${officerPart}
-      property_address, created_at, updated_at,
-      ${optionalPart}
-      loan_borrowers ( position, borrower:borrower_id ( ${borrowerCols} ) )
-    `;
-
-    while (from < HARD_CAP) {
-      const { data, error } = await applyArchivedFilter(
-          supa.from('loans').select(SELECT)
-        )
-        .eq('branch_id', me.branch_id)
-        .gte('created_at', fromISO)
-        .lte('created_at', toISO + 'T23:59:59')
-        .order('created_at', { ascending: false })
-        .range(from, from + PAGE - 1);
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      // Backfill officer if the FK isn't registered but column exists
-      if (SCHEMA.loans_officer_col && !SCHEMA.loans_officer_fk) {
-        data.forEach(attachOfficerToLoan);
-      } else if (!SCHEMA.loans_officer_col) {
-        data.forEach(l => { l.officer = null; });
-      }
-      // Normalize borrowers so HMDA columns are at least null
-      data.forEach(l => (l.loan_borrowers || []).forEach(lb => normalizeBorrower(lb.borrower)));
-      all.push(...data);
-      btn.innerHTML = `<span style="margin-right:0.35rem;">⏳</span>Exporting… ${all.length} rows`;
-      if (data.length < PAGE) break;
-      from += PAGE;
-    }
-
-    if (all.length === 0) {
-      showToast('No loans found in the selected period.', true);
-      return;
-    }
-    if (from + PAGE >= HARD_CAP) {
-      showToast(`Hit ${HARD_CAP}-row cap. Narrow the date range to export the rest.`, true);
-    }
-
-    const rows = [
-      [
-        'loan_number', 'status', 'purpose', 'loan_amount_dollars',
-        'loan_officer', 'property_address',
-        'borrower_first', 'borrower_last',
-        'hmda_race', 'hmda_ethnicity', 'hmda_sex',
-        'created_at', 'updated_at', 'stage_entered_at',
-      ],
-      ...all.map(l => {
-        const lb = (l.loan_borrowers || []).find(b => b.position === 1) || (l.loan_borrowers || [])[0];
-        const b = lb?.borrower || {};
-        return [
-          l.loan_number || '',
-          l.status || '',
-          l.purpose || '',
-          l.loan_amount_cents != null ? (l.loan_amount_cents / 100).toFixed(2) : '',
-          l.officer?.full_name || '',
-          l.property_address || '',
-          b.first_name || '',
-          b.last_name || '',
-          b.hmda_race || '',
-          b.hmda_ethnicity || '',
-          b.hmda_sex || '',
-          l.created_at || '',
-          l.updated_at || '',
-          l.stage_entered_at || '',
-        ];
-      }),
-    ];
-
-    exportCSV('full-dataset-' + range.preset, rows);
-    showToast(`Exported ${all.length} loans (full dataset).`);
-  } catch (err) {
-    console.error('full export err:', err);
-    showToast('Export failed: ' + err.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalLabel;
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', bootstrap);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPLEMENTATION NOTES
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// 1. CLIENT-SIDE AGGREGATION
+//    All math happens in the browser. Acceptable for branches with up to
+//    ~5,000 active loans (the limit on the loans query). For larger
+//    branches, push the heavy aggregations into Postgres views or RPC
+//    functions and call them from here. The KV cards and bar charts work
+//    against any data shape, so swapping the data source is local.
+//
+// 2. NO REALTIME
+//    Reports are read-only and don't subscribe to postgres_changes. Users
+//    can switch tabs and back to refresh. Adding realtime is straightforward
+//    if there's demand: subscribe to loans/aus_runs/closings on this branch
+//    and call renderAll() on any event. Cost is one open WebSocket; risks
+//    are flicker (recompute on every tiny event) and unnecessary DB load.
+//
+// 3. RANGE FILTER SCOPE
+//    The range affects "funded" counts, conversion rate, and most KV cards.
+//    "Active pipeline" is always current (snapshot of pre-funding loans),
+//    and "Velocity" always shows the last 12 calendar months — both are
+//    intentional exceptions. Snapshot metrics shouldn't be filtered, and
+//    velocity ought to ignore the filter to show "are we trending up?".
+//
+// 4. COMPLIANCE PROXIES
+//    The TRID violations on the compliance card are heuristic (LE >3 days
+//    after application, open tolerance COCs). A proper compliance engine
+//    would do per-loan eligibility checks for state licensing, ECOA, RESPA,
+//    HMDA, and many more. For v1 this card is illustrative; future work
+//    is a server-side engine that emits per-loan violations to a
+//    `compliance_violations` table, which this card would simply COUNT.
+//
+// 5. NO ROLE GATING
+//    Anyone in the branch can see reports. If a workflow requires hiding
+//    them from non-admins, gate the page with a role check in bootstrap()
+//    similar to how /team.html does it ("must be admin"). For v1 the
+//    transparency is intentional — LOs benefit from seeing their own
+//    leaderboard rank.
+// ═══════════════════════════════════════════════════════════════════════════
 </script>
 
 </body>
