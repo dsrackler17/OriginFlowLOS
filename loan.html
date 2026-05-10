@@ -1450,46 +1450,164 @@ async function renderTabOverview() {
     $('#overview-pricing').innerHTML = `<div class="empty-state">Pricing engine not configured. Implement <code style="font-family:var(--mono); color:var(--accent);">window.OF_priceScenario</code>.</div>`;
   }
 
-  // Compliance posture
-  const compRows = [];
+  // ═══════════════════════════════════════════════════════════════════════
+  // Compliance posture — Round 4-18
+  // ═══════════════════════════════════════════════════════════════════════
+  // Two-layer presentation:
+  //   1. Engine-backed violations list (from compliance_violations table)
+  //      — replaces the old TRID + fee-tolerance heuristic rows
+  //   2. Heuristic rows (license state + rate lock) — kept because the
+  //      engine doesn't have rules for these yet
+  //
+  // Falls back to all-heuristic mode when compliance_violations table
+  // doesn't exist (pre-engine-migration installations).
+
+  let engineViolations = null;
+  let engineAvailable = false;
+  try {
+    const { data: vs, error: vErr } = await supa.from('compliance_violations')
+      .select('id, rule_code, severity, message, detail, detected_at')
+      .eq('loan_id', loanId)
+      .is('archived_at', null)
+      .is('resolved_at', null)
+      .order('severity', { ascending: true })   // violation < warning < info alphabetically
+      .order('detected_at', { ascending: false });
+    if (!vErr) {
+      engineViolations = vs || [];
+      engineAvailable = true;
+    }
+  } catch (_) { /* table doesn't exist; engineAvailable stays false */ }
+
+  // Heuristic rows (always computed; surface in panel below the engine list)
+  const heuristicRows = [];
   const propState = (loan.property_address?.state || '').toUpperCase();
   const { data: branchData } = await supa.from('branches').select('licensed_states').eq('id', me.branch_id).maybeSingle();
   const licensedStates = branchData?.licensed_states || [];
   const stateOk = !propState || licensedStates.length === 0 || licensedStates.includes(propState);
-  compRows.push(['Licensed in ' + (propState || 'state'), stateOk ? '✓ OK' : '⚠ NOT LICENSED', stateOk ? '' : 'alert']);
-
-  const trid = computeTridMilestones();
-  const tridAlerts = trid.filter(t => t.state === 'alert').length;
-  const tridPending = trid.filter(t => t.state === 'pending').length;
-  compRows.push(['TRID timeline',
-    tridAlerts > 0 ? `⚠ ${tridAlerts} alert${tridAlerts===1?'':'s'}` : (tridPending > 0 ? `${tridPending} pending` : '✓ on track'),
-    tridAlerts > 0 ? 'alert' : '']);
+  heuristicRows.push(['Licensed in ' + (propState || 'state'), stateOk ? '✓ OK' : '⚠ NOT LICENSED', stateOk ? '' : 'alert']);
 
   if (loan.lock_expires_at) {
     const days = Math.ceil((new Date(loan.lock_expires_at) - Date.now()) / 86400000);
-    compRows.push(['Rate lock', days >= 0 ? `expires in ${days}d` : `EXPIRED ${-days}d ago`, days < 3 ? 'flag' : '']);
+    heuristicRows.push(['Rate lock', days >= 0 ? `expires in ${days}d` : `EXPIRED ${-days}d ago`, days < 3 ? 'flag' : '']);
   } else {
-    compRows.push(['Rate lock', '— not locked', 'muted']);
+    heuristicRows.push(['Rate lock', '— not locked', 'muted']);
   }
 
-  // Fee tolerance posture (only if fees exist)
-  try {
-    const { data: feeRows } = await supa.from('fees')
-      .select('section, tolerance_bucket, le_amount_cents, borrower_paid_at_closing_cents, borrower_paid_before_closing_cents, seller_paid_at_closing_cents, seller_paid_before_closing_cents, paid_by_others_cents')
-      .eq('loan_id', loanId).is('archived_at', null);
-    if (feeRows && feeRows.length > 0) {
-      const buckets = computeBucketTotals(feeRows);
-      const bustCount = ['zero','ten_pct'].filter(k => buckets[k].bust).length;
-      compRows.push(['Fee tolerance',
-        bustCount > 0 ? `⚠ ${bustCount} bucket${bustCount===1?'':'s'} bust` : '✓ within tolerance',
-        bustCount > 0 ? 'alert' : '']);
-    }
-  } catch (_) { /* fees table not deployed yet */ }
+  // When engine is unavailable, fall back to heuristic TRID + fee-tolerance
+  // rows so the panel still shows useful data on pre-migration installations.
+  if (!engineAvailable) {
+    const trid = computeTridMilestones();
+    const tridAlerts = trid.filter(t => t.state === 'alert').length;
+    const tridPending = trid.filter(t => t.state === 'pending').length;
+    heuristicRows.push(['TRID timeline',
+      tridAlerts > 0 ? `⚠ ${tridAlerts} alert${tridAlerts===1?'':'s'}` : (tridPending > 0 ? `${tridPending} pending` : '✓ on track'),
+      tridAlerts > 0 ? 'alert' : '']);
 
-  const tagCls = compRows.some(r => r[2] === 'alert') ? 'red' : (compRows.some(r => r[2] === 'flag') ? 'amber' : 'green');
+    try {
+      const { data: feeRows } = await supa.from('fees')
+        .select('section, tolerance_bucket, le_amount_cents, borrower_paid_at_closing_cents, borrower_paid_before_closing_cents, seller_paid_at_closing_cents, seller_paid_before_closing_cents, paid_by_others_cents')
+        .eq('loan_id', loanId).is('archived_at', null);
+      if (feeRows && feeRows.length > 0) {
+        const buckets = computeBucketTotals(feeRows);
+        const bustCount = ['zero','ten_pct'].filter(k => buckets[k].bust).length;
+        heuristicRows.push(['Fee tolerance',
+          bustCount > 0 ? `⚠ ${bustCount} bucket${bustCount===1?'':'s'} bust` : '✓ within tolerance',
+          bustCount > 0 ? 'alert' : '']);
+      }
+    } catch (_) { /* fees table not deployed yet */ }
+  }
+
+  // Status tag — count engine severities + heuristic alerts
+  const violationCount = engineViolations ? engineViolations.filter(v => v.severity === 'violation').length : 0;
+  const warningCount   = engineViolations ? engineViolations.filter(v => v.severity === 'warning').length : 0;
+  const heuristicAlerts = heuristicRows.filter(r => r[2] === 'alert').length;
+  const heuristicFlags  = heuristicRows.filter(r => r[2] === 'flag').length;
+
+  let tagCls, tagText;
+  if (violationCount > 0 || heuristicAlerts > 0) {
+    tagCls = 'red';
+    tagText = `${violationCount + heuristicAlerts} BLOCKING`;
+  } else if (warningCount > 0 || heuristicFlags > 0) {
+    tagCls = 'amber';
+    tagText = `${warningCount + heuristicFlags} WATCH`;
+  } else {
+    tagCls = 'green';
+    tagText = 'CLEAN';
+  }
   $('#overview-compliance-tag').className = 'panel-tag ' + tagCls;
-  $('#overview-compliance-tag').textContent = tagCls === 'green' ? 'CLEAN' : (tagCls === 'amber' ? 'WATCH' : 'BLOCKED');
-  $('#overview-compliance').innerHTML = factList(compRows);
+  $('#overview-compliance-tag').textContent = tagText;
+
+  // Render
+  let html = '';
+
+  // Top: engine violations (if any)
+  if (engineAvailable && engineViolations.length > 0) {
+    html += `<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:${heuristicRows.length > 0 ? '12px' : '0'}">
+      ${engineViolations.map(renderComplianceViolationRow).join('')}
+    </div>`;
+  }
+
+  // Middle: license + lock heuristics
+  if (heuristicRows.length > 0) {
+    html += factList(heuristicRows);
+  }
+
+  // Footer: data source indicator
+  if (engineAvailable) {
+    if (engineViolations.length === 0 && heuristicAlerts === 0 && heuristicFlags === 0) {
+      html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:10px;color:var(--accent2,#7dd87d);letter-spacing:0.04em;">● ENGINE · No open violations</div>`;
+    } else {
+      html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:0.04em;">● ENGINE · Live updates via triggers</div>`;
+    }
+  } else {
+    html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-family:'Space Mono',monospace;font-size:10px;color:var(--amber,#d9a066);letter-spacing:0.04em;">● HEURISTIC · Engine not deployed · run migration 20260509080000</div>`;
+  }
+
+  $('#overview-compliance').innerHTML = html;
+}
+
+// Helper for rendering a single compliance violation row in the overview
+// panel. Severity-coded left border + icon + rule label + message + age.
+const COMPLIANCE_RULE_LABELS = {
+  trid_le_3day_late:          'LE 3-day rule violated',
+  trid_cd_waiting_period:     'CD waiting period violated',
+  trid_tolerance_bust_open:   'Open fee-tolerance bust',
+  qm_dti_over_43:             'DTI exceeds QM threshold',
+  qm_loan_amount_unrealistic: 'Loan amount unrealistic',
+};
+
+function renderComplianceViolationRow(v) {
+  const sev = v.severity || 'violation';
+  const sevColor = ({
+    violation: 'var(--red,#d96666)',
+    warning:   'var(--amber,#d9a066)',
+    info:      'var(--accent,#00d4ff)',
+  })[sev];
+  const sevBg = ({
+    violation: 'rgba(217,102,102,0.06)',
+    warning:   'rgba(217,160,102,0.06)',
+    info:      'rgba(0,212,255,0.04)',
+  })[sev];
+  const sevIcon = ({ violation: '⚠', warning: '○', info: 'ⓘ' })[sev];
+
+  const detectedMs = Date.now() - new Date(v.detected_at).getTime();
+  const days = Math.floor(detectedMs / 86400000);
+  const hours = Math.floor(detectedMs / 3600000);
+  const detectedLabel = days >= 1 ? days + 'd ago'
+                       : hours >= 1 ? hours + 'h ago'
+                       : 'just now';
+
+  const ruleLabel = COMPLIANCE_RULE_LABELS[v.rule_code] || v.rule_code;
+
+  return `
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;padding:9px 12px;background:${sevBg};border-left:3px solid ${sevColor};border-radius:3px;font-size:12px">
+      <span style="color:${sevColor};font-size:14px;line-height:1.2">${sevIcon}</span>
+      <div>
+        <div style="font-weight:500">${escapeHtml(ruleLabel)}</div>
+        <div style="color:var(--text-dim);margin-top:2px;font-size:11px;line-height:1.45">${escapeHtml(v.message)}</div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:4px;letter-spacing:0.04em">${sev.toUpperCase()} · DETECTED ${detectedLabel}</div>
+      </div>
+    </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -5275,6 +5393,22 @@ function initRealtime() {
           if (activeTab === 'closings')    await renderTabClosings();
           if (activeTab === 'disclosures') await renderTabDisclosures();  // TRID timeline reads cd_*
           if (activeTab === 'overview')    await renderTabOverview();     // header rate may update
+        }
+      ).subscribe()
+  );
+
+  // Compliance violations — Round 4-18. The engine's recompute function fires
+  // from triggers on loans/closings/fees/COC; the resulting INSERT/UPDATE on
+  // compliance_violations propagates here. Only the overview tab currently
+  // displays violations directly; reports.html doesn't subscribe (it's a
+  // dashboard, not an editor — refresh-on-demand is fine there).
+  realtimeChans.push(
+    supa.channel(`loan-compliance:${loanId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'compliance_violations', filter: `loan_id=eq.${loanId}` },
+        async () => {
+          const activeTab = document.querySelector('.loan-tab.active')?.dataset.tab;
+          if (activeTab === 'overview') await renderTabOverview();
         }
       ).subscribe()
   );
