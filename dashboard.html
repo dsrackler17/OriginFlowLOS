@@ -1297,8 +1297,7 @@ async function loadAllLoans() {
       loa:profiles!loa_id ( id, full_name, role ),
       processor:profiles!processor_id ( id, full_name, role ),
       underwriter:profiles!underwriter_id ( id, full_name, role ),
-      borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) ),
-      conditions:conditions!loan_id ( id, status, category )
+      borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) )
     `)
     .eq('branch_id', me.branch_id)
     .is('archived_at', null)
@@ -1311,7 +1310,33 @@ async function loadAllLoans() {
   }
   allLoans = data || [];
   loansById.clear();
-  allLoans.forEach(l => loansById.set(l.id, l));
+  allLoans.forEach(l => {
+    l.conditions = [];   // initialized empty; populated by the follow-up query below
+    loansById.set(l.id, l);
+  });
+
+  // Fetch conditions in a separate query and attach client-side.
+  // We used to embed conditions inline in the loans query, but on schemas
+  // where `conditions` has more than one FK that PostgREST can trace back
+  // to loans (e.g., loan_id + a cleared_by/created_by pointing to profiles,
+  // which itself joins to loans), the embed fails with "more than one
+  // relationship was found." The separate query is the same pattern
+  // loadDetailConditions() uses and is immune to FK-graph ambiguity.
+  if (allLoans.length > 0) {
+    const loanIds = allLoans.map(l => l.id);
+    const { data: conds, error: condErr } = await supa.from('conditions')
+      .select('id, loan_id, status, category')
+      .in('loan_id', loanIds)
+      .is('archived_at', null);
+    if (condErr) {
+      console.warn('conditions load failed (non-fatal — open-condition flags will be hidden):', condErr);
+    } else {
+      for (const c of (conds || [])) {
+        const loan = loansById.get(c.loan_id);
+        if (loan) loan.conditions.push(c);
+      }
+    }
+  }
 }
 
 async function loadMetrics() {
