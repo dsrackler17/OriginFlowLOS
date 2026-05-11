@@ -750,8 +750,14 @@ function initRangeToggle() {
 
 async function loadAll() {
   // Loans — main dataset
+  // Only select columns this page actually consumes. Earlier versions
+  // pulled cd_sent_at, cd_signed_at, and intent_to_proceed_at speculatively
+  // for future TRID cards that never shipped — and on schemas where those
+  // columns don't exist yet, Postgres errors out and the whole reports
+  // page dies. If those cards get built later, add the columns back here
+  // alongside a migration that guarantees they exist.
   const loansP = supa.from('loans')
-    .select('id, loan_number, status, loan_amount_cents, program, purpose, occupancy, ltv_pct, dti_back_pct, lo_id, created_at, le_sent_at, cd_sent_at, cd_signed_at, intent_to_proceed_at, funded_at')
+    .select('id, loan_number, status, loan_amount_cents, program, purpose, occupancy, ltv_pct, dti_back_pct, lo_id, created_at, le_sent_at, funded_at')
     .is('archived_at', null)
     .limit(5000);
 
