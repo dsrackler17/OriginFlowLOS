@@ -1298,7 +1298,7 @@ async function loadAllLoans() {
       processor:profiles!processor_id ( id, full_name, role ),
       underwriter:profiles!underwriter_id ( id, full_name, role ),
       borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) ),
-      conditions ( id, status, category )
+      conditions:conditions!loan_id ( id, status, category )
     `)
     .eq('branch_id', me.branch_id)
     .is('archived_at', null)
