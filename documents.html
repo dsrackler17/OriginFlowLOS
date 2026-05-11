@@ -185,7 +185,6 @@ main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 .docs-grid {
   flex: 1;
@@ -193,19 +192,17 @@ main {
   grid-template-columns: 1fr 380px;
   gap: 1px;
   background: var(--border);
-  min-height: 0;
 }
 .docs-list-pane {
   background: var(--navy);
-  display: flex; flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
 }
 .docs-detail-pane {
   background: var(--deep);
   display: flex; flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  position: sticky;
+  top: 60px;
+  align-self: start;
+  max-height: calc(100vh - 60px);
 }
 
 /* ─── FILTERS BAR ──────────────────────────────────────────────────── */
@@ -270,8 +267,6 @@ main {
 
 /* ─── DOC LIST ─────────────────────────────────────────────────────── */
 .docs-list {
-  flex: 1;
-  overflow-y: auto;
   padding: 0.5rem 1.5rem 1.5rem;
 }
 .doc-row {
@@ -707,7 +702,7 @@ footer a:hover { color: var(--accent); }
   .nav-center { display: none; }
   .nav-search { display: none; }
   .docs-grid { grid-template-columns: 1fr; }
-  .docs-detail-pane { max-height: 500px; border-top: 1px solid var(--border); }
+  .docs-detail-pane { position: static; max-height: none; border-top: 1px solid var(--border); }
   .doc-row {
     grid-template-columns: 36px 1fr 80px;
     gap: 0.6rem;
