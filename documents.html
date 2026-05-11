@@ -1252,6 +1252,13 @@ async function loadLoans() {
     $('#view-loan').classList.add('active');
     $('#view-branch').classList.remove('active');
   }
+
+  // Show the view toggle only when there's a loan to switch to. Without a
+  // scoped loan, the toggle has only one real option ("Branch Library")
+  // which is already active, so clicking it was a confusing no-op. Now
+  // the toggle hides entirely when it would only show one button.
+  $('#view-toggle').style.display =
+    (scopedLoanId && loansById.has(scopedLoanId)) ? 'inline-flex' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
