@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OriginFlow LOS · Built for closers. Not clickers.</title>
-<meta name="description" content="The web native LOS for loan officers who got into mortgages for the closings, not for files that take a minute to open. AI reads every PDF. Live collaboration. No $100k Encompass admin required. Pay only when you close.">
+<meta name="description" content="The web native LOS for loan officers who got into mortgages for the closings, not for files that take a minute to open. AI reads every PDF. Live collaboration. $49.99/branch + $10 per closed loan. No $100k Encompass admin required.">
 <meta name="keywords" content="loan origination system, LOS for loan officers, Encompass alternative, AI mortgage software, mortgage software for LOs, independent mortgage branch, Texas loan officer software">
 <meta name="author" content="Davis Rackler · OriginFlow LOS">
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="OriginFlow LOS · Built for closers. Not clickers.">
-<meta property="og:description" content="You got into mortgages for the closings, not the file uploads. I rebuilt the LOS on a live database with Claude Vision reading every paystub, W2, and bank statement. So your day goes back to talking to borrowers.">
+<meta property="og:description" content="You got into mortgages for the closings, not the file uploads. I rebuilt the LOS on a live database with Claude Vision reading every paystub, W2, and bank statement. $49.99/branch + $10 per closed loan.">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-6LRWPMYK9C"></script>
 <script>
@@ -464,34 +464,60 @@ nav {
   margin: 1.5rem 1.5rem 0; font-weight: 700;
 }
 .pricing-body { padding: 1.5rem; }
-.pricing-toggle {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 1px; background: var(--border); margin-bottom: 1.5rem;
-  border: 1px solid var(--border);
+
+/* Two-line-item pricing display: base + variable */
+.pricing-lines {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
-.pricing-tab {
-  background: var(--deep); padding: 0.85rem 1rem;
-  text-align: center; cursor: pointer;
-  font-family: var(--mono); font-size: 0.65rem;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--muted); transition: all 0.2s;
-}
-.pricing-tab.active { background: var(--accent); color: var(--navy); font-weight: 700; }
-.pricing-price {
-  display: flex; align-items: baseline; gap: 0.3rem; margin-bottom: 0.3rem;
+.pricing-line {
+  display: flex; align-items: baseline; gap: 0.4rem;
 }
 .price-dollar { font-family: var(--mono); font-size: 1rem; color: var(--muted); }
 .price-amount {
-  font-family: var(--serif); font-size: 3.4rem; color: var(--white); line-height: 1;
+  font-family: var(--serif); font-size: 2.8rem; color: var(--white); line-height: 1;
+}
+.price-amount.small {
+  font-size: 2rem;
 }
 .price-period {
-  font-family: var(--mono); font-size: 0.72rem;
+  font-family: var(--mono); font-size: 0.7rem;
   color: var(--muted); letter-spacing: 0.08em;
 }
+.price-plus {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--accent2);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.5rem; margin-top: 0.25rem;
+}
+
+/* Worked-example calculator block */
+.pricing-example {
+  background: var(--deep); border: 1px solid var(--border);
+  padding: 0.95rem 1rem; margin: 1.25rem 0 1.75rem;
+  font-family: var(--mono); font-size: 0.72rem;
+  color: var(--muted); line-height: 1.75;
+}
+.pricing-example .pe-label {
+  color: var(--accent); font-size: 0.58rem;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+.pricing-example .pe-total {
+  color: var(--white); font-size: 0.85rem;
+  margin-top: 0.3rem; padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+}
+.pricing-example .pe-vs {
+  color: var(--muted); font-size: 0.6rem;
+  margin-top: 0.4rem; font-style: italic; opacity: 0.8;
+}
+
 .pricing-tagline {
   font-size: 0.85rem; color: var(--muted);
-  margin-bottom: 1.75rem; font-weight: 300;
+  margin-bottom: 0.5rem; font-weight: 300;
 }
+.pricing-tagline strong { color: var(--accent2); }
 .pricing-features {
   list-style: none; margin-bottom: 2rem;
   display: flex; flex-direction: column; gap: 0.6rem;
@@ -752,7 +778,7 @@ footer a:hover { color: var(--accent); }
         <a href="/signup.html" class="btn-primary">Sign Up</a>
         <a href="dashboard.html" class="btn-secondary">See the live dashboard →</a>
       </div>
-      <p class="hero-note"><span>✓</span> Built for working LOs · <span>✓</span> Solo built by a Navy vet · <span>✓</span> No "Encompass Admin" required</p>
+      <p class="hero-note"><span>✓</span> $49.99/branch + $10 per closed loan · <span>✓</span> Solo built by a Navy vet · <span>✓</span> No "Encompass Admin" required</p>
     </div>
 
     <div class="hero-terminal">
@@ -832,7 +858,7 @@ footer a:hover { color: var(--accent); }
           <li><span class="bullet red-bull">✗</span><span><strong>Fake AI →</strong> bolted on OCR that can't reason.<span class="b-fix">→ Native Claude Vision. Reads, calculates, flags.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>Manual stare and compare →</strong> typing PDF numbers into boxes.<span class="b-fix">→ Auto extract plus side by side review pane.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>$100k Encompass admin required →</strong> dedicated headcount.<span class="b-fix">→ Self serve config. Zero admin needed.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Opaque pricing →</strong> 3 month sales cycle, signed contracts.<span class="b-fix">→ Listed on the site. Pay per closed loan or flat.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Opaque pricing →</strong> 3 month sales cycle, signed contracts.<span class="b-fix">→ $49.99/branch + $10 per closed loan. Listed on the site.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>Months long learning curve →</strong> certification programs.<span class="b-fix">→ 15 minute onboarding. New LO closes in week one.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>Broken on mobile →</strong> nightmare on iPad and phone.<span class="b-fix">→ Mobile first. Field ready on any device.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>4 clicks to clear a condition →</strong> bloated workflows.<span class="b-fix">→ AI auto clears. Zero clicks when doc matches.</span></span></li>
@@ -843,7 +869,7 @@ footer a:hover { color: var(--accent); }
           <li><span class="bullet red-bull">✗</span><span><strong>No collaboration →</strong> emails and sticky notes.<span class="b-fix">→ Slack style chat per loan file. @mentions push.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>Fake automation →</strong> task reminders, not actions.<span class="b-fix">→ Real triggers. AI clears conditions itself.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>RAM hungry desktop client →</strong> needs a power PC.<span class="b-fix">→ Browser only. Works on a Chromebook.</span></span></li>
-          <li><span class="bullet red-bull">✗</span><span><strong>Hidden per click fees →</strong> $0.50 every credit pull.<span class="b-fix">→ All inclusive. Or pay per closed loan only.</span></span></li>
+          <li><span class="bullet red-bull">✗</span><span><strong>Hidden per click fees →</strong> $0.50 every credit pull.<span class="b-fix">→ All inclusive. Closed-loan fee is the only variable.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>Notes as treasure hunt →</strong> finding a 3 week old log.<span class="b-fix">→ Threaded chat. Searchable. Pinnable. Dated.</span></span></li>
           <li><span class="bullet red-bull">✗</span><span><strong>No version control →</strong> three bank statements, which is current?<span class="b-fix">→ Document versioning. Source of truth tagged.</span></span></li>
         </ul>
@@ -874,7 +900,8 @@ footer a:hover { color: var(--accent); }
         </thead>
         <tbody>
           <tr><td class="feature">File open time</td><td class="muted">~60 seconds</td><td class="muted">5 to 15 seconds</td><td class="col-of"><strong>Under 2 seconds</strong></td></tr>
-          <tr><td class="feature">Monthly cost (5 LO branch)</td><td class="muted">~$3,000/mo plus per click fees</td><td class="muted">$1,200 to $2,400/mo</td><td class="col-of"><strong>$99/seat or $99/closed loan</strong></td></tr>
+          <tr><td class="feature">Monthly cost (1-branch shop, 20 closes/mo)</td><td class="muted">~$3,000/mo plus per click fees</td><td class="muted">$1,200 to $2,400/mo</td><td class="col-of"><strong>$249.99/mo · all in</strong></td></tr>
+          <tr><td class="feature">Pricing structure</td><td class="muted">Per-user + per-click fees</td><td class="muted">Per-seat tiered</td><td class="col-of"><strong>$49.99/branch + $10/closed loan</strong></td></tr>
           <tr><td class="feature">Onboarding to first close</td><td class="muted">3 to 4 months</td><td class="muted">2 to 4 weeks</td><td class="col-of"><strong>15 minutes</strong></td></tr>
           <tr><td class="feature">Dedicated admin required</td><td class="muted">Yes ($100k/yr salary)</td><td class="muted">Sometimes</td><td class="col-of"><strong>No</strong></td></tr>
           <tr><td class="feature">Two users edit same file</td><td class="muted"><span class="compare-x">✗</span> file lock</td><td class="muted"><span class="compare-x">✗</span></td><td class="col-of"><span class="compare-check">✓</span> live merge</td></tr>
@@ -991,18 +1018,19 @@ footer a:hover { color: var(--accent); }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- PRICING                                                              -->
+<!-- PRICING — unified base+variable model matching MSA contract terms    -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="pricing">
   <div class="section reveal">
     <div class="section-label">Pricing</div>
-    <h2 class="section-heading">Two paths. No sales call. Cancel any time.</h2>
-    <p class="section-sub">Encompass requires a 3 month enterprise sales cycle. I list my prices on the website like a grown up.</p>
+    <h2 class="section-heading">$49.99 per branch. $10 per close.<br>No sales call. Cancel anytime.</h2>
+    <p class="section-sub">Encompass requires a 3 month enterprise sales cycle. I list my prices on the website like a grown up. Two line items, no surprises.</p>
 
     <div class="pricing-wrapper">
       <ul class="pricing-context">
-        <strong>What's included on every plan</strong>
-        <li>Full pipeline · unlimited active loans</li>
+        <strong>What's included · everything</strong>
+        <li>Unlimited LO seats per branch</li>
+        <li>Unlimited active loans · unlimited docs</li>
         <li>Claude Vision document extraction · all doc types</li>
         <li>Live collaboration · branch scoped RLS</li>
         <li>Audit log · TRID, ECOA, HMDA grade recordkeeping</li>
@@ -1013,53 +1041,49 @@ footer a:hover { color: var(--accent); }
       </ul>
 
       <div class="pricing-card">
-        <span class="pricing-badge">Founding LO rate</span>
+        <span class="pricing-badge">Founding LO rate · locked for life</span>
         <div class="pricing-body">
-          <div class="pricing-toggle">
-            <div class="pricing-tab active" id="tab-flat" onclick="togglePrice('flat')">Per Seat</div>
-            <div class="pricing-tab" id="tab-success" onclick="togglePrice('success')">Per Closed Loan</div>
-          </div>
-          <div id="price-flat">
-            <div class="pricing-price">
+
+          <!-- Base + variable, shown as two line items -->
+          <div class="pricing-lines">
+            <div class="pricing-line">
               <span class="price-dollar">$</span>
-              <span class="price-amount">99</span>
-              <span class="price-period">/seat/month</span>
+              <span class="price-amount">49.99</span>
+              <span class="price-period">/branch/month</span>
             </div>
-            <p class="pricing-tagline">All in. No per click fees. No "Encompass admin" required.</p>
-            <ul class="pricing-features">
-              <li>Unlimited loans, docs, conditions</li>
-              <li>All AI extraction included</li>
-              <li>Live collab plus chat</li>
-              <li>Audit log plus compliance reports</li>
-              <li>Email and Slack support</li>
-              <li>Cancel any time, prorated refund</li>
-            </ul>
-          </div>
-          <div id="price-success" style="display:none;">
-            <div class="pricing-price">
-              <span class="price-dollar">$</span>
-              <span class="price-amount">99</span>
-              <span class="price-period">/closed loan · $0 base</span>
+            <div class="price-plus">
+              + $10 per closed loan
             </div>
-            <p class="pricing-tagline">Pay only when you close. Slow month? You owe nothing.</p>
-            <ul class="pricing-features">
-              <li>$0 monthly base, billed at funding</li>
-              <li>Unlimited seats, loans, docs</li>
-              <li>All AI extraction included</li>
-              <li>Live collab plus chat</li>
-              <li>Audit log plus compliance reports</li>
-              <li>Cancel any time, no minimums</li>
-            </ul>
           </div>
+          <p class="pricing-tagline">No per-click fees. No "Encompass admin" required. <strong>Slow month? Your bill drops.</strong></p>
+
+          <!-- Worked example -->
+          <div class="pricing-example">
+            <div class="pe-label">Example · 1-branch shop, 20 closes/mo</div>
+            <div>Base: $49.99 &nbsp;+&nbsp; Loans: 20 × $10 = $200.00</div>
+            <div class="pe-total"><strong>Total: $249.99/month · all in</strong></div>
+            <div class="pe-vs">Encompass equivalent: ~$3,000/mo + per-click fees</div>
+          </div>
+
+          <ul class="pricing-features">
+            <li>Unlimited LO seats per branch</li>
+            <li>Unlimited loans, docs, conditions</li>
+            <li>All Claude Vision AI extraction included</li>
+            <li>Live collab plus internal chat</li>
+            <li>Audit log plus compliance reports</li>
+            <li>Email and Slack support</li>
+            <li>Cancel anytime, no annual contracts</li>
+          </ul>
           <a href="/signup.html" class="pricing-cta">Sign Up →</a>
-          <p class="pricing-note">Beta opens Q2 2026 · Founding 25 LOs lock this rate forever</p>
+          <p class="pricing-note">Beta opens Q2 2026 · Founding 25 branches lock this rate forever</p>
         </div>
       </div>
 
       <div class="pricing-right">
-        <strong>Straight talk on the success model</strong>
-        Per closed loan pricing aligns the software with the LO. If I don't help you close, I don't get paid. Encompass charges whether you funded one loan that month or fifty. The speedboat should price like the speedboat.<br><br>
-        For high volume LOs (8 plus closes/month) the per seat plan usually wins. For seasonal, refi cyclic, or new LO pipelines being built up, success pricing makes the most sense. Switch between them any time. I'll do the math for you in the dashboard.
+        <strong>Why this pricing actually aligns</strong>
+        Encompass charges ~$3,000/mo whether you funded one loan that month or fifty. OriginFlow charges $49.99 to keep the lights on and $10 only when a loan actually closes.<br><br>
+        Slow month with 5 closes? Your bill is $99.99. Heavy month at 50 closes? Still ~$550/mo — about 5x cheaper than Encompass, with no per-click tax on credit pulls, AUS submissions, or doc storage.<br><br>
+        Listed publicly. No 3-month sales cycle. Cancel any time.
       </div>
     </div>
   </div>
@@ -1126,6 +1150,14 @@ footer a:hover { color: var(--accent); }
 
       <div class="faq-item">
         <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          <span>What does a "closed loan" mean for billing?</span>
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">A "closed loan" means a loan file that reaches a final disposition of funded, closed, or equivalent status in the LOS workflow. Withdrawn, denied, and canceled loans don't count and aren't billed. The $10/closed-loan fee is billed monthly in arrears based on closes during the prior calendar month. So if you have a slow month with 3 funded loans, your bill is $49.99 base + $30 = $79.99. Heavy month at 40 funded loans? $49.99 + $400 = $449.99. The math is on your dashboard in real time.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
           <span>Will it integrate with my existing credit, AUS, and title vendors?</span>
           <span class="faq-arrow">+</span>
         </button>
@@ -1164,12 +1196,12 @@ footer a:hover { color: var(--accent); }
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="early-access" class="final-cta reveal">
   <h2>Stop losing hours to your LOS.</h2>
-  <p>Q2 2026 beta is capped at 25 founding loan officers. Founding rate locks for the life of your account. No spam. Just monthly build notes from a builder you'll actually talk to.</p>
+  <p>Q2 2026 beta is capped at 25 founding branches. $49.99/branch + $10/closed loan, founding rate locks for the life of your account. No spam. Just monthly build notes from a builder you'll actually talk to.</p>
   <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
     <a href="/signup.html" class="btn-primary">Sign Up →</a>
     <a href="/login.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;border-bottom:1px solid rgba(200,223,240,0.3);padding-bottom:3px;display:inline-flex;align-items:center;">Already have an account? Log In →</a>
   </div>
-  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> Founding 25 LOs lock the rate · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
+  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> Founding 25 branches lock the rate · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
   <div style="margin-top:2rem;">
     <a href="/dashboard.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted);text-decoration:none;">Or see the live dashboard demo →</a>
   </div>
@@ -1215,13 +1247,7 @@ footer a:hover { color: var(--accent); }
 </footer>
 
 <script>
-  function togglePrice(mode) {
-    document.getElementById('tab-flat').classList.toggle('active', mode === 'flat');
-    document.getElementById('tab-success').classList.toggle('active', mode === 'success');
-    document.getElementById('price-flat').style.display    = mode === 'flat' ? 'block' : 'none';
-    document.getElementById('price-success').style.display = mode === 'success' ? 'block' : 'none';
-  }
-
+  // Reveal-on-scroll observer for .reveal sections
   const els = document.querySelectorAll('.reveal');
   const io = new IntersectionObserver(entries => {
     entries.forEach(e => {
