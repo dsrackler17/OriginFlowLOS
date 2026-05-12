@@ -62,6 +62,7 @@
     background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3);
     color:var(--red); padding:0.85rem 1rem; margin-bottom:1.25rem;
     font-family:var(--mono); font-size:0.72rem; text-align:left;
+    word-break:break-word;
   }
   .btn {
     display:inline-block; font-family:var(--mono); font-size:0.78rem;
@@ -71,6 +72,7 @@
     margin:0.25rem;
   }
   .btn:hover { opacity:0.85; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
   .btn.ghost {
     background:transparent; color:var(--text); border:1px solid var(--border); font-weight:400;
   }
@@ -88,6 +90,10 @@
   .summary-label { color:var(--muted); }
   .summary-value { color:var(--white); }
   .summary-value.accent { color:var(--accent2); font-weight:700; }
+  .fineprint {
+    font-family:var(--mono); font-size:0.58rem; color:var(--muted);
+    letter-spacing:0.04em; margin-top:1rem; line-height:1.5;
+  }
 </style>
 </head>
 <body>
@@ -107,11 +113,12 @@
     <h1>You got a founders slot.</h1>
     <p>Your branch is one of the first 20. This rate is yours forever, even after we raise prices.</p>
     <div class="summary">
-      <div class="summary-row"><span class="summary-label">Base</span><span class="summary-value">$49.99 / month</span></div>
+      <div class="summary-row"><span class="summary-label">Base subscription</span><span class="summary-value">$49.99 / month</span></div>
       <div class="summary-row"><span class="summary-label">Per closed loan</span><span class="summary-value">$10.00</span></div>
       <div class="summary-row"><span class="summary-label">Plan</span><span class="summary-value accent" id="plan-pill">FOUNDERS</span></div>
     </div>
     <button class="btn" id="btn-go" type="button">Continue to Stripe →</button>
+    <div class="fineprint">You'll be charged the $49.99 monthly base today. Per-loan fees are billed separately when you mark a loan as closed.</div>
   </div>
 
   <!-- Standard pricing -->
@@ -150,9 +157,72 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════════════════
+// /checkout.html — Branch subscription activation via Stripe Payment Links
+//
+// This page hands users off to Stripe Payment Links for billing activation.
+// Two links exist in the pricing model:
+//
+//   STRIPE_MONTHLY_LINK  — Base subscription ($49.99/mo). Used here at signup.
+//   STRIPE_PER_LOAN_LINK — Per-closed-loan charge ($10). NOT used on this
+//                          page. Should fire from a server-side handler when
+//                          loans.status flips to 'closed' (or a manual
+//                          "Charge for this loan" button on the loan detail
+//                          page). Constant exported for convenience.
+//
+// Each redirect appends:
+//   ?client_reference_id={branch_id}   — for webhook → DB linking
+//   &prefilled_email={user_email}      — UX, user doesn't retype
+//
+// ─── REQUIRED WIRING ON THE STRIPE SIDE ────────────────────────────────────
+//
+// 1. SUCCESS / CANCEL URLs
+//    Payment Links do NOT accept success_url / cancel_url as query params.
+//    Configure them in the Stripe dashboard:
+//       Payment Links → (each link) → After payment → Don't show confirmation
+//                                                    page → set URL
+//    Recommended:
+//       Success: https://originflowlos.com/home.html?activated=1
+//       Cancel:  https://originflowlos.com/checkout.html?canceled=1
+//
+// 2. WEBHOOK (checkout.session.completed)
+//    Without this, paying users land back on /checkout.html forever because
+//    branches.subscription_status never flips to 'active'.
+//
+//    Edge function pseudocode:
+//       on checkout.session.completed:
+//         branch_id = event.data.object.client_reference_id
+//         UPDATE branches
+//            SET subscription_status = 'active',
+//                stripe_customer_id  = event.data.object.customer,
+//                stripe_subscription_id = event.data.object.subscription,
+//                activated_at = now()
+//          WHERE id = branch_id;
+//
+//    For the per-loan link, key on the loan_id you'll pass through
+//    client_reference_id when you trigger it from the loan-close handler.
+//
+// ─── WHY NOT THE OLD create-checkout-session EDGE FUNCTION? ────────────────
+//
+// The previous build was calling a Supabase edge function that doesn't
+// exist (or wasn't deployed). Payment Links are simpler: no edge function,
+// no Stripe SDK in the page, no API keys to rotate. Tradeoff is that
+// dynamic pricing / coupon logic has to be baked into the link on the
+// Stripe side rather than computed at request time. For two-tier pricing
+// (founders vs standard) that's a fine tradeoff — if/when standard pricing
+// gets a separate link, add it as STRIPE_MONTHLY_LINK_STANDARD and branch
+// inside startCheckout().
+// ═══════════════════════════════════════════════════════════════════════════
+
+const STRIPE_MONTHLY_LINK  = 'https://buy.stripe.com/8x25kC5LA2Ml22y5yO8IU07';
+// eslint-disable-next-line no-unused-vars -- triggered from elsewhere, kept here for single source of truth
+const STRIPE_PER_LOAN_LINK = 'https://buy.stripe.com/9B64gya1Qfz77mSgds8IU08';
+
 const $ = (s) => document.querySelector(s);
+
 let supa = null;
 let session = null;
+let branchId = null;
 
 function showOnly(id) {
   ['loading','founders-detected','standard-detected','already-active','canceled','error']
@@ -160,7 +230,9 @@ function showOnly(id) {
 }
 
 async function bootstrap() {
-  // Handle ?canceled=1 return from Stripe
+  // Handle ?canceled=1 return from Stripe BEFORE touching auth — user might
+  // have ended their session in another tab between leaving and returning,
+  // and we don't want them bounced to login when all they did was hit "back".
   const params = new URLSearchParams(window.location.search);
   if (params.get('canceled') === '1') {
     showOnly('canceled');
@@ -172,30 +244,47 @@ async function bootstrap() {
   if (!supa) return showError('Service unavailable. Refresh and try again.');
 
   try {
-    const { data: { session: s } } = await supa.auth.getSession();
-    if (!s) {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+    if (!session) {
       window.location.href = '/login.html?next=/checkout.html';
       return;
     }
-    session = s;
 
-    // Check current branch subscription status — maybe they're already
-    // subscribed and just landed here by accident.
-    const { data: profile } = await supa
+    // Grab profile + branch subscription status in one round-trip. The
+    // `branches:branch_id ( ... )` syntax is PostgREST FK-disambiguation —
+    // this assumes profiles.branch_id has an FK named branch_id on the
+    // branches table.
+    const { data: profile, error: profErr } = await supa
       .from('profiles')
-      .select('role, branches:branch_id ( subscription_status )')
+      .select('id, branch_id, role, full_name, email, branches:branch_id ( id, subscription_status )')
       .eq('id', session.user.id)
       .maybeSingle();
 
-    const status = profile?.branches?.subscription_status;
+    if (profErr) throw profErr;
+    if (!profile) {
+      return showError("Your profile hasn't been set up yet. Contact davis@originflowlos.com.");
+    }
+    if (!profile.branch_id) {
+      return showError("Your branch hasn't been provisioned yet. You'll get an email from davis@originflowlos.com when it's live.");
+    }
+
+    branchId = profile.branch_id;
+
+    const status = profile.branches?.subscription_status;
     if (status === 'active' || status === 'trialing') {
       showOnly('already-active');
       return;
     }
 
-    // Check founders availability for the right messaging
-    const { data: remaining } = await supa.rpc('founders_slots_remaining');
-    const isFounders = (remaining ?? 0) > 0;
+    // Founders availability check — non-fatal if the RPC isn't deployed yet.
+    let isFounders = false;
+    try {
+      const { data: remaining, error: rpcErr } = await supa.rpc('founders_slots_remaining');
+      if (rpcErr) throw rpcErr;
+      isFounders = (remaining ?? 0) > 0;
+    } catch (err) {
+      console.warn('[checkout] founders_slots_remaining unavailable, defaulting to standard:', err.message);
+    }
 
     if (isFounders) {
       showOnly('founders-detected');
@@ -205,38 +294,45 @@ async function bootstrap() {
       $('#btn-go-standard').addEventListener('click', startCheckout);
     }
   } catch (err) {
-    console.error(err);
-    showError(err.message);
+    console.error('[checkout] bootstrap failed:', err);
+    showError(err.message || 'Unexpected error loading your account.');
   }
 }
 
-async function startCheckout() {
-  showOnly('loading');
-  try {
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/create-checkout-session`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      }
-    );
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Checkout failed');
-    if (!data.url) throw new Error('No checkout URL returned');
-    window.location.href = data.url;
-  } catch (err) {
-    console.error(err);
-    showError(err.message);
+function startCheckout(evt) {
+  // Defensive: a stale page (left open across a logout in another tab)
+  // would have null branchId/session and would otherwise redirect to a
+  // useless ?client_reference_id= empty value.
+  if (!branchId || !session) {
+    showError('Your session expired. Refresh the page and sign in again.');
+    return;
   }
+
+  // Disable the button so an impatient user double-click doesn't fire the
+  // redirect twice (Stripe handles dedupe fine, but it looks janky).
+  if (evt?.currentTarget) {
+    evt.currentTarget.disabled = true;
+    evt.currentTarget.textContent = 'Redirecting to Stripe…';
+  }
+
+  const url = new URL(STRIPE_MONTHLY_LINK);
+  url.searchParams.set('client_reference_id', branchId);
+  if (session.user.email) {
+    url.searchParams.set('prefilled_email', session.user.email);
+  }
+
+  showOnly('loading');
+  // Use replace so the "back" button after a successful checkout doesn't
+  // bring them back here only to get bounced to 'already-active' anyway.
+  window.location.replace(url.toString());
 }
 
 function showError(msg) {
   $('#err-msg').textContent = msg;
   showOnly('error');
-  $('#btn-retry-err').addEventListener('click', () => location.reload());
+  const btn = $('#btn-retry-err');
+  // Replace any previous listener (showError can be called multiple times)
+  btn.onclick = () => location.reload();
 }
 
 function wireRetry() {
@@ -247,11 +343,6 @@ function wireRetry() {
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
-
-// SUPABASE_URL is exposed by /js/config.js
-const SUPABASE_URL = (typeof window.OF_SUPABASE_URL === 'string')
-  ? window.OF_SUPABASE_URL
-  : (window.SUPABASE_URL || '');
 </script>
 </body>
 </html>
