@@ -606,6 +606,8 @@ nav {
   padding: 0;
 }
 .faq-item.open .faq-a { max-height: 400px; padding: 0 0 1.25rem 0; }
+.faq-a a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted var(--accent); }
+.faq-a a:hover { color: var(--accent2); border-bottom-color: var(--accent2); }
 
 /* ─── FINAL CTA ────────────────────────────────────────────────────── */
 .final-cta {
@@ -627,6 +629,16 @@ nav {
   color: var(--muted); margin-top: 1.25rem; letter-spacing: 0.06em;
 }
 .final-cta .final-note span { color: var(--accent2); }
+.final-cta .direct-line {
+  font-family: var(--mono); font-size: 0.72rem;
+  color: var(--muted); margin-top: 1.5rem; letter-spacing: 0.06em;
+}
+.final-cta .direct-line a {
+  color: var(--accent); text-decoration: none;
+  border-bottom: 1px solid rgba(0,212,255,0.3);
+  padding-bottom: 2px; transition: color 0.2s, border-color 0.2s;
+}
+.final-cta .direct-line a:hover { color: var(--accent2); border-bottom-color: var(--accent2); }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
@@ -1018,13 +1030,13 @@ footer a:hover { color: var(--accent); }
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- PRICING — unified base+variable model matching MSA contract terms    -->
+<!-- PRICING — single-tier, $99.99 + $25 for everyone, no founders split  -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="pricing">
   <div class="section reveal">
     <div class="section-label">Pricing</div>
     <h2 class="section-heading">$99.99 per branch. $25 per close.<br>No sales call. Cancel anytime.</h2>
-    <p class="section-sub">Encompass requires a 3 month enterprise sales cycle. I list my prices on the website like a grown up. Two line items, no surprises.</p>
+    <p class="section-sub">Encompass requires a 3 month enterprise sales cycle. I list my prices on the website like a grown up. Two line items, no surprises — same price for every customer, no tiers.</p>
 
     <div class="pricing-wrapper">
       <ul class="pricing-context">
@@ -1041,7 +1053,7 @@ footer a:hover { color: var(--accent); }
       </ul>
 
       <div class="pricing-card">
-        <span class="pricing-badge">Founding LO rate · locked for life</span>
+        <span class="pricing-badge">All-in pricing · no tiers</span>
         <div class="pricing-body">
 
           <!-- Base + variable, shown as two line items -->
@@ -1075,7 +1087,7 @@ footer a:hover { color: var(--accent); }
             <li>Cancel anytime, no annual contracts</li>
           </ul>
           <a href="/signup.html" class="pricing-cta">Sign Up →</a>
-          <p class="pricing-note">Beta opens Q2 2026 · Founding 25 branches lock this rate forever</p>
+          <p class="pricing-note">Beta opens Q2 2026 · First 25 branches get hands-on onboarding from Davis directly</p>
         </div>
       </div>
 
@@ -1182,6 +1194,14 @@ footer a:hover { color: var(--accent); }
 
       <div class="faq-item">
         <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          <span>How do I actually reach you?</span>
+          <span class="faq-arrow">+</span>
+        </button>
+        <div class="faq-a">Email me directly at <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a>. That's the same inbox I'll check whether you're a curious LO, a processor with a feature request, or a compliance officer with a hard question. No sales team, no ticketing system, no Calendly. Until the company grows past the point where I can answer everything myself, you'll always get me.</div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="this.parentElement.classList.toggle('open')">
           <span>Who is this NOT for?</span>
           <span class="faq-arrow">+</span>
         </button>
@@ -1196,13 +1216,14 @@ footer a:hover { color: var(--accent); }
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <section id="early-access" class="final-cta reveal">
   <h2>Stop losing hours to your LOS.</h2>
-  <p>Q2 2026 beta is capped at 25 founding branches. $99.99/branch + $25/closed loan, founding rate locks for the life of your account. No spam. Just monthly build notes from a builder you'll actually talk to.</p>
+  <p>Q2 2026 beta is capped at 25 founding branches. $99.99/branch + $25/closed loan — same price for everyone, no tiers. No spam. Just monthly build notes from a builder you'll actually talk to.</p>
   <div style="display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
     <a href="/signup.html" class="btn-primary">Sign Up →</a>
     <a href="/login.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;border-bottom:1px solid rgba(200,223,240,0.3);padding-bottom:3px;display:inline-flex;align-items:center;">Already have an account? Log In →</a>
   </div>
-  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> Founding 25 branches lock the rate · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
-  <div style="margin-top:2rem;">
+  <p class="final-note" style="margin-top:1.5rem;"><span>✓</span> First 25 branches get hands-on onboarding · <span>✓</span> Davis reviews every signup · <span>✓</span> No sales calls</p>
+  <p class="direct-line">Direct line to the builder: <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a></p>
+  <div style="margin-top:1.5rem;">
     <a href="/dashboard.html" class="btn-secondary" style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted);text-decoration:none;">Or see the live dashboard demo →</a>
   </div>
 </section>
@@ -1242,6 +1263,7 @@ footer a:hover { color: var(--accent); }
     <a href="#faq">FAQ</a>
     <a href="/privacy.html">Privacy</a>
     <a href="/terms.html">Terms</a>
+    <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a>
     <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
   </div>
 </footer>
