@@ -51,12 +51,9 @@
   .badge {
     display:inline-block; font-family:var(--mono); font-size:0.7rem;
     letter-spacing:0.1em; text-transform:uppercase;
-    padding:0.4rem 0.85rem; border:1px solid rgba(0,255,157,0.4);
-    color:var(--accent2); background:rgba(0,255,157,0.06);
+    padding:0.4rem 0.85rem; border:1px solid rgba(0,212,255,0.4);
+    color:var(--accent); background:rgba(0,212,255,0.06);
     margin-bottom:1.25rem;
-  }
-  .badge.standard {
-    color:var(--accent); border-color:rgba(0,212,255,0.4); background:rgba(0,212,255,0.06);
   }
   .err {
     background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3);
@@ -94,11 +91,27 @@
     font-family:var(--mono); font-size:0.58rem; color:var(--muted);
     letter-spacing:0.04em; margin-top:1rem; line-height:1.5;
   }
+  .example-block {
+    background:var(--deep); border:1px solid var(--border);
+    padding:0.85rem 1rem; margin:0.5rem 0 1.5rem;
+    font-family:var(--mono); font-size:0.7rem;
+    color:var(--muted); text-align:left; line-height:1.7;
+  }
+  .example-block .ex-label {
+    color:var(--accent); font-size:0.55rem;
+    letter-spacing:0.14em; text-transform:uppercase;
+    margin-bottom:0.4rem;
+  }
+  .example-block .ex-total {
+    color:var(--white); margin-top:0.3rem; padding-top:0.4rem;
+    border-top:1px solid var(--border);
+  }
 </style>
 </head>
 <body>
 
 <div class="card">
+
   <!-- Loading state -->
   <div id="loading">
     <div class="spinner"></div>
@@ -107,31 +120,35 @@
     <p>We're handing you off to Stripe to activate your branch. Should take five seconds.</p>
   </div>
 
-  <!-- Founders pricing detected -->
-  <div id="founders-detected" style="display:none;">
-    <div class="badge">FOUNDING RATE LOCKED</div>
-    <h1>You got a founders slot.</h1>
-    <p>Your branch is one of the first 20. This rate is yours forever, even after we raise prices.</p>
+  <!-- Ready to checkout -->
+  <div id="ready" style="display:none;">
+    <div class="badge">ONE BRANCH · ALL INCLUDED</div>
+    <h1>Activate your branch.</h1>
+    <p>Two line items. No per-click fees. No annual contract.</p>
     <div class="summary">
-      <div class="summary-row"><span class="summary-label">Base subscription</span><span class="summary-value">$49.99 / month</span></div>
-      <div class="summary-row"><span class="summary-label">Per closed loan</span><span class="summary-value">$10.00</span></div>
-      <div class="summary-row"><span class="summary-label">Plan</span><span class="summary-value accent" id="plan-pill">FOUNDERS</span></div>
+      <div class="summary-row"><span class="summary-label">Base subscription</span><span class="summary-value">$99.99 / month</span></div>
+      <div class="summary-row"><span class="summary-label">Per closed loan</span><span class="summary-value">$25.00</span></div>
+      <div class="summary-row"><span class="summary-label">Unlimited LO seats</span><span class="summary-value accent">INCLUDED</span></div>
+      <div class="summary-row"><span class="summary-label">Claude Vision AI</span><span class="summary-value accent">INCLUDED</span></div>
     </div>
-    <button class="btn" id="btn-go" type="button">Continue to Stripe →</button>
-    <div class="fineprint">You'll be charged the $49.99 monthly base today. Per-loan fees are billed separately when you mark a loan as closed.</div>
-  </div>
 
-  <!-- Standard pricing -->
-  <div id="standard-detected" style="display:none;">
-    <div class="badge standard">STANDARD PLAN</div>
-    <h1>Almost there.</h1>
-    <p>Founding 20 slots are taken. You're on the standard plan — same software, same support.</p>
-    <button class="btn" id="btn-go-standard" type="button">Continue to Stripe →</button>
+    <div class="example-block">
+      <div class="ex-label">Example · 20 closes this month</div>
+      <div>Base: $99.99 &nbsp;+&nbsp; Loans: 20 × $25 = $500.00</div>
+      <div class="ex-total"><strong>Total this month: $599.99 · all in</strong></div>
+    </div>
+
+    <button class="btn" id="btn-go" type="button">Continue to Stripe →</button>
+    <div class="fineprint">
+      You'll be charged the $99.99 monthly base today.<br>
+      Per-loan fees are billed in arrears when loans close.<br>
+      Cancel anytime · No annual contract
+    </div>
   </div>
 
   <!-- Already subscribed -->
   <div id="already-active" style="display:none;">
-    <div class="badge">ALREADY ACTIVE</div>
+    <div class="badge" style="border-color:rgba(0,255,157,0.4);color:var(--accent2);background:rgba(0,255,157,0.06);">ALREADY ACTIVE</div>
     <h1>You're already paid up.</h1>
     <p>Your branch subscription is active. Head to your home dashboard.</p>
     <a href="/home.html" class="btn">Go to Home →</a>
@@ -141,7 +158,7 @@
   <div id="canceled" style="display:none;">
     <div class="eyebrow" style="color:var(--amber);">Checkout canceled</div>
     <h1>No charge made.</h1>
-    <p>You can try again whenever you're ready. The founders rate is still locked in for you until someone else takes the slot.</p>
+    <p>You can try again whenever you're ready. Same pricing, no penalty for waiting.</p>
     <button class="btn" id="btn-retry" type="button">Try again</button>
     <a href="/home.html" class="btn ghost">Back to home</a>
   </div>
@@ -154,64 +171,45 @@
     <button class="btn" id="btn-retry-err" type="button">Try again</button>
     <a href="mailto:dsrackler@gmail.com" class="btn ghost">Email Davis</a>
   </div>
+
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // /checkout.html — Branch subscription activation via Stripe Payment Links
 //
-// This page hands users off to Stripe Payment Links for billing activation.
-// Two links exist in the pricing model:
+// SINGLE TIER PRICING:
+//   $99.99 / branch / month  (base subscription)
+//   $25.00 / closed loan     (variable, billed in arrears)
 //
-//   STRIPE_MONTHLY_LINK  — Base subscription ($49.99/mo). Used here at signup.
-//   STRIPE_PER_LOAN_LINK — Per-closed-loan charge ($10). NOT used on this
-//                          page. Should fire from a server-side handler when
-//                          loans.status flips to 'closed' (or a manual
-//                          "Charge for this loan" button on the loan detail
-//                          page). Constant exported for convenience.
+// No founders/standard split. No tiering. One price for everyone. If
+// pricing ever needs to change in a non-trivial way (different tiers,
+// volume discounts, etc.) that's a structural change — replace this
+// page rather than retrofitting branching logic in.
 //
-// Each redirect appends:
+// ─── PAYMENT LINKS ─────────────────────────────────────────────────────────
+//
+//   STRIPE_MONTHLY_LINK  — $99.99/mo subscription. Used here at signup.
+//   STRIPE_PER_LOAN_LINK — $25 one-time charge. NOT used on this page.
+//                          Fires from a loan-close handler elsewhere in the
+//                          LOS, passing client_reference_id={loan_id}.
+//                          Defined here as a single source of truth.
+//
+// Each redirect to the monthly link appends:
 //   ?client_reference_id={branch_id}   — for webhook → DB linking
 //   &prefilled_email={user_email}      — UX, user doesn't retype
 //
-// ─── REQUIRED WIRING ON THE STRIPE SIDE ────────────────────────────────────
+// ─── REQUIRED STRIPE-SIDE WIRING ───────────────────────────────────────────
 //
-// 1. SUCCESS / CANCEL URLs
-//    Payment Links do NOT accept success_url / cancel_url as query params.
-//    Configure them in the Stripe dashboard:
-//       Payment Links → (each link) → After payment → Don't show confirmation
-//                                                    page → set URL
-//    Recommended:
+// 1. SUCCESS / CANCEL URLs configured on each Payment Link in the Stripe
+//    dashboard (NOT here — Payment Links don't accept these as query params):
 //       Success: https://originflowlos.com/home.html?activated=1
 //       Cancel:  https://originflowlos.com/checkout.html?canceled=1
 //
-// 2. WEBHOOK (checkout.session.completed)
-//    Without this, paying users land back on /checkout.html forever because
-//    branches.subscription_status never flips to 'active'.
-//
-//    Edge function pseudocode:
-//       on checkout.session.completed:
-//         branch_id = event.data.object.client_reference_id
-//         UPDATE branches
-//            SET subscription_status = 'active',
-//                stripe_customer_id  = event.data.object.customer,
-//                stripe_subscription_id = event.data.object.subscription,
-//                activated_at = now()
-//          WHERE id = branch_id;
-//
-//    For the per-loan link, key on the loan_id you'll pass through
-//    client_reference_id when you trigger it from the loan-close handler.
-//
-// ─── WHY NOT THE OLD create-checkout-session EDGE FUNCTION? ────────────────
-//
-// The previous build was calling a Supabase edge function that doesn't
-// exist (or wasn't deployed). Payment Links are simpler: no edge function,
-// no Stripe SDK in the page, no API keys to rotate. Tradeoff is that
-// dynamic pricing / coupon logic has to be baked into the link on the
-// Stripe side rather than computed at request time. For two-tier pricing
-// (founders vs standard) that's a fine tradeoff — if/when standard pricing
-// gets a separate link, add it as STRIPE_MONTHLY_LINK_STANDARD and branch
-// inside startCheckout().
+// 2. checkout.session.completed webhook handler (originflow-billing-webhook
+//    edge function) that flips branches.subscription_status to 'active'
+//    using event.data.object.client_reference_id as the branch_id.
+//    Without this, paying users land back here forever.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STRIPE_MONTHLY_LINK  = 'https://buy.stripe.com/8x25kC5LA2Ml22y5yO8IU07';
@@ -225,12 +223,12 @@ let session = null;
 let branchId = null;
 
 function showOnly(id) {
-  ['loading','founders-detected','standard-detected','already-active','canceled','error']
+  ['loading','ready','already-active','canceled','error']
     .forEach(s => { document.getElementById(s).style.display = (s === id) ? 'block' : 'none'; });
 }
 
 async function bootstrap() {
-  // Handle ?canceled=1 return from Stripe BEFORE touching auth — user might
+  // Handle ?canceled=1 return from Stripe BEFORE touching auth — user may
   // have ended their session in another tab between leaving and returning,
   // and we don't want them bounced to login when all they did was hit "back".
   const params = new URLSearchParams(window.location.search);
@@ -252,8 +250,7 @@ async function bootstrap() {
 
     // Grab profile + branch subscription status in one round-trip. The
     // `branches:branch_id ( ... )` syntax is PostgREST FK-disambiguation —
-    // this assumes profiles.branch_id has an FK named branch_id on the
-    // branches table.
+    // assumes profiles.branch_id has an FK named branch_id on branches.
     const { data: profile, error: profErr } = await supa
       .from('profiles')
       .select('id, branch_id, role, full_name, email, branches:branch_id ( id, subscription_status )')
@@ -262,10 +259,10 @@ async function bootstrap() {
 
     if (profErr) throw profErr;
     if (!profile) {
-      return showError("Your profile hasn't been set up yet. Contact davis@originflowlos.com.");
+      return showError("Your profile hasn't been set up yet. Contact dsrackler@gmail.com.");
     }
     if (!profile.branch_id) {
-      return showError("Your branch hasn't been provisioned yet. You'll get an email from davis@originflowlos.com when it's live.");
+      return showError("Your branch hasn't been provisioned yet. You'll get an email from dsrackler@gmail.com when it's live.");
     }
 
     branchId = profile.branch_id;
@@ -276,23 +273,10 @@ async function bootstrap() {
       return;
     }
 
-    // Founders availability check — non-fatal if the RPC isn't deployed yet.
-    let isFounders = false;
-    try {
-      const { data: remaining, error: rpcErr } = await supa.rpc('founders_slots_remaining');
-      if (rpcErr) throw rpcErr;
-      isFounders = (remaining ?? 0) > 0;
-    } catch (err) {
-      console.warn('[checkout] founders_slots_remaining unavailable, defaulting to standard:', err.message);
-    }
-
-    if (isFounders) {
-      showOnly('founders-detected');
-      $('#btn-go').addEventListener('click', startCheckout);
-    } else {
-      showOnly('standard-detected');
-      $('#btn-go-standard').addEventListener('click', startCheckout);
-    }
+    // Everyone else lands on the same ready screen. No founders RPC,
+    // no tier detection, no branching.
+    showOnly('ready');
+    $('#btn-go').addEventListener('click', startCheckout);
   } catch (err) {
     console.error('[checkout] bootstrap failed:', err);
     showError(err.message || 'Unexpected error loading your account.');
@@ -301,14 +285,14 @@ async function bootstrap() {
 
 function startCheckout(evt) {
   // Defensive: a stale page (left open across a logout in another tab)
-  // would have null branchId/session and would otherwise redirect to a
-  // useless ?client_reference_id= empty value.
+  // would have null branchId/session and would otherwise redirect with a
+  // useless empty client_reference_id.
   if (!branchId || !session) {
     showError('Your session expired. Refresh the page and sign in again.');
     return;
   }
 
-  // Disable the button so an impatient user double-click doesn't fire the
+  // Disable the button so an impatient double-click doesn't fire the
   // redirect twice (Stripe handles dedupe fine, but it looks janky).
   if (evt?.currentTarget) {
     evt.currentTarget.disabled = true;
@@ -322,8 +306,8 @@ function startCheckout(evt) {
   }
 
   showOnly('loading');
-  // Use replace so the "back" button after a successful checkout doesn't
-  // bring them back here only to get bounced to 'already-active' anyway.
+  // Use replace so "back" after a successful checkout doesn't bring them
+  // here only to get bounced to 'already-active' anyway.
   window.location.replace(url.toString());
 }
 
@@ -331,7 +315,8 @@ function showError(msg) {
   $('#err-msg').textContent = msg;
   showOnly('error');
   const btn = $('#btn-retry-err');
-  // Replace any previous listener (showError can be called multiple times)
+  // Use onclick (not addEventListener) so showError can be called multiple
+  // times without stacking listeners.
   btn.onclick = () => location.reload();
 }
 
