@@ -264,6 +264,36 @@ main {
   font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
   letter-spacing: 0.04em; margin-top: 0.4rem;
 }
+/* Round 9.5: slim mode — toggled by JS when the library has ≥1 doc. The hero
+   dropzone is overkill once data exists; collapsing to a single-row bar
+   reclaims ~80px of vertical for the docs list and signals "uploading is
+   still one-click, but the value is in the extractions below." When the
+   user starts a drag, drag-active styling unwinds the slim layout so the
+   full visual target is restored — same UX as the empty state, no surprise
+   landing on a thin strip. */
+.dropzone.slim {
+  margin: 0.5rem 1.5rem;
+  padding: 0.5rem 0.95rem;
+  border-width: 1px;
+  text-align: left;
+  display: flex; align-items: center; gap: 0.7rem;
+}
+.dropzone.slim.drag-active {
+  padding: 1.25rem;
+  text-align: center;
+  display: block;
+}
+.dropzone.slim .dz-icon {
+  font-size: 0.95rem; margin: 0; display: inline-block;
+}
+.dropzone.slim.drag-active .dz-icon {
+  font-size: 1.6rem; display: block; margin-bottom: 0.5rem;
+}
+.dropzone.slim .dz-text {
+  font-size: 0.62rem; letter-spacing: 0.06em;
+}
+.dropzone.slim .dz-sub { display: none; }
+.dropzone.slim.drag-active .dz-sub { display: block; }
 
 /* ─── DOC LIST ─────────────────────────────────────────────────────── */
 .docs-list {
@@ -1183,6 +1213,21 @@ async function bootstrap() {
     const id = window.location.hash.slice(1);
     if (id && docsById.has(id)) selectDoc(id);
   }
+
+  // Round 9.5: auto-select the latest extracted doc so the detail pane is
+  // populated on first paint. Skipped if a hash deep-link already selected
+  // something, or if there's nothing extracted to show. Prefers status
+  // 'extracted' or 'applied' over 'uploaded' / 'extracting' because those
+  // have actual fields + suggested_actions to render — picking an
+  // unextracted doc would just show a "click Run AI extraction" stub,
+  // which defeats the point of auto-selecting.
+  //
+  // `docs` is already sorted by uploaded_at DESC in loadDocs(), so find()
+  // returns the most recent matching row without needing to re-sort.
+  if (!selectedDocId) {
+    const latest = docs.find(d => d.status === 'extracted' || d.status === 'applied');
+    if (latest) selectDoc(latest.id);
+  }
 }
 
 function handleSignOut() {
@@ -1296,10 +1341,46 @@ async function loadDocs() {
 }
 
 function loadMetrics() {
+  // ─── Round 9.5: extraction-led metric strip ─────────────────────────
+  // The old strip showed total/extracted/applied/avg-conf — descriptively
+  // accurate but visually weak for a demo. The new four cells answer "what
+  // has the AI actually done for the branch this week?":
+  //
+  //   1. Docs Extracted          — count of extracted+applied. The headline
+  //                                 unit of throughput.
+  //   2. Fields Written to Loans — sum of length(extraction_data.applied_actions)
+  //                                 across all docs. Each applied action is one
+  //                                 write-back to the loan/borrower/condition,
+  //                                 so this aggregates real downstream effect.
+  //   3. Conditions Cleared (7d) — separate query against the conditions
+  //                                 table for cleared_at >= now-7d. Branch
+  //                                 scoping is via RLS (don't filter
+  //                                 branch_id explicitly — conditions has
+  //                                 RLS that already enforces it). Doesn't
+  //                                 require the clear to have been
+  //                                 doc-triggered; the metric is "how active
+  //                                 is the branch lately" rather than "AI
+  //                                 attribution."
+  //   4. Avg Confidence          — kept from the old strip, recolored.
+  //
+  // The conditions-cleared query is the only async hop; everything else
+  // computes from the already-loaded `docs` array. The function stays
+  // synchronous (fire-and-forget the conditions query) so it can keep
+  // being called from _scheduleMetricRefresh without surfacing promises.
   const total = docs.length;
   const extracted = docs.filter(d => d.status === 'extracted' || d.status === 'applied').length;
   const applied = docs.filter(d => d.status === 'applied').length;
   const pending = docs.filter(d => d.status === 'extracting' || d.status === 'uploaded').length;
+
+  // Fields written: sum of applied_actions arrays across all docs. An
+  // action key in this array means OF_applyExtractionAction was called
+  // successfully (or in demo mode, was clicked). Defensively coerce in
+  // case extraction_data is null or applied_actions isn't an array.
+  let fieldsWritten = 0;
+  for (const d of docs) {
+    const arr = d.extraction_data && d.extraction_data.applied_actions;
+    if (Array.isArray(arr)) fieldsWritten += arr.length;
+  }
 
   // Avg confidence on extracted docs (normalized 0-1)
   const confs = docs
@@ -1307,28 +1388,61 @@ function loadMetrics() {
     .filter(v => v != null);
   const avgConf = confs.length ? (confs.reduce((a,b) => a+b, 0) / confs.length) : null;
 
+  // Paint cells synchronously with what we have; the conditions-cleared
+  // cell starts at "—" and gets backfilled when the query returns. Avoids
+  // a single slow query blocking the whole strip on first render.
+  const fieldsSub = total > 0
+    ? `from ${extracted} doc${extracted === 1 ? '' : 's'}`
+    : 'no extractions yet';
+
   $('#metric-strip').innerHTML = `
     <div class="metric-cell">
-      <div class="metric-label">${view === 'loan' ? 'On This Loan' : 'Branch Library'}</div>
-      <div class="metric-value">${total}</div>
-      <div class="metric-sub">documents total</div>
-    </div>
-    <div class="metric-cell">
-      <div class="metric-label">AI-Extracted</div>
+      <div class="metric-label">Docs Extracted</div>
       <div class="metric-value cyan">${extracted}</div>
-      <div class="metric-sub">${total ? Math.round(extracted/total*100) : 0}% of library</div>
+      <div class="metric-sub">${applied} applied · ${pending} pending</div>
     </div>
     <div class="metric-cell">
-      <div class="metric-label">Applied to Loans</div>
-      <div class="metric-value green">${applied}</div>
-      <div class="metric-sub">data written back</div>
+      <div class="metric-label">Fields Written to Loans</div>
+      <div class="metric-value green">${fieldsWritten}</div>
+      <div class="metric-sub">${escapeHtml(fieldsSub)}</div>
+    </div>
+    <div class="metric-cell" id="metric-cell-cleared">
+      <div class="metric-label">Conditions Cleared</div>
+      <div class="metric-value">—</div>
+      <div class="metric-sub">last 7 days</div>
     </div>
     <div class="metric-cell">
       <div class="metric-label">Avg Confidence</div>
       <div class="metric-value ${avgConf != null && avgConf >= 0.9 ? 'green' : avgConf != null && avgConf >= 0.7 ? 'amber' : ''}">${confLabel(avgConf)}</div>
-      <div class="metric-sub">${pending ? pending + ' still pending' : 'across extractions'}</div>
+      <div class="metric-sub">across extractions</div>
     </div>
   `;
+
+  // Async backfill for conditions cleared in last 7 days. RLS scopes the
+  // count to the user's branch automatically — don't add an explicit
+  // branch_id filter (would require conditions to have a branch_id column,
+  // which it may or may not depending on schema state). Errors are
+  // swallowed so a missing table never breaks the rest of the strip.
+  // The cell lookup happens AFTER the query resolves, so a re-render
+  // mid-flight (from _scheduleMetricRefresh) is safe — we either find
+  // the new cell and write to it, or we don't and bail.
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
+  supa.from('conditions')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'cleared')
+    .gte('cleared_at', sevenDaysAgo)
+    .then(({ count, error }) => {
+      const cell = document.getElementById('metric-cell-cleared');
+      if (!cell) return;
+      const n = error ? null : (count ?? 0);
+      const cls = n != null && n > 0 ? 'green' : '';
+      cell.innerHTML = `
+        <div class="metric-label">Conditions Cleared</div>
+        <div class="metric-value ${cls}">${n != null ? n : '—'}</div>
+        <div class="metric-sub">last 7 days</div>
+      `;
+    })
+    .catch(err => { console.warn('[OF Docs] conditions-cleared metric:', err); });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1405,6 +1519,15 @@ async function switchView(v) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function renderList() {
+  // Round 9.5: slim the dropzone once the library has content. The
+  // dropzone is the hero on an empty branch (drag here, this is how you
+  // start) but once docs exist, the value is the list/detail below, and
+  // a chunky drop target just wastes vertical. CSS handles all the
+  // visual collapse — we only toggle the class. drag-active state
+  // re-expands automatically (see .dropzone.slim.drag-active rules).
+  const dropzone = document.getElementById('dropzone');
+  if (dropzone) dropzone.classList.toggle('slim', docs.length > 0);
+
   const filtered = applyFilters(docs);
   const list = $('#docs-list');
 
