@@ -721,6 +721,45 @@ footer a:hover { color: var(--accent); }
 }
 .cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
 
+/* ─── 9.4 · CORNER BADGE VARIANTS ──────────────────────────────────── */
+/* The .lc-stale span doubles as the slot for the lock countdown AND the
+   stage-age tier. Both render at top:6 right:6 absolute, so swapping
+   between them never shifts layout. Color tells the story:
+     • lock-ok    — cyan, lock is comfortably in the future (>5d)
+     • lock-warn  — amber, lock expires in 1-5 days (action soon)
+     • lock-exp   — red,   lock is expired or expires today
+     • stage-warn — amber, file has been in current stage 5-9 days
+     • stage-stale — red,  file has been in current stage 10+ days
+   The base .lc-stale rule above defaults to amber for back-compat with
+   any badge that might be added later without a tier class. */
+.lc-stale.lock-ok    { color: var(--accent); }
+.lc-stale.lock-warn  { color: var(--amber); }
+.lc-stale.lock-exp   { color: var(--red); font-weight: 700; }
+.lc-stale.stage-warn { color: var(--amber); }
+.lc-stale.stage-stale { color: var(--red); }
+
+/* ─── 9.4 · PROCESSOR OWNERSHIP LINE ──────────────────────────────── */
+/* Sits between the property line and the DTI/LTV/Rate grid. Mono +
+   small so it densifies the card without stealing attention from the
+   borrower name above. Hidden by renderCard's procHtml for lead/app
+   stages — the rule below just styles it when present. */
+.lc-proc {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+.lc-proc-label { color: var(--muted); }
+.lc-proc-name { color: var(--text); }
+.lc-proc-unassigned {
+  color: var(--muted);
+  font-style: italic;
+}
+
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1280px) {
   .metric-strip { grid-template-columns: repeat(3, 1fr); }
@@ -1008,7 +1047,47 @@ footer a:hover { color: var(--accent); }
 // audit-logged via stage_changes table. Inline detail panel for the selected
 // loan. Hash routing — /dashboard.html#<loan_id> deep-links and matches the
 // "Open →" links from home.html and the command palette.
-// ═══════════════════════════════════════════════════════════════════════════
+//
+// ──────────────────────────────────────────────────────────────────────────
+// PATCH 9.4 · DASHBOARD DENSITY PASS (this revision)
+//
+//   1. Lock countdown badge   — top-right corner. Pulls latest active row
+//      from `locks` (status='locked', archived_at null). Cyan when >5d,
+//      amber when 1–5d, red 'EXP' when ≤0. Computed off `expires_at_utc`
+//      (precise) with `expiration_date` as a date-only fallback.
+//
+//   2. AUS pill               — added to `.lc-flags`. Reads latest row
+//      per loan from `aus_findings` (ordered by submitted_at desc).
+//      Engine label preserved on the chip: "DU ✓" green for
+//      approve_eligible, "DU REF" amber for any refer-family result,
+//      "DU ERR" red, "DU OOS" muted for out-of-scope.
+//
+//   3. Processor name on cards — small mono line under .lc-prop. Hidden
+//      entirely for `lead` and `application` (still LO-owned). From
+//      `submitted` onward shows the processor name when assigned, or a
+//      muted italic 'UNASSIGNED' so the gap is visible at a glance.
+//
+//   4. Aging-condition split  — the existing "⚑ N" amber flag becomes
+//      "⚑ N · ⚠ M" when M of the open conditions are >7 days old. Just N
+//      when nothing is aging. Requires `created_at` on the condition
+//      payload so we can compute the age.
+//
+//   5. Days-in-stage tiering  — old single-tier 5d+ amber badge gets a
+//      second 10d+ red tier. A `STALE` red pill is appended to .lc-flags
+//      at 14d+. All three respect the same stage-exemption list (lead,
+//      funded, denied, withdrawn, cancelled — these stages don't have a
+//      meaningful "should have moved by now").
+//
+//   Slot priority on top-right corner: lock countdown WINS if a loan has
+//   an active lock. Stage-age tiering falls back to the same slot when
+//   there's no lock. Both share `.lc-stale` so layout never shifts.
+//
+//   Realtime caveat: the existing channel listens to the `loans` table
+//   only. A new lock or AUS finding that doesn't touch the loan row won't
+//   refresh badges until the next pipeline reload. Cheap to add channels
+//   for `locks` and `aus_findings` if it bites — deferred for now since
+//   stage moves and updated_at bumps already cover the common case.
+// ══════════════════════════════════════════════════════════════════════════
 
 const $ = (s) => document.querySelector(s);
 const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
@@ -1051,6 +1130,15 @@ const STAGES = [
 ];
 const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.key, i]));
 const STAGE_LABEL = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+
+// 9.4 · Stages where "time in stage" is meaningless. A `lead` is allowed
+// to sit cold; a `funded` file is done; denied/withdrawn/cancelled are
+// terminal. Suppressing badges in these stages keeps the board honest —
+// otherwise every long-cold lead would look like a fire to put out, and
+// every funded loan would look stale forever.
+const STAGE_EXEMPT_FROM_AGING = new Set([
+  'lead', 'funded', 'denied', 'withdrawn', 'cancelled'
+]);
 
 // ─── Permissions matrix ──────────────────────────────────────────────────
 // Who can move from <fromStatus> → <toStatus>?
@@ -1154,6 +1242,100 @@ function initials(name) {
   const parts = String(name).split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// ─── 9.4 helpers ─────────────────────────────────────────────────────────
+// Each of these returns either null (don't render the badge/line) or a
+// small object with what renderCard needs. Keeping the logic in pure
+// helpers makes the renderCard template readable AND makes it easy to
+// test each rule in isolation later (e.g. unit-testing "EXP at expiry").
+
+// Lock countdown for the top-right slot. Returns null when:
+//   - the loan is in a stage where rate locks aren't a concern
+//   - there's no active (locked) lock attached
+//   - the latest lock row has no usable date columns
+// Otherwise returns { cls, text } — `cls` selects the color via CSS
+// (.lock-ok / .lock-warn / .lock-exp), `text` is the rendered string.
+function computeLockBadge(loan) {
+  if (STAGE_EXEMPT_FROM_AGING.has(loan.status)) return null;
+  const lk = loan.activeLock;
+  if (!lk) return null;
+  if (lk.status && lk.status !== 'locked') return null;
+
+  // Prefer the precise UTC instant so 'EXP' flips the moment the lock
+  // actually expires, not at midnight branch-time. Fall back to the
+  // date-only column if expires_at_utc isn't populated (legacy rows).
+  let msLeft = null;
+  if (lk.expires_at_utc) {
+    msLeft = new Date(lk.expires_at_utc).getTime() - Date.now();
+  } else if (lk.expiration_date) {
+    // Treat as end-of-day in user-local tz so an expiration_date of today
+    // doesn't read as expired all morning.
+    msLeft = new Date(lk.expiration_date + 'T23:59:59').getTime() - Date.now();
+  }
+  if (msLeft == null) return null;
+
+  const daysLeft = Math.ceil(msLeft / 86400000);
+  if (daysLeft <= 0)  return { cls: 'lock-exp',  text: '🔒 EXP' };
+  if (daysLeft <= 5)  return { cls: 'lock-warn', text: `🔒 ${daysLeft}d` };
+  return { cls: 'lock-ok', text: `🔒 ${daysLeft}d` };
+}
+
+// AUS pill content. Returns null when no AUS has been run on the loan.
+// `result` enum values seen in the seed: approve_eligible. Other values
+// the real engine emits (refer, refer_with_caution, refer_ineligible,
+// error, out_of_scope) are mapped here — anything unrecognized falls
+// through to a muted "?" so it's visible without crashing the card.
+function computeAusPill(loan) {
+  const a = loan.latestAus;
+  if (!a) return null;
+  const engine = (a.engine || 'du').toLowerCase();
+  const engineLabel =
+    engine === 'lpa' || engine === 'lp' ? 'LP' :
+    engine === 'du' ? 'DU' :
+    engine.toUpperCase();
+  const result = (a.result || '').toLowerCase();
+  if (result === 'approve_eligible' || result === 'accept') {
+    return { cls: 'green', text: `${engineLabel} ✓` };
+  }
+  if (result.startsWith('refer') || result === 'caution') {
+    return { cls: 'amber', text: `${engineLabel} REF` };
+  }
+  if (result === 'error' || result === 'errored') {
+    return { cls: 'red', text: `${engineLabel} ERR` };
+  }
+  if (result === 'out_of_scope' || result === 'oos' || result === 'ineligible') {
+    return { cls: 'muted', text: `${engineLabel} OOS` };
+  }
+  return { cls: 'muted', text: `${engineLabel} ?` };
+}
+
+// Processor ownership line. Hidden entirely on lead/application — those
+// are LO-owned and showing "PROC · UNASSIGNED" there would just be visual
+// noise. From submitted onward we surface the name in white text, or a
+// muted italic placeholder if nobody's been assigned yet (that gap is
+// what we WANT to be visible — unassigned files in processing-and-after
+// are bottlenecks).
+function computeProcLine(loan) {
+  if (loan.status === 'lead' || loan.status === 'application') return null;
+  if (loan.processor) {
+    return { name: loan.processor.full_name || 'Processor', assigned: true };
+  }
+  return { name: 'UNASSIGNED', assigned: false };
+}
+
+// Stage-age tier for the fallback corner badge. Mirrors the same exempt
+// stages as the lock badge. The 5d/10d/14d thresholds match the seed-data
+// patterns Davis built into 9.2 so the demo loans render with a realistic
+// mix of green/amber/red — UW files sit at 4-6d, conditional at ~6d,
+// the older COE-blocked Martinez loan deliberately at 10d to exercise
+// the red tier.
+function computeStageAge(loan) {
+  if (STAGE_EXEMPT_FROM_AGING.has(loan.status)) return null;
+  const days = daysIn(loan.updated_at);
+  if (days >= 10) return { cls: 'stage-stale', text: `${days}d`, days };
+  if (days >= 5)  return { cls: 'stage-warn',  text: `${days}d`, days };
+  return null;
 }
 
 function showToast(msg, isError) {
@@ -1312,20 +1494,27 @@ async function loadAllLoans() {
   loansById.clear();
   allLoans.forEach(l => {
     l.conditions = [];   // initialized empty; populated by the follow-up query below
+    l.activeLock = null; // 9.4: filled by the locks query below
+    l.latestAus = null;  // 9.4: filled by the aus_findings query below
     loansById.set(l.id, l);
   });
 
-  // Fetch conditions in a separate query and attach client-side.
-  // We used to embed conditions inline in the loans query, but on schemas
-  // where `conditions` has more than one FK that PostgREST can trace back
-  // to loans (e.g., loan_id + a cleared_by/created_by pointing to profiles,
-  // which itself joins to loans), the embed fails with "more than one
-  // relationship was found." The separate query is the same pattern
-  // loadDetailConditions() uses and is immune to FK-graph ambiguity.
-  if (allLoans.length > 0) {
-    const loanIds = allLoans.map(l => l.id);
+  if (allLoans.length === 0) return;
+  const loanIds = allLoans.map(l => l.id);
+
+  // ─── Conditions ────────────────────────────────────────────────────────
+  // Fetched in a separate query and attached client-side. We used to embed
+  // them inline in the loans query, but on schemas where `conditions` has
+  // more than one FK that PostgREST can trace back to loans (loan_id +
+  // cleared_by_user_id pointing to profiles, which itself joins to loans),
+  // the embed fails with "more than one relationship was found." The
+  // separate query is immune to FK-graph ambiguity.
+  //
+  // 9.4 addition: `created_at` is now in the select so renderCard can
+  // split the open-condition flag into "X open, Y aging (>7d)".
+  {
     const { data: conds, error: condErr } = await supa.from('conditions')
-      .select('id, loan_id, status, category')
+      .select('id, loan_id, status, category, created_at')
       .in('loan_id', loanIds)
       .is('archived_at', null);
     if (condErr) {
@@ -1334,6 +1523,55 @@ async function loadAllLoans() {
       for (const c of (conds || [])) {
         const loan = loansById.get(c.loan_id);
         if (loan) loan.conditions.push(c);
+      }
+    }
+  }
+
+  // ─── 9.4 · Active locks ───────────────────────────────────────────────
+  // Latest non-archived lock per loan, ordered locked_at desc so the first
+  // hit per loan_id wins. We don't strictly need to filter status='locked'
+  // here — the badge helper does that — because we DO want the loan-level
+  // "the previous lock was expired, no new one" case to fall through to
+  // stage-age. Pulling all non-archived lets future work surface
+  // "expired, needs relock" without re-querying.
+  {
+    const { data: locks, error: lockErr } = await supa.from('locks')
+      .select('id, loan_id, status, rate_bps, expiration_date, expires_at_utc, locked_at')
+      .in('loan_id', loanIds)
+      .is('archived_at', null)
+      .order('locked_at', { ascending: false });
+    if (lockErr) {
+      console.warn('locks load failed (non-fatal — lock badges will be hidden):', lockErr);
+    } else {
+      const seen = new Set();
+      for (const lk of (locks || [])) {
+        if (seen.has(lk.loan_id)) continue;  // already have newest for this loan
+        seen.add(lk.loan_id);
+        const loan = loansById.get(lk.loan_id);
+        if (loan) loan.activeLock = lk;
+      }
+    }
+  }
+
+  // ─── 9.4 · Latest AUS findings ────────────────────────────────────────
+  // Same "newest per loan" pattern as locks. We grab the engine + result
+  // columns the card pill needs; deeper findings_summary is reserved for
+  // the AUS tab on loan.html. submission_number is pulled so future
+  // tooltips can show "resub #2" without a refetch.
+  {
+    const { data: aus, error: ausErr } = await supa.from('aus_findings')
+      .select('id, loan_id, engine, result, submitted_at, submission_number')
+      .in('loan_id', loanIds)
+      .order('submitted_at', { ascending: false });
+    if (ausErr) {
+      console.warn('aus_findings load failed (non-fatal — AUS pills will be hidden):', ausErr);
+    } else {
+      const seen = new Set();
+      for (const a of (aus || [])) {
+        if (seen.has(a.loan_id)) continue;
+        seen.add(a.loan_id);
+        const loan = loansById.get(a.loan_id);
+        if (loan) loan.latestAus = a;
       }
     }
   }
@@ -1354,10 +1592,6 @@ async function loadMetrics() {
   // Avg DTI across active
   const dtis = active.map(l => l.dti_back_pct).filter(v => v != null);
   const avgDti = dtis.length ? (dtis.reduce((a,b) => a + Number(b), 0) / dtis.length) : null;
-
-  // Avg days from application → CTC for funded loans this quarter — approximated by stage_entered_at deltas
-  // For v0.2 we just show a placeholder calc
-  const avgDays = active.length ? Math.round(active.reduce((s, l) => s + daysIn(l.created_at), 0) / active.length) : null;
 
   $('#metric-strip').innerHTML = `
     <div class="metric-cell">
@@ -1453,6 +1687,7 @@ function initFilters() {
   });
 }
 
+
 // ═══════════════════════════════════════════════════════════════════════════
 // RENDER BOARD
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1488,6 +1723,22 @@ function renderBoard() {
   wireDropTargets();
 }
 
+// 9.4 · Card render. The card is the densest surface in the whole app —
+// every byte of real estate has to earn its spot, and the rules below
+// reflect that. Reading top-to-bottom:
+//
+//   ┌─[ loan # ] ─────── [ amount ] ─[ corner badge ]─┐
+//   │  Borrower, Primary +N                            │
+//   │  CITY, ST · purpose                              │
+//   │  PROC · Name (or UNASSIGNED, hidden pre-submit)  │
+//   │  ┌─DTI──┬─LTV──┬─Rate─┐                          │
+//   │  └──────┴──────┴──────┘                          │
+//   │  [avatars]                       [flags & pills] │
+//   └──────────────────────────────────────────────────┘
+//
+// The corner badge slot is shared: lock countdown wins when an active
+// lock exists, stage-age tier (5d amber / 10d red) falls back. STALE pill
+// in flags piles on at 14d+. AUS pill lives in the flags row.
 function renderCard(loan) {
   const bs = (loan.borrowers || []).sort((a,b) => (a.position||0) - (b.position||0)).map(b => b.borrower).filter(Boolean);
   const primary = bs[0];
@@ -1504,33 +1755,95 @@ function renderCard(loan) {
   const dtiCls = dti != null && Number(dti) >= 43 ? 'hot' : (dti != null && Number(dti) <= 36 ? 'green' : '');
   const ltvCls = ltv != null && Number(ltv) > 95 ? 'hot' : (ltv != null && Number(ltv) <= 80 ? 'green' : '');
 
-  // Team avatars
+  // Team avatars (LO / Processor / UW). 9.4 keeps these — the explicit
+  // processor LINE below is additive, not a replacement, since the LO
+  // avatar still needs to be visible regardless of processor assignment.
   const team = [];
   if (loan.lo)         team.push({ init: initials(loan.lo.full_name), cls: '' });
   if (loan.processor)  team.push({ init: initials(loan.processor.full_name), cls: 'proc' });
   if (loan.underwriter)team.push({ init: initials(loan.underwriter.full_name), cls: 'uw' });
 
-  // Flag list
-  const openConds = (loan.conditions || []).filter(c => c.status === 'outstanding').length;
+  // ─── 9.4 · Condition split (open count + aging-open count) ───────────
+  // A single number "⚑ 12" doesn't tell a processor whether those 12 are
+  // a fresh dump from a UW kickback this morning OR three weeks of
+  // sitting-on-the-borrower waiting. Split surfaces the difference at a
+  // glance: "⚑ 8 · ⚠ 4" means 4 of the 8 open conditions are past their
+  // 7-day SLA.
+  const conds = loan.conditions || [];
+  const openConds = conds.filter(c => c.status === 'outstanding');
+  const sevenDaysAgoMs = Date.now() - (7 * 86400000);
+  const agingCount = openConds.filter(c =>
+    c.created_at && new Date(c.created_at).getTime() < sevenDaysAgoMs
+  ).length;
+  const openCount = openConds.length;
+
+  // ─── Flag list ───────────────────────────────────────────────────────
+  // Order is deliberate: condition-status FIRST (the most actionable),
+  // AUS pill SECOND (the underwriting context), DTI/CTC-all/NEW after,
+  // STALE last (always at the right edge so it's instantly findable).
   const flags = [];
-  if (openConds > 0) flags.push(`<span class="lc-flag amber">⚑ ${openConds}</span>`);
+  if (openCount > 0) {
+    if (agingCount > 0) {
+      flags.push(`<span class="lc-flag amber">⚑ ${openCount - agingCount} · ⚠ ${agingCount}</span>`);
+    } else {
+      flags.push(`<span class="lc-flag amber">⚑ ${openCount}</span>`);
+    }
+  }
+  const ausPill = computeAusPill(loan);
+  if (ausPill) {
+    flags.push(`<span class="lc-flag ${ausPill.cls}">${escapeHtml(ausPill.text)}</span>`);
+  }
   if (dti != null && Number(dti) >= 43) flags.push(`<span class="lc-flag red">DTI</span>`);
-  if (loan.status === 'clear_to_close' && openConds === 0) flags.push(`<span class="lc-flag green">✓ ALL</span>`);
+  if (loan.status === 'clear_to_close' && openCount === 0) flags.push(`<span class="lc-flag green">✓ ALL</span>`);
   if (loan.status === 'lead') flags.push(`<span class="lc-flag muted">NEW</span>`);
+  // 9.4 · STALE pill at 14d+ in non-exempt stages. Goes LAST so it sits
+  // at the right edge of the flag row regardless of how many other flags
+  // are present.
+  if (!STAGE_EXEMPT_FROM_AGING.has(loan.status) && daysIn(loan.updated_at) >= 14) {
+    flags.push(`<span class="lc-flag red">STALE</span>`);
+  }
 
   const isFeatured = loan.id === selectedLoanId;
-  const stageDays = daysIn(loan.updated_at);
-  const showStale = stageDays >= 5 && !['funded','denied','withdrawn','cancelled','lead'].includes(loan.status);
+
+  // ─── 9.4 · Corner badge slot (lock countdown wins, stage-age fallback) ─
+  // Both render into the same .lc-stale absolutely-positioned span at
+  // top:6, right:6. Sharing the slot means layout never shifts when a
+  // loan gets locked — the lock badge just takes over from the stage-age.
+  let cornerBadge = '';
+  const lockBadge = computeLockBadge(loan);
+  if (lockBadge) {
+    cornerBadge = `<span class="lc-stale ${lockBadge.cls}" title="Rate lock countdown">${escapeHtml(lockBadge.text)}</span>`;
+  } else {
+    const stageAge = computeStageAge(loan);
+    if (stageAge) {
+      cornerBadge = `<span class="lc-stale ${stageAge.cls}" title="Days in current stage">${escapeHtml(stageAge.text)}</span>`;
+    }
+  }
+
+  // ─── 9.4 · Processor line ────────────────────────────────────────────
+  // Hidden entirely on lead/application (still LO's file). From submitted
+  // onward it surfaces the assigned processor by name, or a muted italic
+  // UNASSIGNED placeholder when nobody's been assigned yet (that gap is
+  // important to see at-a-glance — unassigned post-submit files are
+  // bottlenecks).
+  const procLine = computeProcLine(loan);
+  const procHtml = procLine
+    ? `<div class="lc-proc">
+         <span class="lc-proc-label">PROC ·</span>
+         <span class="${procLine.assigned ? 'lc-proc-name' : 'lc-proc-unassigned'}">${escapeHtml(procLine.name)}</span>
+       </div>`
+    : '';
 
   return `
     <article class="loan-card ${isFeatured ? 'featured' : ''}" draggable="true" data-loan-id="${escapeHtml(loan.id)}">
-      ${showStale ? `<span class="lc-stale">${stageDays}d</span>` : ''}
+      ${cornerBadge}
       <div class="lc-top">
         <span class="lc-num">${escapeHtml(loan.loan_number)}</span>
         <span class="lc-amt">${money(loan.loan_amount_cents)}</span>
       </div>
       <div class="lc-name">${escapeHtml(name)}${cob}</div>
       <div class="lc-prop">${escapeHtml(city)}${state ? ', ' + escapeHtml(state) : ''} · ${escapeHtml(loan.purpose || '—')}</div>
+      ${procHtml}
       <div class="lc-stats">
         <div class="lc-stat">
           <span class="lc-stat-label">DTI</span>
@@ -1756,6 +2069,7 @@ async function confirmStageChange() {
   }
 }
 
+
 // ═══════════════════════════════════════════════════════════════════════════
 // REALTIME (anyone in branch moves a card → we re-render)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1912,7 +2226,7 @@ function renderDetailFacts(loan) {
 
 async function loadDetailConditions(loanId) {
   const { data, error } = await supa.from('conditions')
-    .select('id, title, description, category, status, cleared_at, cleared_by, created_at')
+    .select('id, title, description, category, status, cleared_at, cleared_by_user_id, created_at')
     .eq('loan_id', loanId)
     .order('status', { ascending: true })  // outstanding before cleared
     .order('created_at', { ascending: true });
