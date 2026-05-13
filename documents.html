@@ -292,6 +292,9 @@ main {
 .dropzone.slim .dz-text {
   font-size: 0.62rem; letter-spacing: 0.06em;
 }
+.dropzone.slim.drag-active .dz-text {
+  font-size: 0.7rem; letter-spacing: 0.06em;
+}
 .dropzone.slim .dz-sub { display: none; }
 .dropzone.slim.drag-active .dz-sub { display: block; }
 
@@ -715,14 +718,82 @@ main {
 @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
+/* Patch 9.7: footer became a 2-row flex column to make space for the
+   site-wide compliance disclaimer above the existing wordmark/links row.
+   The compliance language is identical across every authenticated page
+   (dashboard, documents, loan, reports, etc.) so a licensed lender
+   reviewing the product knows the LOS isn't claiming to BE the lender.
+   Existing `footer a` rules below are preserved — only the parent
+   `footer` rule changed from a single flex row to a column. */
 footer {
   border-top: 1px solid var(--border); padding: 0.75rem 2rem;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: column; gap: 0.55rem;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+  color: var(--muted); background: var(--deep);
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
+.footer-disclaimer {
+  font-size: 0.58rem;
+  line-height: 1.7;
+  color: var(--muted);
+  text-align: center;
+  max-width: 920px;
+  margin: 0 auto;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.03em;
+  font-weight: 300;
+}
+.footer-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
+
+/* ─── 9.7 · COOKIE / ANALYTICS CONSENT BANNER ───────────────────────── */
+/* Shared banner pattern across all OF pages. The IIFE near end-of-body
+   reads/writes localStorage 'of_cookie_consent' so once a user decides
+   on any page, the banner stays gone everywhere. The gtag('consent',
+   'update', ...) call is wrapped in a typeof-check, so this works as a
+   no-op on pages without GA today and starts gating analytics
+   automatically when GA gets added later. z-index 500 sits below the
+   upload modal at 1000 — modal wins if both are visible. */
+.cookie-banner {
+  position: fixed;
+  bottom: 1rem; left: 1rem; right: 1rem;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  animation: cbIn 0.25s ease both;
+}
+@keyframes cbIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.cookie-banner.hidden { display: none; }
+.cb-text { flex: 1; line-height: 1.6; }
+.cb-text strong { color: var(--white); font-weight: 500; }
+.cb-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.cb-text a:hover { color: var(--accent2); }
+.cb-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.cb-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.5rem 0.9rem;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  transition: all 0.15s;
+}
+.cb-btn.cb-decline:hover { border-color: var(--muted); color: var(--white); }
+.cb-btn.cb-accept {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
 
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1280px) {
@@ -753,6 +824,15 @@ footer a:hover { color: var(--accent); }
   .filter-input { min-width: 140px; }
   .docs-list { padding: 0.5rem 1rem 1rem; }
   .dropzone { margin: 0.75rem 1rem; padding: 1rem; }
+  /* 9.7: collapse the cookie banner to a stacked layout on mobile so the
+     accept/decline buttons get full row width and aren't cramped next to
+     the copy. Matches the same break used by dashboard.html. */
+  .cookie-banner {
+    flex-direction: column; align-items: stretch; gap: 0.75rem;
+    bottom: 0.5rem; left: 0.5rem; right: 0.5rem;
+    padding: 0.75rem 0.9rem;
+  }
+  .cb-buttons { justify-content: flex-end; }
 }
 </style>
 
@@ -973,17 +1053,51 @@ footer a:hover { color: var(--accent); }
 <div class="toast" id="toast" role="status"></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 9.7 · COOKIE / ANALYTICS CONSENT BANNER                              -->
+<!-- Hidden by default; the IIFE near the bottom of the page reveals it   -->
+<!-- only when no prior consent decision is recorded in localStorage.     -->
+<!-- Same markup + classes as dashboard.html so a single set of CSS rules -->
+<!-- styles both. localStorage key 'of_cookie_consent' is shared, so      -->
+<!-- accepting/declining here propagates to the rest of the LOS.          -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cb-text">
+    <strong>We use cookies for analytics.</strong>
+    Helps us see which features people actually use. Nothing tied to a borrower or loan ever leaves your browser.
+    Details in our <a href="/privacy.html">Privacy Policy</a>.
+  </div>
+  <div class="cb-buttons">
+    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
+    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
+<!--                                                                      -->
+<!-- Patch 9.7: two-row layout. Top row is the site-wide compliance       -->
+<!-- disclaimer required on every authenticated page — "OriginFlow is     -->
+<!-- software, the licensed lender remains responsible for TRID / ECOA /  -->
+<!-- HMDA / RESPA / state licensing." Bottom row keeps the original       -->
+<!-- wordmark, version pill, and navigation links — plus /privacy.html    -->
+<!-- and /terms.html which were missing on this page before.              -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>v0.2 · Documents · Claude Vision extraction</span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="/home.html">Home</a>
-    <a href="/dashboard.html">Pipeline</a>
-    <a href="/branch-library.html">Library</a>
-    <a href="/reports.html">Reports</a>
-    <a href="/investor-delivery.html">Delivery</a>
+  <div class="footer-disclaimer">
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations &mdash; including TRID, ECOA, HMDA, RESPA, and state licensing &mdash; remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+  </div>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · Documents · Claude Vision extraction</span>
+    <div style="display:flex;gap:1.25rem;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/branch-library.html">Library</a>
+      <a href="/reports.html">Reports</a>
+      <a href="/investor-delivery.html">Delivery</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
   </div>
 </footer>
 
@@ -1581,6 +1695,8 @@ function renderRow(d) {
   `;
 }
 
+
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SELECT + RENDER DETAIL
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1962,6 +2078,8 @@ window.OF_pdfPreviewFailed = function(id, url) {
   `;
 };
 
+
+
 // ═══════════════════════════════════════════════════════════════════════════
 // AI EXTRACTION
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2304,10 +2422,6 @@ async function confirmUpload() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// REALTIME
-// ═══════════════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════════════
 // REALTIME — row-level patching
 //
 // We listen for INSERT/UPDATE/DELETE on the documents table scoped to this
@@ -2554,6 +2668,59 @@ document.addEventListener('DOMContentLoaded', bootstrap);
 // };
 // */
 // ═══════════════════════════════════════════════════════════════════════════
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- 9.7 · COOKIE BANNER WIRING                                           -->
+<!--                                                                      -->
+<!-- Identical IIFE to dashboard.html so the two pages share consent      -->
+<!-- state via localStorage('of_cookie_consent'). Values 'granted' /      -->
+<!-- 'denied' match the Google Consent Mode v2 API spec, which the        -->
+<!-- gtag('consent', 'update', ...) call below speaks directly. The       -->
+<!-- typeof-gtag guard means this is a no-op on pages without GA loaded   -->
+<!-- and starts gating analytics automatically when GA gets added later.  -->
+<!--                                                                      -->
+<!-- Known inconsistency: /loans-new.html currently uses 'accepted' /     -->
+<!-- 'rejected' for its consent values. A user who clicks Accept on       -->
+<!-- loans-new will not be recognized here (or on dashboard), and vice    -->
+<!-- versa. Normalizing loans-new to match this pattern is a separate     -->
+<!-- patch — flagged here so it doesn't get forgotten.                    -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+
+  var prior = null;
+  try { prior = localStorage.getItem(KEY); } catch (_) {}
+
+  // Show banner only if no prior decision exists. If the user already
+  // accepted or declined on any OF page using the 'granted'/'denied'
+  // vocabulary, we honor that and stay quiet.
+  if (prior !== 'granted' && prior !== 'denied') {
+    banner.classList.remove('hidden');
+  }
+
+  function setConsent(value) {
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+    // Tell Google Consent Mode about the user's choice in real time.
+    // gtag may not exist if an ad-blocker stripped the GA loader, OR
+    // if this page doesn't load GA at all — in either case the
+    // localStorage write is enough; nothing to update.
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': value === 'granted' ? 'granted' : 'denied'
+      });
+    }
+    banner.classList.add('hidden');
+  }
+
+  var accept = document.getElementById('cb-accept');
+  var decline = document.getElementById('cb-decline');
+  if (accept)  accept.addEventListener('click',  function() { setConsent('granted'); });
+  if (decline) decline.addEventListener('click', function() { setConsent('denied');  });
+})();
 </script>
 
 </body>
