@@ -528,7 +528,7 @@ select {
   font-size: 0.95rem;
 }
 .intake-cards {
-  display: grid; grid-template-columns: 1fr 1fr;
+  display: grid; grid-template-columns: 1.4fr 0.8fr;  /* 9.6: MISMO promoted to primary */
   gap: 1px; background: var(--border);
   border: 1px solid var(--border);
   width: 100%; max-width: 760px;
@@ -579,6 +579,49 @@ select {
   border-radius: 50%; animation: spin 0.8s linear infinite;
   font-size: 0; padding: 0; top: 1.7rem; right: 1.7rem;
 }
+/* ─── 9.6 · INTAKE GATE HIERARCHY FLIP ─────────────────────────────── */
+/* MISMO promoted from co-equal to primary. The blank wizard used to be
+   the recommended path because MISMO support was aspirational; now that
+   the parser covers 30+ URLA fields it's the fast path for any LO
+   migrating from another LOS. Blank stays as the fallback for cold-start
+   applications where there's no export to import.
+   
+   Visual hierarchy carried by three things:
+     1. Grid ratio 1.4fr / 0.8fr (above) — primary is ~75% wider
+     2. RECOMMENDED badge on the primary card (green/accent2)
+     3. Larger icon + slightly brighter hover state on the primary
+   
+   On mobile (<=720px) the existing rule collapses to a single column
+   and source order takes over — MISMO first, blank second. Either path
+   is unaffected, the wiring is identical (showIntakeMode binds both
+   handlers regardless of which card is "primary"). */
+
+.intake-card-primary:hover {
+  background: rgba(0,212,255,0.04);
+  outline: 1px solid rgba(0,212,255,0.25);
+  outline-offset: -1px;
+}
+.intake-card-primary .intake-card-desc { color: var(--text); }
+
+.intake-card-secondary .intake-card-title { color: var(--text); }
+.intake-card-secondary .intake-card-desc { color: var(--muted); }
+
+.intake-card-badge {
+  position: absolute; top: 1.5rem; left: 1.5rem;
+  font-family: var(--mono); font-size: 0.55rem;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent2);
+  border: 1px solid rgba(0,255,157,0.35);
+  background: rgba(0,255,157,0.06);
+  padding: 0.2rem 0.55rem;
+  font-weight: 700;
+}
+
+.intake-card-icon-large {
+  font-size: 1.8rem;  /* 1.4rem on the default; bigger here for visual weight */
+  margin-top: 1.1rem; /* push below the absolutely-positioned RECOMMENDED badge */
+}
+
 .intake-foot {
   margin-top: 1.5rem;
   font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
@@ -708,23 +751,24 @@ select {
   <div class="intake-screen" id="state-intake" style="display:none;">
     <div class="intake-eyebrow">URLA · Form 1003</div>
     <h1 class="intake-heading">Start a new loan.</h1>
-    <p class="intake-sub">Begin with a blank application, or drop in a MISMO 3.4 file from another LOS and we'll pre-fill what we can.</p>
+    <p class="intake-sub">Got a MISMO 3.4 export from your other LOS? Drop it in to pre-fill 30+ URLA fields. Otherwise start blank &mdash; the six-step wizard takes 5&ndash;10 minutes.</p>
     <div class="intake-cards">
-      <button type="button" class="intake-card" id="intake-blank">
-        <span class="intake-card-arrow">→</span>
-        <span class="intake-card-icon">+</span>
-        <span class="intake-card-title">Start blank</span>
-        <span class="intake-card-desc">Fill out the URLA form yourself. Six steps, autosaves locally as you go. Roughly 5–10 minutes for a basic file.</span>
-        <span class="intake-card-meta">Recommended for new applications</span>
-      </button>
-      <label class="intake-card" id="intake-mismo" for="intake-mismo-file">
+      <label class="intake-card intake-card-primary" id="intake-mismo" for="intake-mismo-file">
+        <span class="intake-card-badge">RECOMMENDED</span>
         <span class="intake-card-arrow">↓</span>
-        <span class="intake-card-icon">⊟</span>
+        <span class="intake-card-icon intake-card-icon-large">⊟</span>
         <span class="intake-card-title">Import MISMO 3.4</span>
-        <span class="intake-card-desc">Drop in or pick a <code style="font-family:var(--mono); color:var(--accent);">.xml</code> file. We'll parse loan terms, property, borrowers, and income, then drop you into the wizard to review.</span>
+        <span class="intake-card-desc">Drop in or pick a <code style="font-family:var(--mono); color:var(--accent);">.xml</code> file exported from Encompass, Calyx Point, LendingPad, Mortgage Cadence, BytePro, or any other LOS that supports MISMO 3.4. We'll parse loan terms, property, borrowers, employment, and income — then drop you into the wizard to review every field before submitting.</span>
         <span class="intake-card-meta" id="intake-mismo-meta">Drag a file here, or click to browse</span>
         <input type="file" id="intake-mismo-file" accept=".xml,application/xml,text/xml" style="display:none;">
       </label>
+      <button type="button" class="intake-card intake-card-secondary" id="intake-blank">
+        <span class="intake-card-arrow">→</span>
+        <span class="intake-card-icon">+</span>
+        <span class="intake-card-title">Start blank</span>
+        <span class="intake-card-desc">Fill out the six-step URLA form by hand. Autosaves locally as you go.</span>
+        <span class="intake-card-meta">When you don't have an export</span>
+      </button>
     </div>
     <div class="intake-foot">
       Need help with another format? Email <a href="mailto:dsrackler@gmail.com">dsrackler@gmail.com</a> with your export and we'll add a parser.
@@ -1113,16 +1157,21 @@ function restoreDraft() {
 function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (_) {} }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// INTAKE MODE GATE — blank vs MISMO 3.4 import
+// INTAKE MODE GATE — MISMO 3.4 import (primary) vs blank (fallback)
+//
+// Patch 9.6 rebalanced the visual hierarchy in favor of MISMO. The wiring
+// below is unchanged from 9.5 — both cards still fire the same handlers,
+// drag-and-drop still works on the MISMO card, the keyboard activates
+// either with Enter/Space.
 //
 // Shown before the wizard the first time someone lands on this page (no
 // draft, no ?mode=blank). User picks a path:
 //
-//   • Blank      → wizard opens at Step 1 with empty formData
 //   • MISMO 3.4  → file picker / drop zone, OF_parseMismo34(file) runs,
 //                  result merged into formData, wizard opens at Step 1 with
 //                  fields pre-filled. Loan row gets intake_source='mismo_import'
 //                  on first save (see buildLoanRow).
+//   • Blank      → wizard opens at Step 1 with empty formData
 //
 // If OF_parseMismo34 isn't implemented, the MISMO card toasts an error
 // and the user can still pick blank — the page never deadlocks.
@@ -1349,6 +1398,7 @@ function populateForm() {
     }
   });
 }
+
 
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1714,6 +1764,8 @@ function validateStepBorrowers() {
   }
   return ok;
 }
+
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STEP 4 — EMPLOYMENT & INCOME
@@ -2173,6 +2225,7 @@ function validateStepAssets() {
   syncRepeatersToData();
   return true;
 }
+
 
 
 // ═══════════════════════════════════════════════════════════════════════════
