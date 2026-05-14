@@ -4,21 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Investor Delivery · OriginFlow LOS</title>
-<meta name="description" content="Investor delivery — sell funded loans to GSEs, aggregators, and private investors.">
+<meta name="description" content="Post-funding delivery — UCDP, UCD, MISMO 3.4 export, wire receipt, and purchase confirmation across the secondary market.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 
 <style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   /investor-delivery.html — post-funding handoff to the secondary market.
+
+   Shows funded/recorded/complete loans joined to their loan_deliveries row.
+   Multi-step status (UCDP / UCD / MISMO / Wire) renders as a row of pills
+   per loan. Action buttons trigger window.OF_* hooks for the back-office
+   work (build MISMO 3.4, submit UCDP, submit UCD); "Mark purchased" is a
+   direct DB update because it's pure bookkeeping.
+
+   Loans without a loan_deliveries row show "Not started" — the first
+   action automatically inserts the row, same pattern as the AUS / pricing
+   pages where the first interaction creates the working state.
+   ═══════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --navy: #040d1a; --deep: #07152b; --surface: #0b1f3a; --panel: #0f2647;
-  --border: #1a3a5c; --accent: #00d4ff; --accent2: #00ff9d;
-  --amber: #f5a623; --red: #ff4444; --text: #c8dff0; --muted: #5a7a99;
-  --white: #eaf4ff;
-  --mono: 'Space Mono', ui-monospace, monospace;
-  --serif: 'DM Serif Display', Georgia, serif;
-  --sans: 'DM Sans', system-ui, sans-serif;
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -32,7 +54,8 @@ body::before {
   background-image:
     linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px; pointer-events: none; z-index: 0;
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
 }
 nav, main, footer { position: relative; z-index: 1; }
 
@@ -60,16 +83,15 @@ nav {
 .nav-newloan {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
   text-transform: uppercase; font-weight: 700;
-  background: var(--accent); color: var(--navy);
-  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
-  text-decoration: none; cursor: pointer; transition: all 0.15s;
+  background: var(--accent); color: var(--navy); border: 1px solid var(--accent);
+  padding: 0.45rem 0.85rem; text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
 }
 .nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 .nav-branch {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
-  color: var(--muted); border: 1px solid var(--border);
-  padding: 0.3rem 0.75rem;
+  color: var(--muted); border: 1px solid var(--border); padding: 0.3rem 0.75rem;
 }
 .nav-branch strong { color: var(--accent2); }
 .nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
@@ -88,356 +110,193 @@ nav {
 
 /* ─── PAGE HEADER ──────────────────────────────────────────────────── */
 .page-head {
-  padding: 1.75rem 2rem 1.25rem;
+  padding: 2rem 2rem 1.5rem;
   border-bottom: 1px solid var(--border);
   background: var(--deep);
+  position: relative; overflow: hidden;
+}
+.page-head::after {
+  content: ''; position: absolute; top: -120px; right: -120px;
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, rgba(0,255,157,0.08) 0%, transparent 70%);
+  pointer-events: none;
 }
 .page-eyebrow {
   font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+  text-transform: uppercase; color: var(--accent2); margin-bottom: 0.4rem;
 }
 .page-title {
-  font-family: var(--serif); font-size: 1.85rem; color: var(--white); line-height: 1.15;
+  font-family: var(--serif); font-size: 2.4rem; color: var(--white); line-height: 1.05;
 }
-.page-sub { color: var(--muted); margin-top: 0.35rem; max-width: 720px; font-size: 0.92rem; }
+.page-sub {
+  color: var(--muted); margin-top: 0.5rem; max-width: 720px; font-size: 0.95rem;
+}
 
-/* ─── HERO ─────────────────────────────────────────────────────────── */
-.hero-strip {
+/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
+.metric-strip {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 1px; background: var(--border);
   border-bottom: 1px solid var(--border);
 }
-.hero-cell { background: var(--surface); padding: 1.4rem 1.5rem; }
-.hero-label {
-  font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
-}
-.hero-value {
-  font-family: var(--serif); font-size: 2rem; line-height: 1.05; color: var(--white);
-}
-.hero-value.cyan { color: var(--accent); }
-.hero-value.green { color: var(--accent2); }
-.hero-value.amber { color: var(--amber); }
-.hero-sub {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  margin-top: 0.3rem; letter-spacing: 0.04em;
-}
-
-/* ─── TABS ─────────────────────────────────────────────────────────── */
-.tab-bar {
-  display: flex; gap: 1px;
-  background: var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 0 2rem;
-}
-.tab-bar button {
-  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: var(--surface); color: var(--muted);
-  border: none; padding: 0.95rem 1.6rem;
-  cursor: pointer; transition: all 0.15s;
-  position: relative;
-}
-.tab-bar button:hover { color: var(--text); }
-.tab-bar button.active {
-  color: var(--accent); background: var(--navy);
-}
-.tab-bar button.active::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
-  height: 2px; background: var(--accent);
-}
-.tab-bar .tab-count {
-  display: inline-block;
-  font-size: 0.55rem; padding: 0.1rem 0.45rem;
-  border: 1px solid var(--border);
-  margin-left: 0.5rem; color: var(--text);
-}
-.tab-bar button.active .tab-count {
-  border-color: var(--accent); color: var(--accent);
-}
-
-main { flex: 1; padding: 1.5rem 2rem 3rem; }
-.tab-pane { display: none; }
-.tab-pane.active { display: block; }
-
-/* ─── DELIVERY ROWS ────────────────────────────────────────────────── */
-.delivery-grid {
-  display: grid; gap: 1px; background: var(--border);
-  border: 1px solid var(--border);
-}
-.delivery-row {
-  display: grid;
-  grid-template-columns: 1fr 140px 130px 130px 110px 130px;
-  gap: 0.85rem;
-  background: var(--surface);
-  padding: 0.95rem 1.25rem;
-  align-items: center;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.delivery-row:hover { background: var(--panel); }
-.delivery-loan-info {
-  display: flex; flex-direction: column; gap: 0.18rem;
-}
-.delivery-loan-num {
-  font-family: var(--mono); font-size: 0.78rem; color: var(--white);
-  font-weight: 700; letter-spacing: 0.04em;
-}
-.delivery-borrower {
-  font-family: var(--sans); font-size: 0.85rem; color: var(--text);
-}
-.delivery-meta {
-  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
-  letter-spacing: 0.04em;
-}
-.delivery-amount {
-  font-family: var(--serif); font-size: 1.15rem; color: var(--white);
-  text-align: right;
-}
-.delivery-amount-sub {
-  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
-  text-align: right; margin-top: 0.15rem;
-}
-.delivery-rate {
-  font-family: var(--mono); font-size: 0.95rem; color: var(--accent);
-  font-weight: 700; text-align: center;
-}
-.delivery-rate-sub {
-  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
-  text-align: center; margin-top: 0.15rem; letter-spacing: 0.04em;
-}
-.delivery-program {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text);
-  border: 1px solid var(--border);
-  padding: 0.18rem 0.45rem; text-align: center;
-}
-.delivery-status {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.25rem 0.5rem; border: 1px solid; text-align: center;
-}
-.delivery-status.draft       { color: var(--muted);   border-color: var(--border); }
-.delivery-status.validated   { color: var(--accent);  border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
-.delivery-status.transmitted { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
-.delivery-status.pending     { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
-.delivery-status.accepted    { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
-.delivery-status.rejected    { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
-.delivery-status.funded      { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.1); font-weight: 700; }
-.delivery-status.cancelled   { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
-.delivery-status.eligible    { color: var(--accent);  border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
-
-.delivery-action-btn {
-  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
-  text-transform: uppercase; font-weight: 700;
-  background: var(--accent); color: var(--navy);
-  border: 1px solid var(--accent); padding: 0.4rem 0.65rem;
-  cursor: pointer; transition: all 0.15s;
-}
-.delivery-action-btn:hover { background: var(--accent2); border-color: var(--accent2); }
-
-.delivery-empty {
-  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
-  text-align: center; padding: 3rem 1rem; letter-spacing: 0.04em;
-  background: var(--surface);
-}
-
-/* ─── INVESTORS / COMMITMENTS PANELS ───────────────────────────────── */
-.section {
-  margin-bottom: 1.5rem;
-  background: var(--surface); border: 1px solid var(--border);
-}
-.section-head {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border);
-  background: var(--deep);
-}
-.section-title {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--accent);
-}
-.section-add {
-  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
-  text-transform: uppercase; font-weight: 700;
-  background: var(--accent); color: var(--navy);
-  border: 1px solid var(--accent); padding: 0.4rem 0.75rem;
-  cursor: pointer;
-}
-.section-add:hover { background: var(--accent2); border-color: var(--accent2); }
-.section-body { padding: 0; }
-
-.investor-row, .commitment-row {
-  display: grid; gap: 0.85rem;
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  align-items: center;
-}
-.investor-row:last-child, .commitment-row:last-child { border-bottom: none; }
-.investor-row { grid-template-columns: 1fr 120px 100px 100px 100px; }
-.commitment-row { grid-template-columns: 130px 1fr 100px 110px 1fr 110px; }
-
-.investor-name { font-family: var(--sans); font-size: 0.92rem; color: var(--white); font-weight: 500; }
-.investor-meta {
-  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
-  margin-top: 0.18rem; letter-spacing: 0.04em;
-}
-.investor-type-tag {
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--text);
-  border: 1px solid var(--border);
-  padding: 0.2rem 0.5rem; text-align: center;
-}
-.investor-stat {
-  font-family: var(--mono); font-size: 0.85rem; color: var(--white);
-  text-align: center;
-}
-.investor-stat-sub {
-  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
-  margin-top: 0.15rem; text-align: center; letter-spacing: 0.04em;
-}
-
-.fill-bar-track {
-  height: 8px; background: var(--deep);
-  border: 1px solid var(--border);
-  position: relative; overflow: hidden;
-}
-.fill-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
-  transition: width 0.3s;
-}
-
-/* ─── MODALS ───────────────────────────────────────────────────────── */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(4,13,26,0.85);
-  backdrop-filter: blur(6px);
-  z-index: 1000; display: none;
-  align-items: center; justify-content: center;
-  padding: 1.5rem;
-}
-.modal-overlay.open { display: flex; animation: modalIn 0.15s ease both; }
-@keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
-.modal {
-  background: var(--surface); border: 1px solid var(--border);
-  width: 100%; max-width: 720px; max-height: 90vh;
-  display: flex; flex-direction: column;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
-}
-.modal.wide { max-width: 1000px; }
-.modal-head {
-  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
-  background: var(--deep);
-  display: flex; justify-content: space-between; align-items: center;
-  flex-shrink: 0;
-}
-.modal-title {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--accent);
-}
-.modal-close {
-  background: none; border: none; cursor: pointer;
-  color: var(--muted); font-family: var(--mono); font-size: 1.1rem;
-}
-.modal-close:hover { color: var(--red); }
-.modal-body { padding: 1.25rem; overflow-y: auto; }
-.modal-foot {
-  padding: 0.85rem 1.25rem; border-top: 1px solid var(--border);
-  background: var(--deep);
-  display: flex; justify-content: flex-end; gap: 0.6rem;
-  flex-shrink: 0;
-}
-
-.field-block { margin-bottom: 1rem; }
-.field-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
-}
-.field-label {
-  display: block;
-  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+.metric-cell { background: var(--surface); padding: 1.1rem 1.4rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 0.35rem;
 }
-.field-input, .field-select, .field-textarea {
-  width: 100%; background: var(--deep);
-  border: 1px solid var(--border); color: var(--white);
-  font-family: var(--sans); font-size: 0.92rem;
-  padding: 0.6rem 0.8rem; outline: none;
+.metric-value { font-family: var(--serif); font-size: 1.65rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.25rem;
 }
-.field-input:focus, .field-select:focus, .field-textarea:focus {
-  border-color: var(--accent);
-}
-.field-textarea { font-family: var(--mono); font-size: 0.75rem; resize: vertical; min-height: 100px; }
 
-.btn {
-  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
-  text-transform: uppercase; padding: 0.6rem 1.1rem;
-  border: 1px solid var(--border); color: var(--text);
-  background: var(--surface); cursor: pointer; text-decoration: none;
-  transition: all 0.2s;
+/* ─── TOOLBAR ──────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+  background: var(--deep); flex-wrap: wrap;
 }
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-.btn.primary {
-  background: var(--accent); color: var(--navy);
-  border-color: var(--accent); font-weight: 700;
+.toolbar-input {
+  flex: 1; min-width: 220px;
+  font-family: var(--mono); font-size: 0.78rem;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); padding: 0.5rem 0.85rem;
 }
-.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.toolbar-input:focus { outline: none; border-color: var(--accent); }
+.toolbar-select {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.04em;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); padding: 0.5rem 0.75rem;
+  cursor: pointer; min-width: 150px;
+}
+.toolbar-select:focus { outline: none; border-color: var(--accent); }
+.toolbar-count {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
+  color: var(--muted); margin-left: auto;
+}
+.toolbar-count strong { color: var(--accent2); }
 
-/* ─── DELIVERY DETAIL ──────────────────────────────────────────────── */
-.detail-section {
-  margin-bottom: 1.25rem; background: var(--surface);
-  border: 1px solid var(--border);
+/* ─── DELIVERY TABLE ───────────────────────────────────────────────── */
+.table-wrap {
+  flex: 1;
+  overflow-x: auto;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
-.detail-section-head {
-  padding: 0.65rem 1rem; border-bottom: 1px solid var(--border);
+.dlv-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  font-family: var(--mono); font-size: 0.72rem;
+}
+.dlv-table thead th {
+  position: sticky; top: 0;
   background: var(--deep);
-  font-family: var(--mono); font-size: 0.62rem;
-  letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
+  font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  text-align: left; padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  z-index: 5;
 }
-.detail-section-body { padding: 0.85rem 1rem; }
-
-.kv-mini {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem 1rem;
-}
-.kv-mini-cell { padding: 0.35rem 0; border-bottom: 1px dotted var(--border); }
-.kv-mini-cell:last-child, .kv-mini-cell:nth-last-child(2) { border-bottom: none; }
-.kv-mini-label {
-  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
-  color: var(--muted); text-transform: uppercase; margin-bottom: 0.15rem;
-}
-.kv-mini-value { font-family: var(--mono); font-size: 0.78rem; color: var(--white); }
-
-.uldd-display {
-  background: var(--navy); border: 1px solid var(--border);
-  font-family: var(--mono); font-size: 0.65rem; color: var(--text);
-  padding: 0.85rem 1rem; max-height: 320px; overflow: auto;
-  white-space: pre-wrap; word-break: break-all;
+.dlv-table thead th.right { text-align: right; }
+.dlv-table tbody tr { border-bottom: 1px dotted var(--border); }
+.dlv-table tbody tr:hover { background: rgba(0,212,255,0.03); }
+.dlv-table tbody td {
+  padding: 0.7rem 0.9rem;
+  vertical-align: middle;
 }
 
-.validation-row {
-  display: grid; grid-template-columns: 80px 1fr;
-  gap: 0.85rem; padding: 0.55rem 0;
-  border-bottom: 1px dotted var(--border);
-  font-size: 0.78rem;
+/* Loan cell */
+.cell-loan .loan-num {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.04em;
 }
-.validation-row:last-child { border-bottom: none; }
-.validation-sev {
+.cell-loan .loan-name {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--white);
+  margin-top: 0.15rem;
+  font-weight: 500;
+}
+.cell-loan .loan-meta {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+
+/* Investor pills */
+.pill {
+  display: inline-block;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.22rem 0.55rem;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.pill.muted   { color: var(--muted); border-color: var(--border); background: var(--deep); }
+.pill.fannie  { color: var(--accent2); border-color: rgba(0,255,157,0.45); background: rgba(0,255,157,0.07); }
+.pill.freddie { color: var(--accent);  border-color: rgba(0,212,255,0.45); background: rgba(0,212,255,0.07); }
+.pill.ginnie  { color: var(--amber);   border-color: rgba(245,166,35,0.45); background: rgba(245,166,35,0.07); }
+.pill.private { color: var(--text);    border-color: var(--border); background: rgba(255,255,255,0.03); }
+.pill.portfolio{ color: var(--text);   border-color: var(--border); background: var(--deep); }
+.pill.notreq  { color: var(--muted);   border-color: var(--border); background: transparent; }
+.pill.pending { color: var(--muted);   border-color: var(--border); background: var(--deep); }
+.pill.submitted { color: var(--amber); border-color: rgba(245,166,35,0.45); background: rgba(245,166,35,0.07); }
+.pill.accepted { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.08); font-weight: 700; }
+.pill.purchased{ color: var(--accent2); border-color: rgba(0,255,157,0.6); background: rgba(0,255,157,0.12); font-weight: 700; }
+.pill.rejected{ color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.08); }
+.pill.error   { color: var(--red);     border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.08); }
+.pill.built   { color: var(--accent);  border-color: rgba(0,212,255,0.45); background: rgba(0,212,255,0.07); }
+.pill.notbuilt{ color: var(--muted);   border-color: var(--border); background: transparent; }
+.pill.in_flight{ color: var(--accent); border-color: rgba(0,212,255,0.5); background: rgba(0,212,255,0.07); }
+
+.pill-sub {
+  font-family: var(--mono); font-size: 0.5rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.2rem; display: block;
+}
+
+/* Wire/purchase cell */
+.cell-wire .amt {
+  font-family: var(--mono); font-size: 0.78rem; color: var(--white);
+  font-weight: 700; letter-spacing: 0.02em;
+}
+.cell-wire .amt-sub {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+
+/* Last activity */
+.cell-last { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); white-space: nowrap; }
+
+/* Actions */
+.cell-actions { white-space: nowrap; text-align: right; }
+.row-btn {
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  text-align: center; padding: 0.18rem 0.4rem;
-  border: 1px solid; text-transform: uppercase;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy); border: 1px solid var(--accent);
+  padding: 0.4rem 0.7rem; cursor: pointer; text-decoration: none;
+  transition: all 0.15s; margin-left: 0.4rem;
+  display: inline-block;
 }
-.validation-sev.fatal { color: var(--red); border-color: rgba(255,68,68,0.5); background: rgba(255,68,68,0.08); }
-.validation-sev.warning { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
-.validation-sev.info { color: var(--muted); border-color: var(--border); }
-.validation-msg { color: var(--text); }
-.validation-msg small {
-  display: block; font-family: var(--mono); font-size: 0.58rem;
-  color: var(--muted); margin-top: 0.15rem;
+.row-btn:hover { background: var(--accent2); border-color: var(--accent2); }
+.row-btn.ghost {
+  background: transparent; color: var(--text);
+  border-color: var(--border); font-weight: 400;
+}
+.row-btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.row-btn.danger {
+  background: transparent; color: var(--red); border-color: rgba(255,68,68,0.4);
+}
+.row-btn.danger:hover { border-color: var(--red); background: rgba(255,68,68,0.06); }
+
+.table-empty {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  text-align: center; padding: 3rem 1rem; letter-spacing: 0.04em;
 }
 
 /* ─── STATE SCREENS ────────────────────────────────────────────────── */
 .state-screen {
-  flex: 1; display: flex; flex-direction: column;
+  flex: 1;
+  display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 4rem 2rem; min-height: 60vh; text-align: center;
 }
@@ -457,28 +316,163 @@ main { flex: 1; padding: 1.5rem 2rem 3rem; }
   margin-bottom: 1.25rem;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.btn {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.6rem 1.1rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn.danger { background: transparent; color: var(--red); border-color: rgba(255,68,68,0.4); }
+.btn.danger:hover { background: rgba(255,68,68,0.08); border-color: var(--red); }
+
+/* ─── MODAL ────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; padding: 1rem;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  max-width: 720px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  position: relative;
+}
+.modal.wide { max-width: 880px; }
+.modal-head {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.modal-title {
+  font-family: var(--serif); font-size: 1.3rem; color: var(--white);
+}
+.modal-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  color: var(--accent); text-transform: uppercase; margin-top: 0.2rem;
+}
+.modal-close {
+  font-family: var(--mono); font-size: 1.2rem; color: var(--muted);
+  background: none; border: none; cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 1.5rem; }
+.modal-foot {
+  padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: flex-end; gap: 0.6rem;
+}
+.modal-text { color: var(--text); margin-bottom: 1rem; font-size: 0.92rem; }
+.modal-text strong { color: var(--white); }
+
+/* Detail modal grid */
+.detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); margin-bottom: 1.25rem;
+}
+.detail-cell { background: var(--surface); padding: 0.85rem 1.1rem; }
+.detail-cell.full { grid-column: 1 / -1; }
+.detail-label {
+  font-family: var(--mono); font-size: 0.52rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.detail-value {
+  font-family: var(--mono); font-size: 0.82rem; color: var(--white);
+}
+.detail-section-head {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent);
+  margin: 1.25rem 0 0.6rem; padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.detail-section-head:first-child { margin-top: 0; }
+
+/* Form fields */
+.form-row { margin-bottom: 0.85rem; }
+.form-label {
+  display: block;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.form-input, .form-select {
+  width: 100%;
+  font-family: var(--mono); font-size: 0.85rem;
+  background: var(--deep); color: var(--white);
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+}
+.form-input:focus, .form-select:focus { outline: none; border-color: var(--accent); }
+.form-textarea {
+  width: 100%; min-height: 80px; resize: vertical;
+  font-family: var(--sans); font-size: 0.88rem;
+  background: var(--deep); color: var(--white);
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.75rem;
+}
+.form-textarea:focus { outline: none; border-color: var(--accent); }
+.form-hint {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.3rem;
+}
+
+.warning-box {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--amber);
+  border: 1px solid rgba(245,166,35,0.4);
+  background: rgba(245,166,35,0.06);
+  padding: 0.8rem 1rem; margin-bottom: 1rem;
+}
+.info-box {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--text);
+  border: 1px solid var(--border);
+  background: var(--deep);
+  padding: 0.75rem 1rem; margin-bottom: 1rem;
+  letter-spacing: 0.04em; line-height: 1.6;
+}
+.info-box strong { color: var(--accent); }
 
 /* ─── TOAST ────────────────────────────────────────────────────────── */
 .toast {
   position: fixed; bottom: 1.5rem; right: 1.5rem;
-  background: var(--surface); border: 1px solid var(--border);
-  border-left: 3px solid var(--accent2);
-  padding: 0.85rem 1.1rem;
-  font-family: var(--mono); font-size: 0.7rem; color: var(--text);
-  z-index: 200; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  display: none; max-width: 400px;
-  animation: toastIn 0.2s ease both;
+  background: var(--surface); border: 1px solid var(--accent);
+  padding: 0.85rem 1.1rem; min-width: 280px; max-width: 480px;
+  font-family: var(--sans); font-size: 0.85rem;
+  color: var(--white);
+  z-index: 1000;
+  display: none;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
 }
-.toast.error { border-left-color: var(--red); color: var(--red); }
-.toast.show { display: block; }
-@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+.toast.show { display: block; animation: toastIn 0.2s ease-out; }
+.toast.error { border-color: var(--red); }
+.toast.warn  { border-color: var(--amber); }
+.toast-meta {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.25rem;
+}
+.toast.error .toast-meta { color: var(--red); }
+.toast.warn .toast-meta  { color: var(--amber); }
+@keyframes toastIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
-  border-top: 1px solid var(--border); padding: 0.75rem 2rem;
-  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
-  color: var(--muted); background: var(--deep); flex-wrap: wrap; gap: 1rem;
+  color: var(--muted); background: var(--deep);
+}
+.footer-bottom {
+  padding: 0.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
 }
 footer a { color: var(--muted); text-decoration: none; }
 footer a:hover { color: var(--accent); }
@@ -486,27 +480,24 @@ footer a:hover { color: var(--accent); }
 /* ─── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .nav-center { display: none; }
-  .delivery-row { grid-template-columns: 1fr 100px 90px; gap: 0.5rem; }
-  .delivery-row .delivery-program, .delivery-row .delivery-rate { display: none; }
-  .investor-row { grid-template-columns: 1fr 80px 80px; gap: 0.5rem; }
-  .investor-row .investor-stat:nth-child(n+5) { display: none; }
-  .commitment-row { grid-template-columns: 1fr 80px 80px; gap: 0.5rem; }
-  .field-row { grid-template-columns: 1fr; }
+  .metric-strip { grid-template-columns: repeat(2, 1fr); }
+  .page-title { font-size: 1.85rem; }
+  .detail-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 540px) {
   nav { padding: 0.85rem 1rem; gap: 0.5rem; }
   .nav-branch { display: none; }
-  .page-head { padding: 1.25rem 1rem; }
-  main { padding: 1rem; }
-  .hero-strip { grid-template-columns: 1fr 1fr; }
-  .tab-bar { padding: 0 1rem; }
-  .tab-bar button { padding: 0.7rem 0.9rem; font-size: 0.6rem; }
+  .nav-user-role { display: none; }
+  .page-head { padding: 1.5rem 1rem 1.25rem; }
+  .page-title { font-size: 1.5rem; }
+  .toolbar { padding: 0.85rem 1rem; }
+  .footer-bottom { padding: 0.65rem 1rem; }
+  .toast { left: 1rem; right: 1rem; bottom: 1rem; }
 }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
-<script src="/js/uldd-generator.js"></script>
 </head>
 <body>
 
@@ -555,14 +546,14 @@ footer a:hover { color: var(--accent); }
 
   <div class="state-screen" id="state-loading">
     <div class="spinner"></div>
-    <div class="state-eyebrow">Loading delivery</div>
-    <div class="state-heading" style="font-size:1.4rem;">Reading your branch's loans &amp; investors…</div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading investor delivery…</div>
   </div>
 
   <div class="state-screen" id="state-signed-out" style="display:none;">
     <div class="state-eyebrow">Sign in required</div>
     <h1 class="state-heading">Investor delivery is branch-scoped.</h1>
-    <p class="state-text">Sign in to manage your branch's loan sales.</p>
+    <p class="state-text">Sign in to see deliveries for your branch.</p>
     <a href="/login.html" class="btn primary">Sign in →</a>
   </div>
 
@@ -573,55 +564,72 @@ footer a:hover { color: var(--accent); }
     <a href="/home.html" class="btn">Back to Home</a>
   </div>
 
-  <div id="active" style="display:none;">
+  <div class="state-screen" id="state-schema-missing" style="display:none;">
+    <div class="state-eyebrow">Schema not deployed</div>
+    <h1 class="state-heading">loan_deliveries table is missing.</h1>
+    <p class="state-text">Run migration <strong>20260514050000_loan_deliveries.sql</strong> against your Supabase project, then reload this page.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <!-- ─── ACTIVE ─── -->
+  <div id="dlv-active" style="display:none;">
 
     <header class="page-head">
-      <div class="page-eyebrow" id="page-eyebrow">CAPITAL MARKETS</div>
-      <h1 class="page-title" id="page-title">Investor Delivery</h1>
-      <p class="page-sub" id="page-sub">Sell funded loans to GSEs, aggregators, and private investors. ULDD generated client-side; mock transmission until edge function is wired.</p>
+      <div class="page-eyebrow" id="page-eyebrow">DELIVERY</div>
+      <h1 class="page-title">Investor Delivery</h1>
+      <p class="page-sub">Post-funding handoff to the secondary market. Submit UCDP and UCD,
+        build the MISMO 3.4 export, track the wire, and confirm purchase.</p>
     </header>
 
-    <section class="hero-strip" id="hero-strip">
-      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
-      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
-      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
-      <div class="hero-cell"><div class="hero-label">—</div><div class="hero-value">—</div><div class="hero-sub">loading</div></div>
+    <section class="metric-strip" id="metric-strip">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
     </section>
 
-    <div class="tab-bar" id="tab-bar">
-      <button data-tab="deliverable" class="active">Deliverable<span class="tab-count" id="count-deliverable">—</span></button>
-      <button data-tab="inflight">In Flight<span class="tab-count" id="count-inflight">—</span></button>
-      <button data-tab="completed">Completed<span class="tab-count" id="count-completed">—</span></button>
-      <button data-tab="investors">Investors &amp; Commitments</button>
+    <div class="toolbar">
+      <input type="text" class="toolbar-input" id="tb-search" placeholder="Search loan #, borrower, commitment id…">
+      <select class="toolbar-select" id="tb-investor">
+        <option value="all">All investors</option>
+        <option value="fannie">Fannie Mae</option>
+        <option value="freddie">Freddie Mac</option>
+        <option value="ginnie">Ginnie Mae</option>
+        <option value="private">Private investor</option>
+        <option value="portfolio">Portfolio (retained)</option>
+        <option value="none">No investor set</option>
+      </select>
+      <select class="toolbar-select" id="tb-stage">
+        <option value="all">All stages</option>
+        <option value="not_started">Not started</option>
+        <option value="pending">Pending</option>
+        <option value="in_flight">In flight</option>
+        <option value="accepted">Accepted</option>
+        <option value="purchased">Purchased</option>
+        <option value="rejected">Rejected</option>
+        <option value="error">Error</option>
+      </select>
+      <span class="toolbar-count" id="tb-count"><strong>0</strong> shown</span>
     </div>
 
-    <div class="tab-pane active" id="tab-deliverable">
-      <div id="deliverable-body"><div class="delivery-empty">Loading…</div></div>
-    </div>
-
-    <div class="tab-pane" id="tab-inflight">
-      <div id="inflight-body"><div class="delivery-empty">Loading…</div></div>
-    </div>
-
-    <div class="tab-pane" id="tab-completed">
-      <div id="completed-body"><div class="delivery-empty">Loading…</div></div>
-    </div>
-
-    <div class="tab-pane" id="tab-investors">
-      <div class="section">
-        <div class="section-head">
-          <span class="section-title">Investors</span>
-          <button class="section-add" onclick="promptNewInvestor()">+ New investor</button>
-        </div>
-        <div class="section-body" id="investors-body"><div class="delivery-empty">Loading…</div></div>
-      </div>
-      <div class="section">
-        <div class="section-head">
-          <span class="section-title">Commitments</span>
-          <button class="section-add" onclick="promptNewCommitment()">+ New commitment</button>
-        </div>
-        <div class="section-body" id="commitments-body"><div class="delivery-empty">Loading…</div></div>
-      </div>
+    <div class="table-wrap" id="table-wrap">
+      <table class="dlv-table" id="dlv-table">
+        <thead>
+          <tr>
+            <th>Loan</th>
+            <th>Investor</th>
+            <th>UCDP</th>
+            <th>UCD</th>
+            <th>MISMO 3.4</th>
+            <th>Wire / Purchase</th>
+            <th>Last Activity</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="dlv-tbody">
+          <tr><td colspan="8" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
     </div>
 
   </div>
@@ -629,54 +637,219 @@ footer a:hover { color: var(--accent); }
 </main>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MODALS — populated dynamically                                       -->
+<!-- MODALS                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal-overlay">
-  <div class="modal" id="modal-shell">
+
+<!-- Detail / route modal: set investor + commitment id, view full state -->
+<div class="modal-backdrop" id="modal-detail">
+  <div class="modal wide">
     <div class="modal-head">
-      <span class="modal-title" id="modal-title">—</span>
-      <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+      <div>
+        <div class="modal-sub" id="detail-sub">DELIVERY DETAIL</div>
+        <div class="modal-title" id="detail-title">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
     </div>
-    <div class="modal-body" id="modal-body">—</div>
-    <div class="modal-foot" id="modal-foot">
-      <button class="btn" onclick="closeModal()">Cancel</button>
+    <div class="modal-body">
+      <div class="detail-section-head">Investor routing</div>
+      <div class="form-row">
+        <label class="form-label">Investor</label>
+        <select class="form-select" id="detail-investor">
+          <option value="">— Not selected —</option>
+          <option value="fannie">Fannie Mae</option>
+          <option value="freddie">Freddie Mac</option>
+          <option value="ginnie">Ginnie Mae</option>
+          <option value="private">Private investor</option>
+          <option value="portfolio">Portfolio (retained)</option>
+        </select>
+        <div class="form-hint">Routing determines which submission portals (UCDP / UCD) apply. Portfolio loans skip both.</div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Commitment ID</label>
+        <input class="form-input" id="detail-commitment" placeholder="e.g. FNMA-2026-04-1234">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="detail-notes" placeholder="Internal notes about this delivery…"></textarea>
+      </div>
+
+      <div class="detail-section-head">Current state</div>
+      <div class="detail-grid" id="detail-grid"></div>
+
+      <div class="detail-section-head">UCDP / UCD findings</div>
+      <div id="detail-findings" style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger" id="detail-archive">Archive delivery</button>
+      <button class="btn" onclick="closeModal('modal-detail')">Cancel</button>
+      <button class="btn primary" id="detail-save">Save</button>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast" role="status"></div>
+<!-- Build MISMO 3.4 modal -->
+<div class="modal-backdrop" id="modal-mismo">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-sub">BUILD MISMO 3.4</div>
+        <div class="modal-title" id="mismo-title">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-mismo')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        Builds a MISMO 3.4 XML package from the loan data and uploads it to Supabase Storage.
+        The signed URL is then consumed by <strong>UCDP</strong>, <strong>UCD</strong>, and the
+        investor purchase package. Existing exports are versioned, not overwritten.
+      </div>
+      <p class="modal-text">Loan: <strong id="mismo-loan">—</strong></p>
+      <p class="modal-text">Current export: <strong id="mismo-current">—</strong></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-mismo')">Cancel</button>
+      <button class="btn primary" id="mismo-build">Build package</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit UCDP modal -->
+<div class="modal-backdrop" id="modal-ucdp">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-sub">SUBMIT UCDP</div>
+        <div class="modal-title" id="ucdp-title">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-ucdp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        Submits the appraisal package to the GSE <strong>Uniform Collateral Data Portal</strong>.
+        The portal returns a doc id and finding count; both are stored on the delivery row.
+        Re-submitting overwrites the prior response.
+      </div>
+      <div class="warning-box" id="ucdp-warn" style="display:none;">⚠ MISMO 3.4 export not built yet. UCDP submission requires the package — build it first.</div>
+      <p class="modal-text">Loan: <strong id="ucdp-loan">—</strong></p>
+      <p class="modal-text">Current UCDP status: <strong id="ucdp-current">—</strong></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-ucdp')">Cancel</button>
+      <button class="btn primary" id="ucdp-submit">Submit to UCDP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit UCD modal -->
+<div class="modal-backdrop" id="modal-ucd">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-sub">SUBMIT UCD</div>
+        <div class="modal-title" id="ucd-title">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-ucd')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        Submits the Closing Disclosure to the GSE <strong>Uniform Closing Dataset</strong>.
+        Required for all conforming loans before purchase. Re-submitting overwrites the prior
+        response.
+      </div>
+      <div class="warning-box" id="ucd-warn" style="display:none;">⚠ MISMO 3.4 export not built yet. UCD submission requires the package — build it first.</div>
+      <p class="modal-text">Loan: <strong id="ucd-loan">—</strong></p>
+      <p class="modal-text">Current UCD status: <strong id="ucd-current">—</strong></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-ucd')">Cancel</button>
+      <button class="btn primary" id="ucd-submit">Submit to UCD</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mark purchased modal -->
+<div class="modal-backdrop" id="modal-purchase">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-sub">MARK PURCHASED</div>
+        <div class="modal-title" id="purchase-title">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-purchase')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        Records the investor wire and marks the delivery <strong>purchased</strong>. After this
+        the loan moves to the servicing handoff. This is a manual bookkeeping step — the wire
+        itself is reconciled in your bank.
+      </div>
+      <div class="form-row">
+        <label class="form-label">Wire amount (USD)</label>
+        <input class="form-input" id="purchase-amount" type="number" step="0.01" placeholder="e.g. 412500.00">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Wire reference / Fed reference</label>
+        <input class="form-input" id="purchase-ref" placeholder="e.g. 20260514ABC123">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Sale price (USD) <span style="color:var(--muted);font-weight:400;">— optional</span></label>
+        <input class="form-input" id="purchase-saleprice" type="number" step="0.01" placeholder="Often equal to wire amount minus SRP">
+      </div>
+      <div class="form-row">
+        <label class="form-label">SRP (basis points) <span style="color:var(--muted);font-weight:400;">— optional</span></label>
+        <input class="form-input" id="purchase-srp" type="number" step="1" placeholder="e.g. 175">
+        <div class="form-hint">Service Release Premium. Positive = investor paid for servicing rights; negative = retained.</div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-purchase')">Cancel</button>
+      <button class="btn primary" id="purchase-confirm">Confirm purchase</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><div class="toast-meta" id="toast-meta">INFO</div><div id="toast-body">—</div></div>
 
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <!-- FOOTER                                                               -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <footer>
-  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>v0.2 · Investor Delivery · Round 4-20 · ULDD MISMO 3.4</span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="/home.html">Home</a>
-    <a href="/dashboard.html">Pipeline</a>
-    <a href="/reports.html">Reports</a>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · Investor Delivery</span>
+    <div style="display:flex;gap:1.25rem;flex-wrap:wrap;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/documents.html">Documents</a>
+      <a href="/reports.html">Reports</a>
+    </div>
   </div>
 </footer>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// /investor-delivery.html — Capital markets workflow (Round 4-20)
+// /investor-delivery.html
 //
-// Three primary views as tabs:
-//   1. Deliverable    — funded loans without an active delivery
-//   2. In Flight      — non-terminal loan_deliveries
-//   3. Completed      — funded + cancelled deliveries (history)
-//   4. Investors      — investors + commitments CRUD-lite
+// Post-funding delivery dashboard. One row per funded/recorded/complete
+// loan, with a left-join to loan_deliveries for the multi-step state
+// (UCDP, UCD, MISMO 3.4, wire/purchase).
 //
-// The ULDD generation is fully client-side via OFUldd.generateUldd().
-// Transmission is mocked: clicking "Transmit" updates loan_deliveries.status
-// to 'transmitted' without actually calling Fannie/Freddie. A future edge
-// function (deliver-loan) will replace the mock with real transmission.
+// Hooks (all stubs today; surfaced via toasts if missing):
+//   window.OF_buildMismoPackage(loanId)  → returns { url, size_bytes, version }
+//   window.OF_submitUcdp(loanId)         → returns { doc_id, status, finding_count, response }
+//   window.OF_submitUcd(loanId)          → returns { doc_id, status, finding_count, response }
 //
-// Cross-page deep link: /investor-delivery.html?loan_id=<uuid> opens the
-// "Start delivery" modal pre-filled for that specific loan. Other pages
-// (loan.html overview tab, reports.html) can link here directly.
+// Direct DB writes (no hook):
+//   - Investor + commitment routing (detail modal save)
+//   - Mark purchased (wire + sale price + SRP)
+//   - Archive delivery (soft delete, opens path for re-routing)
+//
+// Realtime: subscribes to loan_deliveries on this branch and debounce-
+// refreshes the table on any change. Same pattern as branch-library.html.
+//
+// Schema dependency: loan_deliveries (migration 20260514050000). If the
+// table doesn't exist, the page shows state-schema-missing and exits.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (s) => document.querySelector(s);
@@ -684,62 +857,83 @@ const $ = (s) => document.querySelector(s);
 let supa = null;
 let me = null;
 let branch = null;
+let rows = [];               // joined loan + delivery rows
+let activeRow = null;        // current detail modal target
+let activeLoanIdForAction = null;
 
-let allLoans = [];
-let allDeliveries = [];
-let allInvestors = [];
-let allCommitments = [];
-let loanIdFromUrl = null;
+const INVESTOR_LABELS = {
+  fannie: 'Fannie Mae', freddie: 'Freddie Mac', ginnie: 'Ginnie Mae',
+  private: 'Private', portfolio: 'Portfolio',
+};
+const STAGE_LABELS = {
+  pending: 'Pending', in_flight: 'In flight', accepted: 'Accepted',
+  purchased: 'Purchased', rejected: 'Rejected', error: 'Error',
+};
+const SUB_STATUS_LABELS = {
+  not_required: 'N/A', pending: 'Pending', submitted: 'Submitted',
+  accepted: 'Accepted', rejected: 'Rejected', error: 'Error',
+};
 
-// ─── Formatters ──────────────────────────────────────────────────────────
-
+// ─── Helpers ──────────────────────────────────────────────────────────
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
-function $money(c) {
-  if (c == null) return '—';
-  if (Math.abs(c) >= 1_000_000_00) return '$' + (c / 100_000_000).toFixed(2) + 'M';
-  if (Math.abs(c) >= 100_000_00)   return '$' + Math.round(c / 100_000) + 'K';
-  return '$' + Math.round(c / 100).toLocaleString();
-}
-function $rate(bps) { return bps == null ? '—' : (bps / 100).toFixed(3) + '%'; }
-function $term(m) { return m == null ? '—' : Math.round(m / 12) + 'yr'; }
-function $date(iso) {
+function timeAgo(iso) {
   if (!iso) return '—';
-  const d = new Date(iso); if (isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
 }
-
-const INVESTOR_TYPE_LABELS = {
-  gse_fannie:  'Fannie',
-  gse_freddie: 'Freddie',
-  ginnie_mae:  'Ginnie',
-  aggregator:  'Aggregator',
-  private:     'Private',
-  whole_loan:  'Whole loan',
-  warehouse:   'Warehouse',
-};
-
-function showToast(msg, isError) {
+function money(cents) {
+  if (cents == null) return '—';
+  if (Math.abs(cents) >= 1_000_000_00) return '$' + (cents / 100_000_000).toFixed(2) + 'M';
+  if (Math.abs(cents) >= 1_000_00)     return '$' + Math.round(cents / 100).toLocaleString();
+  return '$' + (cents / 100).toFixed(2);
+}
+function toast(message, kind) {
   const el = $('#toast');
-  el.textContent = msg;
-  el.classList.toggle('error', !!isError);
+  el.classList.remove('error', 'warn');
+  if (kind === 'error') el.classList.add('error');
+  if (kind === 'warn')  el.classList.add('warn');
+  $('#toast-meta').textContent = (kind || 'info').toUpperCase();
+  $('#toast-body').textContent = message;
   el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 3500);
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 3800);
+}
+function openModal(id)  { $('#' + id).classList.add('show'); }
+function closeModal(id) { $('#' + id).classList.remove('show'); }
+window.closeModal = closeModal;  // for onclick="closeModal(...)"
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+window.handleSignOut = handleSignOut;
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending','state-schema-missing'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#dlv-active').style.display = 'none';
+}
+function showActive() {
+  ['state-loading','state-signed-out','state-pending','state-schema-missing'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#dlv-active').style.display = 'block';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AUTH + BOOTSTRAP
+// BOOTSTRAP
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function bootstrap() {
-  // Capture deep-link param early
-  const url = new URL(window.location);
-  loanIdFromUrl = url.searchParams.get('loan_id');
-
   supa = (typeof getSupabase === 'function') ? getSupabase() : null;
   if (!supa) { showState('state-signed-out'); return; }
 
@@ -749,1136 +943,702 @@ async function bootstrap() {
   } catch (err) { console.warn('session error:', err); }
   if (!session) { showState('state-signed-out'); return; }
 
-  const { data: profile } = await supa.from('profiles')
+  const { data: profile } = await supa
+    .from('profiles')
     .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
-    .eq('id', session.user.id).maybeSingle();
+    .eq('id', session.user.id)
+    .maybeSingle();
 
-  if (!profile) { showState('state-pending'); return; }
-  if (!profile.branch_id) {
-    $('#nav-user-name').textContent = session.user.email || 'Signed in';
-    showState('state-pending'); return;
-  }
+  if (!profile || !profile.branch_id) { showState('state-pending'); return; }
 
   me = profile;
   branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
-  $('#nav-user-name').textContent = me.full_name || me.email;
-  $('#nav-user-role').textContent = (me.role || '').toUpperCase();
+
+  $('#nav-user-name').textContent  = profile.full_name || profile.email;
+  $('#nav-user-role').textContent  = (profile.role || '').toUpperCase();
   $('#nav-user-role').style.display = 'inline-block';
   $('#nav-branch-name').textContent = branch.name;
   $('#nav-branch-pill').style.display = 'inline-flex';
-  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
-  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+  $('#page-eyebrow').textContent = `${branch.name.toUpperCase()} · DELIVERY`;
+  if (profile.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (profile.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  // Schema probe: try a no-op query against loan_deliveries. If the table
+  // doesn't exist (PostgREST 42P01), bail to the schema-missing state with
+  // clear instructions. Same defensive pattern as reports.html's optional
+  // compliance_violations.
+  const probe = await supa.from('loan_deliveries').select('id', { count: 'exact', head: true }).limit(0);
+  if (probe.error && /relation .* does not exist|PGRST205|42P01/i.test(JSON.stringify(probe.error))) {
+    showState('state-schema-missing');
+    return;
+  }
 
   showActive();
-  initTabs();
+  initToolbar();
+  initModals();
   await loadAll();
-  renderAll();
-
-  // Deep link: if ?loan_id=X and the loan is deliverable, open the modal
-  if (loanIdFromUrl) {
-    const loan = allLoans.find(l => l.id === loanIdFromUrl);
-    if (loan && isDeliverable(loan)) {
-      promptStartDelivery(loanIdFromUrl);
-    } else if (loan) {
-      // Loan exists but not deliverable — switch to the in-flight tab if
-      // there's an active delivery on it, or to completed otherwise.
-      const d = allDeliveries.find(d => d.loan_id === loanIdFromUrl);
-      if (d) {
-        activateTab(['draft','validated','transmitted','pending','accepted','rejected'].includes(d.status) ? 'inflight' : 'completed');
-        showToast(`Loan ${loan.loan_number} already has a ${d.status} delivery.`, false);
-      }
-    }
-  }
+  initRealtime();
 }
 
-function handleSignOut() {
-  if (typeof ofSignOut === 'function') ofSignOut();
-  else window.location.href = '/login.html';
-}
-
-function showState(id) {
-  ['state-loading','state-signed-out','state-pending'].forEach(s => {
-    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
-  });
-  $('#active').style.display = 'none';
-}
-function showActive() {
-  ['state-loading','state-signed-out','state-pending'].forEach(s => {
-    document.getElementById(s).style.display = 'none';
-  });
-  $('#active').style.display = 'block';
-}
+document.addEventListener('DOMContentLoaded', bootstrap);
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DATA LOAD
+// DATA
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function loadAll() {
-  // Funded/recorded/complete loans (eligible for delivery) + their borrower data.
-  // We also pull all loans that have any delivery record so completed deliveries
-  // can show their loan info even if status moved.
-  const loansP = supa.from('loans')
-    .select(`id, loan_number, status, loan_amount_cents, rate_bps, term_months,
-             program, purpose, occupancy, property_type, ltv_pct, cltv_pct, dti_back_pct,
-             property_address, appraised_value_cents, purchase_price_cents,
-             funded_at, sold_to_investor_id, sold_at,
-             borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id (
-               first_name, last_name, dob, ssn_last4, email, phone
-             ))`)
+  // Funded + downstream loans, left-joined to their active delivery row.
+  // PostgREST returns delivery as an array; we keep at most one ACTIVE
+  // (archived_at IS NULL) row per loan because of the partial unique index.
+  const { data, error } = await supa
+    .from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, program, funded_at, rate_bps,
+      cd_sent_at, lo_id, property_address,
+      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) ),
+      delivery:loan_deliveries (
+        id, investor, commitment_id, stage,
+        ucdp_status, ucdp_submitted_at, ucdp_finding_count, ucdp_doc_id,
+        ucd_status, ucd_submitted_at, ucd_finding_count, ucd_doc_id,
+        ucdp_response, ucd_response,
+        mismo_built_at, mismo_export_url, mismo_export_size_bytes, mismo_version,
+        wire_received_at, wire_amount_cents, wire_reference,
+        purchase_confirmed_at, sale_price_cents, srp_bps,
+        notes, created_at, updated_at, archived_at
+      )
+    `)
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
     .in('status', ['funded', 'recorded', 'complete'])
-    .is('archived_at', null)
-    .order('funded_at', { ascending: false });
+    .order('funded_at', { ascending: false })
+    .limit(500);
 
-  const deliveriesP = supa.from('loan_deliveries')
-    .select(`id, loan_id, commitment_id, investor_id, status,
-             delivery_amount_cents, servicing_retained, delivery_price_pct,
-             uldd_generated_at, uldd_validation_errors,
-             transmitted_at, transmission_method,
-             investor_funded_at, investor_funded_amount_cents,
-             rejection_reason, notes, created_at`)
-    .is('archived_at', null)
-    .order('created_at', { ascending: false });
-
-  const investorsP = supa.from('investors')
-    .select('*')
-    .is('archived_at', null)
-    .order('created_at', { ascending: false });
-
-  const commitmentsP = supa.from('investor_commitments')
-    .select('*, investor:investors!investor_id ( name, investor_type )')
-    .is('archived_at', null)
-    .order('created_at', { ascending: false });
-
-  const [loansR, delsR, invsR, commsR] = await Promise.allSettled([
-    loansP, deliveriesP, investorsP, commitmentsP,
-  ]);
-
-  if (loansR.status === 'fulfilled' && !loansR.value.error) allLoans = loansR.value.data || [];
-  if (delsR.status === 'fulfilled' && !delsR.value.error) allDeliveries = delsR.value.data || [];
-  if (invsR.status === 'fulfilled' && !invsR.value.error) allInvestors = invsR.value.data || [];
-  if (commsR.status === 'fulfilled' && !commsR.value.error) allCommitments = commsR.value.data || [];
-
-  // If the deliveries query errors (table missing), fall through with empty arrays
-  if (delsR.status === 'fulfilled' && delsR.value.error) {
-    console.warn('loan_deliveries not deployed:', delsR.value.error.message);
-    showToast('Investor delivery schema not deployed — read-only mode.', true);
+  if (error) {
+    console.error('loans load error:', error);
+    $('#dlv-tbody').innerHTML = `<tr><td colspan="8" class="table-empty">Could not load deliveries: ${escapeHtml(error.message || '')}</td></tr>`;
+    return;
   }
+
+  rows = (data || []).map(loan => {
+    // delivery is an array; filter to the active (non-archived) row.
+    // Multiple shouldn't exist due to the partial unique index, but we
+    // defensively pick the most-recent.
+    const active = (loan.delivery || [])
+      .filter(d => !d.archived_at)
+      .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))[0] || null;
+    return { loan, delivery: active };
+  });
+
+  renderMetrics();
+  renderTable();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CLASSIFICATION
+// METRICS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const ACTIVE_DELIVERY_STATUSES = ['draft','validated','transmitted','pending','accepted','rejected'];
-const TERMINAL_DELIVERY_STATUSES = ['funded','cancelled'];
-
-function isDeliverable(loan) {
-  // Loan is deliverable if:
-  //   1. It's funded/recorded/complete
-  //   2. No active delivery exists on it
-  if (!['funded','recorded','complete'].includes(loan.status)) return false;
-  return !allDeliveries.some(d =>
-    d.loan_id === loan.id && ACTIVE_DELIVERY_STATUSES.includes(d.status)
+function renderMetrics() {
+  const pending = rows.filter(r => !r.delivery || r.delivery.stage === 'pending').length;
+  const inFlight = rows.filter(r => r.delivery && r.delivery.stage === 'in_flight').length;
+  const cutoff = Date.now() - 30 * 86400 * 1000;
+  const deliveredRecent = rows.filter(r =>
+    r.delivery && r.delivery.stage === 'purchased' &&
+    r.delivery.purchase_confirmed_at &&
+    new Date(r.delivery.purchase_confirmed_at).getTime() >= cutoff
   );
-}
+  const deliveredAmt = deliveredRecent.reduce((s, r) => s + (Number(r.delivery?.wire_amount_cents) || 0), 0);
 
-function activeDeliveryFor(loan) {
-  return allDeliveries.find(d =>
-    d.loan_id === loan.id && ACTIVE_DELIVERY_STATUSES.includes(d.status)
-  );
-}
-
-function classifyAll() {
-  const deliverable = allLoans.filter(isDeliverable);
-  const inflight = allDeliveries.filter(d => ACTIVE_DELIVERY_STATUSES.includes(d.status))
-    .map(d => ({ ...d, loan: allLoans.find(l => l.id === d.loan_id) }))
-    .filter(x => x.loan);
-  const completed = allDeliveries.filter(d => TERMINAL_DELIVERY_STATUSES.includes(d.status))
-    .map(d => ({ ...d, loan: allLoans.find(l => l.id === d.loan_id) }))
-    .filter(x => x.loan);
-  return { deliverable, inflight, completed };
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════════════════════════════════════
-
-function renderAll() {
-  const { deliverable, inflight, completed } = classifyAll();
-
-  $('#count-deliverable').textContent = deliverable.length;
-  $('#count-inflight').textContent = inflight.length;
-  $('#count-completed').textContent = completed.length;
-
-  renderHero(deliverable, inflight, completed);
-  renderDeliverable(deliverable);
-  renderInflight(inflight);
-  renderCompleted(completed);
-  renderInvestors();
-  renderCommitments();
-}
-
-function renderHero(deliverable, inflight, completed) {
-  const eligibleAmt = deliverable.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
-  const inflightAmt = inflight.reduce((s, d) => s + (Number(d.delivery_amount_cents) || 0), 0);
-  const fundedAmt = completed.filter(d => d.status === 'funded')
-    .reduce((s, d) => s + (Number(d.investor_funded_amount_cents) || d.delivery_amount_cents || 0), 0);
-  const activeCommitments = allCommitments.filter(c => c.status === 'active');
-  const remainingCapacity = activeCommitments.reduce((s, c) =>
-    s + Math.max(0, (Number(c.par_amount_cents) || 0) - (Number(c.filled_amount_cents) || 0)), 0);
-
-  $('#hero-strip').innerHTML = `
-    <div class="hero-cell">
-      <div class="hero-label">Eligible to deliver</div>
-      <div class="hero-value cyan">${$money(eligibleAmt)}</div>
-      <div class="hero-sub">${deliverable.length} funded loan${deliverable.length === 1 ? '' : 's'}</div>
+  $('#metric-strip').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">Pending Delivery</div>
+      <div class="metric-value ${pending > 0 ? 'amber' : ''}">${pending}</div>
+      <div class="metric-sub">funded but not submitted</div>
     </div>
-    <div class="hero-cell">
-      <div class="hero-label">In flight</div>
-      <div class="hero-value amber">${$money(inflightAmt)}</div>
-      <div class="hero-sub">${inflight.length} active deliver${inflight.length === 1 ? 'y' : 'ies'}</div>
+    <div class="metric-cell">
+      <div class="metric-label">In Flight</div>
+      <div class="metric-value cyan">${inFlight}</div>
+      <div class="metric-sub">awaiting investor response</div>
     </div>
-    <div class="hero-cell">
-      <div class="hero-label">Investor-funded</div>
-      <div class="hero-value green">${$money(fundedAmt)}</div>
-      <div class="hero-sub">${completed.filter(d => d.status === 'funded').length} sold</div>
+    <div class="metric-cell">
+      <div class="metric-label">Purchased · 30d</div>
+      <div class="metric-value green">${deliveredRecent.length}</div>
+      <div class="metric-sub">loans confirmed</div>
     </div>
-    <div class="hero-cell">
-      <div class="hero-label">Open commitment capacity</div>
-      <div class="hero-value">${$money(remainingCapacity)}</div>
-      <div class="hero-sub">${activeCommitments.length} active commitment${activeCommitments.length === 1 ? '' : 's'}</div>
+    <div class="metric-cell">
+      <div class="metric-label">$ Delivered · 30d</div>
+      <div class="metric-value green">${money(deliveredAmt)}</div>
+      <div class="metric-sub">wire amount total</div>
     </div>
   `;
 }
 
-// ─── Deliverable tab ─────────────────────────────────────────────────────
-
-function renderDeliverable(deliverable) {
-  const body = $('#deliverable-body');
-  if (deliverable.length === 0) {
-    body.innerHTML = `
-      <div class="delivery-empty">
-        No funded loans waiting to be delivered.<br>
-        <small style="opacity:0.7; display:block; margin-top:0.5rem;">
-          Loans become deliverable once their closing flips to <code>funded</code>.
-        </small>
-      </div>`;
-    return;
-  }
-  body.innerHTML = `<div class="delivery-grid">
-    ${deliverable.map(loan => {
-      const borrower = (loan.borrowers || [])[0]?.borrower;
-      const borrowerName = borrower ? `${borrower.last_name}, ${borrower.first_name}` : 'Borrower';
-      return `
-        <div class="delivery-row" onclick="promptStartDelivery('${escapeHtml(loan.id)}')">
-          <div class="delivery-loan-info">
-            <span class="delivery-loan-num">${escapeHtml(loan.loan_number || loan.id.slice(0, 8))}</span>
-            <span class="delivery-borrower">${escapeHtml(borrowerName)}</span>
-            <span class="delivery-meta">funded ${$date(loan.funded_at)}</span>
-          </div>
-          <div>
-            <div class="delivery-amount">${$money(loan.loan_amount_cents)}</div>
-            <div class="delivery-amount-sub">LTV ${loan.ltv_pct ? Number(loan.ltv_pct).toFixed(1) + '%' : '—'}</div>
-          </div>
-          <div>
-            <div class="delivery-rate">${$rate(loan.rate_bps)}</div>
-            <div class="delivery-rate-sub">${$term(loan.term_months)}</div>
-          </div>
-          <div class="delivery-program">${escapeHtml((loan.program || '—').replace('_', ' '))}</div>
-          <div class="delivery-status eligible">ELIGIBLE</div>
-          <div>
-            <button class="delivery-action-btn" onclick="event.stopPropagation(); promptStartDelivery('${escapeHtml(loan.id)}')">Start →</button>
-          </div>
-        </div>
-      `;
-    }).join('')}
-  </div>`;
-}
-
-// ─── In-flight tab ───────────────────────────────────────────────────────
-
-function renderInflight(inflight) {
-  const body = $('#inflight-body');
-  if (inflight.length === 0) {
-    body.innerHTML = `<div class="delivery-empty">No active deliveries.</div>`;
-    return;
-  }
-  body.innerHTML = `<div class="delivery-grid">
-    ${inflight.map(d => {
-      const loan = d.loan;
-      const investor = allInvestors.find(i => i.id === d.investor_id);
-      const borrower = (loan.borrowers || [])[0]?.borrower;
-      const borrowerName = borrower ? `${borrower.last_name}, ${borrower.first_name}` : 'Borrower';
-      return `
-        <div class="delivery-row" onclick="openDeliveryDetail('${escapeHtml(d.id)}')">
-          <div class="delivery-loan-info">
-            <span class="delivery-loan-num">${escapeHtml(loan.loan_number)}</span>
-            <span class="delivery-borrower">${escapeHtml(borrowerName)} · ${escapeHtml(investor?.name || 'Unknown investor')}</span>
-            <span class="delivery-meta">${d.uldd_generated_at ? 'ULDD generated' : 'no ULDD yet'} · created ${$date(d.created_at)}</span>
-          </div>
-          <div>
-            <div class="delivery-amount">${$money(d.delivery_amount_cents)}</div>
-            <div class="delivery-amount-sub">${d.servicing_retained ? 'servicing retained' : 'servicing released'}</div>
-          </div>
-          <div>
-            <div class="delivery-rate">${$rate(loan.rate_bps)}</div>
-            <div class="delivery-rate-sub">${$term(loan.term_months)}</div>
-          </div>
-          <div class="delivery-program">${escapeHtml((loan.program || '—').replace('_', ' '))}</div>
-          <div class="delivery-status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</div>
-          <div>
-            <button class="delivery-action-btn" onclick="event.stopPropagation(); openDeliveryDetail('${escapeHtml(d.id)}')">Open →</button>
-          </div>
-        </div>
-      `;
-    }).join('')}
-  </div>`;
-}
-
-// ─── Completed tab ───────────────────────────────────────────────────────
-
-function renderCompleted(completed) {
-  const body = $('#completed-body');
-  if (completed.length === 0) {
-    body.innerHTML = `<div class="delivery-empty">No completed deliveries yet.</div>`;
-    return;
-  }
-  body.innerHTML = `<div class="delivery-grid">
-    ${completed.map(d => {
-      const loan = d.loan;
-      const investor = allInvestors.find(i => i.id === d.investor_id);
-      const borrower = (loan.borrowers || [])[0]?.borrower;
-      const borrowerName = borrower ? `${borrower.last_name}, ${borrower.first_name}` : 'Borrower';
-      const dt = d.investor_funded_at || d.created_at;
-      return `
-        <div class="delivery-row" onclick="openDeliveryDetail('${escapeHtml(d.id)}')">
-          <div class="delivery-loan-info">
-            <span class="delivery-loan-num">${escapeHtml(loan.loan_number)}</span>
-            <span class="delivery-borrower">${escapeHtml(borrowerName)} · ${escapeHtml(investor?.name || '—')}</span>
-            <span class="delivery-meta">${d.status} ${$date(dt)}</span>
-          </div>
-          <div>
-            <div class="delivery-amount">${$money(d.investor_funded_amount_cents || d.delivery_amount_cents)}</div>
-            <div class="delivery-amount-sub">${d.delivery_price_pct ? Number(d.delivery_price_pct).toFixed(3) + '%' : '—'}</div>
-          </div>
-          <div>
-            <div class="delivery-rate">${$rate(loan.rate_bps)}</div>
-            <div class="delivery-rate-sub">${$term(loan.term_months)}</div>
-          </div>
-          <div class="delivery-program">${escapeHtml((loan.program || '—').replace('_', ' '))}</div>
-          <div class="delivery-status ${escapeHtml(d.status)}">${escapeHtml(d.status)}</div>
-          <div></div>
-        </div>
-      `;
-    }).join('')}
-  </div>`;
-}
-
-// ─── Investors + commitments ─────────────────────────────────────────────
-
-function renderInvestors() {
-  const body = $('#investors-body');
-  if (allInvestors.length === 0) {
-    body.innerHTML = `<div class="delivery-empty">
-      No investors configured.<br>
-      <small style="opacity:0.7; display:block; margin-top:0.5rem;">
-        Add Fannie Mae, Freddie Mac, and your aggregator partners to start delivering loans.
-      </small>
-    </div>`;
-    return;
-  }
-  body.innerHTML = allInvestors.map(inv => {
-    const commitsCount = allCommitments.filter(c => c.investor_id === inv.id && c.status === 'active').length;
-    const delsCount = allDeliveries.filter(d => d.investor_id === inv.id).length;
-    return `
-      <div class="investor-row">
-        <div>
-          <div class="investor-name">${escapeHtml(inv.name)}</div>
-          <div class="investor-meta">
-            ${inv.uldd_seller_id ? 'Seller ID: ' + escapeHtml(inv.uldd_seller_id) : 'No seller ID'}
-            ${inv.delivery_method !== 'manual' ? ' · ' + escapeHtml(inv.delivery_method.toUpperCase()) : ''}
-          </div>
-        </div>
-        <div class="investor-type-tag">${escapeHtml(INVESTOR_TYPE_LABELS[inv.investor_type] || inv.investor_type)}</div>
-        <div>
-          <div class="investor-stat">${commitsCount}</div>
-          <div class="investor-stat-sub">commits</div>
-        </div>
-        <div>
-          <div class="investor-stat">${delsCount}</div>
-          <div class="investor-stat-sub">deliveries</div>
-        </div>
-        <div class="investor-stat" style="color:${inv.active ? 'var(--accent2)' : 'var(--muted)'}">${inv.active ? '●' : '○'}</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderCommitments() {
-  const body = $('#commitments-body');
-  if (allCommitments.length === 0) {
-    body.innerHTML = `<div class="delivery-empty">
-      No commitments yet. Create one to start delivering loans into a contract.
-    </div>`;
-    return;
-  }
-  body.innerHTML = allCommitments.map(c => {
-    const filled = Number(c.filled_amount_cents) || 0;
-    const par = Number(c.par_amount_cents) || 0;
-    const fillPct = par > 0 ? Math.min(100, (filled / par) * 100) : 0;
-    return `
-      <div class="commitment-row">
-        <div>
-          <div class="investor-name" style="font-size:0.85rem">${escapeHtml(c.commitment_number)}</div>
-          <div class="investor-meta">${escapeHtml(c.commitment_type.replace('_', ' '))}</div>
-        </div>
-        <div>
-          <div class="investor-stat" style="text-align:left;font-size:0.78rem">${escapeHtml(c.investor?.name || '—')}</div>
-          <div class="investor-stat-sub" style="text-align:left">${escapeHtml(INVESTOR_TYPE_LABELS[c.investor?.investor_type] || '—')}</div>
-        </div>
-        <div>
-          <div class="investor-stat">${c.coupon_rate_bps != null ? (c.coupon_rate_bps / 100).toFixed(3) + '%' : '—'}</div>
-          <div class="investor-stat-sub">coupon</div>
-        </div>
-        <div>
-          <div class="investor-stat" style="font-size:0.78rem">${c.price_pct ? Number(c.price_pct).toFixed(3) + '%' : '—'}</div>
-          <div class="investor-stat-sub">price</div>
-        </div>
-        <div>
-          <div style="font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--white);margin-bottom:0.25rem">
-            ${$money(filled)} <span style="color:var(--muted)">/ ${$money(par)}</span>
-          </div>
-          <div class="fill-bar-track"><div class="fill-bar-fill" style="width:${fillPct}%"></div></div>
-        </div>
-        <div class="delivery-status ${c.status === 'active' ? 'eligible' : c.status === 'filled' ? 'funded' : 'cancelled'}">
-          ${escapeHtml(c.status)}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
-// TABS
+// TABLE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function initTabs() {
-  $('#tab-bar').addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-tab]');
-    if (!btn) return;
-    activateTab(btn.dataset.tab);
-  });
+function initToolbar() {
+  $('#tb-search').addEventListener('input', renderTable);
+  $('#tb-investor').addEventListener('change', renderTable);
+  $('#tb-stage').addEventListener('change', renderTable);
 }
 
-function activateTab(name) {
-  document.querySelectorAll('#tab-bar button').forEach(b =>
-    b.classList.toggle('active', b.dataset.tab === name)
-  );
-  document.querySelectorAll('.tab-pane').forEach(p =>
-    p.classList.toggle('active', p.id === 'tab-' + name)
-  );
+function effectiveStage(r) {
+  if (!r.delivery) return 'not_started';
+  return r.delivery.stage || 'pending';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MODAL HELPERS
-// ═══════════════════════════════════════════════════════════════════════════
-
-function openModal({ title, body, foot, wide }) {
-  $('#modal-title').textContent = title;
-  $('#modal-body').innerHTML = body;
-  $('#modal-foot').innerHTML = foot || `<button class="btn" onclick="closeModal()">Close</button>`;
-  $('#modal-shell').classList.toggle('wide', !!wide);
-  $('#modal-overlay').classList.add('open');
-}
-function closeModal() {
-  $('#modal-overlay').classList.remove('open');
-}
-window.closeModal = closeModal;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// START DELIVERY (modal)
-// ═══════════════════════════════════════════════════════════════════════════
-
-async function promptStartDelivery(loanId) {
-  const loan = allLoans.find(l => l.id === loanId);
-  if (!loan) { showToast('Loan not found.', true); return; }
-
-  if (allInvestors.filter(i => i.active).length === 0) {
-    openModal({
-      title: 'No active investors',
-      body: `<p>Add at least one investor before starting a delivery.</p>
-        <p style="color:var(--muted);margin-top:0.75rem;font-size:0.85rem">
-          Switch to the "Investors &amp; Commitments" tab and click "+ New investor".
-        </p>`,
-    });
-    return;
-  }
-
-  const borrower = (loan.borrowers || [])[0]?.borrower;
-  const borrowerName = borrower ? `${borrower.last_name}, ${borrower.first_name}` : 'Borrower';
-
-  // Filter commitments by note rate matching range + active status
-  const eligibleCommits = allCommitments.filter(c => {
-    if (c.status !== 'active') return false;
-    if (c.min_note_rate_bps != null && loan.rate_bps < c.min_note_rate_bps) return false;
-    if (c.max_note_rate_bps != null && loan.rate_bps > c.max_note_rate_bps) return false;
+function filtered() {
+  const q = ($('#tb-search').value || '').trim().toLowerCase();
+  const inv = $('#tb-investor').value;
+  const stg = $('#tb-stage').value;
+  return rows.filter(r => {
+    const stage = effectiveStage(r);
+    if (stg !== 'all' && stage !== stg) return false;
+    if (inv === 'none') {
+      if (r.delivery && r.delivery.investor) return false;
+    } else if (inv !== 'all') {
+      if (!r.delivery || r.delivery.investor !== inv) return false;
+    }
+    if (q) {
+      const borrowerName = (r.loan.borrowers || [])[0]?.borrower;
+      const borrowerStr = borrowerName ? `${borrowerName.first_name} ${borrowerName.last_name}` : '';
+      const hay = [
+        r.loan.loan_number || '',
+        borrowerStr,
+        r.delivery?.commitment_id || '',
+      ].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
     return true;
   });
-
-  openModal({
-    title: 'Start delivery',
-    body: `
-      <div style="margin-bottom:1rem;padding:0.85rem;background:var(--deep);border:1px solid var(--border)">
-        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.08em;margin-bottom:0.4rem">LOAN</div>
-        <div style="font-family:var(--sans);font-size:1rem;color:var(--white);margin-bottom:0.2rem">
-          ${escapeHtml(loan.loan_number)} · ${escapeHtml(borrowerName)}
-        </div>
-        <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted)">
-          ${$money(loan.loan_amount_cents)} · ${$rate(loan.rate_bps)} · ${$term(loan.term_months)} · ${escapeHtml((loan.program || '').replace('_', ' '))}
-        </div>
-      </div>
-
-      <div class="field-block">
-        <label class="field-label">Investor</label>
-        <select class="field-select" id="sd-investor">
-          ${allInvestors.filter(i => i.active).map(i =>
-            `<option value="${escapeHtml(i.id)}">${escapeHtml(i.name)} (${escapeHtml(INVESTOR_TYPE_LABELS[i.investor_type] || i.investor_type)})</option>`
-          ).join('')}
-        </select>
-      </div>
-
-      <div class="field-block">
-        <label class="field-label">Commitment <span style="color:var(--muted);text-transform:none">(optional · loans can deliver without one)</span></label>
-        <select class="field-select" id="sd-commitment">
-          <option value="">— No commitment (spot delivery) —</option>
-          ${eligibleCommits.map(c =>
-            `<option value="${escapeHtml(c.id)}">${escapeHtml(c.commitment_number)} · ${escapeHtml(c.investor?.name || '')} · coupon ${c.coupon_rate_bps != null ? (c.coupon_rate_bps / 100).toFixed(3) + '%' : '—'}</option>`
-          ).join('')}
-        </select>
-        ${eligibleCommits.length === 0 ?
-          '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--amber);margin-top:0.4rem">No commitments match this loan\'s rate. Spot delivery only.</div>' : ''}
-      </div>
-
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Delivery amount</label>
-          <input type="text" class="field-input" id="sd-amount" value="${$money(loan.loan_amount_cents)}" disabled>
-        </div>
-        <div class="field-block">
-          <label class="field-label">Servicing</label>
-          <select class="field-select" id="sd-servicing">
-            <option value="released" selected>Released (servicer takes over)</option>
-            <option value="retained">Retained (we keep servicing)</option>
-          </select>
-        </div>
-      </div>
-    `,
-    foot: `
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="confirmStartDelivery('${escapeHtml(loanId)}')">Create delivery</button>
-    `,
-  });
 }
-window.promptStartDelivery = promptStartDelivery;
 
-async function confirmStartDelivery(loanId) {
-  const loan = allLoans.find(l => l.id === loanId);
-  const investorId = $('#sd-investor').value;
-  const commitmentId = $('#sd-commitment').value || null;
-  const servicingRetained = $('#sd-servicing').value === 'retained';
+function renderTable() {
+  const shown = filtered();
+  $('#tb-count').innerHTML = `<strong>${shown.length}</strong> of ${rows.length} shown`;
 
-  if (!investorId) { showToast('Pick an investor.', true); return; }
-
-  try {
-    const { data: { session } } = await supa.auth.getSession();
-    const { data: row, error } = await supa.from('loan_deliveries').insert({
-      loan_id: loanId,
-      investor_id: investorId,
-      commitment_id: commitmentId,
-      branch_id: loan.branch_id || me.branch_id,
-      delivery_amount_cents: loan.loan_amount_cents,
-      servicing_retained: servicingRetained,
-      status: 'draft',
-      created_by: session?.user?.id || null,
-    }).select().single();
-    if (error) throw error;
-    closeModal();
-    showToast('Delivery created. Generating ULDD…');
-    await loadAll();
-    renderAll();
-    activateTab('inflight');
-    // Auto-open the detail to encourage immediate ULDD generation
-    openDeliveryDetail(row.id);
-  } catch (err) {
-    showToast('Failed: ' + err.message, true);
-  }
-}
-window.confirmStartDelivery = confirmStartDelivery;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DELIVERY DETAIL (modal)
-// ═══════════════════════════════════════════════════════════════════════════
-
-async function openDeliveryDetail(deliveryId) {
-  const delivery = allDeliveries.find(d => d.id === deliveryId);
-  if (!delivery) { showToast('Delivery not found.', true); return; }
-  const loan = allLoans.find(l => l.id === delivery.loan_id);
-  const investor = allInvestors.find(i => i.id === delivery.investor_id);
-  const commitment = delivery.commitment_id
-    ? allCommitments.find(c => c.id === delivery.commitment_id) : null;
-  const borrower = (loan?.borrowers || [])[0]?.borrower;
-  const borrowerName = borrower ? `${borrower.last_name}, ${borrower.first_name}` : 'Borrower';
-
-  // Pull the full ULDD XML if it exists (we don't load it in the bulk
-  // query because it can be 80KB per row).
-  let uldd = null;
-  if (delivery.uldd_generated_at) {
-    const { data } = await supa.from('loan_deliveries')
-      .select('uldd_xml').eq('id', deliveryId).maybeSingle();
-    uldd = data?.uldd_xml;
-  }
-
-  const validationErrors = delivery.uldd_validation_errors || [];
-  const fatalCount = validationErrors.filter(e => e.severity === 'fatal').length;
-  const warnCount = validationErrors.filter(e => e.severity === 'warning').length;
-
-  // Action buttons depend on status
-  let actions = [];
-  if (delivery.status === 'draft') {
-    actions.push(`<button class="btn primary" onclick="generateUlddForDelivery('${escapeHtml(deliveryId)}')">Generate ULDD</button>`);
-    actions.push(`<button class="btn" onclick="cancelDelivery('${escapeHtml(deliveryId)}')" style="color:var(--red);border-color:rgba(255,68,68,0.4)">Cancel delivery</button>`);
-  } else if (delivery.status === 'validated') {
-    actions.push(`<button class="btn primary" onclick="transmitDelivery('${escapeHtml(deliveryId)}')" ${fatalCount > 0 ? 'disabled title="Fix fatal errors first"' : ''}>Transmit to investor</button>`);
-    actions.push(`<button class="btn" onclick="generateUlddForDelivery('${escapeHtml(deliveryId)}')">Regenerate ULDD</button>`);
-    actions.push(`<button class="btn" onclick="cancelDelivery('${escapeHtml(deliveryId)}')" style="color:var(--red);border-color:rgba(255,68,68,0.4)">Cancel delivery</button>`);
-  } else if (['transmitted', 'pending'].includes(delivery.status)) {
-    actions.push(`<button class="btn primary" onclick="markAccepted('${escapeHtml(deliveryId)}')">Mark accepted</button>`);
-    actions.push(`<button class="btn" onclick="markRejected('${escapeHtml(deliveryId)}')" style="color:var(--red);border-color:rgba(255,68,68,0.4)">Mark rejected</button>`);
-  } else if (delivery.status === 'accepted') {
-    actions.push(`<button class="btn primary" onclick="markFunded('${escapeHtml(deliveryId)}')">Mark funded</button>`);
-  } else if (delivery.status === 'rejected') {
-    actions.push(`<button class="btn" onclick="generateUlddForDelivery('${escapeHtml(deliveryId)}')">Regenerate ULDD &amp; resend</button>`);
-    actions.push(`<button class="btn" onclick="cancelDelivery('${escapeHtml(deliveryId)}')" style="color:var(--red);border-color:rgba(255,68,68,0.4)">Cancel delivery</button>`);
-  }
-
-  openModal({
-    wide: true,
-    title: `Delivery · ${loan?.loan_number || deliveryId.slice(0, 8)}`,
-    body: `
-      <div class="detail-section">
-        <div class="detail-section-head">Loan &amp; investor</div>
-        <div class="detail-section-body">
-          <div class="kv-mini">
-            <div class="kv-mini-cell"><div class="kv-mini-label">Borrower</div><div class="kv-mini-value">${escapeHtml(borrowerName)}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Loan #</div><div class="kv-mini-value">${escapeHtml(loan?.loan_number || '—')}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Amount</div><div class="kv-mini-value">${$money(delivery.delivery_amount_cents)}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Rate / Term</div><div class="kv-mini-value">${$rate(loan?.rate_bps)} · ${$term(loan?.term_months)}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Investor</div><div class="kv-mini-value">${escapeHtml(investor?.name || '—')}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Commitment</div><div class="kv-mini-value">${escapeHtml(commitment?.commitment_number || 'spot delivery')}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Servicing</div><div class="kv-mini-value">${delivery.servicing_retained ? 'Retained' : 'Released'}</div></div>
-            <div class="kv-mini-cell"><div class="kv-mini-label">Status</div><div class="kv-mini-value"><span class="delivery-status ${escapeHtml(delivery.status)}" style="display:inline-block">${escapeHtml(delivery.status.toUpperCase())}</span></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <div class="detail-section-head">ULDD validation
-          ${validationErrors.length > 0 ? `<span style="float:right;color:${fatalCount > 0 ? 'var(--red)' : 'var(--amber)'}">${fatalCount} fatal · ${warnCount} warning</span>` : ''}
-        </div>
-        <div class="detail-section-body">
-          ${!delivery.uldd_generated_at ? `
-            <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-align:center;padding:1rem;">
-              No ULDD generated yet. Click "Generate ULDD" below.
-            </div>
-          ` : validationErrors.length === 0 ? `
-            <div style="font-family:var(--mono);font-size:0.75rem;color:var(--accent2);">
-              ✓ All edits passed.
-            </div>
-          ` : validationErrors.map(e => `
-            <div class="validation-row">
-              <span class="validation-sev ${escapeHtml(e.severity)}">${escapeHtml(e.severity)}</span>
-              <span class="validation-msg">${escapeHtml(e.message)}<small>${escapeHtml(e.code)} · ${escapeHtml(e.xpath || '')}</small></span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      ${uldd ? `
-        <div class="detail-section">
-          <div class="detail-section-head">ULDD XML preview · ${(uldd.length / 1024).toFixed(1)}KB</div>
-          <div class="detail-section-body" style="padding:0">
-            <div class="uldd-display">${escapeHtml(uldd.slice(0, 4000))}${uldd.length > 4000 ? '\n... [' + (uldd.length - 4000) + ' more bytes truncated for preview]' : ''}</div>
-          </div>
-        </div>
-      ` : ''}
-
-      ${delivery.rejection_reason ? `
-        <div class="detail-section">
-          <div class="detail-section-head" style="color:var(--red)">Rejection reason</div>
-          <div class="detail-section-body">${escapeHtml(delivery.rejection_reason)}</div>
-        </div>
-      ` : ''}
-    `,
-    foot: `
-      <button class="btn" onclick="closeModal()">Close</button>
-      ${actions.join(' ')}
-    `,
-  });
-}
-window.openDeliveryDetail = openDeliveryDetail;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// DELIVERY ACTIONS
-// ═══════════════════════════════════════════════════════════════════════════
-
-async function generateUlddForDelivery(deliveryId) {
-  const delivery = allDeliveries.find(d => d.id === deliveryId);
-  if (!delivery) return;
-  const loan = allLoans.find(l => l.id === delivery.loan_id);
-  const investor = allInvestors.find(i => i.id === delivery.investor_id);
-  const commitment = delivery.commitment_id
-    ? allCommitments.find(c => c.id === delivery.commitment_id) : null;
-
-  showToast('Generating ULDD…');
-  try {
-    if (typeof window.OFUldd === 'undefined') {
-      throw new Error('OFUldd not loaded — check /js/uldd-generator.js script tag');
-    }
-
-    // Pull additional context: most recent credit pull, AUS run, closing
-    // record. The ULDD generator needs these to produce a complete file.
-    const [pullsR, ausR, closingsR, branchR] = await Promise.allSettled([
-      supa.from('credit_pulls').select('rep_score, pulled_at')
-        .eq('loan_id', delivery.loan_id).eq('status', 'completed')
-        .order('pulled_at', { ascending: false }).limit(1).maybeSingle(),
-      supa.from('aus_runs').select('engine, casefile_id, outcome, decision_score, created_at')
-        .eq('loan_id', delivery.loan_id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
-      supa.from('closings').select('signed_at, scheduled_at, disbursed_at, funding_date, title_company_name, status')
-        .eq('loan_id', delivery.loan_id).is('archived_at', null)
-        .not('status', 'in', '(cancelled,rescheduled)').limit(1).maybeSingle(),
-      supa.from('branches').select('name, nmls_id').eq('id', loan.branch_id || me.branch_id).maybeSingle(),
-    ]);
-
-    const repScore = pullsR.status === 'fulfilled' ? pullsR.value.data?.rep_score : null;
-    const aus = ausR.status === 'fulfilled' && ausR.value.data ? {
-      engine: ausR.value.data.engine,
-      casefile_id: ausR.value.data.casefile_id,
-      decision: ausR.value.data.outcome,
-    } : null;
-    const closing = closingsR.status === 'fulfilled' ? closingsR.value.data : null;
-    const branchInfo = branchR.status === 'fulfilled' ? branchR.value.data : null;
-
-    const data = {
-      loan_number: loan.loan_number,
-      loan_amount_cents: loan.loan_amount_cents,
-      rate_bps: loan.rate_bps,
-      term_months: loan.term_months,
-      program: loan.program,
-      purpose: loan.purpose,
-      occupancy: loan.occupancy,
-      property_type: loan.property_type,
-      ltv_pct: loan.ltv_pct,
-      cltv_pct: loan.cltv_pct,
-      dti_back_pct: loan.dti_back_pct,
-      property_address: loan.property_address,
-      appraised_value_cents: loan.appraised_value_cents,
-      purchase_price_cents: loan.purchase_price_cents,
-      rep_score: repScore,
-      borrowers: (loan.borrowers || [])
-        .sort((a, b) => (a.position || 0) - (b.position || 0))
-        .map(lb => lb.borrower)
-        .filter(Boolean),
-      branch: branchInfo,
-      lo: { full_name: 'Loan Officer' },  // not joining profiles for simplicity
-      investor,
-      commitment: commitment ? {
-        commitment_number: commitment.commitment_number,
-        coupon_rate_bps: commitment.coupon_rate_bps,
-        price_pct: commitment.price_pct,
-      } : null,
-      delivery: {
-        delivery_amount_cents: delivery.delivery_amount_cents,
-        servicing_retained: delivery.servicing_retained,
-      },
-      aus,
-      closing,
-      has_escrow: true,
-    };
-
-    const result = window.OFUldd.generateUldd(data);
-
-    const fatalCount = result.validation.filter(e => e.severity === 'fatal').length;
-    const newStatus = fatalCount > 0 ? 'draft' : 'validated';
-
-    const { error } = await supa.from('loan_deliveries').update({
-      uldd_xml: result.xml,
-      uldd_generated_at: new Date().toISOString(),
-      uldd_validation_errors: result.validation,
-      status: newStatus,
-    }).eq('id', deliveryId);
-    if (error) throw error;
-
-    showToast(`ULDD generated · ${(result.length_bytes / 1024).toFixed(1)}KB · ${result.validation.length} edit${result.validation.length === 1 ? '' : 's'}`);
-    await loadAll();
-    renderAll();
-    openDeliveryDetail(deliveryId);
-  } catch (err) {
-    console.error(err);
-    showToast('ULDD generation failed: ' + err.message, true);
-  }
-}
-window.generateUlddForDelivery = generateUlddForDelivery;
-
-async function transmitDelivery(deliveryId) {
-  // MOCK — when the deliver-loan edge function is wired, replace this
-  // with: await supa.functions.invoke('deliver-loan', { body: { delivery_id } })
-  if (!confirm('Transmit ULDD to investor? (This is a mock — no real transmission until edge function ships.)')) return;
-  try {
-    const { error } = await supa.from('loan_deliveries').update({
-      status: 'transmitted',
-      transmitted_at: new Date().toISOString(),
-      transmission_method: 'manual',
-    }).eq('id', deliveryId);
-    if (error) throw error;
-    showToast('Transmitted (mock).');
-    await loadAll();
-    renderAll();
-    closeModal();
-  } catch (err) { showToast('Failed: ' + err.message, true); }
-}
-window.transmitDelivery = transmitDelivery;
-
-async function markAccepted(deliveryId) {
-  try {
-    const { error } = await supa.from('loan_deliveries').update({
-      status: 'accepted',
-    }).eq('id', deliveryId);
-    if (error) throw error;
-    showToast('Marked accepted.');
-    await loadAll();
-    renderAll();
-    openDeliveryDetail(deliveryId);
-  } catch (err) { showToast('Failed: ' + err.message, true); }
-}
-window.markAccepted = markAccepted;
-
-async function markRejected(deliveryId) {
-  const reason = prompt('Rejection reason (from investor):');
-  if (reason === null) return;
-  try {
-    const { error } = await supa.from('loan_deliveries').update({
-      status: 'rejected',
-      rejection_reason: reason || null,
-    }).eq('id', deliveryId);
-    if (error) throw error;
-    showToast('Marked rejected.');
-    await loadAll();
-    renderAll();
-    openDeliveryDetail(deliveryId);
-  } catch (err) { showToast('Failed: ' + err.message, true); }
-}
-window.markRejected = markRejected;
-
-async function markFunded(deliveryId) {
-  const delivery = allDeliveries.find(d => d.id === deliveryId);
-  if (!confirm(`Confirm investor funding of ${$money(delivery.delivery_amount_cents)}?\n\nThis will mark the loan as sold and update commitment fill amounts via trigger.`)) return;
-  try {
-    const { error } = await supa.from('loan_deliveries').update({
-      status: 'funded',
-      investor_funded_at: new Date().toISOString(),
-      investor_funded_amount_cents: delivery.delivery_amount_cents,
-    }).eq('id', deliveryId);
-    if (error) throw error;
-    showToast('Funded. Loan marked as sold.');
-    await loadAll();
-    renderAll();
-    closeModal();
-    activateTab('completed');
-  } catch (err) { showToast('Failed: ' + err.message, true); }
-}
-window.markFunded = markFunded;
-
-async function cancelDelivery(deliveryId) {
-  if (!confirm('Cancel this delivery? The loan will become eligible to deliver to a different investor.')) return;
-  try {
-    const { error } = await supa.from('loan_deliveries').update({
-      status: 'cancelled',
-    }).eq('id', deliveryId);
-    if (error) throw error;
-    showToast('Cancelled.');
-    await loadAll();
-    renderAll();
-    closeModal();
-  } catch (err) { showToast('Failed: ' + err.message, true); }
-}
-window.cancelDelivery = cancelDelivery;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// NEW INVESTOR (modal)
-// ═══════════════════════════════════════════════════════════════════════════
-
-function promptNewInvestor() {
-  openModal({
-    title: 'New investor',
-    body: `
-      <div class="field-block">
-        <label class="field-label">Name</label>
-        <input type="text" class="field-input" id="ni-name" placeholder="Fannie Mae" />
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Type</label>
-          <select class="field-select" id="ni-type">
-            <option value="gse_fannie">Fannie Mae</option>
-            <option value="gse_freddie">Freddie Mac</option>
-            <option value="ginnie_mae">Ginnie Mae (FHA/VA)</option>
-            <option value="aggregator">Aggregator</option>
-            <option value="private">Private investor</option>
-            <option value="whole_loan">Whole loan buyer</option>
-            <option value="warehouse">Warehouse line</option>
-          </select>
-        </div>
-        <div class="field-block">
-          <label class="field-label">Delivery method</label>
-          <select class="field-select" id="ni-method">
-            <option value="manual">Manual (portal upload)</option>
-            <option value="uldd_plus">ULDD Plus (Fannie)</option>
-            <option value="lsa">Loan Selling Advisor (Freddie)</option>
-            <option value="sftp">SFTP</option>
-            <option value="api">API</option>
-          </select>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">ULDD seller ID</label>
-          <input type="text" class="field-input" id="ni-seller" placeholder="12345" />
-        </div>
-        <div class="field-block">
-          <label class="field-label">ULDD servicer ID</label>
-          <input type="text" class="field-input" id="ni-servicer" placeholder="67890" />
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Contact name</label>
-          <input type="text" class="field-input" id="ni-contact-name" />
-        </div>
-        <div class="field-block">
-          <label class="field-label">Contact email</label>
-          <input type="email" class="field-input" id="ni-contact-email" />
-        </div>
-      </div>
-    `,
-    foot: `
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="confirmNewInvestor()">Create investor</button>
-    `,
-  });
-}
-window.promptNewInvestor = promptNewInvestor;
-
-async function confirmNewInvestor() {
-  const name = $('#ni-name').value.trim();
-  if (!name) { showToast('Name required.', true); return; }
-
-  try {
-    const { data: { session } } = await supa.auth.getSession();
-    const { error } = await supa.from('investors').insert({
-      branch_id: me.branch_id,
-      name,
-      investor_type: $('#ni-type').value,
-      delivery_method: $('#ni-method').value,
-      uldd_seller_id: $('#ni-seller').value || null,
-      uldd_servicer_id: $('#ni-servicer').value || null,
-      delivery_contact_name: $('#ni-contact-name').value || null,
-      delivery_contact_email: $('#ni-contact-email').value || null,
-      created_by: session?.user?.id || null,
-    });
-    if (error) throw error;
-    closeModal();
-    showToast('Investor added.');
-    await loadAll();
-    renderAll();
-  } catch (err) { showToast('Failed: ' + err.message, true); }
-}
-window.confirmNewInvestor = confirmNewInvestor;
-
-// ═══════════════════════════════════════════════════════════════════════════
-// NEW COMMITMENT (modal)
-// ═══════════════════════════════════════════════════════════════════════════
-
-function promptNewCommitment() {
-  if (allInvestors.filter(i => i.active).length === 0) {
-    openModal({
-      title: 'No investors',
-      body: '<p>Add an investor first, then create a commitment with them.</p>',
-    });
+  const tbody = $('#dlv-tbody');
+  if (shown.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="table-empty">No deliveries match these filters.</td></tr>`;
     return;
   }
-  const today = new Date().toISOString().slice(0, 10);
-  const next30 = new Date(); next30.setDate(next30.getDate() + 30);
-  const next30Str = next30.toISOString().slice(0, 10);
 
-  openModal({
-    title: 'New commitment',
-    body: `
-      <div class="field-block">
-        <label class="field-label">Investor</label>
-        <select class="field-select" id="nc-investor">
-          ${allInvestors.filter(i => i.active).map(i =>
-            `<option value="${escapeHtml(i.id)}">${escapeHtml(i.name)}</option>`
-          ).join('')}
-        </select>
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Commitment #</label>
-          <input type="text" class="field-input" id="nc-number" placeholder="C-2026-001" />
-        </div>
-        <div class="field-block">
-          <label class="field-label">Type</label>
-          <select class="field-select" id="nc-type">
-            <option value="best_efforts" selected>Best efforts</option>
-            <option value="mandatory">Mandatory</option>
-            <option value="bulk">Bulk</option>
-            <option value="flow">Flow</option>
-          </select>
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Min note rate %</label>
-          <input type="number" step="0.001" class="field-input" id="nc-min-rate" placeholder="6.500" />
-        </div>
-        <div class="field-block">
-          <label class="field-label">Max note rate %</label>
-          <input type="number" step="0.001" class="field-input" id="nc-max-rate" placeholder="7.500" />
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Coupon rate %</label>
-          <input type="number" step="0.001" class="field-input" id="nc-coupon" placeholder="6.500" />
-        </div>
-        <div class="field-block">
-          <label class="field-label">Price %</label>
-          <input type="number" step="0.001" class="field-input" id="nc-price" placeholder="102.345" />
-        </div>
-      </div>
-      <div class="field-row">
-        <div class="field-block">
-          <label class="field-label">Effective date</label>
-          <input type="date" class="field-input" id="nc-effective" value="${today}" />
-        </div>
-        <div class="field-block">
-          <label class="field-label">Expiration date</label>
-          <input type="date" class="field-input" id="nc-expiration" value="${next30Str}" />
-        </div>
-      </div>
-      <div class="field-block">
-        <label class="field-label">Par amount ($)</label>
-        <input type="number" step="1000" class="field-input" id="nc-par" placeholder="5000000" />
-      </div>
-    `,
-    foot: `
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn primary" onclick="confirmNewCommitment()">Create commitment</button>
-    `,
+  tbody.innerHTML = shown.map(r => rowHtml(r)).join('');
+}
+
+function investorPill(investor) {
+  if (!investor) return `<span class="pill muted">— Not set —</span>`;
+  const label = INVESTOR_LABELS[investor] || investor;
+  return `<span class="pill ${investor}">${escapeHtml(label)}</span>`;
+}
+
+function subStatusPill(status, submittedAt, findingCount) {
+  const cls =
+    status === 'not_required' ? 'notreq' :
+    status === 'pending'      ? 'pending' :
+    status === 'submitted'    ? 'submitted' :
+    status === 'accepted'     ? 'accepted' :
+    status === 'rejected'     ? 'rejected' :
+    status === 'error'        ? 'error' : 'pending';
+  const label = SUB_STATUS_LABELS[status] || status || 'Pending';
+  const sub = submittedAt ? `<span class="pill-sub">${timeAgo(submittedAt)}${findingCount ? ' · ' + findingCount + ' findings' : ''}</span>` : '';
+  return `<span class="pill ${cls}">${escapeHtml(label)}</span>${sub}`;
+}
+
+function mismoPill(d) {
+  if (!d || !d.mismo_built_at) {
+    return `<span class="pill notbuilt">Not built</span>`;
+  }
+  const sizeKb = d.mismo_export_size_bytes ? Math.round(d.mismo_export_size_bytes / 1024) + ' KB' : '';
+  const sub = `<span class="pill-sub">${timeAgo(d.mismo_built_at)}${sizeKb ? ' · ' + sizeKb : ''}</span>`;
+  return `<span class="pill built">v${escapeHtml(d.mismo_version || '3.4')}</span>${sub}`;
+}
+
+function wirePill(d) {
+  if (!d || !d.wire_received_at) return `<span class="pill muted">—</span>`;
+  const amt = money(d.wire_amount_cents);
+  const sub = `<span class="pill-sub">${timeAgo(d.wire_received_at)}${d.srp_bps != null ? ' · SRP ' + d.srp_bps + 'bps' : ''}</span>`;
+  return `<span class="cell-wire"><span class="amt">${escapeHtml(amt)}</span>${sub}</span>`;
+}
+
+function rowHtml(r) {
+  const loan = r.loan;
+  const d = r.delivery;
+  const borrower = (loan.borrowers || [])[0]?.borrower;
+  const name = borrower ? `${borrower.last_name}, ${borrower.first_name}` : 'Borrower TBD';
+  const program = (loan.program || '').toUpperCase().replace('_', ' ');
+  const loanAmt = money(loan.loan_amount_cents);
+  const lastAt = d?.updated_at || d?.created_at || loan.funded_at;
+
+  // Action button picks the most-actionable next step:
+  //   no delivery row yet  → "Start"   (opens detail modal to set investor)
+  //   delivery, no mismo   → "Build MISMO"
+  //   mismo built, ucdp pending → "Submit UCDP"
+  //   ucdp ok, ucd pending → "Submit UCD"
+  //   both submitted/accepted, not purchased → "Mark purchased"
+  //   purchased → "Details"
+  let primaryBtn;
+  if (!d) {
+    primaryBtn = `<button class="row-btn" onclick="openDetail('${escapeHtml(loan.id)}')">Start</button>`;
+  } else if (!d.mismo_built_at) {
+    primaryBtn = `<button class="row-btn" onclick="openMismo('${escapeHtml(loan.id)}')">Build MISMO</button>`;
+  } else if (d.ucdp_status !== 'not_required' && (d.ucdp_status === 'pending' || !d.ucdp_status)) {
+    primaryBtn = `<button class="row-btn" onclick="openUcdp('${escapeHtml(loan.id)}')">Submit UCDP</button>`;
+  } else if (d.ucd_status !== 'not_required' && (d.ucd_status === 'pending' || !d.ucd_status)) {
+    primaryBtn = `<button class="row-btn" onclick="openUcd('${escapeHtml(loan.id)}')">Submit UCD</button>`;
+  } else if (d.stage === 'accepted' || (d.stage !== 'purchased' && d.stage !== 'rejected')) {
+    primaryBtn = `<button class="row-btn" onclick="openPurchase('${escapeHtml(loan.id)}')">Mark purchased</button>`;
+  } else {
+    primaryBtn = `<button class="row-btn ghost" onclick="openDetail('${escapeHtml(loan.id)}')">Details</button>`;
+  }
+  const detailsBtn = d
+    ? `<button class="row-btn ghost" onclick="openDetail('${escapeHtml(loan.id)}')">Details</button>`
+    : '';
+
+  return `
+    <tr data-loan-id="${escapeHtml(loan.id)}">
+      <td class="cell-loan">
+        <div class="loan-num">${escapeHtml(loan.loan_number || '—')}</div>
+        <div class="loan-name">${escapeHtml(name)}</div>
+        <div class="loan-meta">${escapeHtml(loanAmt)} · ${escapeHtml(program || '—')}</div>
+      </td>
+      <td>${investorPill(d?.investor)}${d?.commitment_id ? `<span class="pill-sub">${escapeHtml(d.commitment_id)}</span>` : ''}</td>
+      <td>${subStatusPill(d?.ucdp_status, d?.ucdp_submitted_at, d?.ucdp_finding_count)}</td>
+      <td>${subStatusPill(d?.ucd_status, d?.ucd_submitted_at, d?.ucd_finding_count)}</td>
+      <td>${mismoPill(d)}</td>
+      <td>${wirePill(d)}</td>
+      <td class="cell-last">${lastAt ? timeAgo(lastAt) : '—'}</td>
+      <td class="cell-actions">${detailsBtn}${primaryBtn}</td>
+    </tr>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DELIVERY ROW LIFECYCLE
+// ═══════════════════════════════════════════════════════════════════════════
+// ensureDelivery() returns the existing active delivery row for a loan, or
+// inserts a fresh one (stage='pending') if none exists. Centralizing this
+// means every action path (build MISMO / submit UCDP / submit UCD / mark
+// purchased) starts from a guaranteed row without each path duplicating
+// the existence check.
+
+async function ensureDelivery(loanId) {
+  const existing = rows.find(r => r.loan.id === loanId)?.delivery;
+  if (existing) return existing;
+  const { data, error } = await supa
+    .from('loan_deliveries')
+    .insert({
+      loan_id: loanId,
+      branch_id: me.branch_id,
+      stage: 'pending',
+      created_by: me.id,
+    })
+    .select('*')
+    .single();
+  if (error) throw new Error('Could not create delivery row: ' + error.message);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETAIL MODAL — investor routing, notes, audit view
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function openDetail(loanId) {
+  const r = rows.find(x => x.loan.id === loanId);
+  if (!r) return;
+  activeRow = r;
+  const d = r.delivery;
+
+  const borrower = (r.loan.borrowers || [])[0]?.borrower;
+  const name = borrower ? `${borrower.first_name} ${borrower.last_name}` : 'Borrower TBD';
+  $('#detail-title').textContent = `${r.loan.loan_number || '—'} · ${name}`;
+  $('#detail-sub').textContent = 'DELIVERY DETAIL';
+
+  $('#detail-investor').value = d?.investor || '';
+  $('#detail-commitment').value = d?.commitment_id || '';
+  $('#detail-notes').value = d?.notes || '';
+
+  // State grid: snapshot of every status column. Read-only.
+  const cells = [
+    { label: 'Stage', value: STAGE_LABELS[d?.stage] || (d ? d.stage : 'Not started') },
+    { label: 'Created', value: d?.created_at ? new Date(d.created_at).toLocaleString() : '—' },
+    { label: 'UCDP status', value: SUB_STATUS_LABELS[d?.ucdp_status] || '—' },
+    { label: 'UCDP submitted', value: d?.ucdp_submitted_at ? new Date(d.ucdp_submitted_at).toLocaleString() : '—' },
+    { label: 'UCD status', value: SUB_STATUS_LABELS[d?.ucd_status] || '—' },
+    { label: 'UCD submitted', value: d?.ucd_submitted_at ? new Date(d.ucd_submitted_at).toLocaleString() : '—' },
+    { label: 'MISMO built', value: d?.mismo_built_at ? new Date(d.mismo_built_at).toLocaleString() : '—' },
+    { label: 'MISMO size', value: d?.mismo_export_size_bytes ? Math.round(d.mismo_export_size_bytes / 1024) + ' KB' : '—' },
+    { label: 'Wire received', value: d?.wire_received_at ? new Date(d.wire_received_at).toLocaleString() : '—' },
+    { label: 'Wire amount', value: money(d?.wire_amount_cents) },
+    { label: 'Sale price', value: money(d?.sale_price_cents) },
+    { label: 'SRP', value: d?.srp_bps != null ? d.srp_bps + ' bps' : '—' },
+  ];
+  $('#detail-grid').innerHTML = cells.map(c => `
+    <div class="detail-cell">
+      <div class="detail-label">${escapeHtml(c.label)}</div>
+      <div class="detail-value">${escapeHtml(c.value)}</div>
+    </div>
+  `).join('');
+
+  // Findings (verbatim from vendor jsonb). Compact rendering.
+  const fnd = [];
+  if (d?.ucdp_response) fnd.push(`<div style="margin-bottom:0.6rem;"><strong style="color:var(--accent);">UCDP response:</strong><pre style="white-space:pre-wrap;font-size:0.65rem;color:var(--text);margin-top:0.3rem;">${escapeHtml(JSON.stringify(d.ucdp_response, null, 2))}</pre></div>`);
+  if (d?.ucd_response)  fnd.push(`<div><strong style="color:var(--accent);">UCD response:</strong><pre style="white-space:pre-wrap;font-size:0.65rem;color:var(--text);margin-top:0.3rem;">${escapeHtml(JSON.stringify(d.ucd_response, null, 2))}</pre></div>`);
+  $('#detail-findings').innerHTML = fnd.length ? fnd.join('') : '<em>No vendor responses yet.</em>';
+
+  // Archive only enabled if a delivery row exists
+  $('#detail-archive').disabled = !d;
+  $('#detail-archive').style.opacity = d ? '1' : '0.4';
+  $('#detail-archive').style.pointerEvents = d ? 'auto' : 'none';
+
+  openModal('modal-detail');
+}
+window.openDetail = openDetail;
+
+function initModals() {
+  $('#detail-save').addEventListener('click', saveDetail);
+  $('#detail-archive').addEventListener('click', archiveDelivery);
+  $('#mismo-build').addEventListener('click', runBuildMismo);
+  $('#ucdp-submit').addEventListener('click', runSubmitUcdp);
+  $('#ucd-submit').addEventListener('click', runSubmitUcd);
+  $('#purchase-confirm').addEventListener('click', runMarkPurchased);
+
+  // Close on backdrop click
+  document.querySelectorAll('.modal-backdrop').forEach(el => {
+    el.addEventListener('click', (e) => { if (e.target === el) el.classList.remove('show'); });
   });
 }
-window.promptNewCommitment = promptNewCommitment;
 
-async function confirmNewCommitment() {
-  const number = $('#nc-number').value.trim();
-  const investorId = $('#nc-investor').value;
-  if (!number || !investorId) { showToast('Investor and commitment number required.', true); return; }
+async function saveDetail() {
+  if (!activeRow) return;
+  const investor = $('#detail-investor').value || null;
+  const commitment = $('#detail-commitment').value.trim() || null;
+  const notes = $('#detail-notes').value.trim() || null;
 
   try {
-    const minR = $('#nc-min-rate').value ? Math.round(parseFloat($('#nc-min-rate').value) * 100) : null;
-    const maxR = $('#nc-max-rate').value ? Math.round(parseFloat($('#nc-max-rate').value) * 100) : null;
-    const couponR = $('#nc-coupon').value ? Math.round(parseFloat($('#nc-coupon').value) * 100) : null;
-    const priceP = $('#nc-price').value ? parseFloat($('#nc-price').value) : null;
-    const par = $('#nc-par').value ? Math.round(parseFloat($('#nc-par').value) * 100) : null;
-
-    const { data: { session } } = await supa.auth.getSession();
-    const { error } = await supa.from('investor_commitments').insert({
-      branch_id: me.branch_id,
-      investor_id: investorId,
-      commitment_number: number,
-      commitment_type: $('#nc-type').value,
-      min_note_rate_bps: minR,
-      max_note_rate_bps: maxR,
-      coupon_rate_bps: couponR,
-      price_pct: priceP,
-      par_amount_cents: par,
-      effective_date: $('#nc-effective').value || null,
-      expiration_date: $('#nc-expiration').value || null,
-      status: 'active',
-      created_by: session?.user?.id || null,
-    });
-    if (error) throw error;
-    closeModal();
-    showToast('Commitment added.');
+    const existing = activeRow.delivery;
+    if (existing) {
+      const { error } = await supa.from('loan_deliveries').update({
+        investor, commitment_id: commitment, notes,
+      }).eq('id', existing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supa.from('loan_deliveries').insert({
+        loan_id: activeRow.loan.id,
+        branch_id: me.branch_id,
+        stage: 'pending',
+        investor, commitment_id: commitment, notes,
+        created_by: me.id,
+      });
+      if (error) throw error;
+    }
+    closeModal('modal-detail');
+    toast('Delivery saved');
     await loadAll();
-    renderAll();
-  } catch (err) { showToast('Failed: ' + err.message, true); }
+  } catch (err) {
+    toast('Save failed: ' + (err.message || err), 'error');
+  }
 }
-window.confirmNewCommitment = confirmNewCommitment;
+
+async function archiveDelivery() {
+  if (!activeRow?.delivery) return;
+  if (!confirm('Archive this delivery? A new delivery row can be created for re-routing to a different investor.')) return;
+  try {
+    const { error } = await supa.from('loan_deliveries')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', activeRow.delivery.id);
+    if (error) throw error;
+    closeModal('modal-detail');
+    toast('Delivery archived');
+    await loadAll();
+  } catch (err) {
+    toast('Archive failed: ' + (err.message || err), 'error');
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
-// BOOT
+// BUILD MISMO 3.4 — hook
 // ═══════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', bootstrap);
+
+async function openMismo(loanId) {
+  const r = rows.find(x => x.loan.id === loanId);
+  if (!r) return;
+  activeLoanIdForAction = loanId;
+  const borrower = (r.loan.borrowers || [])[0]?.borrower;
+  const name = borrower ? `${borrower.first_name} ${borrower.last_name}` : 'Borrower TBD';
+  $('#mismo-title').textContent = `${r.loan.loan_number || '—'} · ${name}`;
+  $('#mismo-loan').textContent = r.loan.loan_number || '—';
+  const d = r.delivery;
+  $('#mismo-current').textContent = d?.mismo_built_at
+    ? `v${d.mismo_version || '3.4'} built ${timeAgo(d.mismo_built_at)}`
+    : 'Not built yet';
+  openModal('modal-mismo');
+}
+window.openMismo = openMismo;
+
+async function runBuildMismo() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+  closeModal('modal-mismo');
+
+  if (typeof window.OF_buildMismoPackage !== 'function') {
+    toast('MISMO build hook not implemented yet (window.OF_buildMismoPackage). Edge function deploy is pending.', 'warn');
+    return;
+  }
+
+  toast('Building MISMO 3.4 package…');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const result = await window.OF_buildMismoPackage(loanId);
+    // Expected: { url, size_bytes, version }
+    const { error } = await supa.from('loan_deliveries').update({
+      mismo_built_at: new Date().toISOString(),
+      mismo_export_url: result?.url || null,
+      mismo_export_size_bytes: result?.size_bytes || null,
+      mismo_version: result?.version || '3.4',
+    }).eq('id', delivery.id);
+    if (error) throw error;
+    toast('MISMO 3.4 package built');
+    await loadAll();
+  } catch (err) {
+    toast('Build failed: ' + (err.message || err), 'error');
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
-// IMPLEMENTATION NOTES
+// SUBMIT UCDP — hook
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function openUcdp(loanId) {
+  const r = rows.find(x => x.loan.id === loanId);
+  if (!r) return;
+  activeLoanIdForAction = loanId;
+  const borrower = (r.loan.borrowers || [])[0]?.borrower;
+  const name = borrower ? `${borrower.first_name} ${borrower.last_name}` : 'Borrower TBD';
+  $('#ucdp-title').textContent = `${r.loan.loan_number || '—'} · ${name}`;
+  $('#ucdp-loan').textContent = r.loan.loan_number || '—';
+  const d = r.delivery;
+  $('#ucdp-current').textContent = d?.ucdp_status ? (SUB_STATUS_LABELS[d.ucdp_status] || d.ucdp_status) : 'Pending';
+  $('#ucdp-warn').style.display = (!d || !d.mismo_built_at) ? 'block' : 'none';
+  openModal('modal-ucdp');
+}
+window.openUcdp = openUcdp;
+
+async function runSubmitUcdp() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+  closeModal('modal-ucdp');
+
+  if (typeof window.OF_submitUcdp !== 'function') {
+    toast('UCDP submit hook not implemented yet (window.OF_submitUcdp). Edge function deploy is pending.', 'warn');
+    return;
+  }
+
+  toast('Submitting to UCDP…');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const result = await window.OF_submitUcdp(loanId);
+    // Expected: { doc_id, status, finding_count, response }
+    const status = result?.status || 'submitted';
+    const update = {
+      ucdp_status: status,
+      ucdp_submitted_at: new Date().toISOString(),
+      ucdp_doc_id: result?.doc_id || null,
+      ucdp_finding_count: Number(result?.finding_count) || 0,
+      ucdp_response: result?.response || null,
+    };
+    // If both UCDP and UCD are now in flight, roll the stage forward.
+    if (delivery.ucd_status === 'submitted' || delivery.ucd_status === 'accepted' || status === 'submitted') {
+      update.stage = 'in_flight';
+    }
+    const { error } = await supa.from('loan_deliveries').update(update).eq('id', delivery.id);
+    if (error) throw error;
+    toast(`UCDP submission ${status}${result?.finding_count ? ' · ' + result.finding_count + ' findings' : ''}`);
+    await loadAll();
+  } catch (err) {
+    toast('UCDP submit failed: ' + (err.message || err), 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBMIT UCD — hook
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function openUcd(loanId) {
+  const r = rows.find(x => x.loan.id === loanId);
+  if (!r) return;
+  activeLoanIdForAction = loanId;
+  const borrower = (r.loan.borrowers || [])[0]?.borrower;
+  const name = borrower ? `${borrower.first_name} ${borrower.last_name}` : 'Borrower TBD';
+  $('#ucd-title').textContent = `${r.loan.loan_number || '—'} · ${name}`;
+  $('#ucd-loan').textContent = r.loan.loan_number || '—';
+  const d = r.delivery;
+  $('#ucd-current').textContent = d?.ucd_status ? (SUB_STATUS_LABELS[d.ucd_status] || d.ucd_status) : 'Pending';
+  $('#ucd-warn').style.display = (!d || !d.mismo_built_at) ? 'block' : 'none';
+  openModal('modal-ucd');
+}
+window.openUcd = openUcd;
+
+async function runSubmitUcd() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+  closeModal('modal-ucd');
+
+  if (typeof window.OF_submitUcd !== 'function') {
+    toast('UCD submit hook not implemented yet (window.OF_submitUcd). Edge function deploy is pending.', 'warn');
+    return;
+  }
+
+  toast('Submitting to UCD…');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const result = await window.OF_submitUcd(loanId);
+    const status = result?.status || 'submitted';
+    const update = {
+      ucd_status: status,
+      ucd_submitted_at: new Date().toISOString(),
+      ucd_doc_id: result?.doc_id || null,
+      ucd_finding_count: Number(result?.finding_count) || 0,
+      ucd_response: result?.response || null,
+    };
+    // Roll stage: if both passed acceptance, mark 'accepted'. If either is
+    // in_flight, mark 'in_flight'. If either rejected, 'rejected'.
+    const newUcdp = delivery.ucdp_status;
+    const newUcd  = status;
+    if ((newUcdp === 'accepted' || newUcdp === 'not_required') &&
+        (newUcd === 'accepted' || newUcd === 'not_required')) {
+      update.stage = 'accepted';
+    } else if (newUcdp === 'rejected' || newUcd === 'rejected') {
+      update.stage = 'rejected';
+    } else {
+      update.stage = 'in_flight';
+    }
+    const { error } = await supa.from('loan_deliveries').update(update).eq('id', delivery.id);
+    if (error) throw error;
+    toast(`UCD submission ${status}${result?.finding_count ? ' · ' + result.finding_count + ' findings' : ''}`);
+    await loadAll();
+  } catch (err) {
+    toast('UCD submit failed: ' + (err.message || err), 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MARK PURCHASED — direct DB write
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function openPurchase(loanId) {
+  const r = rows.find(x => x.loan.id === loanId);
+  if (!r) return;
+  activeLoanIdForAction = loanId;
+  const borrower = (r.loan.borrowers || [])[0]?.borrower;
+  const name = borrower ? `${borrower.first_name} ${borrower.last_name}` : 'Borrower TBD';
+  $('#purchase-title').textContent = `${r.loan.loan_number || '—'} · ${name}`;
+  // Pre-fill wire amount with loan amount as a reasonable starting guess.
+  $('#purchase-amount').value = r.loan.loan_amount_cents ? (r.loan.loan_amount_cents / 100).toFixed(2) : '';
+  $('#purchase-ref').value = '';
+  $('#purchase-saleprice').value = '';
+  $('#purchase-srp').value = '';
+  openModal('modal-purchase');
+}
+window.openPurchase = openPurchase;
+
+async function runMarkPurchased() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+
+  const amount = parseFloat($('#purchase-amount').value);
+  if (!isFinite(amount) || amount <= 0) {
+    toast('Wire amount is required', 'error');
+    return;
+  }
+  const ref = $('#purchase-ref').value.trim() || null;
+  const salePrice = parseFloat($('#purchase-saleprice').value);
+  const srp = parseInt($('#purchase-srp').value, 10);
+
+  closeModal('modal-purchase');
+  toast('Recording purchase…');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const nowIso = new Date().toISOString();
+    const { error } = await supa.from('loan_deliveries').update({
+      stage: 'purchased',
+      wire_received_at: nowIso,
+      wire_amount_cents: Math.round(amount * 100),
+      wire_reference: ref,
+      purchase_confirmed_at: nowIso,
+      sale_price_cents: isFinite(salePrice) ? Math.round(salePrice * 100) : null,
+      srp_bps: isFinite(srp) ? srp : null,
+    }).eq('id', delivery.id);
+    if (error) throw error;
+    toast('Purchase recorded · loan delivered');
+    await loadAll();
+  } catch (err) {
+    toast('Purchase recording failed: ' + (err.message || err), 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME
+// ═══════════════════════════════════════════════════════════════════════════
+// Subscribe to loan_deliveries changes on this branch. Debounce-refresh
+// the table on any event. Same pattern as branch-library — aggregate-heavy
+// page, full reload is cheap, surgical patches not worth the complexity.
+
+let _refreshTimer = null;
+function _scheduleRefresh() {
+  clearTimeout(_refreshTimer);
+  _refreshTimer = setTimeout(loadAll, 400);
+}
+
+function initRealtime() {
+  supa.channel(`delivery:${me.branch_id}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'loan_deliveries', filter: `branch_id=eq.${me.branch_id}` },
+      _scheduleRefresh)
+    .subscribe();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HOOK CONTRACTS (for the future edge-function buildout)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// 1. ACCESS FROM OTHER PAGES
-//    Direct link: /investor-delivery.html
-//    Deep link to a loan: /investor-delivery.html?loan_id=<uuid>
-//    The deep link auto-opens the "Start delivery" modal pre-scoped to
-//    that loan if it's deliverable, or switches to the appropriate tab
-//    showing the loan's existing delivery if not.
+// All three hooks below are stubs today. The page falls through to a
+// "Coming soon" warn toast if a hook is missing. The contracts are:
 //
-//    To add a nav link to other pages (loan.html, dashboard.html, etc.),
-//    add this <li> to their <ul class="nav-center">:
-//      <li><a href="/investor-delivery.html">Delivery</a></li>
+// window.OF_buildMismoPackage = async function (loanId) {
+//   // 1. Read loan + borrower + property + closing data
+//   // 2. Render MISMO 3.4 XML (use a library like @actualbudget/mismo or
+//   //    hand-roll the schema; Fannie publishes the XSDs)
+//   // 3. Upload to Supabase Storage at:
+//   //    branch/{branchId}/deliveries/{loanId}/mismo-{version}-{timestamp}.xml
+//   // 4. Return: { url: signedUrl, size_bytes, version: '3.4' }
+//   // Edge function name: build-mismo-package
+//   // Required env: none beyond Supabase service-role
+// };
 //
-//    To add a "Deliver this loan" CTA on the loan.html overview tab,
-//    add a button calling: window.location.href =
-//      '/investor-delivery.html?loan_id=' + loan.id
+// window.OF_submitUcdp = async function (loanId) {
+//   // 1. Fetch the most recent MISMO export from storage (signed URL on
+//   //    loan_deliveries.mismo_export_url)
+//   // 2. POST to the GSE UCDP endpoint (vendor-specific — Fannie/Freddie
+//   //    have their own UCDP wrappers; Black Knight, ICE Mortgage
+//   //    Technology, and others act as middleware)
+//   // 3. Parse response: doc id, status ('accepted'|'rejected'|'submitted'),
+//   //    finding count, full response jsonb
+//   // 4. Return: { doc_id, status, finding_count, response }
+//   // Edge function name: submit-ucdp
+//   // Required env: UCDP_VENDOR_API_KEY (or per-GSE keys)
+// };
 //
-// 2. TRANSMISSION IS MOCKED
-//    The "Transmit to investor" button updates loan_deliveries.status to
-//    'transmitted' and stamps transmitted_at — but it doesn't actually
-//    talk to Fannie's Loan Delivery API or Freddie's Loan Selling Advisor.
-//    A future deliver-loan edge function (paralleling run-aus / pull-credit)
-//    will replace the mock. Until then, ops can manually upload the ULDD
-//    XML to the investor portal and click "Mark accepted" / "Mark
-//    rejected" / "Mark funded" as the investor responds.
+// window.OF_submitUcd = async function (loanId) {
+//   // Same shape as OF_submitUcdp but for the Uniform Closing Dataset.
+//   // Edge function name: submit-ucd
+//   // Required env: UCD_VENDOR_API_KEY
+// };
 //
-// 3. ULDD GENERATION IS CLIENT-SIDE
-//    The browser calls OFUldd.generateUldd() with all the loan data and
-//    saves the resulting XML to loan_deliveries.uldd_xml. No edge function
-//    needed for this step — the generator is pure JS, Supabase RLS
-//    handles the persistence. This keeps the Supabase function quota
-//    free for things that need server context (transmission auth, etc.).
-//
-// 4. NO REALTIME (YET)
-//    The page doesn't subscribe to postgres_changes on loan_deliveries.
-//    For capital markets workflows the action is sequential — one user
-//    progresses a delivery through its lifecycle — so realtime adds less
-//    value than for the loan editor. Adding it later is straightforward
-//    (~10 lines) if a multi-user use case emerges.
-//
-// 5. INVESTORS / COMMITMENTS ARE READ-ONLY-ISH
-//    The "Investors & Commitments" tab supports CREATE but not edit or
-//    delete. For v1 this matches reality: investor relationships rarely
-//    change, and a wrong commitment can be cancelled (status='cancelled')
-//    via direct SQL. Future work: add edit forms with proper validation
-//    (don't let par_amount go below filled_amount, etc.).
+// Until those edge functions exist, the modals display info-boxes that
+// describe what each action will do, and the action falls through with a
+// warn toast. Davis can wire them in any order — the schema and the page
+// already support the full lifecycle.
 // ═══════════════════════════════════════════════════════════════════════════
 </script>
 
