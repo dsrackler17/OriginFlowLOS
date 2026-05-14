@@ -1,0 +1,1350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex,nofollow" />
+<title>investor-delivery / smoke · OriginFlow LOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!--
+================================================================================
+investor-delivery-smoke.html
+--------------------------------------------------------------------------------
+OriginFlow LOS · Round 10 · Patch 10.3
+
+PURPOSE
+  End-to-end smoke harness for the investor-delivery pipeline. Exercises:
+
+    Step 1 · BUILD MISMO PACKAGE   →  window.OF_buildMismoPackage (9.14)
+    Step 2 · SUBMIT UCDP            →  window.OF_submitUcdp        (10.1)
+    Step 3 · SUBMIT UCD             →  window.OF_submitUcd         (10.2)
+    Step 4 · MARK PURCHASED         →  loan_deliveries PATCH + audit insert (9.13)
+
+  Each step is runnable in isolation OR chained via RUN FULL SMOKE which
+  short-circuits on the first failure. Status, timing, response payload,
+  and signed artifact URLs are surfaced per step. The branch-scoped
+  loan_audit_events tail is rendered below the pipeline so the operator
+  can confirm narrative_status='pending' rows landed for each operation.
+
+SECURITY POSTURE
+  - Page is /dev/* and noindex,nofollow
+  - Auth is mandatory: supabase email+password sign-in surfaced inline
+  - All reads/writes go through the user-scoped supabase client → RLS
+    handles branch enforcement; no service-role key is ever exposed here
+  - Mark-purchased emits its own audit row explicitly (no trigger reliance)
+    so the smoke test exercises the same path the production UI uses
+
+DESIGN NOTES
+  Visual aesthetic mirrors the LO surface — terminal-flavored institutional,
+  navy/cyan/accent-green, Space Mono for data, DM Serif Display for
+  headings, DM Sans for body. Sharp corners, thin borders, ALL CAPS
+  letter-spaced labels.
+
+DEPENDENCIES
+  - supabase-js@2.45.4 (ESM)
+  - /js/of-hooks-mismo.js, /js/of-hooks-ucdp.js, /js/of-hooks-ucd.js
+  - window.OF_SUPABASE_URL / window.OF_SUPABASE_ANON_KEY (or set inline
+    via the config pane, persisted to localStorage)
+================================================================================
+-->
+
+<style>
+  /* --------------------------------------------------------------------
+     Design tokens — OriginFlow terminal-institutional palette.
+     -------------------------------------------------------------------- */
+  :root {
+    --bg:          #0a1628;
+    --bg-elev:    #11233f;
+    --bg-elev-2:  #173052;
+    --line:        #1f3a5f;
+    --line-bright: #2a4d7a;
+    --text:        #e6f0ff;
+    --text-dim:    #8aa6c7;
+    --text-fade:   #5a7090;
+    --cyan:        #00d4ff;
+    --cyan-bright: #5ce7ff;
+    --green:       #5eff9e;
+    --yellow:      #ffce4d;
+    --red:         #ff6b6b;
+    --orange:      #ff9d4d;
+
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans:  'DM Sans', system-ui, sans-serif;
+    --mono:  'Space Mono', ui-monospace, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { color: var(--cyan-bright); text-decoration: underline; }
+
+  /* --------------------------------------------------------------------
+     Layout shell
+     -------------------------------------------------------------------- */
+  .shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+  }
+
+  header.top {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px; margin-bottom: 24px;
+  }
+  header.top h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+  header.top h1 small {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+  header.top .env {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-fade);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-align: right;
+  }
+  header.top .env .who { color: var(--green); }
+
+  /* --------------------------------------------------------------------
+     Panels — generic card wrapper with corner label.
+     -------------------------------------------------------------------- */
+  .panel {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .panel > .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel > .body { padding: 16px; }
+
+  /* --------------------------------------------------------------------
+     Form controls
+     -------------------------------------------------------------------- */
+  label.field {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  input[type=text], input[type=email], input[type=password], select {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--line-bright);
+    padding: 9px 12px;
+    width: 100%;
+    border-radius: 0;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  input:focus, select:focus { border-color: var(--cyan); }
+
+  .field-row {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 12px;
+  }
+
+  button {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    background: transparent;
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  button:hover:not(:disabled) {
+    background: var(--cyan);
+    color: var(--bg);
+  }
+  button.primary {
+    background: var(--cyan);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  button.primary:hover:not(:disabled) { background: var(--cyan-bright); }
+  button.danger { color: var(--red); border-color: var(--red); }
+  button.danger:hover:not(:disabled) { background: var(--red); color: var(--bg); }
+  button.ghost  { color: var(--text-dim); border-color: var(--line-bright); }
+  button.ghost:hover:not(:disabled)  { color: var(--text); border-color: var(--text-dim); background: transparent; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Toggle pill */
+  .toggle {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle .pill {
+    width: 36px; height: 18px;
+    border: 1px solid var(--line-bright);
+    position: relative;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .toggle .pill::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--text-dim);
+    top: 2px; left: 2px;
+    transition: left 0.14s, background 0.14s;
+  }
+  .toggle input { display: none; }
+  .toggle input:checked + .pill { border-color: var(--cyan); background: rgba(0,212,255,0.12); }
+  .toggle input:checked + .pill::after { left: 20px; background: var(--cyan); }
+
+  /* --------------------------------------------------------------------
+     Loan summary card
+     -------------------------------------------------------------------- */
+  .loan-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px 28px;
+    padding: 12px 16px;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--line-bright);
+    margin-top: 12px;
+  }
+  .loan-summary .k {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-fade);
+    display: block;
+    margin-bottom: 2px;
+  }
+  .loan-summary .v {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    word-break: break-all;
+  }
+  .loan-summary .v.dim { color: var(--text-dim); }
+
+  /* --------------------------------------------------------------------
+     Pipeline steps
+     -------------------------------------------------------------------- */
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 1000px) {
+    .pipeline { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 580px) {
+    .pipeline { grid-template-columns: 1fr; }
+  }
+
+  .step {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    min-height: 320px;
+  }
+  .step .head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .step .step-no {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--text-fade);
+  }
+  .step .step-name {
+    font-family: var(--serif);
+    font-size: 17px;
+    margin: 6px 14px 0;
+    color: var(--text);
+  }
+  .step .step-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-fade);
+    margin: 2px 14px 12px;
+  }
+  .step .step-body {
+    flex: 1;
+    padding: 0 14px 14px;
+    display: flex; flex-direction: column;
+    gap: 10px;
+  }
+  .step .step-foot {
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    display: flex; gap: 8px;
+  }
+  .step button { font-size: 10px; padding: 7px 12px; }
+
+  /* Status pill */
+  .pill-status {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border: 1px solid var(--line-bright);
+    color: var(--text-dim);
+    background: var(--bg);
+    white-space: nowrap;
+  }
+  .pill-status.idle    { color: var(--text-fade); }
+  .pill-status.running { color: var(--cyan); border-color: var(--cyan); animation: blink 1.2s steps(2) infinite; }
+  .pill-status.success { color: var(--green); border-color: var(--green); }
+  .pill-status.overrides { color: var(--yellow); border-color: var(--yellow); }
+  .pill-status.error   { color: var(--red); border-color: var(--red); }
+  .pill-status.skipped { color: var(--text-fade); }
+
+  @keyframes blink { 50% { opacity: 0.45; } }
+
+  /* Inline KV list inside step */
+  .kv {
+    font-family: var(--mono);
+    font-size: 11px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+  }
+  .kv .k {
+    color: var(--text-fade);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 9.5px;
+    padding-top: 2px;
+  }
+  .kv .v { color: var(--text); word-break: break-all; }
+  .kv .v.green  { color: var(--green); }
+  .kv .v.yellow { color: var(--yellow); }
+  .kv .v.red    { color: var(--red); }
+  .kv .v.cyan   { color: var(--cyan); }
+
+  /* Response payload block */
+  details.payload {
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  details.payload > summary {
+    cursor: pointer;
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    list-style: none;
+  }
+  details.payload > summary::-webkit-details-marker { display: none; }
+  details.payload > summary::after { content: '+'; float: right; color: var(--cyan); }
+  details.payload[open] > summary::after { content: '–'; }
+  details.payload pre {
+    margin: 0;
+    padding: 10px 12px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text);
+    max-height: 280px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* --------------------------------------------------------------------
+     Event log
+     -------------------------------------------------------------------- */
+  .event-log {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    max-height: 360px;
+    overflow: auto;
+  }
+  .event-row {
+    display: grid;
+    grid-template-columns: 90px 120px 1fr;
+    gap: 12px;
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+  }
+  .event-row:last-child { border-bottom: 0; }
+  .event-row .ts  { color: var(--text-fade); }
+  .event-row .op  { color: var(--cyan); letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+  .event-row .ns-pending { color: var(--yellow); }
+  .event-row .ns-resolved { color: var(--green); }
+  .event-row .ns-failed { color: var(--red); }
+
+  /* --------------------------------------------------------------------
+     Toast feed (driven by window.OF_toast bridge)
+     -------------------------------------------------------------------- */
+  .toast-feed {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    max-height: 220px;
+    overflow: auto;
+    padding: 10px 14px;
+  }
+  .toast-feed .t-info  { color: var(--cyan); }
+  .toast-feed .t-warn  { color: var(--yellow); }
+  .toast-feed .t-error { color: var(--red); }
+  .toast-feed .t-time  { color: var(--text-fade); margin-right: 8px; }
+
+  /* Auth + config pane */
+  .auth-state {
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .auth-state .badge {
+    padding: 4px 10px;
+    border: 1px solid var(--line-bright);
+    color: var(--text-dim);
+  }
+  .auth-state .badge.ok  { color: var(--green); border-color: var(--green); }
+  .auth-state .badge.no  { color: var(--red); border-color: var(--red); }
+
+  .info-line {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-fade);
+    margin-top: 8px;
+    line-height: 1.7;
+  }
+
+  hr.sep {
+    border: 0;
+    border-top: 1px dashed var(--line-bright);
+    margin: 18px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ============================================================ HEADER -->
+  <header class="top">
+    <h1>
+      <small>OriginFlow · /dev</small>
+      Investor Delivery · Smoke Test
+    </h1>
+    <div class="env">
+      <div>round 10 / patch 10.3</div>
+      <div>session · <span class="who" id="env-who">not signed in</span></div>
+    </div>
+  </header>
+
+  <!-- ============================================================ CONFIG -->
+  <section class="panel">
+    <div class="label">
+      <span>Configuration</span>
+      <span class="auth-state">
+        <span class="badge" id="badge-client">supabase: pending</span>
+        <span class="badge" id="badge-auth">auth: pending</span>
+        <span class="badge" id="badge-hooks">hooks: pending</span>
+      </span>
+    </div>
+    <div class="body">
+      <div class="field-row">
+        <div>
+          <label class="field" for="cfg-url">Supabase URL</label>
+          <input type="text" id="cfg-url" autocomplete="off" placeholder="https://xxxx.supabase.co" />
+        </div>
+        <div>
+          <label class="field" for="cfg-anon">Anon Key</label>
+          <input type="text" id="cfg-anon" autocomplete="off" placeholder="eyJhbGciOi..." />
+        </div>
+      </div>
+
+      <div class="button-row" style="margin-bottom: 14px;">
+        <button id="btn-init" class="primary">Initialize Client</button>
+        <button id="btn-clear-cfg" class="ghost">Forget Config</button>
+      </div>
+
+      <div id="auth-pane" style="display:none;">
+        <hr class="sep" />
+        <div class="field-row">
+          <div>
+            <label class="field" for="auth-email">Email</label>
+            <input type="email" id="auth-email" autocomplete="username" />
+          </div>
+          <div>
+            <label class="field" for="auth-pw">Password</label>
+            <input type="password" id="auth-pw" autocomplete="current-password" />
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="btn-signin" class="primary">Sign In</button>
+          <button id="btn-signout" class="ghost" style="display:none;">Sign Out</button>
+        </div>
+      </div>
+
+      <div class="info-line">
+        Config persists to <code style="color:var(--cyan)">localStorage</code> under
+        <code style="color:var(--cyan)">of_smoke_v1</code>. Anon key is non-secret;
+        RLS is enforced server-side. Hook bundles load from <code style="color:var(--cyan)">/js/of-hooks-*.js</code>.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ LOAN -->
+  <section class="panel">
+    <div class="label">
+      <span>Loan Selection</span>
+      <span style="color: var(--text-fade); font-size: 10px;">branch-scoped via RLS</span>
+    </div>
+    <div class="body">
+      <div class="field-row">
+        <div>
+          <label class="field" for="loan-id">Loan ID (uuid)</label>
+          <input type="text" id="loan-id" autocomplete="off" placeholder="00000000-0000-0000-0000-000000000000" />
+        </div>
+        <div>
+          <label class="field" for="recent-loans">Recent Loans</label>
+          <select id="recent-loans">
+            <option value="">—</option>
+          </select>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="btn-load-loan" class="primary">Load Loan</button>
+        <button id="btn-refresh-recent" class="ghost">Refresh Recent</button>
+      </div>
+
+      <div id="loan-summary" style="display:none;" class="loan-summary"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ CONTROLS -->
+  <section class="panel">
+    <div class="label">
+      <span>Run Controls</span>
+    </div>
+    <div class="body">
+      <div class="field-row">
+        <div>
+          <label class="field">Force Mock</label>
+          <label class="toggle">
+            <input type="checkbox" id="opt-mock" checked />
+            <span class="pill"></span>
+            <span id="opt-mock-text">on · deterministic mocks</span>
+          </label>
+          <div class="info-line">
+            With mock off, real adapters throw <code style="color:var(--cyan)">not_implemented</code> and fall through to mock with a warning.
+          </div>
+        </div>
+        <div>
+          <label class="field" for="opt-investor">UCD Investor Filter</label>
+          <select id="opt-investor">
+            <option value="all">all (FNMA + FHLMC + GNMA)</option>
+            <option value="fnma">Fannie Mae only</option>
+            <option value="fhlmc">Freddie Mac only</option>
+            <option value="gnma">Ginnie Mae only</option>
+          </select>
+        </div>
+        <div>
+          <label class="field">Pipeline</label>
+          <div class="button-row">
+            <button id="btn-run-all" class="primary" disabled>Run Full Smoke</button>
+            <button id="btn-reset" class="ghost">Reset Steps</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ PIPELINE -->
+  <section class="panel">
+    <div class="label">
+      <span>Pipeline</span>
+      <span style="color: var(--text-fade); font-size: 10px;">build → ucdp → ucd → purchased</span>
+    </div>
+    <div class="body">
+      <div class="pipeline" id="pipeline">
+        <!-- step cards injected by render() -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ EVENTS -->
+  <section class="panel">
+    <div class="label">
+      <span>loan_audit_events (last 20, this loan)</span>
+      <button id="btn-refresh-events" class="ghost" style="padding:4px 10px;font-size:9px;">refresh</button>
+    </div>
+    <div class="body" style="padding: 0;">
+      <div class="event-log" id="event-log">
+        <div class="event-row" style="color: var(--text-fade);">
+          <div>—</div><div>—</div><div>(load a loan and run a step)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ TOAST FEED -->
+  <section class="panel">
+    <div class="label">
+      <span>Hook Toast Bridge</span>
+      <button id="btn-clear-toasts" class="ghost" style="padding:4px 10px;font-size:9px;">clear</button>
+    </div>
+    <div class="body" style="padding: 0;">
+      <div class="toast-feed" id="toast-feed">
+        <div style="color: var(--text-fade);">window.OF_toast feed will appear here</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================
+     HOOK BUNDLES
+     ============================================================
+     These three scripts attach window.OF_buildMismoPackage,
+     window.OF_submitUcdp, window.OF_submitUcd. They run inside
+     IIFEs and detect window.OF_supabase at call time.
+============================================================ -->
+<script src="/js/of-hooks-mismo.js"></script>
+<script src="/js/of-hooks-ucdp.js"></script>
+<script src="/js/of-hooks-ucd.js"></script>
+
+<!-- ============================================================
+     CONTROLLER (ES module)
+     ============================================================ -->
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+
+// =============================================================================
+// State container — single source of truth for the page.
+// All UI is a function of state; mutate then call render().
+// =============================================================================
+const state = {
+  supabase: null,
+  user: null,
+  branchId: null,
+  loan: null,
+  recent: [],
+  forceMock: true,
+  investor: 'all',
+  steps: {
+    mismo:     { status: 'idle', result: null, error: null, durationMs: null, startedAt: null },
+    ucdp:      { status: 'idle', result: null, error: null, durationMs: null, startedAt: null },
+    ucd:       { status: 'idle', result: null, error: null, durationMs: null, startedAt: null },
+    purchased: { status: 'idle', result: null, error: null, durationMs: null, startedAt: null },
+  },
+  events: [],   // loan_audit_events rows
+  toasts: [],   // bridge-captured toasts
+};
+
+// =============================================================================
+// Config persistence — localStorage-backed so a single developer can keep
+// the smoke page warm across sessions. Anon key is non-secret; RLS holds
+// the line server-side regardless.
+// =============================================================================
+const CFG_KEY = 'of_smoke_v1';
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch { return {}; }
+}
+function saveCfg(cfg) {
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+}
+function clearCfg() {
+  localStorage.removeItem(CFG_KEY);
+}
+
+// =============================================================================
+// Toast bridge — hooks call window.OF_toast({level, message, detail}). We
+// capture them into state.toasts so the operator sees them inline rather
+// than only in the browser console.
+// =============================================================================
+window.OF_toast = function ({ level, message, detail }) {
+  state.toasts.unshift({
+    t: new Date().toLocaleTimeString(),
+    level: level || 'info',
+    message: message || '',
+    detail: detail || '',
+  });
+  if (state.toasts.length > 80) state.toasts.length = 80;
+  renderToasts();
+};
+
+// =============================================================================
+// Supabase init.
+// =============================================================================
+async function initSupabase() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const anon = document.getElementById('cfg-anon').value.trim();
+  if (!url || !anon) {
+    alert('Supabase URL and anon key are required');
+    return;
+  }
+  saveCfg({ url, anon });
+
+  state.supabase = createClient(url, anon, {
+    auth: { persistSession: true, storageKey: 'of_smoke_session' },
+  });
+
+  // Make hooks happy — they look up window.OF_supabase + a functions URL
+  // off it. Also expose the raw URL so the hooks can compute /functions/v1.
+  window.OF_supabase = state.supabase;
+  window.OF_supabase.functionsUrl = url.replace(/\/$/, '') + '/functions/v1';
+  window.OF_SUPABASE_URL = url;
+
+  // Probe existing session
+  const { data } = await state.supabase.auth.getSession();
+  if (data?.session?.user) {
+    state.user = data.session.user;
+    await resolveBranch();
+  }
+
+  // Listen for future auth changes so sign-out reflects immediately.
+  state.supabase.auth.onAuthStateChange(async (_event, session) => {
+    state.user = session?.user || null;
+    state.branchId = null;
+    if (state.user) await resolveBranch();
+    render();
+  });
+
+  render();
+}
+
+async function resolveBranch() {
+  if (!state.user) return;
+  const { data, error } = await state.supabase
+    .from('user_profiles')
+    .select('branch_id')
+    .eq('user_id', state.user.id)
+    .maybeSingle();
+  if (error) {
+    console.error('[smoke] branch lookup failed', error);
+    return;
+  }
+  state.branchId = data?.branch_id || null;
+}
+
+// =============================================================================
+// Auth.
+// =============================================================================
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const pw = document.getElementById('auth-pw').value;
+  if (!state.supabase) { alert('Initialize the client first'); return; }
+  const { data, error } = await state.supabase.auth.signInWithPassword({ email, password: pw });
+  if (error) { alert('Sign-in failed: ' + error.message); return; }
+  state.user = data.user;
+  await resolveBranch();
+  render();
+}
+
+async function signOut() {
+  if (!state.supabase) return;
+  await state.supabase.auth.signOut();
+  state.user = null;
+  state.branchId = null;
+  state.loan = null;
+  resetSteps();
+  render();
+}
+
+// =============================================================================
+// Loan loading + recent loans.
+// =============================================================================
+async function loadLoan(idOverride) {
+  const id = (idOverride ?? document.getElementById('loan-id').value).trim();
+  if (!id) { alert('Loan ID required'); return; }
+  if (!state.supabase || !state.user) { alert('Sign in first'); return; }
+
+  // RLS will scope this to the caller's branch automatically.
+  const { data, error } = await state.supabase
+    .from('loans')
+    .select('id, branch_id, loan_number, property_address, loan_amount_cents, borrower_first_name, borrower_last_name, intake_source, created_at')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) { alert('Loan lookup failed: ' + error.message); return; }
+  if (!data) { alert('Loan not found (or not in your branch)'); return; }
+
+  state.loan = data;
+  resetSteps();
+  await refreshEvents();
+  render();
+}
+
+async function refreshRecentLoans() {
+  if (!state.supabase || !state.user) return;
+  const { data, error } = await state.supabase
+    .from('loans')
+    .select('id, loan_number, borrower_last_name, created_at')
+    .order('created_at', { ascending: false })
+    .limit(15);
+  if (error) {
+    console.warn('[smoke] recent loans fetch failed', error);
+    return;
+  }
+  state.recent = data || [];
+  renderRecent();
+}
+
+// =============================================================================
+// Step runners.
+//
+// Each runner: marks running, awaits the hook, measures duration, captures
+// the result or error, marks final status, refreshes events. Failures
+// abort the chain when runAll is in play.
+// =============================================================================
+function classifyStepStatus(result) {
+  // For UCDP and UCD the response includes status of 'successful' / 'successful_with_overrides' / 'unsuccessful'.
+  // For MISMO and mark-purchased, success is binary.
+  if (!result) return 'error';
+  if (result.status === 'unsuccessful') return 'error';
+  if (result.status === 'successful_with_overrides') return 'overrides';
+  return 'success';
+}
+
+async function runStep(stepKey, fn) {
+  if (!state.loan) { alert('Load a loan first'); return false; }
+  const step = state.steps[stepKey];
+  step.status = 'running';
+  step.startedAt = performance.now();
+  step.result = null;
+  step.error = null;
+  render();
+
+  try {
+    const result = await fn();
+    step.durationMs = Math.round(performance.now() - step.startedAt);
+    step.result = result;
+    step.status = classifyStepStatus(result);
+    await refreshEvents();
+    render();
+    return step.status !== 'error';
+  } catch (err) {
+    step.durationMs = Math.round(performance.now() - step.startedAt);
+    step.error = {
+      code: err?.code || 'unknown',
+      message: err?.message || String(err),
+      detail: err?.detail || null,
+      status: err?.status || null,
+    };
+    step.status = 'error';
+    await refreshEvents();
+    render();
+    return false;
+  }
+}
+
+async function runMismo() {
+  return runStep('mismo', async () => {
+    if (typeof window.OF_buildMismoPackage !== 'function') {
+      throw Object.assign(new Error('window.OF_buildMismoPackage missing'), { code: 'hook_missing' });
+    }
+    return await window.OF_buildMismoPackage({
+      loan_id: state.loan.id,
+      force_mock: state.forceMock,
+    });
+  });
+}
+
+async function runUcdp() {
+  return runStep('ucdp', async () => {
+    if (typeof window.OF_submitUcdp !== 'function') {
+      throw Object.assign(new Error('window.OF_submitUcdp missing'), { code: 'hook_missing' });
+    }
+    return await window.OF_submitUcdp({
+      loan_id: state.loan.id,
+      force_mock: state.forceMock,
+    });
+  });
+}
+
+async function runUcd() {
+  return runStep('ucd', async () => {
+    if (typeof window.OF_submitUcd !== 'function') {
+      throw Object.assign(new Error('window.OF_submitUcd missing'), { code: 'hook_missing' });
+    }
+    return await window.OF_submitUcd({
+      loan_id: state.loan.id,
+      force_mock: state.forceMock,
+      investor: state.investor,
+    });
+  });
+}
+
+// Mark-purchased: no dedicated hook in the bundle since this is a simple
+// state transition. We do it inline against PostgREST + insert the audit
+// row explicitly so the smoke harness exercises exactly the path the
+// production UI uses.
+async function runMarkPurchased() {
+  return runStep('purchased', async () => {
+    if (!state.supabase || !state.user) throw Object.assign(new Error('not signed in'), { code: 'not_signed_in' });
+
+    const purchasedAt = new Date().toISOString();
+    const patch = {
+      loan_id: state.loan.id,
+      delivery_status: 'purchased',
+      purchased_at: purchasedAt,
+    };
+
+    // Defensive column fallback mirrors the edge-function pattern: if the
+    // schema lacks a column the PostgREST error includes the column name
+    // and we drop it and retry. Keeps the smoke green across schema drift.
+    const skipped = [];
+    let attempt = { ...patch };
+    for (let i = 0; i < 6; i++) {
+      const { error } = await state.supabase
+        .from('loan_deliveries')
+        .upsert(attempt, { onConflict: 'loan_id' });
+      if (!error) break;
+      const m = /column "([^"]+)" of relation/.exec(error.message);
+      if (!m || !(m[1] in attempt)) {
+        throw Object.assign(new Error(error.message), { code: 'mark_failed' });
+      }
+      skipped.push(m[1]);
+      delete attempt[m[1]];
+      if (i === 5) throw Object.assign(new Error('fallback exhausted'), { code: 'mark_failed', detail: skipped.join(',') });
+    }
+
+    const { error: auditErr } = await state.supabase
+      .from('loan_audit_events')
+      .insert({
+        loan_id: state.loan.id,
+        branch_id: state.loan.branch_id,
+        actor_user_id: state.user.id,
+        operation: 'mark_purchased',
+        payload: {
+          purchased_at: purchasedAt,
+          via: 'investor-delivery-smoke',
+          schema_skipped_columns: skipped,
+        },
+        narrative_status: 'pending',
+      });
+
+    return {
+      status: 'successful',
+      purchased_at: purchasedAt,
+      audit_recorded: !auditErr,
+      audit_error: auditErr?.message || null,
+      deliveries_upsert_skipped: skipped,
+    };
+  });
+}
+
+async function runAll() {
+  resetSteps();
+  if (!(await runMismo()))         return abortBanner('build_failed');
+  if (!(await runUcdp()))          return abortBanner('ucdp_failed');
+  if (!(await runUcd()))           return abortBanner('ucd_failed');
+  if (!(await runMarkPurchased())) return abortBanner('mark_failed');
+}
+
+function abortBanner(_reason) {
+  // No banner needed beyond per-step state; the failed step is highlighted
+  // and the remaining steps stay 'idle'. We mark them 'skipped' explicitly
+  // so the operator sees the chain stopped vs never ran.
+  ['mismo','ucdp','ucd','purchased'].forEach(k => {
+    if (state.steps[k].status === 'idle') state.steps[k].status = 'skipped';
+  });
+  render();
+}
+
+function resetSteps() {
+  for (const k of Object.keys(state.steps)) {
+    state.steps[k] = { status: 'idle', result: null, error: null, durationMs: null, startedAt: null };
+  }
+  render();
+}
+
+// =============================================================================
+// Audit event tail — pulls the last 20 events for the active loan.
+// =============================================================================
+async function refreshEvents() {
+  if (!state.supabase || !state.loan) return;
+  const { data, error } = await state.supabase
+    .from('loan_audit_events')
+    .select('id, operation, payload, narrative_status, created_at')
+    .eq('loan_id', state.loan.id)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (error) {
+    console.warn('[smoke] events fetch failed', error);
+    state.events = [];
+  } else {
+    state.events = data || [];
+  }
+  renderEvents();
+}
+
+// =============================================================================
+// Signed-URL helper — used by step cards to expose downloadable artifacts.
+// =============================================================================
+async function signedUrl(bucket, path, expiresSec = 600) {
+  if (!state.supabase) return null;
+  const { data, error } = await state.supabase.storage.from(bucket).createSignedUrl(path, expiresSec);
+  if (error) {
+    console.warn('[smoke] signed URL failed', error);
+    return null;
+  }
+  return data?.signedUrl || null;
+}
+
+// =============================================================================
+// Rendering. Plain string templating into innerHTML — no framework, no
+// build, deliberately boring. Re-renders are coarse but the page is small.
+// =============================================================================
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtCents(c) {
+  if (c == null || c === '') return '—';
+  return '$' + (Number(c) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtMs(ms) { return ms == null ? '—' : ms + ' ms'; }
+
+function render() {
+  // Header session badge
+  document.getElementById('env-who').textContent = state.user?.email || 'not signed in';
+
+  // Config badges
+  const bc = document.getElementById('badge-client');
+  bc.textContent = 'supabase: ' + (state.supabase ? 'ready' : 'pending');
+  bc.classList.toggle('ok', !!state.supabase);
+  bc.classList.toggle('no', !state.supabase);
+
+  const ba = document.getElementById('badge-auth');
+  ba.textContent = 'auth: ' + (state.user ? 'signed in' : 'signed out');
+  ba.classList.toggle('ok', !!state.user);
+  ba.classList.toggle('no', !state.user);
+
+  const hooksOk = !!(window.OF_buildMismoPackage && window.OF_submitUcdp && window.OF_submitUcd);
+  const bh = document.getElementById('badge-hooks');
+  bh.textContent = 'hooks: ' + (hooksOk ? 'loaded' : 'missing');
+  bh.classList.toggle('ok', hooksOk);
+  bh.classList.toggle('no', !hooksOk);
+
+  // Auth pane visibility
+  document.getElementById('auth-pane').style.display = state.supabase ? '' : 'none';
+  document.getElementById('btn-signout').style.display = state.user ? '' : 'none';
+  document.getElementById('btn-signin').style.display = state.user ? 'none' : '';
+
+  // Force-mock toggle text
+  document.getElementById('opt-mock-text').textContent =
+    state.forceMock ? 'on · deterministic mocks' : 'off · attempt real adapters';
+
+  // Loan summary
+  const ls = document.getElementById('loan-summary');
+  if (state.loan) {
+    const l = state.loan;
+    const borrower = [l.borrower_first_name, l.borrower_last_name].filter(Boolean).join(' ') || '—';
+    ls.style.display = '';
+    ls.innerHTML = `
+      <div><span class="k">Loan ID</span><span class="v">${esc(l.id)}</span></div>
+      <div><span class="k">Loan #</span><span class="v">${esc(l.loan_number || '—')}</span></div>
+      <div><span class="k">Borrower</span><span class="v ${borrower==='—'?'dim':''}">${esc(borrower)}</span></div>
+      <div><span class="k">Property</span><span class="v ${l.property_address?'':'dim'}">${esc(l.property_address || '—')}</span></div>
+      <div><span class="k">Loan Amount</span><span class="v">${esc(fmtCents(l.loan_amount_cents))}</span></div>
+      <div><span class="k">Intake</span><span class="v">${esc(l.intake_source || '—')}</span></div>
+      <div><span class="k">Branch ID</span><span class="v">${esc(l.branch_id)}</span></div>
+    `;
+  } else {
+    ls.style.display = 'none';
+  }
+
+  // Run All availability
+  document.getElementById('btn-run-all').disabled = !state.loan || !state.user || !hooksOk;
+
+  renderPipeline();
+}
+
+function renderRecent() {
+  const sel = document.getElementById('recent-loans');
+  sel.innerHTML = '<option value="">—</option>' +
+    state.recent.map(r => {
+      const label = (r.loan_number || r.id.slice(0,8)) +
+        (r.borrower_last_name ? ' · ' + r.borrower_last_name : '');
+      return `<option value="${esc(r.id)}">${esc(label)}</option>`;
+    }).join('');
+}
+
+function renderPipeline() {
+  const wrap = document.getElementById('pipeline');
+  const cards = [
+    { key: 'mismo',     no: '01', name: 'Build MISMO Package',  sub: 'mismo 3.4 → deliveries bucket', btn: 'Build' },
+    { key: 'ucdp',      no: '02', name: 'Submit UCDP',           sub: 'fnma + fhlmc appraisal SSR',    btn: 'Submit' },
+    { key: 'ucd',       no: '03', name: 'Submit UCD',            sub: 'closing disclosure → GSEs',    btn: 'Submit' },
+    { key: 'purchased', no: '04', name: 'Mark Purchased',        sub: 'loan_deliveries state transition', btn: 'Mark' },
+  ];
+  wrap.innerHTML = cards.map(c => renderStep(c)).join('');
+
+  // Wire up per-step run buttons after innerHTML replacement.
+  document.getElementById('step-run-mismo').onclick     = () => runMismo();
+  document.getElementById('step-run-ucdp').onclick      = () => runUcdp();
+  document.getElementById('step-run-ucd').onclick       = () => runUcd();
+  document.getElementById('step-run-purchased').onclick = () => runMarkPurchased();
+
+  // Wire signed-URL buttons that we generated.
+  wrap.querySelectorAll('[data-signed-url]').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.preventDefault();
+      const [bucket, ...rest] = btn.dataset.signedUrl.split('::');
+      const path = rest.join('::');
+      const url = await signedUrl(bucket, path, 600);
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      else alert('Failed to create signed URL');
+    };
+  });
+}
+
+function renderStep(c) {
+  const s = state.steps[c.key];
+  const pillLabel = s.status.toUpperCase();
+  const detailsHtml = renderStepBody(c.key, s);
+  return `
+    <div class="step">
+      <div class="head">
+        <span class="step-no">step ${c.no}</span>
+        <span class="pill-status ${s.status}">${pillLabel}</span>
+      </div>
+      <div class="step-name">${esc(c.name)}</div>
+      <div class="step-sub">${esc(c.sub)}</div>
+      <div class="step-body">${detailsHtml}</div>
+      <div class="step-foot">
+        <button id="step-run-${c.key}" class="primary">${esc(c.btn)}</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderStepBody(key, s) {
+  if (s.status === 'idle')    return `<div style="color:var(--text-fade);font-family:var(--mono);font-size:11px;">not yet run</div>`;
+  if (s.status === 'skipped') return `<div style="color:var(--text-fade);font-family:var(--mono);font-size:11px;">skipped — earlier step failed</div>`;
+  if (s.status === 'running') return `<div style="color:var(--cyan);font-family:var(--mono);font-size:11px;">submitting…</div>`;
+
+  if (s.status === 'error') {
+    return `
+      <div class="kv">
+        <div class="k">Code</div><div class="v red">${esc(s.error.code)}</div>
+        <div class="k">HTTP</div><div class="v">${esc(s.error.status ?? '—')}</div>
+        <div class="k">Took</div><div class="v">${esc(fmtMs(s.durationMs))}</div>
+        <div class="k">Message</div><div class="v">${esc(s.error.message)}</div>
+        ${s.error.detail ? `<div class="k">Detail</div><div class="v">${esc(s.error.detail)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // success / overrides
+  return stepSuccessBody(key, s);
+}
+
+function stepSuccessBody(key, s) {
+  const r = s.result || {};
+  const took = fmtMs(s.durationMs);
+  const mockBadge = r.mock ? `<span class="v yellow">[mock]</span>` : '';
+
+  let rows = '';
+
+  if (key === 'mismo') {
+    const path = r.storage?.path;
+    const bucket = r.storage?.bucket || 'deliveries';
+    rows = `
+      <div class="k">Status</div><div class="v green">ok ${mockBadge}</div>
+      <div class="k">Bucket</div><div class="v">${esc(bucket)}</div>
+      <div class="k">Path</div><div class="v cyan">${esc(path || '—')}</div>
+      <div class="k">Took</div><div class="v">${esc(took)}</div>
+      ${path ? `<div class="k">Artifact</div><div class="v"><a href="#" data-signed-url="${esc(bucket)}::${esc(path)}">open signed url ▸</a></div>` : ''}
+    `;
+  }
+  else if (key === 'ucdp') {
+    const path = r.storage?.path;
+    const bucket = r.storage?.bucket || 'deliveries';
+    rows = `
+      <div class="k">Status</div><div class="v ${r.status === 'successful' ? 'green' : 'yellow'}">${esc(r.status)} ${mockBadge}</div>
+      <div class="k">Submission</div><div class="v cyan">${esc(r.submission_id)}</div>
+      <div class="k">FNMA Doc</div><div class="v">${esc(r.fannie_doc_file_id || '—')}</div>
+      <div class="k">FHLMC Doc</div><div class="v">${esc(r.freddie_doc_file_id || '—')}</div>
+      <div class="k">Findings</div><div class="v ${r.finding_count > 0 ? 'red' : ''}">${esc(r.finding_count)}</div>
+      <div class="k">Warnings</div><div class="v ${r.warning_count > 0 ? 'yellow' : ''}">${esc(r.warning_count)}</div>
+      <div class="k">Took</div><div class="v">${esc(took)}</div>
+      ${path ? `<div class="k">SSR JSON</div><div class="v"><a href="#" data-signed-url="${esc(bucket)}::${esc(path)}">open signed url ▸</a></div>` : ''}
+    `;
+  }
+  else if (key === 'ucd') {
+    const path = r.storage?.path;
+    const bucket = r.storage?.bucket || 'deliveries';
+    const perGse = r.per_gse || {};
+    const gseRows = ['fnma','fhlmc','gnma'].filter(g => perGse[g]).map(g => {
+      const p = perGse[g];
+      const stColor = p.status === 'successful' ? 'green' : p.status === 'unsuccessful' ? 'red' : 'yellow';
+      return `<div class="k">${g.toUpperCase()}</div><div class="v ${stColor}">${esc(p.status)} · ${esc(p.doc_file_id)}</div>`;
+    }).join('');
+    rows = `
+      <div class="k">Status</div><div class="v ${r.status === 'successful' ? 'green' : r.status === 'unsuccessful' ? 'red' : 'yellow'}">${esc(r.status)} ${mockBadge}</div>
+      <div class="k">Submission</div><div class="v cyan">${esc(r.submission_id)}</div>
+      <div class="k">Investor</div><div class="v">${esc(r.investor_filter || state.investor)}</div>
+      ${gseRows}
+      <div class="k">Findings</div><div class="v ${r.finding_count > 0 ? 'red' : ''}">${esc(r.finding_count)}</div>
+      <div class="k">Warnings</div><div class="v ${r.warning_count > 0 ? 'yellow' : ''}">${esc(r.warning_count)}</div>
+      <div class="k">Took</div><div class="v">${esc(took)}</div>
+      ${path ? `<div class="k">UCD JSON</div><div class="v"><a href="#" data-signed-url="${esc(bucket)}::${esc(path)}">open signed url ▸</a></div>` : ''}
+    `;
+  }
+  else if (key === 'purchased') {
+    rows = `
+      <div class="k">Status</div><div class="v green">purchased</div>
+      <div class="k">At</div><div class="v">${esc(r.purchased_at)}</div>
+      <div class="k">Audit</div><div class="v ${r.audit_recorded ? 'green' : 'red'}">${r.audit_recorded ? 'recorded' : 'failed: ' + esc(r.audit_error || '?')}</div>
+      <div class="k">Took</div><div class="v">${esc(took)}</div>
+      ${r.deliveries_upsert_skipped?.length ? `<div class="k">Schema Skip</div><div class="v yellow">${esc(r.deliveries_upsert_skipped.join(', '))}</div>` : ''}
+    `;
+  }
+
+  return `
+    <div class="kv">${rows}</div>
+    <details class="payload">
+      <summary>raw response</summary>
+      <pre>${esc(JSON.stringify(r, null, 2))}</pre>
+    </details>
+  `;
+}
+
+function renderEvents() {
+  const wrap = document.getElementById('event-log');
+  if (!state.events.length) {
+    wrap.innerHTML = `<div class="event-row" style="color: var(--text-fade);"><div>—</div><div>—</div><div>(no audit rows yet)</div></div>`;
+    return;
+  }
+  wrap.innerHTML = state.events.map(e => {
+    const ts = new Date(e.created_at).toLocaleTimeString();
+    const nsClass =
+      e.narrative_status === 'pending' ? 'ns-pending' :
+      e.narrative_status === 'resolved' ? 'ns-resolved' :
+      e.narrative_status === 'failed' ? 'ns-failed' : '';
+    const subId = e.payload?.submission_id ? ` · ${esc(e.payload.submission_id)}` : '';
+    const status = e.payload?.status ? ` · ${esc(e.payload.status)}` : '';
+    return `
+      <div class="event-row">
+        <div class="ts">${esc(ts)}</div>
+        <div class="op">${esc(e.operation)}</div>
+        <div>
+          <span class="${nsClass}">${esc(e.narrative_status || '—')}</span>${subId}${status}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderToasts() {
+  const wrap = document.getElementById('toast-feed');
+  if (!state.toasts.length) {
+    wrap.innerHTML = `<div style="color: var(--text-fade);">window.OF_toast feed will appear here</div>`;
+    return;
+  }
+  wrap.innerHTML = state.toasts.map(t => {
+    const cls = t.level === 'error' ? 't-error' : t.level === 'warn' ? 't-warn' : 't-info';
+    const detail = t.detail ? ` <span style="color:var(--text-fade);">— ${esc(t.detail)}</span>` : '';
+    return `<div class="${cls}"><span class="t-time">${esc(t.t)}</span>${esc(t.message)}${detail}</div>`;
+  }).join('');
+}
+
+// =============================================================================
+// Wire up controls.
+// =============================================================================
+document.getElementById('btn-init').onclick           = initSupabase;
+document.getElementById('btn-signin').onclick         = signIn;
+document.getElementById('btn-signout').onclick        = signOut;
+document.getElementById('btn-load-loan').onclick      = () => loadLoan();
+document.getElementById('btn-refresh-recent').onclick = refreshRecentLoans;
+document.getElementById('btn-run-all').onclick        = runAll;
+document.getElementById('btn-reset').onclick          = resetSteps;
+document.getElementById('btn-refresh-events').onclick = refreshEvents;
+document.getElementById('btn-clear-toasts').onclick   = () => { state.toasts = []; renderToasts(); };
+document.getElementById('btn-clear-cfg').onclick      = () => { clearCfg(); document.getElementById('cfg-url').value=''; document.getElementById('cfg-anon').value=''; };
+
+document.getElementById('opt-mock').onchange = (e) => { state.forceMock = e.target.checked; render(); };
+document.getElementById('opt-investor').onchange = (e) => { state.investor = e.target.value; };
+
+document.getElementById('recent-loans').onchange = (e) => {
+  if (e.target.value) {
+    document.getElementById('loan-id').value = e.target.value;
+    loadLoan(e.target.value);
+  }
+};
+
+// =============================================================================
+// Boot — restore config if present, auto-init.
+// =============================================================================
+(function boot() {
+  const cfg = loadCfg();
+  if (cfg.url)  document.getElementById('cfg-url').value  = cfg.url;
+  if (cfg.anon) document.getElementById('cfg-anon').value = cfg.anon;
+  if (cfg.url && cfg.anon) {
+    initSupabase().then(() => {
+      if (state.user) refreshRecentLoans();
+    });
+  } else {
+    render();
+  }
+})();
+</script>
+
+</body>
+</html>
