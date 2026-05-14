@@ -840,6 +840,10 @@ select {
 
 <script>
 // ─── Cookie consent IIFE ─────────────────────────────────────────────
+// 9.7b · vocabulary normalized to 'granted' / 'denied' to match
+// dashboard.html and documents.html. Legacy 'accepted' / 'rejected'
+// values from earlier versions of this page get migrated on read so
+// returning users don't see the banner pop again.
 (function() {
   var KEY = 'of_cookie_consent';
   var banner = document.getElementById('cookie-banner');
@@ -854,26 +858,36 @@ select {
       ad_storage: 'denied',
     });
   } catch (_e) {}
+
+  // One-time migration of legacy values. Idempotent — once migrated, the
+  // 'accepted'/'rejected' values are gone from this user's storage and
+  // this block becomes a no-op.
+  try {
+    var legacy = localStorage.getItem(KEY);
+    if (legacy === 'accepted')      localStorage.setItem(KEY, 'granted');
+    else if (legacy === 'rejected') localStorage.setItem(KEY, 'denied');
+  } catch (_e) {}
+
   var existing = null;
   try { existing = localStorage.getItem(KEY); } catch (_e) {}
-  if (existing === 'accepted') {
+  if (existing === 'granted') {
     try { window.gtag('consent', 'update', { analytics_storage: 'granted', ad_storage: 'denied' }); } catch (_e) {}
     return;
   }
-  if (existing === 'rejected') return;
+  if (existing === 'denied') return;
   setTimeout(function() { banner.classList.add('show'); }, 600);
   function decide(value) {
     try { localStorage.setItem(KEY, value); } catch (_e) {}
     banner.classList.remove('show');
     try {
       window.gtag('consent', 'update', {
-        analytics_storage: value === 'accepted' ? 'granted' : 'denied',
+        analytics_storage: value === 'granted' ? 'granted' : 'denied',
         ad_storage: 'denied',
       });
     } catch (_e) {}
   }
-  document.getElementById('cookie-accept').addEventListener('click', function() { decide('accepted'); });
-  document.getElementById('cookie-reject').addEventListener('click', function() { decide('rejected'); });
+  document.getElementById('cookie-accept').addEventListener('click', function() { decide('granted'); });
+  document.getElementById('cookie-reject').addEventListener('click', function() { decide('denied'); });
 })();
 </script>
 
