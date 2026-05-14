@@ -1,115 +1,146 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// OriginFlow LOS — Patch 9.9a · OF_parseMismo34 client hook
+// OriginFlow LOS — Patch 9.14 · build-mismo-package client hook
 // File: /js/of-hooks-mismo.js
 //
-// Implements window.OF_parseMismo34(file) for /loans-new.html's intake gate.
-// Reads the dropped/picked XML as text, posts to the parse-mismo-34 edge
-// function, and returns the formData-shaped object that the wizard merges
-// into its state.
+// Implements window.OF_buildMismoPackage(loanId, opts?) — called from
+// investor-delivery.html when the LO clicks "Build MISMO 3.4 package" in
+// the build-mismo modal. Thin wrapper around the build-mismo-package
+// edge function. Sibling of of-hooks-pricing.js, of-hooks-credit.js,
+// of-hooks-aus.js, of-hooks-esign.js (patches 9.9c/d/e/f).
 //
-// To wire this in:
-//   1. Place this file at /js/of-hooks-mismo.js (or wherever your static
-//      assets live).
-//   2. Add this line to /loans-new.html, BEFORE the existing inline
-//      <script> block that defines bootstrap():
-//        <script src="/js/of-hooks-mismo.js"></script>
-//      The existing script tags for supabase-js and /js/config.js already
-//      load, so this just slots in alongside them.
+// Contract — matches the page's runBuildMismo() expectation:
 //
-// The wizard will then detect window.OF_parseMismo34 and route MISMO drops
-// through it. If you forget to include this file, the MISMO card toasts an
-// "OF_parseMismo34 not configured" error and the user can still pick the
-// blank intake — the page never deadlocks.
+//   await window.OF_buildMismoPackage(loanId, { force_mock?: boolean })
 //
-// Contract
-// ────────
-// Input:   File (XML, ≤10MB, .xml extension or application/xml MIME)
-// Output:  { ...formDataKeys } — keys matching loans-new.html's `formData`.
-//          Any keys NOT in formData are silently dropped by the wizard's
-//          whitelist merge, so it's safe for the edge function to over-return.
-// Throws:  Error on network failure, edge-function 4xx/5xx, or parser
-//          rejecting the XML. The wizard catches and shows a toast.
+//   →  {
+//        url:         string,        // signed URL, 1-hour TTL
+//        size_bytes:  number,
+//        version:     string,        // "3.4"
+//        // diagnostic, optional:
+//        is_mock:     boolean,
+//        vendor:      string | null,
+//        warnings:    string[],
+//        duration_ms: number,
+//        storage_path: string,
+//      }
 //
-// Side effects
-// ────────────
-// Console-logs the warnings array on success so you can see what the parser
-// couldn't extract without bothering the user. The wizard separately shows
-// a toast with the count of fields imported.
+// On error, throws Error(message) — the page's runBuildMismo() catch
+// block turns this into a toast.
+//
+// Why a hook and not a direct supabase.functions.invoke()
+// ───────────────────────────────────────────────────────
+// The same indirection as 9.9c/d/e/f:
+//   • The page treats the hook as an interface; if the hook isn't
+//     loaded, the page degrades gracefully ("hook not implemented" toast)
+//     instead of crashing.
+//   • Hooks are independently shippable — staging can run a mocked
+//     hook (e.g. one that hits a local-mode mock server) while prod
+//     hits the real edge function.
+//   • Future swap to a different backing service (Cloudflare Worker,
+//     Lambda) is a one-file change.
+//
+// Page-side state updates
+// ───────────────────────
+// The edge function is the authoritative writer for loan_deliveries —
+// it updates mismo_built_at, mismo_export_url, mismo_export_size_bytes,
+// and mismo_version inside the same transaction-shaped block as the
+// storage upload. The page's post-hook update statement is therefore
+// a redundant no-op (last-write-wins is safe). The page should
+// re-load via loadAll() after the hook resolves, which it already does.
+//
+// Page integration
+// ────────────────
+// Add this script tag to investor-delivery.html before </body>:
+//
+//   <script src="/js/of-hooks-mismo.js"></script>
+//
+// Place it after the supabase-js bundle so window.supabaseClient is
+// resolvable, but the hook also probes window._supa as a fallback (the
+// page uses a `supa` local; this is wired through the same convention
+// the other 9.9 hooks use).
 // ═══════════════════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
-  // Bail loudly if config.js / supabase-js haven't loaded. Should never
-  // happen in practice (we're loaded after them) but the alternative is
-  // a confusing "getSupabase is not a function" downstream.
-  if (typeof window.getSupabase !== 'function') {
-    console.warn('[OF_parseMismo34] getSupabase() not available — make sure /js/config.js loads before this file.');
-    return;
+  // ── Supabase client resolver ────────────────────────────────────────────
+  // The page may expose the client under any of these names depending on
+  // its bootstrap convention. We check in order of preference.
+  function resolveSupabase() {
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) return window.supabaseClient;
+    if (typeof window._supa          !== 'undefined' && window._supa)          return window._supa;
+    if (typeof window.supa           !== 'undefined' && window.supa)           return window.supa;
+    if (typeof window.sb             !== 'undefined' && window.sb)             return window.sb;
+    return null;
   }
 
-  window.OF_parseMismo34 = async function OF_parseMismo34(file) {
-    if (!file) throw new Error('No file provided.');
-
-    // Read as text. MISMO 3.4 is always XML (no binary attachments at the
-    // root); File.text() handles UTF-8 + BOM correctly.
-    let xml;
-    try {
-      xml = await file.text();
-    } catch (err) {
-      throw new Error('Could not read file: ' + (err && err.message ? err.message : String(err)));
+  // ── The hook itself ─────────────────────────────────────────────────────
+  async function buildMismoPackage(loanId, opts) {
+    if (!loanId || typeof loanId !== 'string') {
+      throw new Error('window.OF_buildMismoPackage: loanId (uuid string) is required');
+    }
+    if (!/^[0-9a-f-]{36}$/i.test(loanId)) {
+      throw new Error('window.OF_buildMismoPackage: loanId is not a valid uuid');
     }
 
-    if (!xml || xml.length < 100) {
-      throw new Error('File is empty or too short to be a MISMO 3.4 export.');
+    const supa = resolveSupabase();
+    if (!supa) {
+      throw new Error('Supabase client not initialized — load supabase-js before /js/of-hooks-mismo.js');
     }
 
-    // Cheap client-side sniff. Catches users who picked the wrong file (PDF
-    // saved with .xml extension, fillable form export, etc.) without
-    // burning a round trip to the edge function.
-    if (!xml.includes('<MESSAGE') && !xml.includes(':MESSAGE') && !xml.includes('<DEAL')) {
-      throw new Error("File doesn't look like a MISMO 3.4 document (no <MESSAGE> or <DEAL> root element found).");
-    }
+    const body = {
+      loan_id:    loanId,
+      force_mock: Boolean(opts && opts.force_mock),
+    };
 
-    const supa = window.getSupabase();
-    if (!supa) throw new Error('Supabase client not initialized.');
-
-    const { data, error } = await supa.functions.invoke('parse-mismo-34', {
-      body: { xml },
+    // supabase.functions.invoke() handles auth headers + URL composition
+    // for us — it pulls the current session's JWT and sends it as
+    // Authorization: Bearer. No need to manage tokens here.
+    const { data, error } = await supa.functions.invoke('build-mismo-package', {
+      body,
     });
 
     if (error) {
-      // supabase-js wraps non-2xx responses in error. The body is in
-      // error.context or error.message depending on version; surface
-      // whichever has more detail.
-      const msg = (error && error.message) ? error.message : 'Parser invocation failed.';
-      throw new Error(msg);
+      // FunctionsHttpError, FunctionsRelayError, FunctionsFetchError all
+      // surface their message via error.message. Some wrap a Response in
+      // error.context; we don't depend on that — message is sufficient
+      // for the page's toast.
+      const msg = error.message || String(error);
+      throw new Error('Edge function call failed: ' + msg);
     }
-    if (!data) throw new Error('Parser returned no data.');
+    if (!data) {
+      throw new Error('Edge function returned no payload');
+    }
     if (data.ok === false) {
-      throw new Error(data.error || 'Parser returned an error.');
+      throw new Error(data.error || 'Edge function returned ok=false');
     }
-    if (!data.formData || typeof data.formData !== 'object') {
-      throw new Error('Parser returned an unexpected shape (no formData).');
-    }
-
-    // Surface warnings to the console for the LO/admin to see. The wizard
-    // shows a separate toast with the success count; combining warnings
-    // there would crowd the UI.
-    if (Array.isArray(data.warnings) && data.warnings.length > 0) {
-      console.info(
-        '[OF_parseMismo34] Imported %d field(s) with %d warning(s):',
-        data.fieldsFilled || 0,
-        data.warnings.length,
-      );
-      for (const w of data.warnings) console.info('  · ' + w);
-    } else if (typeof data.fieldsFilled === 'number') {
-      console.info('[OF_parseMismo34] Imported %d field(s), no warnings.', data.fieldsFilled);
+    if (!data.url) {
+      throw new Error('Edge function did not return a signed URL');
     }
 
-    return data.formData;
-  };
+    // Surface warnings to the console — the page only shows the success
+    // toast, but warnings about mock fallback or missing real-adapter
+    // envs are worth seeing during development.
+    if (Array.isArray(data.warnings) && data.warnings.length) {
+      console.warn('[OF_buildMismoPackage] warnings:', data.warnings);
+    }
 
-  // Optional: expose a version string for debugging "is the right hook loaded?"
-  window.OF_parseMismo34.version = '9.9a';
+    return {
+      url:          data.url,
+      size_bytes:   data.size_bytes || 0,
+      version:      data.version    || '3.4',
+      is_mock:      Boolean(data.is_mock),
+      vendor:       data.vendor      || null,
+      warnings:     data.warnings    || [],
+      duration_ms:  data.duration_ms || 0,
+      storage_path: data.storage_path || null,
+    };
+  }
+
+  // ── Publish ──────────────────────────────────────────────────────────────
+  if (typeof window.OF_buildMismoPackage !== 'function') {
+    window.OF_buildMismoPackage = buildMismoPackage;
+  } else {
+    console.warn('[of-hooks-mismo] window.OF_buildMismoPackage already defined — skipping re-registration');
+  }
 })();
