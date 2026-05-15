@@ -768,16 +768,28 @@ async function initSupabase() {
 
 async function resolveBranch() {
   if (!state.user) return;
+  // 10.5.5: real profile table is `profiles` with id = auth.uid(); gate
+  // on active + archived_at to match the helper function's posture.
   const { data, error } = await state.supabase
-    .from('user_profiles')
-    .select('branch_id')
-    .eq('user_id', state.user.id)
+    .from('profiles')
+    .select('branch_id, active, archived_at')
+    .eq('id', state.user.id)
     .maybeSingle();
   if (error) {
     console.error('[smoke] branch lookup failed', error);
     return;
   }
-  state.branchId = data?.branch_id || null;
+  if (!data) {
+    console.warn('[smoke] no profiles row for current user');
+    state.branchId = null;
+    return;
+  }
+  if (!data.active || data.archived_at) {
+    console.warn('[smoke] profile is inactive or archived');
+    state.branchId = null;
+    return;
+  }
+  state.branchId = data.branch_id || null;
 }
 
 // =============================================================================
