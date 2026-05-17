@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Integrations · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — CRM sync activity, connections, and inbound webhook events.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --navy:    #040d1a;
+  --deep:    #07152b;
+  --surface: #0b1f3a;
+  --panel:   #0f2647;
+  --border:  #1a3a5c;
+  --accent:  #00d4ff;
+  --accent2: #00ff9d;
+  --amber:   #f5a623;
+  --red:     #ff4444;
+  --text:    #c8dff0;
+  --muted:   #5a7a99;
+  --white:   #eaf4ff;
+  --mono:    'Space Mono', ui-monospace, monospace;
+  --serif:   'DM Serif Display', Georgia, serif;
+  --sans:    'DM Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--navy);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+nav, main, footer, .modal-overlay { position: relative; z-index: 1; }
+
+/* ─── NAV (verbatim from production) ──────────────────────────────── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(4,13,26,0.92);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  gap: 1rem;
+}
+.nav-logo { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; flex-shrink: 0; }
+.sonar-icon { width: 26px; height: 26px; }
+.sonar-icon svg { width: 100%; height: 100%; }
+.nav-wordmark {
+  font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+  color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
+}
+.nav-wordmark span { color: var(--accent); }
+.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+.nav-center a {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-search {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
+  color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 0.4rem 0.7rem; cursor: pointer;
+  transition: all 0.15s;
+  min-width: 220px;
+}
+.nav-search:hover { border-color: var(--accent); color: var(--text); }
+.nav-search-icon { color: var(--accent); }
+.nav-search-text { flex: 1; text-align: left; }
+.nav-search-kbd {
+  font-size: 0.55rem; padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border); border-radius: 2px;
+  color: var(--muted);
+}
+.nav-newloan {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--accent); color: var(--navy);
+  border: 1px solid var(--accent); padding: 0.45rem 0.85rem;
+  text-decoration: none; cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-newloan:hover { background: var(--accent2); border-color: var(--accent2); }
+.nav-branch {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  color: var(--muted); border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+}
+.nav-branch strong { color: var(--accent2); }
+.nav-user-name { font-family: var(--sans); font-size: 0.78rem; color: var(--white); }
+.nav-user-role {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em;
+  color: var(--accent); border: 1px solid rgba(0,212,255,0.3);
+  padding: 0.15rem 0.5rem; background: rgba(0,212,255,0.06); margin-left: 0.5rem;
+}
+.nav-signout {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--border); padding: 0.3rem 0.75rem;
+  transition: all 0.2s; cursor: pointer; background: none;
+}
+.nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
+
+/* ─── MAIN ──────────────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  background: var(--navy);
+}
+.page-content {
+  padding: 2rem;
+  max-width: 1640px;
+  margin: 0 auto;
+}
+
+/* ─── STATE SCREENS (verbatim from production) ─────────────────────── */
+.state-screen {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 4rem 2rem; min-height: 60vh; text-align: center;
+}
+.state-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+}
+.state-heading {
+  font-family: var(--serif); font-size: 2.25rem; color: var(--white);
+  margin-bottom: 0.85rem; max-width: 640px;
+}
+.state-text { max-width: 540px; color: var(--muted); margin-bottom: 1.5rem; }
+.state-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+.btn {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.7rem 1.25rem;
+  border: 1px solid var(--border); color: var(--text);
+  background: var(--surface); cursor: pointer; text-decoration: none;
+  transition: all 0.2s;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
+.btn.danger { color: var(--red); border-color: rgba(255,68,68,0.4); }
+.btn.danger:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn:disabled:hover { border-color: var(--border); color: var(--text); }
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.25rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── PAGE HEADER (matches home.html pattern) ──────────────────────── */
+.page-header { margin-bottom: 1.5rem; }
+.page-eyebrow {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+}
+.page-heading { font-family: var(--serif); font-size: 2rem; color: var(--white); line-height: 1.15; }
+.page-sub { color: var(--muted); margin-top: 0.4rem; max-width: 640px; }
+
+/* ─── METRIC STRIP (matches home.html — 4 cells) ───────────────────── */
+.metric-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 1.75rem;
+}
+.metric-cell { background: var(--surface); padding: 1rem 1.15rem; }
+.metric-label {
+  font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.metric-value { font-family: var(--serif); font-size: 1.6rem; line-height: 1.1; color: var(--white); }
+.metric-value.cyan  { color: var(--accent); }
+.metric-value.green { color: var(--accent2); }
+.metric-value.amber { color: var(--amber); }
+.metric-value.red   { color: var(--red); }
+.metric-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.05em;
+  color: var(--muted); margin-top: 0.2rem;
+}
+
+/* ─── PANEL (matches home.html) ────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  margin-bottom: 1.25rem;
+  min-height: 200px;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  gap: 0.75rem;
+}
+.panel-title {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text);
+}
+.panel-tag {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0.15rem 0.5rem; border: 1px solid var(--border);
+}
+.panel-tag.alert { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.panel-tag.ok    { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.panel-actions { display: flex; gap: 0.4rem; align-items: center; margin-left: auto; }
+.panel-body {
+  padding: 0.6rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 620px;
+}
+.panel-empty {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  text-align: center; padding: 2.5rem 1rem; letter-spacing: 0.04em;
+}
+
+.icon-btn {
+  font-family: var(--mono); font-size: 0.85rem;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--border);
+  width: 28px; height: 28px;
+  cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+.icon-btn.spinning { animation: spin 0.9s linear infinite; }
+.icon-btn:disabled { opacity: 0.4; cursor: wait; }
+
+/* ─── CONTENT GRID ─────────────────────────────────────────────────── */
+.content-grid {
+  display: grid; grid-template-columns: 1.2fr 1fr;
+  gap: 1.25rem; margin-bottom: 1.5rem;
+}
+
+/* ─── CONNECTIONS ROW ──────────────────────────────────────────────── */
+.crm-conn-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--panel); border: 1px solid var(--border);
+}
+.crm-conn-row.inactive { opacity: 0.55; }
+.crm-conn-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted);
+}
+.crm-conn-dot.active {
+  background: var(--accent2);
+  box-shadow: 0 0 8px rgba(0,255,157,0.4);
+}
+.crm-conn-mid { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.crm-conn-vendor {
+  font-family: var(--sans); font-size: 0.92rem; color: var(--white); font-weight: 500;
+}
+.crm-conn-meta {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.crm-conn-stat {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border); text-align: center; min-width: 56px;
+}
+.crm-conn-stat.fail   { color: var(--red);   border-color: rgba(255,68,68,0.5);  background: rgba(255,68,68,0.08); }
+.crm-conn-stat.ok     { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.crm-conn-stat.idle   { color: var(--muted); }
+.crm-conn-action {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent);
+  border: 1px solid rgba(0,212,255,0.3); background: transparent;
+  padding: 0.3rem 0.65rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.crm-conn-action:hover { background: rgba(0,212,255,0.08); border-color: var(--accent); }
+.crm-conn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── SYNC EVENT ROW ───────────────────────────────────────────────── */
+.crm-event { border: 1px solid var(--border); background: var(--panel); }
+.crm-event + .crm-event { border-top: none; }
+.crm-event-row {
+  display: grid;
+  grid-template-columns: auto 88px 1fr auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.crm-event-row:hover { background: rgba(0,212,255,0.04); }
+.crm-event.open > .crm-event-row { background: rgba(0,212,255,0.06); }
+
+.pill {
+  font-family: var(--mono); font-size: 0.55rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.15rem 0.5rem; border: 1px solid;
+  white-space: nowrap;
+}
+.pill.success { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.08); }
+.pill.partial { color: var(--amber);   border-color: rgba(245,166,35,0.5); background: rgba(245,166,35,0.08); }
+.pill.failed  { color: var(--red);     border-color: rgba(255,68,68,0.5);  background: rgba(255,68,68,0.1); }
+
+.crm-event-vendor {
+  font-family: var(--mono); font-size: 0.68rem; color: var(--white);
+  letter-spacing: 0.06em;
+}
+.crm-event-mid { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.crm-event-mid-top {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--text);
+  letter-spacing: 0.05em;
+}
+.crm-event-mid-sub {
+  font-family: var(--mono); font-size: 0.56rem; color: var(--muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.crm-event-loan {
+  font-family: var(--mono); font-size: 0.66rem; color: var(--accent);
+  letter-spacing: 0.05em;
+}
+.crm-event-loan.unmapped {
+  color: var(--muted); font-style: italic;
+}
+.crm-event-time {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; text-align: right; min-width: 56px;
+}
+.crm-event-chev {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  transition: transform 0.15s, color 0.15s;
+}
+.crm-event.open .crm-event-chev { transform: rotate(90deg); color: var(--accent); }
+
+/* drill-down detail */
+.crm-event-detail {
+  display: none;
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  padding: 0.85rem 0.95rem;
+}
+.crm-event.open > .crm-event-detail { display: block; }
+
+.detail-meta {
+  display: flex; flex-wrap: wrap; gap: 0.85rem;
+  margin-bottom: 0.65rem;
+  font-family: var(--mono); font-size: 0.58rem;
+  letter-spacing: 0.05em; color: var(--muted);
+}
+.detail-meta strong {
+  color: var(--text); font-weight: 400; margin-left: 0.35rem;
+  font-size: 0.62rem;
+}
+.detail-error {
+  font-family: var(--mono); font-size: 0.65rem;
+  color: var(--red); padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(255,68,68,0.3);
+  background: rgba(255,68,68,0.06);
+  margin-bottom: 0.65rem;
+  letter-spacing: 0.03em; line-height: 1.5;
+}
+
+.fr-header {
+  font-family: var(--mono); font-size: 0.55rem;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 0.35rem;
+}
+.fr-list { display: flex; flex-direction: column; gap: 0.15rem; }
+.field-result {
+  display: grid;
+  grid-template-columns: 10px 1.1fr 1.1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.4rem;
+  font-family: var(--mono); font-size: 0.62rem;
+  border-bottom: 1px dotted var(--border);
+}
+.field-result:last-child { border-bottom: none; }
+.fr-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  display: inline-block;
+}
+.fr-dot.applied          { background: var(--accent2); }
+.fr-dot.skipped          { background: var(--muted); }
+.fr-dot.transform_failed { background: var(--amber); }
+.fr-dot.write_failed     { background: var(--red); }
+.fr-path {
+  color: var(--text); letter-spacing: 0.03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fr-vendor {
+  color: var(--muted); letter-spacing: 0.03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fr-status {
+  font-size: 0.5rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border); white-space: nowrap;
+}
+.fr-status.applied          { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
+.fr-status.skipped          { color: var(--muted); }
+.fr-status.transform_failed { color: var(--amber); border-color: rgba(245,166,35,0.4); }
+.fr-status.write_failed     { color: var(--red);   border-color: rgba(255,68,68,0.5); }
+.fr-error-line {
+  grid-column: 2 / -1;
+  font-size: 0.6rem;
+  color: var(--red); font-style: italic;
+  margin-top: 0.1rem;
+  letter-spacing: 0;
+}
+.fr-error-line.warn  { color: var(--amber); }
+.fr-error-line.muted { color: var(--muted); }
+
+/* sub-tabs (outbound / inbound) — adapted from chat-tabs in home.html */
+.dir-tabs {
+  display: flex; gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.dir-tab {
+  flex: 1;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--deep); color: var(--muted);
+  border: none; padding: 0.6rem 0.5rem;
+  cursor: pointer; transition: all 0.15s;
+}
+.dir-tab:hover { color: var(--text); }
+.dir-tab.active {
+  background: var(--surface); color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.dir-tab .count {
+  font-size: 0.55rem; color: inherit; opacity: 0.7;
+  margin-left: 0.35rem;
+}
+
+/* ─── ACTION ROW (matches home.html exactly) ───────────────────────── */
+.action-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.75rem; align-items: center;
+  padding: 0.6rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+}
+.action-row.urgent { border-left-color: var(--red); }
+.action-row.info   { border-left-color: var(--accent); }
+.action-icon { font-family: var(--mono); font-size: 0.85rem; color: var(--amber); }
+.action-row.urgent .action-icon { color: var(--red); }
+.action-row.info   .action-icon { color: var(--accent); }
+.action-text { color: var(--text); font-size: 0.82rem; line-height: 1.4; }
+.action-text strong { color: var(--white); }
+.action-cta {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent);
+  text-decoration: none; padding: 0.25rem 0.55rem;
+  border: 1px solid rgba(0,212,255,0.3); cursor: pointer;
+  background: none;
+}
+.action-cta:hover { background: rgba(0,212,255,0.08); border-color: var(--accent); }
+
+/* ─── CTA ROW ──────────────────────────────────────────────────────── */
+.cta-row {
+  display: flex; gap: 0.75rem; flex-wrap: wrap;
+  padding-top: 0.5rem;
+}
+
+/* ─── CONFIRM MODAL (verbatim from dashboard.html) ─────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4,13,26,0.85);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.modal-overlay.open { display: flex; animation: modalIn 0.15s ease both; }
+@keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 480px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.08);
+}
+.modal-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--accent);
+}
+.modal-body { padding: 1.4rem 1.25rem; }
+.modal-prompt {
+  font-family: var(--serif); font-size: 1.25rem; color: var(--white);
+  line-height: 1.3; margin-bottom: 0.5rem;
+}
+.modal-detail {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-bottom: 1.2rem;
+}
+.modal-field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+.modal-field label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.modal-field select, .modal-field input[type="text"] {
+  font-family: var(--mono); font-size: 0.78rem;
+  background: var(--deep); color: var(--white);
+  border: 1px solid var(--border); padding: 0.55rem 0.7rem;
+  outline: none; transition: border-color 0.15s;
+}
+.modal-field select:focus, .modal-field input[type="text"]:focus { border-color: var(--accent); }
+.modal-check {
+  display: flex; align-items: center; gap: 0.55rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  cursor: pointer; user-select: none;
+  margin-bottom: 1.2rem;
+}
+.modal-check input[type="checkbox"] { accent-color: var(--accent); }
+.modal-warning {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--amber);
+  letter-spacing: 0.04em; padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(245,166,35,0.3);
+  background: rgba(245,166,35,0.06);
+  margin-bottom: 1.2rem;
+  display: none;
+}
+.modal-warning.show { display: block; }
+.modal-foot {
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--deep);
+  display: flex; justify-content: flex-end; gap: 0.6rem;
+}
+
+/* ─── TOAST (verbatim from production) ─────────────────────────────── */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent2);
+  padding: 0.85rem 1.1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: none;
+  animation: toastIn 0.2s ease both;
+  max-width: 400px;
+}
+.toast.error { border-left-color: var(--red); color: var(--red); }
+.toast.partial { border-left-color: var(--amber); color: var(--amber); }
+.toast.show { display: block; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ─── FOOTER (verbatim from production) ────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border); padding: 0.85rem 2rem;
+  display: flex; flex-direction: column; gap: 0.55rem;
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); background: var(--deep);
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+.footer-disclaimer {
+  font-size: 0.58rem;
+  line-height: 1.7;
+  color: var(--muted);
+  text-align: center;
+  max-width: 920px;
+  margin: 0 auto;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.03em;
+  font-weight: 300;
+}
+.footer-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
+
+/* ─── COOKIE BANNER (verbatim from production) ─────────────────────── */
+.cookie-banner {
+  position: fixed;
+  bottom: 1rem; left: 1rem; right: 1rem;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem 1.1rem;
+  display: flex; align-items: center; gap: 1rem;
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--text); letter-spacing: 0.04em;
+  z-index: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  animation: cbIn 0.25s ease both;
+}
+@keyframes cbIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.cookie-banner.hidden { display: none; }
+.cb-text { flex: 1; line-height: 1.6; }
+.cb-text strong { color: var(--white); font-weight: 500; }
+.cb-text a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.cb-text a:hover { color: var(--accent2); }
+.cb-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.cb-btn {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.5rem 0.9rem;
+  cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text);
+  transition: all 0.15s;
+}
+.cb-btn.cb-decline:hover { border-color: var(--muted); color: var(--white); }
+.cb-btn.cb-accept {
+  background: var(--accent); color: var(--navy);
+  border-color: var(--accent); font-weight: 700;
+}
+.cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ─── RESPONSIVE (matches production breakpoints) ──────────────────── */
+@media (max-width: 1180px) {
+  .nav-search { min-width: 160px; }
+  .nav-search-text { display: none; }
+}
+@media (max-width: 1024px) {
+  .nav-center { display: none; }
+  .nav-search { display: none; }
+  .metric-row { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+  .page-content { padding: 1.25rem; }
+  .page-heading { font-size: 1.55rem; }
+}
+@media (max-width: 540px) {
+  nav { padding: 0.85rem 1rem; gap: 0.5rem; }
+  .nav-branch { display: none; }
+  .nav-user-role { display: none; }
+  .nav-newloan { padding: 0.4rem 0.6rem; font-size: 0.6rem; }
+  .page-content { padding: 1rem; }
+  .metric-row { grid-template-columns: 1fr; }
+  .crm-event-row {
+    grid-template-columns: auto 1fr auto;
+  }
+  .crm-event-vendor, .crm-event-mid-sub { display: none; }
+  .cookie-banner {
+    flex-direction: column; align-items: stretch; gap: 0.75rem;
+    bottom: 0.5rem; left: 0.5rem; right: 0.5rem;
+    padding: 0.75rem 0.9rem;
+  }
+  .cb-buttons { justify-content: flex-end; }
+}
+</style>
+
+<!-- Google tag (gtag.js) — matches home.html consent posture -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6LRWPMYK9C"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  var ofConsent = null;
+  try { ofConsent = localStorage.getItem('of_cookie_consent'); } catch(_) {}
+  gtag('consent', 'default', {
+    'ad_storage':         'denied',
+    'ad_user_data':       'denied',
+    'ad_personalization': 'denied',
+    'analytics_storage':  ofConsent === 'granted' ? 'granted' : 'denied',
+    'wait_for_update':    500
+  });
+  gtag('js', new Date());
+  gtag('config', 'G-6LRWPMYK9C', { page_path: window.location.pathname });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV                                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/branch-library.html">Library</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li><a href="/investor-delivery.html">Delivery</a></li>
+    <li><a href="/integrations.html" class="active">Integrations</a></li>
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="nav-search" id="nav-search-btn" type="button" aria-label="Search loans">
+      <span class="nav-search-icon">⌕</span>
+      <span class="nav-search-text">Search loans, borrowers…</span>
+      <span class="nav-search-kbd" id="nav-search-kbd">⌘K</span>
+    </button>
+    <a href="/loans-new.html" class="nav-newloan" id="nav-newloan">+ New Loan</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
+    </span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN                                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<main>
+
+  <div class="state-screen" id="state-loading">
+    <div class="spinner"></div>
+    <div class="state-eyebrow">Authenticating</div>
+    <div class="state-heading" style="font-size:1.4rem;">Loading integrations…</div>
+  </div>
+
+  <div class="state-screen" id="state-signed-out" style="display:none;">
+    <div class="state-eyebrow">Sign in required</div>
+    <h1 class="state-heading">You're not signed in.</h1>
+    <p class="state-text">Integrations show your branch's CRM sync activity. Sign in to see connections, recent events, and failure drill-downs.</p>
+    <div class="state-actions">
+      <a href="/login.html" class="btn primary">Sign in →</a>
+      <a href="/home.html" class="btn">Back to Home</a>
+    </div>
+  </div>
+
+  <div class="state-screen" id="state-pending" style="display:none;">
+    <div class="state-eyebrow">Account pending · Q2 2026 beta</div>
+    <h1 class="state-heading">Your account is awaiting branch setup.</h1>
+    <p class="state-text">You're signed in, but your branch hasn't been provisioned yet. You'll get an email from <strong>dsrackler@gmail.com</strong> when your branch is live.</p>
+    <a href="/home.html" class="btn">Back to Home</a>
+  </div>
+
+  <section class="page-content" id="page-content" style="display:none;">
+
+    <header class="page-header">
+      <div class="page-eyebrow" id="page-eyebrow">INTEGRATIONS · —</div>
+      <h1 class="page-heading">CRM Sync Activity</h1>
+      <p class="page-sub">Live view of CRM connections, recent push/pull events, and field-level failure drill-down. Inbound webhooks land in the Inbound tab; manual sync triggers a pull on demand.</p>
+    </header>
+
+    <div class="metric-row" id="metric-row">
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+      <div class="metric-cell"><div class="metric-label">—</div><div class="metric-value">—</div><div class="metric-sub">loading</div></div>
+    </div>
+
+    <!-- Connections (full width) -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Connections</span>
+        <span class="panel-tag" id="conn-tag">—</span>
+        <div class="panel-actions">
+          <button class="icon-btn" id="refresh-all-btn" title="Refresh">↻</button>
+        </div>
+      </div>
+      <div class="panel-body" id="connections-list" style="max-height:none;">
+        <div class="panel-empty">Loading connections…</div>
+      </div>
+    </div>
+
+    <!-- Content grid: Sync Activity (left) + Action Needed (right) -->
+    <div class="content-grid">
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Sync Activity</span>
+          <span class="panel-tag" id="activity-tag">—</span>
+        </div>
+        <div class="dir-tabs">
+          <button class="dir-tab active" data-dir="outbound">Outbound <span class="count" id="count-outbound">—</span></button>
+          <button class="dir-tab"        data-dir="inbound">Inbound <span class="count" id="count-inbound">—</span></button>
+        </div>
+        <div class="panel-body" id="events-list">
+          <div class="panel-empty">Loading events…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Action Needed</span>
+          <span class="panel-tag" id="action-tag">—</span>
+        </div>
+        <div class="panel-body" id="action-list">
+          <div class="panel-empty">Loading…</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="cta-row">
+      <button class="btn primary" id="sync-btn" type="button">Sync from CRM →</button>
+      <a class="btn" href="/dashboard.html">Open Pipeline</a>
+      <a class="btn" href="/reports.html">Reports</a>
+    </div>
+
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- CONFIRM MODAL (manual sync)                                          -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Manual CRM Pull</span>
+    </div>
+    <div class="modal-body">
+      <div class="modal-prompt">Pull data from CRM into a loan?</div>
+      <div class="modal-detail">Triggers <code>pull-from-crm</code>. Overwrites OriginFlow fields with vendor values where mappings exist; never creates new rows.</div>
+
+      <div class="modal-field">
+        <label for="modal-connection">Connection</label>
+        <select id="modal-connection"></select>
+      </div>
+
+      <div class="modal-field">
+        <label for="modal-loan">Target loan</label>
+        <select id="modal-loan"></select>
+      </div>
+
+      <label class="modal-check">
+        <input type="checkbox" id="modal-force-mock">
+        <span>Force mock adapter (skip real vendor API — testing only)</span>
+      </label>
+
+      <div class="modal-warning" id="modal-warning"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="modal-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="modal-confirm" type="button">Sync</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<!-- Cookie banner -->
+<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cb-text">
+    <strong>We use cookies for analytics.</strong>
+    Helps us see which features people actually use. Nothing tied to a borrower or loan ever leaves your browser.
+    Details in our <a href="/privacy.html">Privacy Policy</a>.
+  </div>
+  <div class="cb-buttons">
+    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
+    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-disclaimer">
+    OriginFlow LOS is a software platform for independent mortgage branches and loan officers. Not a registered investment adviser, broker dealer, or financial planner. All compliance with federal and state mortgage regulations &mdash; including TRID, ECOA, HMDA, RESPA, and state licensing &mdash; remains the responsibility of the licensed lender. Software outputs are aids to underwriting decisions, not substitutes for them.
+  </div>
+  <div class="footer-bottom">
+    <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+    <span>v0.2 · live data · branch-scoped</span>
+    <div style="display:flex;gap:1.25rem;">
+      <a href="/home.html">Home</a>
+      <a href="/dashboard.html">Pipeline</a>
+      <a href="/documents.html">Documents</a>
+      <a href="/reports.html">Reports</a>
+      <a href="/investor-delivery.html">Delivery</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// /integrations.html — CRM Sync Activity
+//
+// 10.7 deliverable: live view of the v10/v11 CRM integration platform.
+//   - Connections panel: one row per active crm_connections, with last-event
+//     timestamp + 24h failure count + per-row "Pull Now" button
+//   - Sync Activity panel: outbound/inbound tab pair, click-to-expand
+//     field_results for failure drill-down (the sales lever)
+//   - Action Needed panel: 24h failures only, mirrors home.html's
+//     queue-panel pattern with action-row + Open CTA
+//   - Manual Sync modal: connection picker + loan picker + force-mock toggle,
+//     POSTs to /functions/v1/pull-from-crm
+//
+// Auth posture matches home.html / dashboard.html:
+//   - getSupabase() from /js/config.js
+//   - ofGetSession() for session retrieval
+//   - touchLastSeen() heartbeat (60s throttled via localStorage)
+//   - ofSignOut() for sign-out
+//
+// All Supabase queries go through `supa.from(...)` with explicit FK
+// disambiguation where needed (e.g. crm_connections!inner(vendor)). RLS
+// enforces branch scoping; we don't filter branch_id client-side except
+// where the policy doesn't cover it.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+
+let supa   = null;
+let me     = null;
+let branch = null;
+
+// In-memory caches refreshed on every refreshAll().
+let connections = [];
+let events = { outbound: [], inbound: [] };
+let actionItems = [];
+let recentLoans = [];
+
+let currentDir = 'outbound';
+let openEventIds = new Set();
+let realtimeChan = null;
+
+// ─── Formatting helpers (matches home.html/dashboard.html) ──────────────
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)        return Math.floor(diff) + 's ago';
+  if (diff < 3600)      return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400)     return Math.floor(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function fmtTrigger(t) { return String(t || '').replace(/_/g, ' '); }
+function vendorLabel(v) {
+  const map = {
+    surefire: 'Surefire',
+    hubspot:  'HubSpot',
+    bntouch:  'BNTouch',
+    velocity: 'Velocity',
+    top_of_mind: 'Top of Mind',
+  };
+  return map[v] || String(v || '').toUpperCase();
+}
+
+// ─── Last-seen tracking (lifted from home.html / dashboard.html) ────────
+async function touchLastSeen() {
+  try {
+    if (!supa || !me?.id) return;
+    const KEY = 'of_last_seen_touched_at';
+    const last = parseInt(localStorage.getItem(KEY) || '0', 10);
+    const now = Date.now();
+    if (now - last < 60000) return;
+    localStorage.setItem(KEY, String(now));
+    supa.from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', me.id)
+      .then(({ error }) => { if (error) console.warn('last_seen update:', error.message); });
+  } catch (err) {
+    console.warn('touchLastSeen:', err);
+  }
+}
+
+// ─── Toast ──────────────────────────────────────────────────────────────
+function showToast(msg, kind) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.remove('error', 'partial');
+  if (kind === 'error') el.classList.add('error');
+  else if (kind === 'partial') el.classList.add('partial');
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ─── State machine ─────────────────────────────────────────────────────
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+  });
+  $('#page-content').style.display = 'none';
+}
+function showContent() {
+  ['state-loading','state-signed-out','state-pending'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  $('#page-content').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════════
+async function bootstrap() {
+  $('#nav-search-kbd').textContent = isMac ? '⌘K' : 'Ctrl K';
+
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) {
+    console.error('[Integrations] Supabase client unavailable');
+    showState('state-signed-out'); return;
+  }
+
+  let session = null;
+  try {
+    session = (typeof ofGetSession === 'function') ? await ofGetSession() : null;
+  } catch (err) { console.warn('[Integrations] session error:', err); }
+  if (!session) { showState('state-signed-out'); return; }
+
+  const { data: profile, error: profErr } = await supa
+    .from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (profErr || !profile || !profile.branch_id) {
+    $('#nav-user-name').textContent = session.user.email || 'Signed in';
+    showState('state-pending');
+    return;
+  }
+
+  me = {
+    id: profile.id, branch_id: profile.branch_id, role: profile.role,
+    full_name: profile.full_name || session.user.email,
+    email: profile.email || session.user.email,
+  };
+  branch = profile.branches || { id: profile.branch_id, name: 'Your Branch' };
+
+  touchLastSeen();
+
+  $('#nav-user-name').textContent   = me.full_name;
+  $('#nav-user-role').textContent   = (me.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+  if (me.role === 'admin') $('#nav-team-li').style.display = 'list-item';
+  if (me.role === 'viewer') $('#nav-newloan').style.display = 'none';
+
+  $('#page-eyebrow').textContent = 'INTEGRATIONS · ' + branch.name.toUpperCase();
+
+  showContent();
+
+  bindHandlers();
+  await refreshAll();
+  initRealtime();
+
+  $('#nav-search-btn').addEventListener('click', () => {
+    // Quick navigation back to home for the command palette
+    window.location.href = '/home.html';
+  });
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      window.location.href = '/home.html';
+    }
+  });
+}
+
+function handleSignOut() {
+  if (typeof ofSignOut === 'function') ofSignOut();
+  else window.location.href = '/login.html';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA LOAD
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function loadConnections() {
+  // RLS scopes to branch automatically. Explicit branch_id filter as a
+  // belt-and-suspenders measure in case policy is misconfigured during
+  // initial deploy — extra cost is zero (indexed) and explicit failures
+  // beat silent cross-branch leaks if RLS ever drifts.
+  const { data, error } = await supa.from('crm_connections')
+    .select('id, vendor, vendor_tenant_id, active')
+    .eq('branch_id', me.branch_id)
+    .order('vendor');
+  if (error) {
+    console.warn('[Integrations] connections load:', error);
+    return [];
+  }
+  if (!data || data.length === 0) return [];
+
+  // For each connection: last event, 24h failures, today count. Three
+  // queries per connection — fine for the typical 1-5 connections per
+  // branch. If a branch ever has 20+ connections, replace with a single
+  // aggregating view.
+  const since24 = new Date(Date.now() - 24*3600*1000).toISOString();
+  const sinceToday = new Date(); sinceToday.setHours(0,0,0,0);
+  const startOfDay = sinceToday.toISOString();
+
+  const out = [];
+  for (const c of data) {
+    const [{ data: lastRow }, { count: failCount }, { count: todayCount }] = await Promise.all([
+      supa.from('crm_sync_events')
+        .select('created_at')
+        .eq('connection_id', c.id)
+        .order('created_at', { ascending: false })
+        .limit(1),
+      supa.from('crm_sync_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('connection_id', c.id)
+        .eq('status', 'failed')
+        .gte('created_at', since24),
+      supa.from('crm_sync_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('connection_id', c.id)
+        .gte('created_at', startOfDay),
+    ]);
+    out.push({
+      id: c.id,
+      vendor: c.vendor,
+      vendor_label: vendorLabel(c.vendor),
+      vendor_tenant_id: c.vendor_tenant_id,
+      active: c.active,
+      last_event_at: lastRow && lastRow[0] ? lastRow[0].created_at : null,
+      recent_failures: failCount ?? 0,
+      events_today: todayCount ?? 0,
+    });
+  }
+  return out;
+}
+
+async function loadEvents(direction, limit) {
+  // PostgREST embedding gotcha: crm_sync_events.connection_id → crm_connections
+  // is unambiguous (one FK), so the shorthand form works. Same for loan_id →
+  // loans. If those grow additional FKs we'll need the explicit form.
+  const { data, error } = await supa.from('crm_sync_events')
+    .select(`
+      id, connection_id, loan_id, trigger, status, direction,
+      external_event_id, field_results, error_message, narrative_status,
+      created_at,
+      crm_connections!inner ( vendor ),
+      loans ( loan_number )
+    `)
+    .eq('direction', direction)
+    .eq('branch_id', me.branch_id)
+    .order('created_at', { ascending: false })
+    .limit(limit || 30);
+
+  if (error) {
+    console.warn('[Integrations] events load (' + direction + '):', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    connection_id: row.connection_id,
+    vendor: row.crm_connections?.vendor,
+    vendor_label: vendorLabel(row.crm_connections?.vendor),
+    loan_id: row.loan_id,
+    loan_number: row.loans?.loan_number || null,
+    trigger: row.trigger,
+    status: row.status,
+    direction: row.direction,
+    external_event_id: row.external_event_id,
+    field_results: row.field_results || [],
+    error_message: row.error_message,
+    narrative_status: row.narrative_status,
+    created_at: row.created_at,
+  }));
+}
+
+async function loadActionItems() {
+  // 24h failures, max 8. We don't paginate beyond that — if a branch has 8+
+  // failures in 24h the action panel is doing its job (drawing attention)
+  // and the user should click through to the full Sync Activity tab.
+  const since = new Date(Date.now() - 24*3600*1000).toISOString();
+  const { data, error } = await supa.from('crm_sync_events')
+    .select(`
+      id, connection_id, loan_id, trigger, status, direction,
+      external_event_id, error_message, created_at,
+      crm_connections!inner ( vendor ),
+      loans ( loan_number )
+    `)
+    .eq('branch_id', me.branch_id)
+    .eq('status', 'failed')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(8);
+  if (error) {
+    console.warn('[Integrations] action items load:', error);
+    return [];
+  }
+  return (data || []).map(row => ({
+    id: row.id,
+    connection_id: row.connection_id,
+    vendor: row.crm_connections?.vendor,
+    vendor_label: vendorLabel(row.crm_connections?.vendor),
+    loan_id: row.loan_id,
+    loan_number: row.loans?.loan_number || null,
+    trigger: row.trigger,
+    direction: row.direction,
+    external_event_id: row.external_event_id,
+    error_message: row.error_message,
+    created_at: row.created_at,
+  }));
+}
+
+async function loadRecentLoans() {
+  // For the manual-sync modal's loan picker. Last 30 active loans in the
+  // branch, ordered by activity. RLS handles branch scoping; we filter
+  // archived_at out so the picker doesn't show terminated files.
+  const { data, error } = await supa.from('loans')
+    .select('id, loan_number, status, loan_amount_cents, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
+    .eq('branch_id', me.branch_id)
+    .is('archived_at', null)
+    .order('updated_at', { ascending: false })
+    .limit(30);
+  if (error) {
+    console.warn('[Integrations] recent loans load:', error);
+    return [];
+  }
+  return (data || []).map(l => {
+    const bs = (l.borrowers || []).sort((a,b) => (a.position||0) - (b.position||0)).map(b => b.borrower).filter(Boolean);
+    const primary = bs[0];
+    return {
+      id: l.id,
+      loan_number: l.loan_number,
+      borrower_name: primary ? `${primary.last_name}, ${primary.first_name}` : 'Borrower TBD',
+      status: l.status,
+    };
+  });
+}
+
+async function loadMetrics() {
+  const active = connections.filter(c => c.active).length;
+  const totalToday = connections.reduce((s, c) => s + (c.events_today || 0), 0);
+  const totalFail = connections.reduce((s, c) => s + (c.recent_failures || 0), 0);
+
+  // Last inbound webhook (for the "Last Webhook" cell)
+  const { data: lastWebhook } = await supa.from('crm_sync_events')
+    .select('created_at')
+    .eq('branch_id', me.branch_id)
+    .eq('direction', 'inbound')
+    .eq('trigger', 'webhook')
+    .order('created_at', { ascending: false })
+    .limit(1);
+  const lastWebhookAt = lastWebhook && lastWebhook[0] ? lastWebhook[0].created_at : null;
+
+  $('#metric-row').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">Active Connections</div>
+      <div class="metric-value cyan">${active}</div>
+      <div class="metric-sub">${connections.length - active} inactive</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Events Today</div>
+      <div class="metric-value">${totalToday}</div>
+      <div class="metric-sub">all directions</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Failures · 24h</div>
+      <div class="metric-value ${totalFail > 0 ? 'red' : 'green'}">${totalFail}</div>
+      <div class="metric-sub">${totalFail === 0 ? 'all healthy' : 'needs attention'}</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Last Webhook</div>
+      <div class="metric-value ${lastWebhookAt ? '' : 'muted'}">${lastWebhookAt ? timeAgo(lastWebhookAt) : '—'}</div>
+      <div class="metric-sub">inbound</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REFRESH
+// ═══════════════════════════════════════════════════════════════════════════
+async function refreshAll() {
+  const btn = $('#refresh-all-btn');
+  if (btn) { btn.classList.add('spinning'); btn.disabled = true; }
+
+  try {
+    connections = await loadConnections();
+    const [out, inb, actions, loans] = await Promise.all([
+      loadEvents('outbound', 30),
+      loadEvents('inbound', 30),
+      loadActionItems(),
+      loadRecentLoans(),
+    ]);
+    events.outbound = out;
+    events.inbound  = inb;
+    actionItems     = actions;
+    recentLoans     = loans;
+
+    await loadMetrics();
+    renderConnections();
+    renderEvents();
+    renderActions();
+    updateTags();
+  } catch (err) {
+    console.error('[Integrations] refresh failed:', err);
+    showToast('Refresh failed: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.classList.remove('spinning'); btn.disabled = false; }
+  }
+}
+
+function updateTags() {
+  const active = connections.filter(c => c.active).length;
+  $('#conn-tag').textContent = active + ' active · ' + connections.length + ' total';
+  $('#count-outbound').textContent = events.outbound.length;
+  $('#count-inbound').textContent  = events.inbound.length;
+  $('#activity-tag').textContent = events.outbound.length + events.inbound.length + ' events';
+
+  const tag = $('#action-tag');
+  tag.textContent = actionItems.length + ' to review';
+  tag.classList.toggle('alert', actionItems.length > 0);
+  tag.classList.toggle('ok', actionItems.length === 0);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderConnections() {
+  const el = $('#connections-list');
+  if (!connections.length) {
+    el.innerHTML = `<div class="panel-empty">No CRM connections configured. Connections are provisioned per branch — contact <a href="mailto:dsrackler@gmail.com" style="color:var(--accent);">Davis</a> to add one.</div>`;
+    return;
+  }
+  el.innerHTML = connections.map(c => {
+    let statCls, statText;
+    if (!c.active) { statCls = 'idle'; statText = 'Inactive'; }
+    else if (c.recent_failures > 0) { statCls = 'fail'; statText = `⚠ ${c.recent_failures} fail`; }
+    else { statCls = 'ok'; statText = '✓ Healthy'; }
+
+    const lastTxt = c.last_event_at ? timeAgo(c.last_event_at) : 'no events';
+    const tenantTxt = c.vendor_tenant_id ? `tenant ${c.vendor_tenant_id}` : 'no tenant id';
+
+    return `
+      <div class="crm-conn-row ${c.active ? '' : 'inactive'}">
+        <span class="crm-conn-dot ${c.active ? 'active' : ''}"></span>
+        <div class="crm-conn-mid">
+          <span class="crm-conn-vendor">${escapeHtml(c.vendor_label)}</span>
+          <span class="crm-conn-meta">${escapeHtml(tenantTxt)} · ${escapeHtml(c.events_today)} events today</span>
+        </div>
+        <span class="crm-conn-stat">${escapeHtml(lastTxt)}</span>
+        <span class="crm-conn-stat ${statCls}">${escapeHtml(statText)}</span>
+        <button class="crm-conn-action" data-conn-id="${escapeHtml(c.id)}" ${!c.active ? 'disabled' : ''}>Pull Now</button>
+      </div>`;
+  }).join('');
+
+  // wire per-connection Pull Now buttons
+  el.querySelectorAll('.crm-conn-action').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const connId = btn.dataset.connId;
+      openSyncModal(connId);
+    });
+  });
+}
+
+function renderEvents() {
+  const el = $('#events-list');
+  const list = events[currentDir] || [];
+  if (!list.length) {
+    el.innerHTML = `<div class="panel-empty">No ${currentDir} events yet.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(e => renderEventRow(e)).join('');
+  el.querySelectorAll('.crm-event-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const evt = row.closest('.crm-event');
+      const id = evt.getAttribute('data-id');
+      if (openEventIds.has(id)) {
+        openEventIds.delete(id); evt.classList.remove('open');
+      } else {
+        openEventIds.add(id); evt.classList.add('open');
+      }
+    });
+  });
+}
+
+function renderEventRow(e) {
+  const isOpen = openEventIds.has(e.id);
+  const loanCell = e.loan_number
+    ? `<a class="crm-event-loan" href="/loan.html?id=${escapeHtml(e.loan_id)}" onclick="event.stopPropagation()">${escapeHtml(e.loan_number)}</a>`
+    : `<span class="crm-event-loan unmapped">unmapped</span>`;
+
+  return `
+    <div class="crm-event${isOpen ? ' open' : ''}" data-id="${escapeHtml(e.id)}">
+      <div class="crm-event-row">
+        <span class="pill ${e.status}">${e.status}</span>
+        <span class="crm-event-vendor">${escapeHtml(e.vendor_label || e.vendor)}</span>
+        <div class="crm-event-mid">
+          <span class="crm-event-mid-top">${escapeHtml(fmtTrigger(e.trigger))}</span>
+          ${e.external_event_id
+            ? `<span class="crm-event-mid-sub">evt ${escapeHtml(e.external_event_id)}</span>`
+            : ''}
+        </div>
+        ${loanCell}
+        <span class="crm-event-time">${escapeHtml(timeAgo(e.created_at))}</span>
+        <span class="crm-event-chev">▸</span>
+      </div>
+      <div class="crm-event-detail">${renderEventDetail(e)}</div>
+    </div>`;
+}
+
+function renderEventDetail(e) {
+  const meta = [];
+  if (e.external_event_id) meta.push(`vendor event<strong>${escapeHtml(e.external_event_id)}</strong>`);
+  if (e.narrative_status)  meta.push(`narrative<strong>${escapeHtml(e.narrative_status)}</strong>`);
+  if (e.direction)         meta.push(`direction<strong>${escapeHtml(e.direction)}</strong>`);
+  const metaHtml = meta.length ? `<div class="detail-meta">${meta.join('')}</div>` : '';
+
+  const errHtml = e.error_message
+    ? `<div class="detail-error">${escapeHtml(e.error_message)}</div>`
+    : '';
+
+  let frHtml = '';
+  if (e.field_results && e.field_results.length) {
+    frHtml = `
+      <div class="fr-header">Field Results · ${e.field_results.length}</div>
+      <div class="fr-list">${e.field_results.map(renderFieldResult).join('')}</div>`;
+  } else if (!e.error_message) {
+    frHtml = `<div class="fr-header" style="color:var(--muted);">No field results recorded</div>`;
+  }
+
+  return metaHtml + errHtml + frHtml;
+}
+
+function renderFieldResult(fr) {
+  const status = fr.status || 'skipped';
+  let errLine = '';
+  if (fr.error) {
+    const cls = status === 'write_failed' ? ''
+              : status === 'transform_failed' ? 'warn'
+              : 'muted';
+    errLine = `<div class="fr-error-line ${cls}">${escapeHtml(fr.error)}</div>`;
+  }
+  return `
+    <div class="field-result">
+      <span class="fr-dot ${status}"></span>
+      <span class="fr-path">${escapeHtml(fr.of_path || '—')}</span>
+      <span class="fr-vendor">${escapeHtml(fr.vendor_field || '—')}</span>
+      <span class="fr-status ${status}">${escapeHtml(status.replace('_', ' '))}</span>
+      ${errLine}
+    </div>`;
+}
+
+function renderActions() {
+  const el = $('#action-list');
+  if (!actionItems.length) {
+    el.innerHTML = `<div class="panel-empty">No failures in the last 24h. Everything's syncing cleanly.</div>`;
+    return;
+  }
+  el.innerHTML = actionItems.map(a => {
+    const loanCell = a.loan_number
+      ? `<strong>${escapeHtml(a.loan_number)}</strong>`
+      : `<strong style="font-style:italic;color:var(--muted);">unmapped</strong>`;
+    const dirLabel = a.direction === 'outbound' ? 'push' : (a.trigger === 'webhook' ? 'webhook' : 'pull');
+    const errSnippet = a.error_message ? ' — ' + escapeHtml(a.error_message.slice(0, 60)) : '';
+    const urgency = a.error_message && /no .* row|column missing|unauthorized/i.test(a.error_message) ? 'urgent' : '';
+
+    const ctaHref = a.loan_id
+      ? `/loan.html?id=${a.loan_id}`
+      : '#';
+    const ctaAttr = a.loan_id ? `href="${ctaHref}"` : `href="#" onclick="return false"`;
+
+    return `
+      <div class="action-row ${urgency}">
+        <span class="action-icon">⚠</span>
+        <span class="action-text">
+          ${loanCell} · ${escapeHtml(vendorLabel(a.vendor))} ${escapeHtml(dirLabel)} failed${errSnippet}
+          <span style="color:var(--muted); display:block; font-size:0.7rem; margin-top:0.15rem;">${escapeHtml(timeAgo(a.created_at))}</span>
+        </span>
+        <a class="action-cta" ${ctaAttr}>${a.loan_id ? 'Open →' : 'Triage'}</a>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MANUAL SYNC MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+let modalConnectionId = null;
+
+function openSyncModal(presetConnId) {
+  const connSel = $('#modal-connection');
+  const loanSel = $('#modal-loan');
+
+  const activeConns = connections.filter(c => c.active);
+  if (!activeConns.length) {
+    showToast('No active CRM connections to pull from.', 'error');
+    return;
+  }
+  if (!recentLoans.length) {
+    showToast('No active loans to sync.', 'error');
+    return;
+  }
+
+  connSel.innerHTML = activeConns.map(c =>
+    `<option value="${escapeHtml(c.id)}">${escapeHtml(c.vendor_label)} · ${escapeHtml(c.vendor_tenant_id || 'no tenant id')}</option>`
+  ).join('');
+  if (presetConnId) connSel.value = presetConnId;
+  modalConnectionId = connSel.value;
+
+  loanSel.innerHTML = recentLoans.map(l =>
+    `<option value="${escapeHtml(l.id)}">${escapeHtml(l.loan_number)} · ${escapeHtml(l.borrower_name)} (${escapeHtml(l.status)})</option>`
+  ).join('');
+
+  $('#modal-force-mock').checked = false;
+  $('#modal-warning').classList.remove('show');
+  $('#modal-warning').textContent = '';
+  $('#modal-overlay').classList.add('open');
+}
+
+function closeSyncModal() {
+  $('#modal-overlay').classList.remove('open');
+  modalConnectionId = null;
+}
+
+async function confirmSync() {
+  const connId = $('#modal-connection').value;
+  const loanId = $('#modal-loan').value;
+  const forceMock = $('#modal-force-mock').checked;
+
+  if (!connId || !loanId) {
+    showToast('Pick a connection and a loan.', 'error');
+    return;
+  }
+
+  const btn = $('#modal-confirm');
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = 'Syncing…';
+
+  try {
+    const { data: { session } } = await supa.auth.getSession();
+    if (!session) throw new Error('not authenticated');
+
+    const SUPABASE_URL = window.OF_SUPABASE_URL || window.SUPABASE_URL || '';
+    if (!SUPABASE_URL) throw new Error('SUPABASE_URL not set in /js/config.js');
+
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/pull-from-crm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        connection_id: connId,
+        loan_id: loanId,
+        force_mock: forceMock,
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+
+    const statusLabel = body.status === 'success' ? 'success'
+                      : body.status === 'partial' ? 'partial'
+                      : 'error';
+    const conn = connections.find(c => c.id === connId);
+    const loan = recentLoans.find(l => l.id === loanId);
+    const adapterTxt = body.adapter_mode === 'mock' ? ' · mock adapter' : '';
+
+    showToast(
+      `${conn?.vendor_label || 'CRM'} → ${loan?.loan_number || 'loan'} · ${body.status}${adapterTxt}`,
+      statusLabel,
+    );
+    closeSyncModal();
+
+    // Re-fetch inbound (where pulls land) + actions
+    events.inbound = await loadEvents('inbound', 30);
+    actionItems    = await loadActionItems();
+    connections    = await loadConnections();
+    await loadMetrics();
+    renderConnections();
+    if (currentDir === 'inbound') renderEvents();
+    renderActions();
+    updateTags();
+
+  } catch (err) {
+    console.error('[Integrations] sync error:', err);
+    showToast('Sync failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// REALTIME
+// ═══════════════════════════════════════════════════════════════════════════
+// Listen for new crm_sync_events on the branch. Inbound webhooks are the
+// most interesting case — they arrive without user action and should show
+// up immediately. We re-fetch the affected direction; not the cheapest but
+// the volume is low enough that simplicity wins.
+
+function initRealtime() {
+  if (realtimeChan) {
+    try { supa.removeChannel(realtimeChan); } catch (_) {}
+  }
+  realtimeChan = supa
+    .channel(`integrations:${me.branch_id}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'crm_sync_events', filter: `branch_id=eq.${me.branch_id}` },
+      async (payload) => {
+        const row = payload.new;
+        const dir = row?.direction;
+        if (dir === 'outbound' || dir === 'inbound') {
+          events[dir] = await loadEvents(dir, 30);
+          if (currentDir === dir) renderEvents();
+        }
+        if (row?.status === 'failed') {
+          actionItems = await loadActionItems();
+          renderActions();
+        }
+        // Connection summaries (last_event_at, today count, failures)
+        // change frequently enough to refresh on every insert.
+        connections = await loadConnections();
+        renderConnections();
+        await loadMetrics();
+        updateTags();
+      }
+    )
+    .subscribe();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HANDLERS
+// ═══════════════════════════════════════════════════════════════════════════
+function bindHandlers() {
+  // Tab switching
+  $$('.dir-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.dir-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentDir = tab.dataset.dir;
+      openEventIds.clear();
+      renderEvents();
+    });
+  });
+
+  $('#refresh-all-btn').addEventListener('click', refreshAll);
+  $('#sync-btn').addEventListener('click', () => openSyncModal(null));
+
+  // Modal
+  $('#modal-cancel').addEventListener('click', closeSyncModal);
+  $('#modal-confirm').addEventListener('click', confirmSync);
+  $('#modal-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeSyncModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('#modal-overlay').classList.contains('open')) {
+      closeSyncModal();
+    }
+  });
+
+  // Periodic relative-time refresh (so "2m ago" → "3m ago" without
+  // user action). Cheap because all data is already in memory.
+  setInterval(() => {
+    renderConnections();
+    renderEvents();
+    renderActions();
+  }, 30000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- COOKIE BANNER WIRING (verbatim from production)                      -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+
+  var prior = null;
+  try { prior = localStorage.getItem(KEY); } catch (_) {}
+
+  if (prior !== 'granted' && prior !== 'denied') {
+    banner.classList.remove('hidden');
+  }
+
+  function setConsent(value) {
+    try { localStorage.setItem(KEY, value); } catch (_) {}
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': value === 'granted' ? 'granted' : 'denied'
+      });
+    }
+    banner.classList.add('hidden');
+  }
+
+  var accept = document.getElementById('cb-accept');
+  var decline = document.getElementById('cb-decline');
+  if (accept)  accept.addEventListener('click',  function() { setConsent('granted'); });
+  if (decline) decline.addEventListener('click', function() { setConsent('denied');  });
+})();
+</script>
+
+</body>
+</html>
