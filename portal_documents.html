@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documents — OriginFlow Borrower Portal</title>
+<meta name="description" content="Upload documents for your mortgage loan.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  :root {
+    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
+    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
+    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
+    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+  nav,.portal-banner,main,footer{position:relative;z-index:1}
+  a{color:inherit}
+
+  /* ─── Nav ───────────────────────────────────────────────────────── */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.9);backdrop-filter:blur(12px);gap:1rem;flex-wrap:wrap}
+  .nav-logo{display:flex;align-items:center;gap:0.75rem;text-decoration:none}
+  .sonar-icon{width:30px;height:30px}
+  .nav-wordmark{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase}
+  .nav-wordmark span{color:var(--accent)}
+  .nav-right{display:flex;align-items:center;gap:0.85rem;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.06em;color:var(--muted);flex-wrap:wrap}
+  .nav-back{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.15s}
+  .nav-back:hover{color:var(--accent)}
+  .nav-signout{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);background:transparent;border:1px solid var(--border);padding:0.4rem 0.85rem;cursor:pointer;transition:all 0.15s}
+  .nav-signout:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ─── Portal banner ─────────────────────────────────────────────── */
+  .portal-banner{background:rgba(0,212,255,0.06);border-bottom:1px solid rgba(0,212,255,0.25);padding:0.5rem 2rem;display:flex;align-items:center;justify-content:center;gap:0.6rem;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.14em;color:var(--accent);text-transform:uppercase}
+  .pb-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+
+  /* ─── Main + states ─────────────────────────────────────────────── */
+  main{flex:1;padding:2.25rem 1.75rem 4rem;max-width:920px;margin:0 auto;width:100%;animation:fadeIn 0.4s ease both}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .state-block{text-align:center;padding:3.5rem 1.5rem}
+  .state-block h2{font-family:var(--serif);font-size:1.6rem;color:var(--white);margin-bottom:0.7rem}
+  .state-block p{color:var(--muted);font-weight:300;max-width:480px;margin:0 auto 1.4rem;line-height:1.7;font-size:0.93rem}
+  .state-cta{font-family:var(--mono);font-size:0.75rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.8rem 1.7rem;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+  .state-cta:hover{opacity:0.85}
+  .spinner{display:inline-block;width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.85s linear infinite;margin-bottom:1.2rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ─── Loan header ───────────────────────────────────────────────── */
+  .loan-eyebrow{font-family:var(--mono);font-size:0.66rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.7rem;display:flex;align-items:center;gap:0.7rem}
+  .loan-eyebrow::before{content:'';display:block;width:1.5rem;height:1px;background:var(--accent)}
+  h1.page-title{font-family:var(--serif);font-size:clamp(1.7rem,3.6vw,2.3rem);color:var(--white);line-height:1.2;margin-bottom:0.45rem}
+  .page-sub{font-size:0.95rem;color:var(--muted);font-weight:300;max-width:640px;margin-bottom:1.75rem;line-height:1.65}
+
+  /* ─── Progress strip ────────────────────────────────────────────── */
+  .progress-strip{background:var(--surface);border:1px solid var(--border);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;flex-wrap:wrap}
+  .progress-stat{font-family:var(--mono);font-size:0.66rem;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;line-height:1.6}
+  .progress-stat strong{color:var(--accent);font-weight:700;font-size:0.95rem;letter-spacing:0.06em}
+  .progress-bar-wrap{flex:1;height:6px;background:var(--panel);min-width:160px;max-width:340px;overflow:hidden;position:relative}
+  .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.4s ease;width:0%}
+
+  /* ─── Request cards ─────────────────────────────────────────────── */
+  .request-card{background:var(--surface);border:1px solid var(--border);padding:1.5rem 1.5rem 1.4rem;margin-bottom:1rem;position:relative;transition:border-color 0.15s}
+  .request-card:hover{border-color:rgba(0,212,255,0.3)}
+  .request-card.complete{border-left:3px solid var(--accent2)}
+  .request-card.rejected{border-left:3px solid var(--red)}
+  .request-card.partial{border-left:3px solid var(--amber)}
+  .request-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.65rem;flex-wrap:wrap}
+  .request-title-wrap{flex:1;min-width:0}
+  .request-title{font-family:var(--serif);font-size:1.25rem;color:var(--white);line-height:1.3;margin-bottom:0.3rem}
+  .request-desc{font-size:0.88rem;color:var(--muted);font-weight:300;line-height:1.6;max-width:580px}
+  .request-pills{display:flex;gap:0.4rem;flex-wrap:wrap;flex-shrink:0}
+  .req-pill{display:inline-block;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.32rem 0.7rem;border:1px solid;line-height:1;font-weight:700}
+  .req-pill.required{color:var(--amber);border-color:var(--amber);background:rgba(245,166,35,0.08)}
+  .req-pill.optional{color:var(--muted);border-color:var(--border);background:transparent}
+  .req-pill.status-pending{color:var(--muted);border-color:var(--border)}
+  .req-pill.status-partial{color:var(--amber);border-color:var(--amber);background:rgba(245,166,35,0.08)}
+  .req-pill.status-provided{color:var(--accent2);border-color:var(--accent2);background:rgba(0,255,157,0.08)}
+  .req-pill.status-waived{color:var(--muted);border-color:var(--border);background:transparent}
+  .req-pill.status-rejected{color:var(--red);border-color:var(--red);background:rgba(255,68,68,0.08)}
+
+  /* ─── Upload zone ───────────────────────────────────────────────── */
+  .upload-zone{margin-top:1.1rem;border:1px dashed var(--border);background:var(--deep);padding:1.4rem 1rem;text-align:center;transition:all 0.18s;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:0.85rem}
+  .upload-zone:hover{border-color:var(--accent);background:rgba(0,212,255,0.03)}
+  .upload-zone.dragover{border-color:var(--accent);background:rgba(0,212,255,0.08);border-style:solid}
+  .upload-zone[hidden]{display:none}
+  .upload-buttons{display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center}
+  .upload-btn{font-family:var(--mono);font-size:0.66rem;letter-spacing:0.1em;text-transform:uppercase;background:transparent;color:var(--accent);border:1px solid var(--accent);padding:0.65rem 1rem;cursor:pointer;font-weight:700;transition:all 0.15s;display:inline-flex;align-items:center;gap:0.45rem}
+  .upload-btn:hover{background:var(--accent);color:var(--navy)}
+  .upload-btn.primary{background:var(--accent);color:var(--navy)}
+  .upload-btn.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  .upload-zone-hint{font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.05em;line-height:1.6}
+  .upload-zone-hint .or{display:block;margin-bottom:0.25rem;color:var(--muted)}
+
+  /* ─── Upload chips (one per uploaded/uploading file) ────────────── */
+  .upload-list{margin-top:1.1rem;display:flex;flex-direction:column;gap:0.45rem}
+  .upload-chip{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0.7rem;padding:0.65rem 0.9rem;background:var(--panel);border:1px solid var(--border);font-size:0.85rem;animation:chipIn 0.3s ease}
+  @keyframes chipIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  .chip-icon{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--border);background:var(--deep);font-family:var(--mono);font-size:0.58rem;font-weight:700;color:var(--accent);flex-shrink:0;letter-spacing:0.03em}
+  .chip-mid{min-width:0}
+  .chip-name{color:var(--white);font-weight:400;word-break:break-word;line-height:1.4}
+  .chip-meta{font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:0.04em;margin-top:0.18rem}
+  .chip-status{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.25rem 0.6rem;border:1px solid;flex-shrink:0;display:inline-flex;align-items:center;gap:0.45rem}
+  .chip-status.uploading{color:var(--accent);border-color:var(--accent);background:rgba(0,212,255,0.06)}
+  .chip-status.processing{color:var(--amber);border-color:var(--amber);background:rgba(245,166,35,0.06)}
+  .chip-status.uploaded,.chip-status.classified,.chip-status.extracted,.chip-status.accepted{color:var(--accent2);border-color:var(--accent2);background:rgba(0,255,157,0.06)}
+  .chip-status.rejected,.chip-status.scan_failed,.chip-status.error{color:var(--red);border-color:var(--red);background:rgba(255,68,68,0.06)}
+  .chip-status .mini-spinner{display:inline-block;width:9px;height:9px;border:1.5px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin 0.7s linear infinite}
+  .chip-reject-reason{grid-column:1 / -1;font-family:var(--mono);font-size:0.62rem;color:var(--red);background:rgba(255,68,68,0.05);border-top:1px dotted rgba(255,68,68,0.3);margin:0.55rem -0.9rem -0.65rem;padding:0.5rem 0.9rem;letter-spacing:0.03em;line-height:1.6}
+  .chip-retry{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;background:transparent;color:var(--accent);border:1px solid var(--accent);padding:0.3rem 0.6rem;cursor:pointer;margin-left:0.4rem}
+  .chip-retry:hover{background:var(--accent);color:var(--navy)}
+
+  /* ─── Unsolicited upload section ────────────────────────────────── */
+  .section-divider{margin:2.5rem 0 1.25rem;display:flex;align-items:center;gap:0.9rem}
+  .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .section-divider span{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase}
+  .unsolicited-card{background:var(--surface);border:1px dashed var(--border);padding:1.4rem 1.5rem 1.3rem}
+  .unsolicited-card h3{font-family:var(--serif);font-size:1.15rem;color:var(--white);margin-bottom:0.4rem;line-height:1.3}
+  .unsolicited-card p{font-size:0.85rem;color:var(--muted);font-weight:300;line-height:1.65;margin-bottom:0.9rem}
+
+  /* ─── Toast ─────────────────────────────────────────────────────── */
+  .toast{position:fixed;bottom:1.5rem;left:50%;transform:translate(-50%, 200%);background:var(--surface);border:1px solid var(--accent);color:var(--white);padding:0.85rem 1.2rem;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.06em;z-index:200;transition:transform 0.3s ease;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .toast.show{transform:translate(-50%, 0)}
+  .toast.error{border-color:var(--red);color:var(--red)}
+  .toast.success{border-color:var(--accent2);color:var(--accent2)}
+
+  /* ─── Footer ────────────────────────────────────────────────────── */
+  footer{padding:1.5rem 2rem 2rem;border-top:1px solid var(--border);background:var(--deep);text-align:center;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;color:var(--muted);line-height:1.7}
+  footer a{color:var(--muted);text-decoration:none;margin:0 0.5rem}
+  footer a:hover{color:var(--accent)}
+
+  /* ─── Mobile ────────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    nav{padding:0.85rem 1.1rem}
+    main{padding:1.5rem 1rem 3rem}
+    .request-card{padding:1.25rem 1.1rem 1.2rem}
+    .request-head{flex-direction:column;gap:0.6rem}
+    .request-pills{order:-1}
+    .upload-zone{padding:1.2rem 0.85rem}
+    .upload-buttons{flex-direction:column;width:100%}
+    .upload-btn{width:100%;justify-content:center}
+    .chip-status{font-size:0.55rem;padding:0.22rem 0.5rem}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/portal/index.html" class="nav-logo" aria-label="Back to portal">
+    <svg class="sonar-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="6" fill="#00d4ff"/>
+      <circle cx="50" cy="50" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.7"/>
+      <circle cx="50" cy="50" r="32" fill="none" stroke="#00d4ff" stroke-width="1" opacity="0.4"/>
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#00d4ff" stroke-width="0.6" opacity="0.2"/>
+    </svg>
+    <span class="nav-wordmark">Origin<span>Flow</span></span>
+  </a>
+  <div class="nav-right">
+    <a href="" class="nav-back" id="back-to-loan">← Back to loan</a>
+    <button class="nav-signout" id="signout-btn" type="button">Sign Out</button>
+  </div>
+</nav>
+
+<div class="portal-banner"><span class="pb-dot"></span>Borrower Portal · Documents</div>
+
+<main>
+  <!-- Loading -->
+  <div id="state-loading" class="state-block">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;">Loading documents…</p>
+  </div>
+
+  <!-- Signed out -->
+  <div id="state-signed-out" class="state-block" hidden>
+    <h2>You're not signed in</h2>
+    <p>Please sign in to view your loan's documents.</p>
+    <a href="/portal/login.html" class="state-cta">Sign in →</a>
+  </div>
+
+  <!-- No loan / no access -->
+  <div id="state-not-found" class="state-block" hidden>
+    <h2>Loan not found</h2>
+    <p>This loan doesn't exist or you don't have access to it. If you think this is wrong, contact your loan officer.</p>
+    <a href="/portal/index.html" class="state-cta">Return to Portal →</a>
+  </div>
+
+  <!-- Main content -->
+  <div id="content" hidden>
+    <div class="loan-eyebrow"><span id="loan-eyebrow-text">Loan</span></div>
+    <h1 class="page-title">Documents.</h1>
+    <p class="page-sub" id="page-sub">Upload the documents your loan officer has requested. You can take photos from your phone or upload files from your computer.</p>
+
+    <div class="progress-strip">
+      <div class="progress-stat"><strong id="progress-done">0</strong> of <strong id="progress-total">0</strong> documents uploaded</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar"></div></div>
+      <div class="progress-stat" id="progress-required-meta">—</div>
+    </div>
+
+    <div id="requests-list"></div>
+
+    <div class="section-divider"><span>Need to upload something else?</span></div>
+
+    <div class="unsolicited-card">
+      <h3>Upload an additional document</h3>
+      <p>If you have something to share that isn't in the list above — a letter of explanation, a gift letter, additional proof of income — upload it here. Your loan officer will review and categorize it.</p>
+      <div class="upload-zone" id="unsolicited-zone" data-request-id="">
+        <div class="upload-buttons">
+          <button type="button" class="upload-btn" data-action="camera" data-request-id="">📷 Take a photo</button>
+          <button type="button" class="upload-btn primary" data-action="file" data-request-id="">Choose a file</button>
+        </div>
+        <div class="upload-zone-hint">
+          <span class="or">or drag a file here</span>
+          PDF, JPG, PNG, HEIC · up to 25 MB
+        </div>
+      </div>
+      <div class="upload-list" id="unsolicited-uploads"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div>Equal Housing Opportunity · NMLS ID #—</div>
+  <div style="margin-top:0.4rem;">
+    <a href="/portal/index.html">Portal</a> ·
+    <a href="/privacy.html">Privacy</a> ·
+    <a href="/terms.html">Terms</a>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<!-- Hidden file inputs — one for camera, one for file picker. We swap which
+     request the picker targets via the data-request-id attribute. -->
+<input type="file" id="file-camera"  accept="image/*,application/pdf" capture="environment" style="display:none;" />
+<input type="file" id="file-picker"  accept="application/pdf,image/jpeg,image/jpg,image/png,image/heic,image/heif,image/webp" style="display:none;" />
+
+<script>
+  // ═══════════════════════════════════════════════════════════════════════
+  // /portal/documents.html — borrower-facing categorized doc upload
+  //
+  // Bootstrap:
+  //   ?loan_id=<uuid> from the URL → session → borrowers row → eConsent gate
+  //   → verify loan access → load loan_documents_borrower_view rows
+  //
+  // Upload flow per file:
+  //   1. validateFile(): MIME + size client-side (server re-validates)
+  //   2. RPC borrower_initiate_doc_upload → { document_id, storage_path }
+  //   3. supabase.storage.from('loan-documents').upload(path, file)
+  //   4. RPC borrower_finalize_doc_upload(document_id)
+  //   5. refresh the request card UI
+  //
+  // Failure modes:
+  //   - validate fails → toast, no row created
+  //   - initiate fails → toast, no row created
+  //   - storage upload fails → orphan loan_documents row (pending_upload),
+  //     UI shows error chip with retry button; retry re-uploads to same path
+  //   - finalize fails → same as above, retry path re-runs finalize
+  //
+  // The page is single-loan-scoped. Multi-loan support would mean adding a
+  // loan picker — deferred. Most borrowers have one active loan at a time.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  var ALLOWED_MIME = [
+    'application/pdf',
+    'image/jpeg','image/jpg','image/png','image/heic','image/heif','image/webp'
+  ];
+  var MAX_SIZE = 25 * 1024 * 1024;  // 25 MB — must match the RPC's cap
+
+  var sb = null;
+  var loanId = null;
+  var loan = null;
+  var borrower = null;
+  var requests = [];       // array of loan_documents_borrower_view rows
+  var unsolicited = [];    // array of loan_documents rows where request_id is null
+  // Map of document_id → in-flight File object; used by retry to re-upload
+  // without re-validating. Cleared once the upload succeeds.
+  var inFlightFiles = {};
+
+  // ─── Helpers ──────────────────────────────────────────────────────────
+  function showState(stateId) {
+    ['state-loading','state-signed-out','state-not-found'].forEach(function(s) {
+      document.getElementById(s).hidden = (s !== stateId);
+    });
+    document.getElementById('content').hidden = true;
+  }
+  function showContent() {
+    ['state-loading','state-signed-out','state-not-found'].forEach(function(s) {
+      document.getElementById(s).hidden = true;
+    });
+    document.getElementById('content').hidden = false;
+  }
+  function toast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove('show'); }, 3800);
+  }
+  function fmtSize(bytes) {
+    if (bytes == null) return '—';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    var now = new Date();
+    var diff = (now - d) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 86400 * 7) return Math.floor(diff / 86400) + 'd ago';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+  function categoryCode(cat) {
+    return {
+      id: 'ID', pay_stub: 'PS', w2_form: 'W2', bank_statement: 'BS',
+      tax_return: 'TR', homeowners_insurance: 'HI', gift_letter: 'GL',
+      lox: 'LX', divorce_decree: 'DD', other: 'DOC'
+    }[cat] || (cat || 'DOC').substring(0, 3).toUpperCase();
+  }
+
+  // ─── Bootstrap ────────────────────────────────────────────────────────
+  async function bootstrap() {
+    // 1. Get loan_id from URL
+    var params = new URLSearchParams(window.location.search);
+    loanId = params.get('loan_id') || params.get('id');
+    if (!loanId) {
+      console.warn('[OF Docs] no loan_id in URL');
+      showState('state-not-found');
+      return;
+    }
+
+    // 2. Init Supabase
+    if (!window.OF_CONFIG || !window.OF_CONFIG.SUPABASE_URL) {
+      console.error('[OF Docs] missing OF_CONFIG');
+      showState('state-not-found');
+      return;
+    }
+    sb = window.supabase.createClient(
+      window.OF_CONFIG.SUPABASE_URL,
+      window.OF_CONFIG.SUPABASE_ANON_KEY
+    );
+
+    // 3. Session
+    var sessRes = await sb.auth.getSession();
+    if (!sessRes.data.session) {
+      showState('state-signed-out');
+      return;
+    }
+    var userId = sessRes.data.session.user.id;
+
+    // 4. Resolve borrowers row
+    var borRes = await sb
+      .from('borrowers')
+      .select('id, first_name, last_name, econsent_granted_at, econsent_withdrawn_at')
+      .eq('auth_user_id', userId)
+      .maybeSingle();
+    if (borRes.error || !borRes.data) {
+      console.warn('[OF Docs] no borrowers row:', borRes.error);
+      // Not a borrower (e.g. staff). Send to portal index to sort out.
+      window.location.href = '/portal/index.html';
+      return;
+    }
+    borrower = borRes.data;
+
+    // 5. eConsent gate
+    var granted = borrower.econsent_granted_at &&
+                  (!borrower.econsent_withdrawn_at ||
+                   new Date(borrower.econsent_withdrawn_at) < new Date(borrower.econsent_granted_at));
+    if (!granted) {
+      window.location.href = '/portal/econsent.html';
+      return;
+    }
+
+    // 6. Verify loan access + load loan summary
+    var loanRes = await sb
+      .from('loans_borrower_view')
+      .select('id, loan_number, property_address, purpose, loan_amount_cents')
+      .eq('id', loanId)
+      .maybeSingle();
+    if (loanRes.error || !loanRes.data) {
+      console.warn('[OF Docs] loan not accessible:', loanRes.error);
+      showState('state-not-found');
+      return;
+    }
+    loan = loanRes.data;
+
+    // Wire the back-to-loan link now that we know the id
+    document.getElementById('back-to-loan').setAttribute('href', '/portal/loan.html?id=' + encodeURIComponent(loanId));
+
+    // 7. Load requests + uploads
+    await loadRequests();
+
+    showContent();
+    renderHeader();
+    renderRequests();
+    wireGlobalListeners();
+  }
+
+  async function loadRequests() {
+    // Per-request view (one row per document_request with uploads array)
+    var reqsRes = await sb
+      .from('loan_documents_borrower_view')
+      .select('*')
+      .eq('loan_id', loanId)
+      .order('requested_at', { ascending: true });
+    if (reqsRes.error) {
+      console.error('[OF Docs] loadRequests failed:', reqsRes.error);
+      requests = [];
+    } else {
+      requests = reqsRes.data || [];
+    }
+
+    // Unsolicited uploads (request_id is null) — fetch separately since the
+    // view only includes rows tied to a request.
+    var unsRes = await sb
+      .from('loan_documents')
+      .select('id, filename, mime_type, file_size_bytes, status, rejected_reason, uploaded_at, created_at')
+      .eq('loan_id', loanId)
+      .is('request_id', null)
+      .order('created_at', { ascending: false });
+    if (unsRes.error) {
+      console.warn('[OF Docs] unsolicited fetch failed:', unsRes.error);
+      unsolicited = [];
+    } else {
+      unsolicited = unsRes.data || [];
+    }
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────
+  function renderHeader() {
+    var addr = loan.property_address || {};
+    var addrStr = [
+      addr.street,
+      [addr.city, addr.state, addr.zip].filter(Boolean).join(' ')
+    ].filter(Boolean).join(', ') || 'your loan';
+    document.getElementById('loan-eyebrow-text').textContent =
+      'Loan ' + (loan.loan_number || '') + (addrStr !== 'your loan' ? ' · ' + addrStr : '');
+
+    // Progress strip
+    var total = requests.length;
+    var done = requests.filter(function(r) { return r.request_status === 'provided'; }).length;
+    var partial = requests.filter(function(r) { return r.request_status === 'partially_provided'; }).length;
+    var requiredOpen = requests.filter(function(r) {
+      return r.required && (r.request_status === 'pending' || r.request_status === 'partially_provided');
+    }).length;
+    document.getElementById('progress-done').textContent = done;
+    document.getElementById('progress-total').textContent = total;
+    document.getElementById('progress-bar').style.width =
+      total === 0 ? '0%' : Math.round((done / total) * 100) + '%';
+    var meta = document.getElementById('progress-required-meta');
+    if (requiredOpen === 0 && total > 0) {
+      meta.innerHTML = '<strong style="color:var(--accent2);">All required uploaded</strong>';
+    } else if (requiredOpen > 0) {
+      meta.innerHTML = '<strong style="color:var(--amber);">' + requiredOpen +
+                       '</strong> required still pending';
+    } else {
+      meta.textContent = '';
+    }
+  }
+
+  function renderRequests() {
+    var list = document.getElementById('requests-list');
+    if (requests.length === 0) {
+      list.innerHTML = '<div style="background:var(--surface);border:1px dashed var(--border);padding:2rem 1.5rem;text-align:center;color:var(--muted);font-family:var(--mono);font-size:0.78rem;letter-spacing:0.04em;line-height:1.7;">' +
+        'No documents have been requested yet.<br>' +
+        '<span style="font-size:0.7rem;color:var(--muted);">Your loan officer will add document requests here as your application progresses.</span></div>';
+    } else {
+      list.innerHTML = requests.map(renderRequestCard).join('');
+    }
+
+    // Unsolicited uploads
+    document.getElementById('unsolicited-uploads').innerHTML =
+      unsolicited.map(function(u) { return renderUploadChip(u, null); }).join('');
+
+    // Wire upload zones (per card + unsolicited)
+    document.querySelectorAll('.upload-zone').forEach(wireUploadZone);
+    document.querySelectorAll('.upload-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var action = btn.dataset.action;
+        var rid = btn.dataset.requestId || null;
+        triggerFilePicker(action, rid);
+      });
+    });
+    document.querySelectorAll('.chip-retry').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        retryUpload(btn.dataset.docId);
+      });
+    });
+  }
+
+  function renderRequestCard(req) {
+    var uploads = Array.isArray(req.uploads) ? req.uploads : [];
+    var status = req.request_status || 'pending';
+
+    // Card border state mirrors status
+    var cardCls = '';
+    if (status === 'provided') cardCls = 'complete';
+    else if (status === 'partially_provided') cardCls = 'partial';
+    else if (status === 'rejected') cardCls = 'rejected';
+
+    var statusLabel = {
+      pending: 'Needs upload',
+      partially_provided: 'Partial',
+      provided: '✓ Uploaded',
+      waived: 'Waived',
+      rejected: 'Rejected'
+    }[status] || status;
+
+    // Hide the upload zone if the request is fully provided or waived. The
+    // borrower can still upload more (via "Upload an additional document"
+    // section at the bottom) but the per-card affordance gets out of the way.
+    var hideZone = (status === 'provided' || status === 'waived');
+
+    return [
+      '<div class="request-card ' + cardCls + '" data-request-id="' + escapeHtml(req.request_id) + '">',
+        '<div class="request-head">',
+          '<div class="request-title-wrap">',
+            '<div class="request-title">' + escapeHtml(req.title) + '</div>',
+            req.description ? '<div class="request-desc">' + escapeHtml(req.description) + '</div>' : '',
+          '</div>',
+          '<div class="request-pills">',
+            req.required ? '<span class="req-pill required">Required</span>' : '<span class="req-pill optional">Optional</span>',
+            '<span class="req-pill status-' + status + '">' + statusLabel + '</span>',
+          '</div>',
+        '</div>',
+
+        '<div class="upload-zone" data-request-id="' + escapeHtml(req.request_id) + '"' + (hideZone ? ' hidden' : '') + '>',
+          '<div class="upload-buttons">',
+            '<button type="button" class="upload-btn" data-action="camera" data-request-id="' + escapeHtml(req.request_id) + '">📷 Take a photo</button>',
+            '<button type="button" class="upload-btn primary" data-action="file" data-request-id="' + escapeHtml(req.request_id) + '">Choose a file</button>',
+          '</div>',
+          '<div class="upload-zone-hint">',
+            '<span class="or">or drag a file here</span>',
+            'PDF, JPG, PNG, HEIC · up to 25 MB',
+          '</div>',
+        '</div>',
+
+        uploads.length > 0 ? (
+          '<div class="upload-list">' +
+            uploads.map(function(u) { return renderUploadChip(u, req.request_id); }).join('') +
+          '</div>'
+        ) : '',
+      '</div>'
+    ].join('');
+  }
+
+  function renderUploadChip(upload, requestId) {
+    var status = upload.status || 'uploaded';
+    // Group statuses into a coarser visual bucket for the chip's color band.
+    // 'processing' covers the Phase-12 in-flight states; 'rejected' covers
+    // both manual rejection and scan failure.
+    var visualBucket;
+    if (['pending_upload'].indexOf(status) !== -1) visualBucket = 'uploading';
+    else if (['scanning','scanned_clean','classifying','classified','extracting','extracted'].indexOf(status) !== -1) visualBucket = 'processing';
+    else if (['uploaded'].indexOf(status) !== -1) visualBucket = 'uploaded';
+    else if (['accepted'].indexOf(status) !== -1) visualBucket = 'accepted';
+    else if (['rejected','scan_failed'].indexOf(status) !== -1) visualBucket = 'rejected';
+    else visualBucket = 'uploaded';
+
+    var statusLabel = {
+      pending_upload: 'Uploading',
+      uploaded: '✓ Received',
+      scanning: 'Scanning',
+      scanned_clean: 'Scanned',
+      classifying: 'Reading',
+      classified: 'Read',
+      extracting: 'Extracting',
+      extracted: 'Processed',
+      accepted: '✓ Accepted',
+      rejected: 'Rejected',
+      scan_failed: 'Failed scan'
+    }[status] || status;
+
+    var showSpinner = ['pending_upload','scanning','classifying','extracting'].indexOf(status) !== -1;
+    var ext = (upload.filename || '').split('.').pop().toUpperCase().substring(0, 4) || 'DOC';
+
+    var rejectReasonRow = '';
+    if (upload.rejected_reason && (status === 'rejected' || status === 'scan_failed')) {
+      rejectReasonRow = '<div class="chip-reject-reason">' + escapeHtml(upload.rejected_reason) + '</div>';
+    }
+
+    // The retry button appears when a pending_upload row exists but the
+    // in-flight File got lost (e.g. the user refreshed mid-upload). We don't
+    // actually have the file at that point — show a cancel/explain instead.
+    // True retry only works if inFlightFiles[upload.id] is present, which
+    // happens during the same session.
+    var retryBtn = '';
+    if (status === 'pending_upload' && inFlightFiles[upload.id]) {
+      retryBtn = ' <button type="button" class="chip-retry" data-doc-id="' + escapeHtml(upload.id) + '">Retry</button>';
+    }
+
+    return [
+      '<div class="upload-chip" data-doc-id="' + escapeHtml(upload.id) + '">',
+        '<div class="chip-icon">' + escapeHtml(ext) + '</div>',
+        '<div class="chip-mid">',
+          '<div class="chip-name">' + escapeHtml(upload.filename) + '</div>',
+          '<div class="chip-meta">' +
+            fmtSize(upload.file_size_bytes) +
+            (upload.uploaded_at ? ' · uploaded ' + fmtDate(upload.uploaded_at) :
+             upload.created_at ? ' · started ' + fmtDate(upload.created_at) : '') +
+          '</div>',
+        '</div>',
+        '<div class="chip-status ' + visualBucket + '">' +
+          (showSpinner ? '<span class="mini-spinner"></span>' : '') +
+          escapeHtml(statusLabel) + retryBtn +
+        '</div>',
+        rejectReasonRow,
+      '</div>'
+    ].join('');
+  }
+
+  // ─── Upload triggers (file picker + camera + drag-drop) ───────────────
+  // The two hidden <input type="file"> elements are reused across all upload
+  // zones — we just stash the target request_id on them via dataset before
+  // triggering the click.
+
+  function triggerFilePicker(action, requestId) {
+    var input = document.getElementById(action === 'camera' ? 'file-camera' : 'file-picker');
+    input.dataset.requestId = requestId || '';
+    input.value = '';  // ensure 'change' fires even if same file is picked
+    input.click();
+  }
+
+  function wireUploadZone(zone) {
+    var rid = zone.dataset.requestId || null;
+    // Click-to-pick on the zone itself (anywhere outside the buttons)
+    zone.addEventListener('click', function(e) {
+      if (e.target.closest('.upload-btn')) return;
+      triggerFilePicker('file', rid);
+    });
+    // Drag and drop
+    ['dragenter','dragover'].forEach(function(evt) {
+      zone.addEventListener(evt, function(e) {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.add('dragover');
+      });
+    });
+    ['dragleave','dragend'].forEach(function(evt) {
+      zone.addEventListener(evt, function(e) {
+        e.preventDefault(); e.stopPropagation();
+        zone.classList.remove('dragover');
+      });
+    });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault(); e.stopPropagation();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0], rid);
+      }
+    });
+  }
+
+  function wireGlobalListeners() {
+    // Hidden file inputs (shared across all zones)
+    document.getElementById('file-camera').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0], e.target.dataset.requestId || null);
+      }
+    });
+    document.getElementById('file-picker').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0], e.target.dataset.requestId || null);
+      }
+    });
+    // Prevent the page from navigating away if the user drops a file outside
+    // a valid zone.
+    ['dragenter','dragover','drop'].forEach(function(evt) {
+      document.body.addEventListener(evt, function(e) {
+        if (!e.target.closest('.upload-zone')) {
+          e.preventDefault();
+        }
+      });
+    });
+    // Sign out
+    document.getElementById('signout-btn').addEventListener('click', async function() {
+      await sb.auth.signOut();
+      window.location.href = '/portal/login.html';
+    });
+  }
+
+  // ─── Upload flow ──────────────────────────────────────────────────────
+  async function handleFile(file, requestId) {
+    if (!file) return;
+
+    // Client-side validation (server re-validates in initiate RPC)
+    var err = validateFile(file);
+    if (err) { toast(err, 'error'); return; }
+
+    // Initiate: reserve the loan_documents row. validateFile may have
+    // inferred a MIME from the extension when file.type was blank (common
+    // for HEIC from iPhone) — prefer that over the empty browser value.
+    var resolvedMime = file._of_inferred_mime || file.type || 'application/octet-stream';
+    var initRes;
+    try {
+      initRes = await sb.rpc('borrower_initiate_doc_upload', {
+        p_loan_id: loanId,
+        p_request_id: requestId || null,
+        p_filename: file.name,
+        p_mime_type: resolvedMime,
+        p_size_bytes: file.size
+      });
+    } catch (caught) {
+      console.error('[OF Docs] initiate failed:', caught);
+      toast('Could not start upload: ' + (caught.message || 'unknown error'), 'error');
+      return;
+    }
+    if (initRes.error) {
+      console.error('[OF Docs] initiate error:', initRes.error);
+      toast('Upload failed: ' + (initRes.error.message || 'unknown error'), 'error');
+      return;
+    }
+    var row = Array.isArray(initRes.data) ? initRes.data[0] : initRes.data;
+    if (!row || !row.document_id) {
+      toast('Upload failed: invalid response from server', 'error');
+      return;
+    }
+
+    // Stash the File so retry can reuse it without re-validating
+    inFlightFiles[row.document_id] = file;
+
+    // Optimistically render the chip in pending_upload state
+    var optimisticChip = {
+      id: row.document_id, filename: file.name, mime_type: file.type,
+      file_size_bytes: file.size, status: 'pending_upload',
+      created_at: new Date().toISOString()
+    };
+    if (requestId) {
+      var reqRow = requests.find(function(r) { return r.request_id === requestId; });
+      if (reqRow) {
+        if (!Array.isArray(reqRow.uploads)) reqRow.uploads = [];
+        reqRow.uploads.unshift(optimisticChip);
+      }
+    } else {
+      unsolicited.unshift(optimisticChip);
+    }
+    renderRequests();
+
+    // Do the actual upload + finalize
+    await performUpload(row.document_id, row.storage_path, file);
+  }
+
+  async function performUpload(docId, storagePath, file) {
+    // Storage upload. Supabase JS v2: .upload(path, file, { contentType, upsert })
+    // Use the same resolved MIME as the initiate RPC to keep storage metadata
+    // consistent with the loan_documents row.
+    var resolvedMime = file._of_inferred_mime || file.type || 'application/octet-stream';
+    var upRes;
+    try {
+      upRes = await sb.storage
+        .from('loan-documents')
+        .upload(storagePath, file, {
+          contentType: resolvedMime,
+          upsert: false  // bucket RLS would let us, but we never want collisions
+        });
+    } catch (caught) {
+      console.error('[OF Docs] storage upload threw:', caught);
+      handleUploadError(docId, caught.message || 'network error');
+      return;
+    }
+    if (upRes.error) {
+      console.error('[OF Docs] storage upload error:', upRes.error);
+      handleUploadError(docId, upRes.error.message || 'upload failed');
+      return;
+    }
+
+    // Finalize: verify object landed, advance status, bump request
+    var finRes;
+    try {
+      finRes = await sb.rpc('borrower_finalize_doc_upload', { p_document_id: docId });
+    } catch (caught) {
+      console.error('[OF Docs] finalize threw:', caught);
+      handleUploadError(docId, caught.message || 'finalize failed');
+      return;
+    }
+    if (finRes.error) {
+      console.error('[OF Docs] finalize error:', finRes.error);
+      handleUploadError(docId, finRes.error.message || 'finalize failed');
+      return;
+    }
+
+    // Done — clear the in-flight reference and refresh from server
+    delete inFlightFiles[docId];
+    toast('Upload complete', 'success');
+    await loadRequests();
+    renderHeader();
+    renderRequests();
+  }
+
+  function handleUploadError(docId, message) {
+    // Find the chip and flip it to error state in-place. The row in DB is
+    // still 'pending_upload' so the retry button is meaningful.
+    var foundIn = null;
+    requests.forEach(function(r) {
+      if (Array.isArray(r.uploads)) {
+        var c = r.uploads.find(function(u) { return u.id === docId; });
+        if (c) {
+          c.status = 'rejected';
+          c.rejected_reason = message;
+          foundIn = r;
+        }
+      }
+    });
+    if (!foundIn) {
+      var c = unsolicited.find(function(u) { return u.id === docId; });
+      if (c) {
+        c.status = 'rejected';
+        c.rejected_reason = message;
+      }
+    }
+    toast(message || 'Upload failed', 'error');
+    renderRequests();
+  }
+
+  async function retryUpload(docId) {
+    var file = inFlightFiles[docId];
+    if (!file) {
+      toast('Cannot retry — please choose the file again', 'error');
+      return;
+    }
+    // Find the storage_path. We don't have it in client state; query.
+    var row;
+    try {
+      var r = await sb.from('loan_documents')
+        .select('id, storage_path, status')
+        .eq('id', docId)
+        .maybeSingle();
+      if (r.error || !r.data) throw r.error || new Error('document not found');
+      row = r.data;
+    } catch (err) {
+      toast('Retry failed: ' + (err.message || 'unknown error'), 'error');
+      return;
+    }
+    if (row.status !== 'pending_upload') {
+      // Someone else (or a previous successful retry) finalized it. Refresh.
+      await loadRequests();
+      renderHeader();
+      renderRequests();
+      return;
+    }
+    // Flip chip back to uploading state visually
+    requests.forEach(function(rq) {
+      if (Array.isArray(rq.uploads)) {
+        var c = rq.uploads.find(function(u) { return u.id === docId; });
+        if (c) { c.status = 'pending_upload'; c.rejected_reason = null; }
+      }
+    });
+    var uc = unsolicited.find(function(u) { return u.id === docId; });
+    if (uc) { uc.status = 'pending_upload'; uc.rejected_reason = null; }
+    renderRequests();
+    await performUpload(docId, row.storage_path, file);
+  }
+
+  function validateFile(file) {
+    if (!file) return 'No file selected';
+    if (file.size <= 0) return 'File is empty';
+    if (file.size > MAX_SIZE) {
+      return 'File is too large (max 25 MB; this file is ' + fmtSize(file.size) + ')';
+    }
+    // HEIC sometimes comes through with an empty file.type — accept by extension.
+    var mt = (file.type || '').toLowerCase();
+    if (!mt && /\.(heic|heif)$/i.test(file.name)) mt = 'image/heic';
+    if (!mt && /\.pdf$/i.test(file.name)) mt = 'application/pdf';
+    if (!mt) return 'Unsupported file type. Please upload a PDF or an image.';
+    if (ALLOWED_MIME.indexOf(mt) === -1) {
+      return 'Unsupported file type: ' + mt + '. Please upload a PDF, JPG, PNG, HEIC, or WebP.';
+    }
+    // Stamp the inferred type onto the file so initiate gets the right value.
+    // File.type is read-only; we re-create via Blob if we needed to, but for
+    // the RPC we'll just pass the inferred mt directly. Stash it on a property.
+    file._of_inferred_mime = mt;
+    return null;
+  }
+
+  // Boot
+  bootstrap();
+</script>
+</body>
+</html>
