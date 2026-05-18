@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start Your Mortgage Application — OriginFlow</title>
+<meta name="description" content="Apply for a mortgage in 15 minutes. Online. Plain-English questions, save your progress anytime.">
+<meta name="author" content="OriginFlow LOS">
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-6LRWPMYK9C"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  var ofConsent = null;
+  try { ofConsent = localStorage.getItem('of_cookie_consent'); } catch(_) {}
+  gtag('consent', 'default', {
+    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied',
+    'analytics_storage': ofConsent === 'granted' ? 'granted' : 'denied',
+    'wait_for_update': 500
+  });
+  gtag('js', new Date());
+  gtag('config', 'G-6LRWPMYK9C');
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+
+<style>
+:root {
+  --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
+  --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
+  --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
+  --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+nav,.urgency-bar,section,footer{position:relative;z-index:1}
+a{color:inherit}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 3rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
+.nav-logo{display:flex;align-items:center;gap:0.75rem;text-decoration:none}
+.sonar-icon{width:32px;height:32px}
+.nav-wordmark{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase}
+.nav-wordmark span{color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.nav-link{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted)}
+.nav-link a{color:var(--accent);text-decoration:none}
+.nav-link a:hover{text-decoration:underline}
+.nav-portal{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;padding:0.5rem 1rem;border:1px solid var(--border);transition:all 0.2s}
+.nav-portal:hover{color:var(--accent);border-color:var(--accent)}
+
+.urgency-bar{background:rgba(0,255,157,0.08);border-bottom:1px solid rgba(0,255,157,0.25);padding:0.55rem 3rem;display:flex;align-items:center;justify-content:center;gap:1rem;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.08em;color:var(--accent2);flex-wrap:wrap}
+.ub-pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent2);margin-right:0.4rem;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+.urgency-bar strong{color:var(--white);font-weight:700}
+
+.hero{min-height:80vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:4rem;padding:4rem 3rem;max-width:1300px;margin:0 auto}
+.hero-eyebrow{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;display:flex;align-items:center;gap:0.75rem}
+.hero-eyebrow::before{content:'';display:block;width:2rem;height:1px;background:var(--accent)}
+.hero-headline{font-family:var(--serif);font-size:clamp(2.4rem,4.6vw,3.8rem);line-height:1.05;color:var(--white);margin-bottom:1.5rem}
+.hero-headline em{color:var(--accent);font-style:normal}
+.hero-sub{font-size:1.05rem;color:var(--text);max-width:510px;margin-bottom:2rem;line-height:1.7;font-weight:300}
+.hero-sub strong{color:var(--white);font-weight:400}
+.hero-note{font-family:var(--mono);font-size:0.68rem;color:var(--muted);letter-spacing:0.06em;line-height:1.8}
+.hero-note span{color:var(--accent2)}
+
+.apply-card{background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;animation:fadeUp 0.7s ease both 0.2s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.apply-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.apply-card-head{padding:1.5rem 1.75rem 1rem;border-bottom:1px solid var(--border)}
+.apply-card-eyebrow{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem}
+.apply-card-title{font-family:var(--serif);font-size:1.4rem;color:var(--white);line-height:1.3}
+.apply-card-sub{font-size:0.85rem;color:var(--muted);font-weight:300;margin-top:0.4rem}
+.apply-card-body{padding:1.5rem 1.75rem 1.75rem}
+
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.45rem}
+.form-label .req{color:var(--accent)}
+.form-label .opt{color:var(--muted);font-size:0.55rem;margin-left:0.4rem;text-transform:none;letter-spacing:0.06em}
+.form-input,.form-select{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.85rem;padding:0.7rem 0.9rem;outline:none;transition:border-color 0.2s;-webkit-appearance:none;appearance:none}
+.form-input::placeholder{color:var(--muted)}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.form-select{background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235a7a99' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.purpose-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem}
+.purpose-btn{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:0.7rem 0.5rem;cursor:pointer;transition:all 0.15s;text-align:center;line-height:1.3}
+.purpose-btn:hover{border-color:var(--accent);color:var(--accent)}
+.purpose-btn.selected{background:rgba(0,212,255,0.08);border-color:var(--accent);color:var(--accent)}
+.btn-submit{display:block;width:100%;font-family:var(--mono);font-size:0.8rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.95rem;cursor:pointer;font-weight:700;transition:opacity 0.2s;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));margin-top:0.75rem}
+.btn-submit:hover{opacity:0.85}
+.btn-submit:disabled{opacity:0.5;cursor:not-allowed}
+.legal-tiny{font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-top:0.85rem;line-height:1.6;letter-spacing:0.02em;text-align:center}
+.legal-tiny a{color:var(--accent);text-decoration:none}
+.legal-tiny a:hover{text-decoration:underline}
+
+.error-box{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);color:var(--red);font-family:var(--mono);font-size:0.7rem;padding:0.65rem 0.85rem;margin-bottom:1rem;display:none;letter-spacing:0.04em;line-height:1.6}
+.error-box.visible{display:block}
+.sent-pane{text-align:center;padding:1.5rem 0.5rem 0.5rem;display:none}
+.sent-pane.visible{display:block}
+.sent-icon{display:inline-block;width:48px;height:48px;border-radius:50%;background:rgba(0,255,157,0.1);border:1px solid var(--accent2);color:var(--accent2);font-family:var(--mono);font-size:1.5rem;line-height:48px;margin-bottom:1rem}
+.sent-pane h3{font-family:var(--serif);font-size:1.35rem;color:var(--white);margin-bottom:0.4rem}
+.sent-pane p{font-size:0.88rem;color:var(--text);font-weight:300;line-height:1.65;max-width:340px;margin:0 auto 1rem}
+.sent-pane p strong{color:var(--white);font-weight:500}
+.sent-email{font-family:var(--mono);font-size:0.78rem;color:var(--accent);padding:0.5rem 0.85rem;background:var(--panel);border:1px solid var(--border);display:inline-block;margin:0.5rem 0}
+.sent-note{font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.04em;margin-top:1rem}
+
+.section-block{padding:5rem 3rem}
+.section-block.alt{background:var(--deep);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.section-inner{max-width:1100px;margin:0 auto}
+.section-label{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);max-width:80px}
+.section-heading{font-family:var(--serif);font-size:clamp(1.9rem,3.2vw,2.6rem);color:var(--white);margin-bottom:0.75rem;line-height:1.15}
+.section-sub{color:var(--muted);max-width:580px;font-weight:300;font-size:1rem;line-height:1.7}
+
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem}
+.step-card{background:var(--surface);border:1px solid var(--border);padding:1.75rem;position:relative}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.step-card:nth-child(2)::before{background:var(--accent2)}
+.step-card:nth-child(3)::before{background:var(--amber)}
+.step-num{font-family:var(--serif);font-size:2.5rem;line-height:1;color:var(--accent);margin-bottom:0.75rem}
+.step-card:nth-child(2) .step-num{color:var(--accent2)}
+.step-card:nth-child(3) .step-num{color:var(--amber)}
+.step-time{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
+.step-title{font-family:var(--serif);font-size:1.3rem;color:var(--white);margin-bottom:0.6rem;line-height:1.25}
+.step-desc{font-size:0.88rem;color:var(--muted);line-height:1.7;font-weight:300}
+
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:3rem}
+.trust-cell{background:var(--surface);border:1px solid var(--border);padding:1.5rem 1.25rem;text-align:center}
+.trust-icon{font-family:var(--mono);font-size:1.4rem;color:var(--accent);margin-bottom:0.5rem}
+.trust-cell:nth-child(2) .trust-icon{color:var(--accent2)}
+.trust-cell:nth-child(3) .trust-icon{color:var(--amber)}
+.trust-cell:nth-child(4) .trust-icon{color:var(--accent)}
+.trust-title{font-family:var(--mono);font-size:0.66rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--white);margin-bottom:0.4rem}
+.trust-desc{font-size:0.76rem;color:var(--muted);font-weight:300;line-height:1.6}
+
+footer{border-top:1px solid var(--border);background:var(--deep);font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted)}
+.footer-state{padding:1rem 3rem;border-bottom:1px solid var(--border);text-align:center;font-size:0.58rem;line-height:1.7;color:var(--muted);max-width:900px;margin:0 auto}
+.footer-state strong{color:var(--text);font-weight:700}
+.footer-bottom{padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--accent)}
+.footer-links{display:flex;gap:1.25rem;flex-wrap:wrap}
+
+.cookie-banner{position:fixed;bottom:1rem;left:1rem;right:1rem;max-width:680px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:0.85rem 1.1rem;display:flex;align-items:center;gap:1rem;font-family:var(--mono);font-size:0.7rem;color:var(--text);letter-spacing:0.04em;z-index:500;box-shadow:0 12px 40px rgba(0,0,0,0.5)}
+.cookie-banner.hidden{display:none}
+.cb-text{flex:1;line-height:1.6}
+.cb-text strong{color:var(--white);font-weight:500}
+.cb-text a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.cb-buttons{display:flex;gap:0.5rem;flex-shrink:0}
+.cb-btn{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 0.9rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);transition:all 0.15s}
+.cb-btn.cb-accept{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700}
+.cb-btn.cb-accept:hover{background:var(--accent2);border-color:var(--accent2)}
+.cb-btn.cb-decline:hover{border-color:var(--muted);color:var(--white)}
+
+@media (max-width:1024px){
+  .hero{grid-template-columns:1fr;padding:3rem 2rem;gap:2.5rem}
+  .steps-grid{grid-template-columns:1fr}
+  .trust-grid{grid-template-columns:repeat(2,1fr)}
+  nav{padding:1rem 1.5rem}
+  .urgency-bar{padding:0.55rem 1rem;font-size:0.62rem}
+}
+@media (max-width:640px){
+  .section-block{padding:3.5rem 1.5rem}
+  .footer-state{padding:1rem 1.25rem}
+  .footer-bottom{padding:1.25rem 1.25rem;flex-direction:column;gap:1rem;text-align:center}
+  .form-row{grid-template-columns:1fr}
+  .purpose-grid{grid-template-columns:1fr}
+  .nav-portal{padding:0.4rem 0.7rem;font-size:0.62rem}
+  .nav-link{display:none}
+}
+@media (max-width:540px){
+  .cookie-banner{flex-direction:column;align-items:stretch;gap:0.75rem;bottom:0.5rem;left:0.5rem;right:0.5rem;padding:0.75rem 0.9rem}
+  .cb-buttons{justify-content:flex-end}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/></path>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-link">Already started? <a href="/portal/login.html">Sign in →</a></span>
+    <a href="/portal/login.html" class="nav-portal">Borrower Sign In</a>
+  </div>
+</nav>
+
+<div class="urgency-bar">
+  <span><span class="ub-pulse"></span>Bank-grade encryption · <strong>Equal Housing Opportunity</strong> · We never sell your data · Real loan officer assigned to every application</span>
+</div>
+
+<section>
+  <div class="hero">
+    <div>
+      <div class="hero-eyebrow">Online Mortgage Application</div>
+      <h1 class="hero-headline">Apply for a mortgage.<br>Online. In <em>15 minutes.</em></h1>
+      <p class="hero-sub">Plain-English questions. <strong>No paperwork yet.</strong> Save your progress and finish whenever you've got coffee. A real loan officer reviews every application — no chatbots, no upsells, no spam.</p>
+      <p class="hero-note">
+        <span>✓</span> No commitment · <span>✓</span> No credit pull until you authorize one<br>
+        <span>✓</span> ESIGN compliant · <span>✓</span> Your data stays with your lender
+      </p>
+    </div>
+
+    <div class="apply-card">
+      <div class="apply-card-head">
+        <div class="apply-card-eyebrow">Start your application</div>
+        <h2 class="apply-card-title">Tell us a bit about you.</h2>
+        <p class="apply-card-sub">We'll email you a link to continue. No password.</p>
+      </div>
+      <div class="apply-card-body">
+
+        <div class="error-box" id="error-box"></div>
+
+        <!-- ─── Default form pane ────────────────────────────────── -->
+        <form id="apply-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="full-name">Your Full Name <span class="req">*</span></label>
+            <input class="form-input" type="text" id="full-name" autocomplete="name" placeholder="Maria Esquivel" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">Email Address <span class="req">*</span></label>
+            <input class="form-input" type="email" id="email" autocomplete="email" placeholder="you@example.com" required />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone <span class="opt">optional</span></label>
+              <input class="form-input" type="tel" id="phone" autocomplete="tel" placeholder="(806) 555-0123" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="property-state">Property State <span class="req">*</span></label>
+              <select class="form-select" id="property-state" required>
+                <option value="">Select…</option>
+                <option value="TX">Texas</option>
+                <option value="" disabled>──────────</option>
+                <option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option>
+                <option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option>
+                <option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="FL">Florida</option>
+                <option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option>
+                <option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option>
+                <option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option>
+                <option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option>
+                <option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option>
+                <option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option>
+                <option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option>
+                <option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option>
+                <option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option>
+                <option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option>
+                <option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option>
+                <option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option>
+                <option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option>
+                <option value="WY">Wyoming</option><option value="DC">District of Columbia</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">What are you looking to do? <span class="req">*</span></label>
+            <div class="purpose-grid" id="purpose-grid">
+              <button type="button" class="purpose-btn" data-purpose="purchase">Buying<br>a home</button>
+              <button type="button" class="purpose-btn" data-purpose="refinance">Refinancing</button>
+              <button type="button" class="purpose-btn" data-purpose="cashout_refinance">Cash-out<br>refinance</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-submit" id="submit-btn">Send My Sign-In Link</button>
+
+          <p class="legal-tiny">
+            By continuing, you agree to receive an email with a sign-in link. No credit pull happens at this step. Once you sign in, you'll be asked to consent to electronic delivery of mortgage disclosures (ESIGN) before continuing your application. See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
+          </p>
+        </form>
+
+        <!-- ─── Sent pane (success state after magic link send) ──── -->
+        <div class="sent-pane" id="sent-pane">
+          <div class="sent-icon">✓</div>
+          <h3>Check your email.</h3>
+          <p>We sent a sign-in link to</p>
+          <div class="sent-email" id="sent-email-display">—</div>
+          <p>Click the link in the email to <strong>continue your application</strong>. The link expires in 1 hour.</p>
+          <p class="sent-note">Don't see it? Check your spam folder, or <a href="#" id="resend-link" style="color:var(--accent);text-decoration:underline;">send it again</a>.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-block alt">
+  <div class="section-inner">
+    <div class="section-label">How it works</div>
+    <h2 class="section-heading">Three steps. About 15 minutes total.</h2>
+    <p class="section-sub">No paperwork to gather upfront. We ask for documents only when we need them, and you upload them right from your phone.</p>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-time">~30 seconds</div>
+        <div class="step-title">Tell us how to reach you.</div>
+        <div class="step-desc">Just your name, email, and what you're looking to do. We'll send a sign-in link so you can pick up from any device — phone, laptop, or your spouse's iPad.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-time">~1 minute</div>
+        <div class="step-title">Sign in. Consent to e-delivery.</div>
+        <div class="step-desc">Click the link in your email. Read and accept the electronic communication consent (federal law requires us to ask). Then your application starts.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-time">~12 minutes</div>
+        <div class="step-title">Walk through the application.</div>
+        <div class="step-desc">Plain-English questions — about you, your home, your finances. Save progress whenever you want. When you finish, a real loan officer reviews everything and reaches out.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-block">
+  <div class="section-inner">
+    <div class="section-label">Built around protection</div>
+    <h2 class="section-heading">Your data, secured at every step.</h2>
+    <p class="section-sub">Bank-grade encryption. Row-level database isolation. ESIGN-compliant audit trails. Your application belongs to your lender — not to us.</p>
+
+    <div class="trust-grid">
+      <div class="trust-cell">
+        <div class="trust-icon">🔒</div>
+        <div class="trust-title">Encryption in transit</div>
+        <div class="trust-desc">TLS 1.3 on every connection. Your data is never sent in the clear.</div>
+      </div>
+      <div class="trust-cell">
+        <div class="trust-icon">🏷</div>
+        <div class="trust-title">No data sales</div>
+        <div class="trust-desc">We never sell, rent, or share your information with marketers. Your application is between you and your lender.</div>
+      </div>
+      <div class="trust-cell">
+        <div class="trust-icon">⚖</div>
+        <div class="trust-title">ESIGN & TRID compliant</div>
+        <div class="trust-desc">Every disclosure delivery is logged with timestamp, IP, and your consent hash — required by federal law.</div>
+      </div>
+      <div class="trust-cell">
+        <div class="trust-icon">⌂</div>
+        <div class="trust-title">Equal Housing Opportunity</div>
+        <div class="trust-desc">We don't discriminate. Your race, ethnicity, sex, or whether you provide that info — none of it affects your decision.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
+  <div class="cb-text">
+    <strong>We use cookies for analytics.</strong>
+    Helps us see which features people actually use. Nothing tied to a loan ever leaves your browser.
+    Details in our <a href="/privacy.html">Privacy Policy</a>.
+  </div>
+  <div class="cb-buttons">
+    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
+    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-state">
+    <strong>Texas property?</strong> [Lender Name] is licensed by the Texas Department of Savings and Mortgage Lending. Consumers wishing to file a complaint should complete the form at www.sml.texas.gov or call 1-877-276-5550. NMLS ID: [pending]. Equal Housing Opportunity. State licensing varies; we will route your application to a licensed loan officer for your property state.
+  </div>
+  <div class="footer-bottom">
+    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/portal/login.html">Sign In</a>
+      <a href="mailto:dsrackler@gmail.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── Cookie banner IIFE (landing pattern, 'granted'/'denied') ─────── -->
+<script>
+(function() {
+  var KEY = 'of_cookie_consent';
+  var banner = document.getElementById('cookie-banner');
+  if (!banner) return;
+  var prior = null;
+  try { prior = localStorage.getItem(KEY); } catch(_) {}
+  if (prior !== 'granted' && prior !== 'denied') {
+    banner.classList.remove('hidden');
+  }
+  function setConsent(v) {
+    try { localStorage.setItem(KEY, v); } catch(_) {}
+    if (typeof gtag === 'function') {
+      gtag('consent','update',{ 'analytics_storage': v === 'granted' ? 'granted' : 'denied' });
+    }
+    banner.classList.add('hidden');
+  }
+  document.getElementById('cb-accept').addEventListener('click', function() { setConsent('granted'); });
+  document.getElementById('cb-decline').addEventListener('click', function() { setConsent('denied'); });
+})();
+</script>
+
+<!-- ─── Apply submission ────────────────────────────────────────────────
+     Flow:
+       1. Validate required fields (name, email, state, purpose).
+       2. Stash {fullName, phone, propertyState, loanPurpose} in localStorage
+          under 'of_pending_application' so /portal/apply.html can pick it
+          up on first authenticated load and prefill the wizard.
+       3. Call signInWithOtp with shouldCreateUser:true and emailRedirectTo
+          /portal/apply.html. Supabase creates auth.users on first verify.
+       4. Show the "Check your email" pane.
+
+     Why we don't insert into borrower_accounts here:
+       The anon role can't write to borrower_accounts (RLS), and exposing
+       a permissive insert policy to anon is a spam vector. Migration 003
+       provides bootstrap_borrower_account() — a security-definer RPC that
+       /portal/apply.html calls AFTER the borrower is authenticated, using
+       the values we cached in localStorage to fill in display name + phone.
+─────────────────────────────────────────────────────────────────────── -->
+<script>
+  var errorBox = document.getElementById('error-box');
+  var submitBtn = document.getElementById('submit-btn');
+  var form = document.getElementById('apply-form');
+  var sentPane = document.getElementById('sent-pane');
+  var sentEmailDisplay = document.getElementById('sent-email-display');
+
+  // Purpose buttons — radio-like behavior on a button group.
+  var selectedPurpose = null;
+  document.querySelectorAll('.purpose-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.purpose-btn').forEach(function(b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      selectedPurpose = btn.dataset.purpose;
+    });
+  });
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add('visible');
+  }
+  function resetBtn() {
+    submitBtn.textContent = 'Send My Sign-In Link';
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+  }
+
+  function validEmail(e) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  }
+
+  async function submitApply(email, fullName, phone, propertyState, loanPurpose) {
+    var sb = (typeof getSupabase === 'function') ? getSupabase() : null;
+    if (!sb) {
+      showError('Could not reach the service. Please refresh and try again.');
+      resetBtn();
+      return;
+    }
+
+    // Cache the captured fields for /portal/apply.html to pick up after
+    // the borrower verifies their magic link. Includes a timestamp so we
+    // can age out stale drafts on the portal side (>24h = ignore).
+    try {
+      localStorage.setItem('of_pending_application', JSON.stringify({
+        fullName: fullName,
+        email: email,
+        phone: phone || null,
+        propertyState: propertyState,
+        loanPurpose: loanPurpose,
+        capturedAt: new Date().toISOString()
+      }));
+    } catch (_) { /* localStorage unavailable, the wizard will just have less prefill */ }
+
+    try {
+      var result = await sb.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin + '/portal/apply.html',
+          shouldCreateUser: true
+        }
+      });
+      if (result.error) throw result.error;
+
+      sentEmailDisplay.textContent = email;
+      form.style.display = 'none';
+      sentPane.classList.add('visible');
+    } catch (err) {
+      if (err && err.message && err.message.toLowerCase().includes('rate limit')) {
+        showError('Too many attempts. Please wait a minute before trying again.');
+      } else {
+        showError((err && err.message) || 'Could not send sign-in link. Please try again.');
+      }
+      resetBtn();
+    }
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    errorBox.classList.remove('visible');
+
+    var fullName = document.getElementById('full-name').value.trim();
+    var email = document.getElementById('email').value.trim();
+    var phone = document.getElementById('phone').value.trim();
+    var propertyState = document.getElementById('property-state').value;
+
+    if (!fullName) return showError('Your full name is required.');
+    if (!email || !validEmail(email)) return showError('A valid email address is required.');
+    if (!propertyState) return showError('Please select the state of the property.');
+    if (!selectedPurpose) return showError('Please choose what you\'re looking to do.');
+
+    submitBtn.textContent = 'Sending…';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.7';
+
+    submitApply(email, fullName, phone, propertyState, selectedPurpose);
+  });
+
+  // Resend link from the sent pane
+  document.getElementById('resend-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('of_pending_application') || 'null'); } catch(_) {}
+    if (!cached || !cached.email) {
+      sentPane.classList.remove('visible');
+      form.style.display = '';
+      return;
+    }
+    submitApply(cached.email, cached.fullName, cached.phone, cached.propertyState, cached.loanPurpose);
+  });
+</script>
+
+</body>
+</html>

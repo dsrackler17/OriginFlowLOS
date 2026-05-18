@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Application — OriginFlow Borrower Portal</title>
+<meta name="description" content="Complete your mortgage application.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  :root {
+    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
+    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
+    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
+    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+  nav,.portal-banner,main,footer{position:relative;z-index:1}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 3rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.85);backdrop-filter:blur(12px)}
+  .nav-logo{display:flex;align-items:center;gap:0.75rem;text-decoration:none}
+  .sonar-icon{width:32px;height:32px}
+  .nav-wordmark{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase}
+  .nav-wordmark span{color:var(--accent)}
+  .nav-right{display:flex;align-items:center;gap:1rem;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted)}
+  .nav-signout{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);background:transparent;border:1px solid var(--border);padding:0.45rem 0.9rem;cursor:pointer;transition:all 0.15s}
+  .nav-signout:hover{border-color:var(--accent);color:var(--accent)}
+
+  .portal-banner{background:rgba(0,212,255,0.06);border-bottom:1px solid rgba(0,212,255,0.25);padding:0.55rem 3rem;display:flex;align-items:center;justify-content:center;gap:0.6rem;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.14em;color:var(--accent);text-transform:uppercase}
+  .portal-banner strong{color:var(--white);font-weight:700;letter-spacing:0.08em}
+
+  main{flex:1;padding:2.5rem 2rem 4rem;max-width:840px;margin:0 auto;width:100%}
+
+  /* ─── Progress ─────────────────────────────────────────────────── */
+  .progress-wrap{margin-bottom:2.5rem}
+  .progress-bar{height:3px;background:var(--border);position:relative;overflow:hidden;margin-bottom:0.85rem}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width 0.4s ease}
+  .progress-steps{display:flex;justify-content:space-between;gap:0.25rem;font-family:var(--mono);font-size:0.55rem;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase}
+  .progress-step{flex:1;padding:0.4rem 0.2rem;text-align:center;border-top:2px solid transparent;line-height:1.3;transition:all 0.2s}
+  .progress-step.active{color:var(--accent);border-top-color:var(--accent)}
+  .progress-step.done{color:var(--accent2);border-top-color:var(--accent2)}
+
+  /* ─── State blocks ─────────────────────────────────────────────── */
+  .state-block{text-align:center;padding:4rem 2rem}
+  .state-block h2{font-family:var(--serif);font-size:1.6rem;color:var(--white);margin-bottom:0.75rem}
+  .state-block p{color:var(--muted);font-weight:300;max-width:480px;margin:0 auto 1.5rem;line-height:1.7;font-size:0.95rem}
+  .state-block .state-cta{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.85rem 1.75rem;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+  .spinner{display:inline-block;width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:1.25rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ─── Section ──────────────────────────────────────────────────── */
+  .section{display:none;animation:fadeIn 0.35s ease both}
+  .section.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .section-eyebrow{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem}
+  .section-eyebrow::before{content:'';display:block;width:1.5rem;height:1px;background:var(--accent)}
+  .section-title{font-family:var(--serif);font-size:2rem;color:var(--white);margin-bottom:0.5rem;line-height:1.2}
+  .section-sub{font-size:0.95rem;color:var(--muted);font-weight:300;margin-bottom:2rem;line-height:1.7}
+
+  .section-card{background:var(--surface);border:1px solid var(--border);padding:1.75rem;position:relative;overflow:hidden;margin-bottom:1.5rem}
+  .section-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+  /* ─── Form ─────────────────────────────────────────────────────── */
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+  .field-row.three{grid-template-columns:1fr 1fr 1fr}
+  .field-row.wide-narrow{grid-template-columns:3fr 1fr}
+  .field-group{margin-bottom:1rem}
+  .field-group.span-2{grid-column:span 2}
+  .field-label{display:block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
+  .field-label .req{color:var(--accent)}
+  .field-label .opt{color:var(--muted);font-size:0.55rem;margin-left:0.4rem;letter-spacing:0.06em;text-transform:none}
+  .field-input,.field-select{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.85rem;padding:0.7rem 0.9rem;outline:none;transition:border-color 0.2s;-webkit-appearance:none;appearance:none}
+  .field-input::placeholder{color:var(--muted)}
+  .field-input:focus,.field-select:focus{border-color:var(--accent)}
+  .field-input.error,.field-select.error{border-color:var(--red)}
+  .field-help{font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-top:0.35rem;letter-spacing:0.04em;line-height:1.5}
+  .field-select{background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235a7a99' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2rem}
+
+  /* Pill choices (single-select via button group) */
+  .pill-group{display:flex;flex-wrap:wrap;gap:0.5rem}
+  .pill-btn{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.06em;text-transform:uppercase;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:0.6rem 1rem;cursor:pointer;transition:all 0.15s}
+  .pill-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .pill-btn.selected{background:rgba(0,212,255,0.08);border-color:var(--accent);color:var(--accent)}
+
+  /* Currency input with $ prefix */
+  .currency-wrap{position:relative}
+  .currency-wrap::before{content:'$';position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:0.85rem;color:var(--muted);pointer-events:none}
+  .currency-wrap .field-input{padding-left:1.6rem}
+
+  /* ─── Wizard nav (bottom buttons) ──────────────────────────────── */
+  .wizard-nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+  .btn-back{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--text);padding:0.8rem 1.4rem;cursor:pointer;transition:all 0.15s}
+  .btn-back:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-back:disabled{opacity:0.3;cursor:not-allowed}
+  .btn-next{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.85rem 1.75rem;cursor:pointer;font-weight:700;transition:opacity 0.2s;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+  .btn-next:hover{opacity:0.85}
+  .btn-next:disabled{opacity:0.4;cursor:not-allowed;background:var(--muted)}
+  .save-indicator{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);text-align:center;flex:1;text-transform:uppercase}
+  .save-indicator .si-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent2);margin-right:0.35rem;vertical-align:middle}
+  .save-indicator.saving .si-dot{background:var(--amber);animation:pulse 0.8s ease-in-out infinite}
+
+  /* ─── Stub state for sections 5-8 ──────────────────────────────── */
+  .stub-card{background:var(--panel);border:1px dashed var(--border);padding:2rem;text-align:center}
+  .stub-card .stub-eyebrow{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);margin-bottom:0.75rem}
+  .stub-card h3{font-family:var(--serif);font-size:1.3rem;color:var(--white);margin-bottom:0.5rem}
+  .stub-card p{font-size:0.88rem;color:var(--muted);font-weight:300;line-height:1.7;max-width:480px;margin:0 auto}
+  .stub-card .stub-fields{font-family:var(--mono);font-size:0.65rem;color:var(--text);letter-spacing:0.04em;margin-top:1.25rem;text-align:left;display:inline-block;line-height:1.9;background:var(--deep);padding:0.85rem 1.25rem;border:1px solid var(--border)}
+  .stub-card .stub-fields span{color:var(--accent)}
+
+  .error-banner{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);color:var(--red);font-family:var(--mono);font-size:0.7rem;padding:0.7rem 1rem;margin-bottom:1.25rem;display:none;letter-spacing:0.04em;line-height:1.6}
+  .error-banner.visible{display:block}
+
+  footer{border-top:1px solid var(--border);font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);background:var(--deep);margin-top:auto}
+  .footer-disclaimer{padding:0.7rem 3rem;border-bottom:1px solid var(--border);text-align:center;font-size:0.58rem;line-height:1.5;color:var(--muted)}
+  .footer-disclaimer strong{color:var(--text);font-weight:700}
+  .footer-bottom{padding:1.25rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:var(--accent)}
+  .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+
+  @media (max-width:640px){
+    nav{padding:1rem 1.25rem;flex-wrap:wrap;gap:0.6rem}
+    .nav-right{font-size:0.62rem;gap:0.6rem}
+    .portal-banner{padding:0.55rem 1rem;font-size:0.58rem}
+    main{padding:2rem 1.1rem 3rem}
+    .section-title{font-size:1.6rem}
+    .section-card{padding:1.25rem}
+    .field-row,.field-row.three,.field-row.wide-narrow{grid-template-columns:1fr}
+    .progress-step{font-size:0.5rem}
+    .footer-disclaimer{padding:0.6rem 1rem}
+    .footer-bottom{padding:1rem 1.25rem;flex-direction:column;gap:0.75rem;text-align:center}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/portal/index.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/></path>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <div class="nav-right">
+    <button class="nav-signout" id="nav-signout" type="button">Save &amp; Exit</button>
+  </div>
+</nav>
+
+<div class="portal-banner">Mortgage Application · Step <strong id="banner-step">1</strong> of <strong>8</strong></div>
+
+<main>
+  <!-- ─── Loading state: shown while we bootstrap session + account ─── -->
+  <div id="state-loading" class="state-block">
+    <div class="spinner"></div>
+    <p style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;">Setting up your application…</p>
+  </div>
+
+  <!-- ─── Error state: bootstrap failed, can't continue ───────────── -->
+  <div id="state-error" class="state-block" style="display:none;">
+    <h2>Something went wrong setting up your application.</h2>
+    <p id="state-error-msg">Please refresh the page or sign in again. If the problem persists, email your loan officer or dsrackler@gmail.com.</p>
+    <a href="/portal/index.html" class="state-cta">Back to Portal →</a>
+  </div>
+
+  <!-- ─── Wizard ─────────────────────────────────────────────────── -->
+  <div id="wizard" style="display:none;">
+
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-steps" id="progress-steps">
+        <span class="progress-step active" data-step="1">About</span>
+        <span class="progress-step" data-step="2">Address</span>
+        <span class="progress-step" data-step="3">Income</span>
+        <span class="progress-step" data-step="4">Assets</span>
+        <span class="progress-step" data-step="5">Property</span>
+        <span class="progress-step" data-step="6">Questions</span>
+        <span class="progress-step" data-step="7">Demographics</span>
+        <span class="progress-step" data-step="8">Review</span>
+      </div>
+    </div>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 1 · About You
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section active" data-section="1">
+      <div class="section-eyebrow">Step 1 of 8</div>
+      <h1 class="section-title">About you.</h1>
+      <p class="section-sub">Let's start with how you appear on your driver's license, passport, or other official ID. We'll use this exact spelling on every document.</p>
+
+      <div class="section-card">
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s1_legal_first_name">Legal First Name <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s1_legal_first_name" data-key="s1_legal_first_name" autocomplete="given-name" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s1_legal_last_name">Legal Last Name <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s1_legal_last_name" data-key="s1_legal_last_name" autocomplete="family-name" />
+          </div>
+        </div>
+        <div class="field-row wide-narrow">
+          <div class="field-group">
+            <label class="field-label" for="s1_middle_name">Middle Name <span class="opt">optional</span></label>
+            <input class="field-input" type="text" id="s1_middle_name" data-key="s1_middle_name" autocomplete="additional-name" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s1_suffix">Suffix <span class="opt">opt.</span></label>
+            <select class="field-select" id="s1_suffix" data-key="s1_suffix">
+              <option value="">—</option>
+              <option value="Jr">Jr</option>
+              <option value="Sr">Sr</option>
+              <option value="II">II</option>
+              <option value="III">III</option>
+              <option value="IV">IV</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s1_dob">Date of Birth <span class="req">*</span></label>
+            <input class="field-input" type="date" id="s1_dob" data-key="s1_dob" autocomplete="bday" />
+            <div class="field-help">You must be at least 18 years old to apply for a mortgage.</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s1_ssn_last4">SSN (last 4) <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s1_ssn_last4" data-key="s1_ssn_last4" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="1234" />
+            <div class="field-help">We'll collect your full SSN later, encrypted, only when needed for credit pull.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="field-group">
+          <label class="field-label">Citizenship Status <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s1_citizenship">
+            <button type="button" class="pill-btn" data-value="us_citizen">U.S. Citizen</button>
+            <button type="button" class="pill-btn" data-value="permanent_resident">Permanent Resident</button>
+            <button type="button" class="pill-btn" data-value="non_permanent_resident">Non-Permanent Resident</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Marital Status <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s1_marital_status">
+            <button type="button" class="pill-btn" data-value="married">Married</button>
+            <button type="button" class="pill-btn" data-value="separated">Separated</button>
+            <button type="button" class="pill-btn" data-value="unmarried">Unmarried</button>
+          </div>
+          <div class="field-help">Affects how property is titled in some states. We don't share this with anyone outside your lender.</div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s1_dependents_count">Number of Dependents <span class="opt">optional</span></label>
+            <input class="field-input" type="number" id="s1_dependents_count" data-key="s1_dependents_count" min="0" max="20" placeholder="0" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 2 · Where You Live
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="2">
+      <div class="section-eyebrow">Step 2 of 8</div>
+      <h1 class="section-title">Where you live now.</h1>
+      <p class="section-sub">Your current home address. If you've been there less than two years, we'll ask for your previous address on a later step.</p>
+
+      <div class="section-card">
+        <div class="field-group">
+          <label class="field-label" for="s2_current_street">Street Address <span class="req">*</span></label>
+          <input class="field-input" type="text" id="s2_current_street" data-key="s2_current_street" autocomplete="street-address" placeholder="123 Main St" />
+        </div>
+        <div class="field-row wide-narrow">
+          <div class="field-group">
+            <label class="field-label" for="s2_current_unit">Apt / Unit <span class="opt">opt.</span></label>
+            <input class="field-input" type="text" id="s2_current_unit" data-key="s2_current_unit" placeholder="Apt 4B" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s2_current_city">City <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s2_current_city" data-key="s2_current_city" autocomplete="address-level2" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s2_current_state">State <span class="req">*</span></label>
+            <select class="field-select" id="s2_current_state" data-key="s2_current_state" autocomplete="address-level1">
+              <option value="">Select…</option>
+              <option value="TX">Texas</option>
+              <option value="" disabled>──────────</option>
+              <option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option>
+              <option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option>
+              <option value="CT">CT</option><option value="DE">DE</option><option value="FL">FL</option>
+              <option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option>
+              <option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option>
+              <option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option>
+              <option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option>
+              <option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option>
+              <option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option>
+              <option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option>
+              <option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option>
+              <option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option>
+              <option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option>
+              <option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option>
+              <option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option>
+              <option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option>
+              <option value="WY">WY</option><option value="DC">DC</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s2_current_zip">ZIP <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s2_current_zip" data-key="s2_current_zip" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s2_years_at">Years at this address <span class="req">*</span></label>
+            <input class="field-input" type="number" id="s2_years_at" data-key="s2_years_at" min="0" max="99" placeholder="3" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s2_months_at">Additional months <span class="opt">opt.</span></label>
+            <input class="field-input" type="number" id="s2_months_at" data-key="s2_months_at" min="0" max="11" placeholder="6" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Housing Situation <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s2_housing_status">
+            <button type="button" class="pill-btn" data-value="own">I own this home</button>
+            <button type="button" class="pill-btn" data-value="rent">I rent</button>
+            <button type="button" class="pill-btn" data-value="rent_free">I live rent-free</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 3 · Job & Income
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="3">
+      <div class="section-eyebrow">Step 3 of 8</div>
+      <h1 class="section-title">Your job &amp; income.</h1>
+      <p class="section-sub">Your primary employment. Use the income you can document with paystubs or tax returns — we'll verify everything when the application is complete.</p>
+
+      <div class="section-card">
+        <div class="field-group">
+          <label class="field-label">Are you self-employed? <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s3_self_employed">
+            <button type="button" class="pill-btn" data-value="no">No, I'm a W-2 employee</button>
+            <button type="button" class="pill-btn" data-value="yes">Yes, self-employed</button>
+            <button type="button" class="pill-btn" data-value="mixed">Mixed (both)</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s3_employer_name">Employer / Business Name <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s3_employer_name" data-key="s3_employer_name" autocomplete="organization" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s3_position">Position / Title <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s3_position" data-key="s3_position" autocomplete="organization-title" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s3_years_at_job">Years at this job <span class="req">*</span></label>
+            <input class="field-input" type="number" id="s3_years_at_job" data-key="s3_years_at_job" min="0" max="60" step="0.1" placeholder="5" />
+            <div class="field-help">If less than 2 years, we'll ask for prior employment on a later step.</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s3_employer_phone">Employer Phone <span class="opt">optional</span></label>
+            <input class="field-input" type="tel" id="s3_employer_phone" data-key="s3_employer_phone" placeholder="(806) 555-0100" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Monthly income (gross)</h3>
+        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Before taxes. If your income varies, use the average over the last 24 months.</p>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s3_monthly_base">Base Pay <span class="req">*</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_base" data-key="s3_monthly_base" min="0" step="100" placeholder="5,000" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s3_monthly_overtime">Overtime <span class="opt">opt.</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_overtime" data-key="s3_monthly_overtime" min="0" step="50" placeholder="0" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s3_monthly_bonus">Bonus <span class="opt">opt.</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_bonus" data-key="s3_monthly_bonus" min="0" step="50" placeholder="0" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s3_monthly_commission">Commission <span class="opt">opt.</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_commission" data-key="s3_monthly_commission" min="0" step="50" placeholder="0" /></div>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="s3_monthly_other">Other monthly income (rental, alimony, etc.) <span class="opt">optional</span></label>
+          <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_other" data-key="s3_monthly_other" min="0" step="50" placeholder="0" /></div>
+          <div class="field-help">You're not required to disclose alimony, child support, or separate maintenance unless you want it counted as income.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 4 · Money & Debts
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="4">
+      <div class="section-eyebrow">Step 4 of 8</div>
+      <h1 class="section-title">Your savings &amp; debts.</h1>
+      <p class="section-sub">A high-level picture of what you have and what you owe. Approximate is fine here — we'll get exact numbers from statements later.</p>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Assets</h3>
+        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Estimated balances. You don't need exact numbers right now.</p>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s4_checking_total">Checking accounts (total)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_checking_total" data-key="s4_checking_total" min="0" step="100" placeholder="0" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s4_savings_total">Savings accounts (total)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_savings_total" data-key="s4_savings_total" min="0" step="100" placeholder="0" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s4_retirement_total">Retirement (401k, IRA)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_retirement_total" data-key="s4_retirement_total" min="0" step="100" placeholder="0" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s4_other_assets_total">Other assets <span class="opt">opt.</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_other_assets_total" data-key="s4_other_assets_total" min="0" step="100" placeholder="0" /></div>
+            <div class="field-help">Stocks, brokerage, gift letters, etc.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Monthly debt payments</h3>
+        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Recurring monthly minimums. We'll pull exact figures from your credit report later.</p>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s4_credit_card_min">Credit card minimums (total)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_credit_card_min" data-key="s4_credit_card_min" min="0" step="10" placeholder="0" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s4_auto_loan_min">Auto loans (monthly)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_auto_loan_min" data-key="s4_auto_loan_min" min="0" step="10" placeholder="0" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s4_student_loan_min">Student loans (monthly)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_student_loan_min" data-key="s4_student_loan_min" min="0" step="10" placeholder="0" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s4_other_debt_min">Other debt (monthly)</label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s4_other_debt_min" data-key="s4_other_debt_min" min="0" step="10" placeholder="0" /></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 5 · Property & Loan (STUB)
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="5">
+      <div class="section-eyebrow">Step 5 of 8</div>
+      <h1 class="section-title">The property &amp; loan.</h1>
+      <p class="section-sub">Where you're buying, what you're buying, and how much you need to borrow.</p>
+      <div class="stub-card">
+        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
+        <h3>Property &amp; Loan section coming soon.</h3>
+        <p>This section will collect property address, type (SFH / condo / multi-family), occupancy intent, purchase price (or current value for refi), down payment source, loan amount, loan type (conventional / FHA / VA / USDA), and term.</p>
+        <div class="stub-fields">
+          <span>•</span> Property address, city, state, ZIP<br>
+          <span>•</span> Property type · occupancy · units<br>
+          <span>•</span> Purchase price · loan amount · LTV preview<br>
+          <span>•</span> Loan type · term · rate type<br>
+          <span>•</span> Down payment amount &amp; source
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 6 · A Few Questions (STUB)
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="6">
+      <div class="section-eyebrow">Step 6 of 8</div>
+      <h1 class="section-title">A few questions.</h1>
+      <p class="section-sub">Standard questions every borrower has to answer. Yes or no.</p>
+      <div class="stub-card">
+        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
+        <h3>Declarations section coming soon.</h3>
+        <p>Standard URLA declarations — bankruptcy in last 7 years, foreclosure in last 7 years, party to a lawsuit, primary residence intent, etc.</p>
+        <div class="stub-fields">
+          <span>•</span> Bankruptcy or foreclosure history<br>
+          <span>•</span> Outstanding judgments or liens<br>
+          <span>•</span> Co-signer on other obligations<br>
+          <span>•</span> U.S. citizen / permanent resident<br>
+          <span>•</span> Primary residence intent
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 7 · Demographics (STUB)
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="7">
+      <div class="section-eyebrow">Step 7 of 8</div>
+      <h1 class="section-title">Demographic information.</h1>
+      <p class="section-sub">Required by federal fair lending laws to monitor that lenders serve all communities. You're not required to provide this.</p>
+      <div class="stub-card">
+        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
+        <h3>HMDA / Demographics section coming soon.</h3>
+        <p>Reg B Appendix B framing — voluntary disclosure of ethnicity, race, and sex. "I do not wish to provide this information" is a first-class option, visually equivalent to answering. See compliance_copy_v1.md §3 for the full required text.</p>
+        <div class="stub-fields">
+          <span>•</span> Ethnicity (multi-select or decline)<br>
+          <span>•</span> Race (multi-select or decline)<br>
+          <span>•</span> Sex (or decline)<br>
+          <span>•</span> Voluntary · no impact on decision
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────────────────────────────────────────────────────
+         SECTION 8 · Review & Submit (STUB)
+    ────────────────────────────────────────────────────────────── -->
+    <div class="section" data-section="8">
+      <div class="section-eyebrow">Step 8 of 8</div>
+      <h1 class="section-title">Review &amp; submit.</h1>
+      <p class="section-sub">One last look. Authorize a credit pull. Send to your loan officer.</p>
+      <div class="stub-card">
+        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
+        <h3>Review &amp; Submit section coming soon.</h3>
+        <p>Final step shows a complete summary of everything entered, captures credit pull authorization (FCRA §604(a)(2), see compliance_copy_v1.md §2), and on submit materializes the draft into the loans + borrowers tables with intake_source='borrower_portal'.</p>
+        <div class="stub-fields">
+          <span>•</span> Summary of all sections<br>
+          <span>•</span> Credit pull authorization checkbox<br>
+          <span>•</span> Submit creates loan + borrowers + credit_pull_auth_records<br>
+          <span>•</span> Status moves draft → submitted<br>
+          <span>•</span> LO notification sent
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Wizard nav ──────────────────────────────────────────── -->
+    <div class="wizard-nav">
+      <button class="btn-back" id="btn-back" type="button" disabled>← Back</button>
+      <span class="save-indicator" id="save-indicator"><span class="si-dot"></span>Saved</span>
+      <button class="btn-next" id="btn-next" type="button">Continue →</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-disclaimer">
+    <strong>OriginFlow LOS · Borrower Portal</strong> · Your application is saved automatically · No credit pull happens until you authorize one on Step 8
+  </div>
+  <div class="footer-bottom">
+    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/portal/index.html">Portal Home</a>
+      <a href="mailto:dsrackler@gmail.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     WIZARD BOOTSTRAP + STATE + NAVIGATION
+     
+     Architecture:
+       formState               — flat key/value object of all field values
+       SECTIONS                — total section count (8)
+       currentSection          — 1..8
+       draftStorageKey         — 'of_apply_draft_<borrower_account_id>'
+       saveDraft()             — debounced write to localStorage
+       restoreDraft()          — read on bootstrap, prefill form
+       showSection(n)          — hide all, show n, update progress
+       validateCurrentSection()— per-section required-field check
+       bootstrap()             — gate logic: session → account → econsent → wizard
+     
+     Section data lives entirely in localStorage during the draft phase.
+     Materialization into loans + borrowers happens on Section 8 submit
+     (next session). No DB writes happen from sections 1-4.
+═══════════════════════════════════════════════════════════════════ -->
+<script>
+  var SECTIONS = 8;
+  var currentSection = 1;
+  var formState = {};
+  var draftStorageKey = null;  // set after we know borrower_account_id
+  var saveTimer = null;
+  var bootstrapComplete = false;
+
+  var loadingEl = document.getElementById('state-loading');
+  var errorEl = document.getElementById('state-error');
+  var errorMsgEl = document.getElementById('state-error-msg');
+  var wizardEl = document.getElementById('wizard');
+  var bannerStepEl = document.getElementById('banner-step');
+  var progressFill = document.getElementById('progress-fill');
+  var saveIndicator = document.getElementById('save-indicator');
+  var errorBanner = document.getElementById('error-banner');
+  var btnBack = document.getElementById('btn-back');
+  var btnNext = document.getElementById('btn-next');
+
+  var sb = null;
+  try { sb = (typeof getSupabase === 'function') ? getSupabase() : null; } catch (_) {}
+
+  // ─── Bootstrap ────────────────────────────────────────────────────
+  async function bootstrap() {
+    if (!sb) { showBootstrapError('Could not reach the service. Please refresh.'); return; }
+
+    // 1. Session gate
+    var sessionRes;
+    try { sessionRes = await sb.auth.getSession(); } catch(_) { sessionRes = null; }
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if (!session) { window.location.href = '/portal/login.html'; return; }
+
+    // 2. Borrower account: lookup, or create via RPC using cached apply form data.
+    var account = null;
+    try {
+      var accRes = await sb
+        .from('borrower_accounts')
+        .select('id, econsent_granted_at, econsent_withdrawn_at, display_first_name, display_last_name, phone')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+      account = accRes && accRes.data;
+    } catch (err) { console.warn('[OF Apply] borrower_account lookup:', err); }
+
+    if (!account) {
+      // No row yet — call bootstrap_borrower_account RPC with whatever we cached
+      // from apply.html. The RPC creates the row keyed to the current auth.uid().
+      var pending = readPendingApplication();
+      var firstName = null, lastName = null, phone = null;
+      if (pending && pending.fullName) {
+        var parts = pending.fullName.trim().split(/\s+/);
+        firstName = parts.shift() || null;
+        lastName = parts.join(' ') || null;
+      }
+      if (pending && pending.phone) phone = pending.phone;
+
+      try {
+        var rpcRes = await sb.rpc('bootstrap_borrower_account', {
+          p_phone: phone,
+          p_first_name: firstName,
+          p_last_name: lastName
+        });
+        if (rpcRes.error) throw rpcRes.error;
+        // Re-fetch the row we just created
+        var refetched = await sb
+          .from('borrower_accounts')
+          .select('id, econsent_granted_at, econsent_withdrawn_at, display_first_name, display_last_name, phone')
+          .eq('auth_user_id', session.user.id)
+          .maybeSingle();
+        account = refetched && refetched.data;
+      } catch (err) {
+        console.error('[OF Apply] bootstrap_borrower_account failed:', err);
+        showBootstrapError('Could not create your application: ' + ((err && err.message) || 'unknown error') + '.');
+        return;
+      }
+
+      if (!account) {
+        showBootstrapError('Account bootstrap returned no row. Please refresh and try again.');
+        return;
+      }
+    }
+
+    // 3. eConsent gate
+    var granted = account.econsent_granted_at;
+    var withdrawn = account.econsent_withdrawn_at;
+    var consentActive = granted && (!withdrawn || new Date(withdrawn) < new Date(granted));
+    if (!consentActive) { window.location.href = '/portal/econsent.html'; return; }
+
+    // 4. Set the storage key and load any prior draft
+    draftStorageKey = 'of_apply_draft_' + account.id;
+    restoreDraft(account);
+
+    // 5. Show wizard
+    bootstrapComplete = true;
+    loadingEl.style.display = 'none';
+    wizardEl.style.display = 'block';
+    showSection(currentSection);
+  }
+
+  function showBootstrapError(msg) {
+    loadingEl.style.display = 'none';
+    wizardEl.style.display = 'none';
+    errorEl.style.display = 'block';
+    errorMsgEl.textContent = msg;
+  }
+
+  // ─── Pending application from apply.html ──────────────────────────
+  function readPendingApplication() {
+    try {
+      var raw = localStorage.getItem('of_pending_application');
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      // Stale check — ignore drafts older than 24h.
+      if (data.capturedAt) {
+        var age = Date.now() - new Date(data.capturedAt).getTime();
+        if (age > 24 * 60 * 60 * 1000) return null;
+      }
+      return data;
+    } catch (_) { return null; }
+  }
+
+  // ─── Draft restore ────────────────────────────────────────────────
+  function restoreDraft(account) {
+    var raw = null;
+    try { raw = localStorage.getItem(draftStorageKey); } catch(_) {}
+    if (raw) {
+      try {
+        var saved = JSON.parse(raw);
+        formState = saved.formState || {};
+        currentSection = Math.min(Math.max(saved.currentSection || 1, 1), SECTIONS);
+      } catch (_) { formState = {}; currentSection = 1; }
+    }
+
+    // Prefill from apply.html cached data + borrower_accounts row.
+    var pending = readPendingApplication();
+    if (pending) {
+      if (pending.fullName && !formState.s1_legal_first_name) {
+        var parts = pending.fullName.trim().split(/\s+/);
+        formState.s1_legal_first_name = formState.s1_legal_first_name || (parts[0] || '');
+        formState.s1_legal_last_name = formState.s1_legal_last_name || (parts.slice(1).join(' ') || '');
+      }
+    }
+    // Account-level prefill (in case staff seeded these)
+    if (account.display_first_name && !formState.s1_legal_first_name) formState.s1_legal_first_name = account.display_first_name;
+    if (account.display_last_name && !formState.s1_legal_last_name) formState.s1_legal_last_name = account.display_last_name;
+
+    // Apply formState to all inputs
+    Object.keys(formState).forEach(function(key) {
+      var el = document.querySelector('[data-key="' + key + '"]');
+      if (el) el.value = formState[key];
+      // Pill selections
+      var pillGroup = document.querySelector('[data-pill-key="' + key + '"]');
+      if (pillGroup) {
+        pillGroup.querySelectorAll('.pill-btn').forEach(function(b) {
+          b.classList.toggle('selected', b.dataset.value === formState[key]);
+        });
+      }
+    });
+  }
+
+  // ─── Draft save (debounced) ───────────────────────────────────────
+  function saveDraft() {
+    if (!draftStorageKey || !bootstrapComplete) return;
+    saveIndicator.classList.add('saving');
+    saveIndicator.innerHTML = '<span class="si-dot"></span>Saving…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function() {
+      try {
+        localStorage.setItem(draftStorageKey, JSON.stringify({
+          formState: formState,
+          currentSection: currentSection,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (_) { /* localStorage full or unavailable; silently continue */ }
+      saveIndicator.classList.remove('saving');
+      saveIndicator.innerHTML = '<span class="si-dot"></span>Saved';
+    }, 600);
+  }
+
+  // ─── Field wiring (delegated) ─────────────────────────────────────
+  // Every input with data-key writes to formState[key] on change.
+  document.querySelectorAll('[data-key]').forEach(function(el) {
+    el.addEventListener('input', function() {
+      formState[el.dataset.key] = el.value;
+      saveDraft();
+    });
+    el.addEventListener('change', function() {
+      formState[el.dataset.key] = el.value;
+      saveDraft();
+    });
+  });
+
+  // Pill button groups (single-select)
+  document.querySelectorAll('[data-pill-key]').forEach(function(group) {
+    var key = group.dataset.pillKey;
+    group.querySelectorAll('.pill-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        group.querySelectorAll('.pill-btn').forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        formState[key] = btn.dataset.value;
+        saveDraft();
+      });
+    });
+  });
+
+  // ─── Section navigation ───────────────────────────────────────────
+  function showSection(n) {
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    var target = document.querySelector('.section[data-section="' + n + '"]');
+    if (target) target.classList.add('active');
+
+    currentSection = n;
+    bannerStepEl.textContent = n;
+    progressFill.style.width = (n / SECTIONS * 100) + '%';
+
+    document.querySelectorAll('.progress-step').forEach(function(s) {
+      var step = parseInt(s.dataset.step, 10);
+      s.classList.remove('active', 'done');
+      if (step === n) s.classList.add('active');
+      else if (step < n) s.classList.add('done');
+    });
+
+    btnBack.disabled = (n === 1);
+    btnNext.textContent = (n === SECTIONS) ? 'Submit Application →' : 'Continue →';
+
+    // Disable Next on stub sections (5-8) until those ship
+    if (n >= 5) {
+      btnNext.disabled = true;
+      btnNext.title = 'This section is in development. Use Back to return to completed sections.';
+    } else {
+      btnNext.disabled = false;
+      btnNext.title = '';
+    }
+
+    errorBanner.classList.remove('visible');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    saveDraft();
+  }
+
+  // ─── Per-section validation ───────────────────────────────────────
+  // Returns null on success, or an error message string on failure.
+  function validateCurrentSection() {
+    var f = formState;
+    if (currentSection === 1) {
+      if (!f.s1_legal_first_name || !f.s1_legal_first_name.trim()) return 'Legal first name is required.';
+      if (!f.s1_legal_last_name || !f.s1_legal_last_name.trim()) return 'Legal last name is required.';
+      if (!f.s1_dob) return 'Date of birth is required.';
+      var dob = new Date(f.s1_dob);
+      var age = (Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      if (age < 18) return 'You must be at least 18 years old to apply.';
+      if (!/^[0-9]{4}$/.test((f.s1_ssn_last4 || '').trim())) return 'Last 4 of SSN must be 4 digits.';
+      if (!f.s1_citizenship) return 'Please select your citizenship status.';
+      if (!f.s1_marital_status) return 'Please select your marital status.';
+      return null;
+    }
+    if (currentSection === 2) {
+      if (!f.s2_current_street || !f.s2_current_street.trim()) return 'Street address is required.';
+      if (!f.s2_current_city || !f.s2_current_city.trim()) return 'City is required.';
+      if (!f.s2_current_state) return 'State is required.';
+      if (!/^[0-9]{5}$/.test((f.s2_current_zip || '').trim())) return 'ZIP must be 5 digits.';
+      if (f.s2_years_at === undefined || f.s2_years_at === '' || isNaN(parseInt(f.s2_years_at,10))) return 'Years at this address is required.';
+      if (!f.s2_housing_status) return 'Please select your housing situation.';
+      return null;
+    }
+    if (currentSection === 3) {
+      if (!f.s3_self_employed) return 'Please tell us whether you\'re self-employed.';
+      if (!f.s3_employer_name || !f.s3_employer_name.trim()) return 'Employer / business name is required.';
+      if (!f.s3_position || !f.s3_position.trim()) return 'Position / title is required.';
+      if (f.s3_years_at_job === undefined || f.s3_years_at_job === '') return 'Years at this job is required.';
+      if (!f.s3_monthly_base || parseFloat(f.s3_monthly_base) <= 0) return 'Monthly base pay is required.';
+      return null;
+    }
+    if (currentSection === 4) {
+      // Section 4 is all optional fields by design (asset estimates / debt estimates).
+      return null;
+    }
+    return null;
+  }
+
+  // ─── Nav buttons ──────────────────────────────────────────────────
+  btnBack.addEventListener('click', function() {
+    if (currentSection > 1) showSection(currentSection - 1);
+  });
+
+  btnNext.addEventListener('click', function() {
+    var err = validateCurrentSection();
+    if (err) {
+      errorBanner.textContent = err;
+      errorBanner.classList.add('visible');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (currentSection < SECTIONS) {
+      showSection(currentSection + 1);
+    } else {
+      // Section 8 submit — implemented in S3b
+      errorBanner.textContent = 'Submit handler ships in S3b along with sections 5–8.';
+      errorBanner.classList.add('visible');
+    }
+  });
+
+  // ─── Save & Exit ──────────────────────────────────────────────────
+  document.getElementById('nav-signout').addEventListener('click', function() {
+    saveDraft();
+    setTimeout(function() { window.location.href = '/portal/index.html'; }, 100);
+  });
+
+  // ─── Boot ─────────────────────────────────────────────────────────
+  bootstrap();
+</script>
+
+</body>
+</html>
