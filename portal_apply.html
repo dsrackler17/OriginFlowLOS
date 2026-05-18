@@ -113,6 +113,65 @@
   .stub-card .stub-fields{font-family:var(--mono);font-size:0.65rem;color:var(--text);letter-spacing:0.04em;margin-top:1.25rem;text-align:left;display:inline-block;line-height:1.9;background:var(--deep);padding:0.85rem 1.25rem;border:1px solid var(--border)}
   .stub-card .stub-fields span{color:var(--accent)}
 
+  /* ─── Declarations rows (Section 6) ─────────────────────────────── */
+  .decl-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;padding:0.85rem 0;border-bottom:1px solid rgba(26,58,92,0.5)}
+  .decl-row:last-child{border-bottom:none}
+  .decl-q{font-size:0.9rem;color:var(--text);line-height:1.5;font-weight:300}
+  .decl-q .decl-help{display:block;font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.25rem;letter-spacing:0.04em}
+  .yn-group{display:flex;gap:0.4rem}
+  .yn-btn{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:0.45rem 0.85rem;cursor:pointer;transition:all 0.15s;min-width:54px}
+  .yn-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .yn-btn.selected[data-value="yes"]{background:rgba(245,166,35,0.1);border-color:var(--amber);color:var(--amber)}
+  .yn-btn.selected[data-value="no"]{background:rgba(0,255,157,0.08);border-color:var(--accent2);color:var(--accent2)}
+
+  /* ─── HMDA section (Section 7) ──────────────────────────────────── */
+  .hmda-notice{background:var(--panel);border-left:3px solid var(--accent);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:0.85rem;color:var(--text);font-weight:300;line-height:1.7}
+  .hmda-notice strong{color:var(--white);font-weight:500}
+  .hmda-group{margin-bottom:1.5rem}
+  .hmda-group:last-child{margin-bottom:0}
+  .hmda-group-label{display:block;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--white);margin-bottom:0.75rem;font-weight:700}
+  .hmda-option{display:flex;align-items:flex-start;gap:0.7rem;padding:0.5rem 0;cursor:pointer}
+  .hmda-option input{margin-top:0.3rem;width:16px;height:16px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+  .hmda-option label{font-size:0.88rem;color:var(--text);cursor:pointer;line-height:1.5;flex:1;font-weight:300}
+  .hmda-subgroup{margin-left:1.7rem;padding-left:0.7rem;border-left:1px solid var(--border);margin-top:0.25rem;margin-bottom:0.5rem}
+  .hmda-subgroup .hmda-option{padding:0.3rem 0}
+  .hmda-subgroup .hmda-option label{font-size:0.82rem;color:var(--muted)}
+  .hmda-decline{margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)}
+  .hmda-decline label{font-weight:500;color:var(--white)}
+  .hmda-input-other{margin-left:1.7rem;margin-top:0.25rem;max-width:300px;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.78rem;padding:0.5rem 0.75rem;outline:none}
+  .hmda-input-other:focus{border-color:var(--accent)}
+
+  /* ─── Review & Submit (Section 8) ───────────────────────────────── */
+  .review-section{margin-bottom:1.5rem}
+  .review-section h3{font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .review-edit{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);background:transparent;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .review-edit:hover{color:var(--accent2)}
+  .review-row{display:grid;grid-template-columns:140px 1fr;gap:0.75rem;padding:0.3rem 0;font-size:0.85rem;line-height:1.5}
+  .review-row .r-label{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;padding-top:0.15rem}
+  .review-row .r-val{color:var(--text);font-weight:300}
+  .review-row .r-val.empty{color:var(--muted);font-style:italic}
+
+  .auth-text{background:var(--panel);border:1px solid var(--border);padding:1.25rem 1.5rem;font-size:0.88rem;color:var(--text);font-weight:300;line-height:1.75;max-height:280px;overflow-y:auto;margin-bottom:1.25rem}
+  .auth-text p{margin-bottom:0.85rem}
+  .auth-text p:last-child{margin-bottom:0}
+  .auth-text strong{color:var(--white);font-weight:500}
+  .auth-text ul{margin:0.4rem 0 0.85rem 1.25rem}
+  .auth-text ul li{margin-bottom:0.3rem}
+
+  .credit-auth-row{display:flex;align-items:flex-start;gap:0.75rem;padding:1rem;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.3);margin-bottom:1.25rem;cursor:pointer}
+  .credit-auth-row input{margin-top:0.3rem;width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+  .credit-auth-row label{font-size:0.9rem;color:var(--text);cursor:pointer;line-height:1.55;flex:1;font-weight:300}
+  .credit-auth-row label strong{color:var(--white);font-weight:500}
+
+  /* ─── Success state (post-submit) ───────────────────────────────── */
+  .success-state{text-align:center;padding:3rem 2rem;animation:fadeIn 0.5s ease both}
+  .success-icon{display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(0,255,157,0.1);border:2px solid var(--accent2);color:var(--accent2);font-family:var(--mono);font-size:2rem;line-height:60px;margin-bottom:1.5rem}
+  .success-state h2{font-family:var(--serif);font-size:2rem;color:var(--white);margin-bottom:0.5rem}
+  .success-state p{color:var(--muted);font-weight:300;max-width:540px;margin:0 auto 1.25rem;line-height:1.7;font-size:0.95rem}
+  .success-loan-number{font-family:var(--mono);font-size:1rem;color:var(--accent);padding:0.65rem 1.25rem;background:var(--surface);border:1px solid var(--accent);display:inline-block;margin:0.5rem 0 1.5rem;letter-spacing:0.04em}
+  .success-cta{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.85rem 1.75rem;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+  .success-cta:hover{opacity:0.85}
+
   .error-banner{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);color:var(--red);font-family:var(--mono);font-size:0.7rem;padding:0.7rem 1rem;margin-bottom:1.25rem;display:none;letter-spacing:0.04em;line-height:1.6}
   .error-banner.visible{display:block}
 
@@ -482,86 +541,452 @@
     </div>
 
     <!-- ──────────────────────────────────────────────────────────
-         SECTION 5 · Property & Loan (STUB)
+         SECTION 5 · Property & Loan
     ────────────────────────────────────────────────────────────── -->
     <div class="section" data-section="5">
       <div class="section-eyebrow">Step 5 of 8</div>
       <h1 class="section-title">The property &amp; loan.</h1>
-      <p class="section-sub">Where you're buying, what you're buying, and how much you need to borrow.</p>
-      <div class="stub-card">
-        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
-        <h3>Property &amp; Loan section coming soon.</h3>
-        <p>This section will collect property address, type (SFH / condo / multi-family), occupancy intent, purchase price (or current value for refi), down payment source, loan amount, loan type (conventional / FHA / VA / USDA), and term.</p>
-        <div class="stub-fields">
-          <span>•</span> Property address, city, state, ZIP<br>
-          <span>•</span> Property type · occupancy · units<br>
-          <span>•</span> Purchase price · loan amount · LTV preview<br>
-          <span>•</span> Loan type · term · rate type<br>
-          <span>•</span> Down payment amount &amp; source
+      <p class="section-sub">Where you're buying (or refinancing), and how much you need to borrow.</p>
+
+      <div class="section-card">
+        <div class="field-group">
+          <label class="field-label">What are you doing? <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s5_purpose">
+            <button type="button" class="pill-btn" data-value="purchase">Buying a home</button>
+            <button type="button" class="pill-btn" data-value="refinance">Refinancing</button>
+            <button type="button" class="pill-btn" data-value="cashout_refinance">Cash-out refinance</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="s5_property_street">Property Street Address <span class="req">*</span></label>
+          <input class="field-input" type="text" id="s5_property_street" data-key="s5_property_street" placeholder="789 Oak Lane" autocomplete="street-address" />
+        </div>
+        <div class="field-row wide-narrow">
+          <div class="field-group">
+            <label class="field-label" for="s5_property_unit">Apt / Unit <span class="opt">opt.</span></label>
+            <input class="field-input" type="text" id="s5_property_unit" data-key="s5_property_unit" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s5_property_city">City <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s5_property_city" data-key="s5_property_city" autocomplete="address-level2" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label" for="s5_property_state">State <span class="req">*</span></label>
+            <select class="field-select" id="s5_property_state" data-key="s5_property_state" autocomplete="address-level1">
+              <option value="">Select…</option>
+              <option value="TX">Texas</option>
+              <option value="" disabled>──────────</option>
+              <option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option>
+              <option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option>
+              <option value="CT">CT</option><option value="DE">DE</option><option value="FL">FL</option>
+              <option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option>
+              <option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option>
+              <option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option>
+              <option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option>
+              <option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option>
+              <option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option>
+              <option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option>
+              <option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option>
+              <option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option>
+              <option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option>
+              <option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option>
+              <option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option>
+              <option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option>
+              <option value="WY">WY</option><option value="DC">DC</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s5_property_zip">ZIP <span class="req">*</span></label>
+            <input class="field-input" type="text" id="s5_property_zip" data-key="s5_property_zip" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="field-group">
+          <label class="field-label">Property Type <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s5_property_type">
+            <button type="button" class="pill-btn" data-value="single_family">Single-family home</button>
+            <button type="button" class="pill-btn" data-value="condo">Condo</button>
+            <button type="button" class="pill-btn" data-value="townhouse">Townhouse</button>
+            <button type="button" class="pill-btn" data-value="multi_family_2_4">2-4 unit</button>
+            <button type="button" class="pill-btn" data-value="manufactured">Manufactured</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Occupancy <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s5_occupancy">
+            <button type="button" class="pill-btn" data-value="primary_residence">Primary residence</button>
+            <button type="button" class="pill-btn" data-value="second_home">Second home</button>
+            <button type="button" class="pill-btn" data-value="investment">Investment</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Loan details</h3>
+        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Best estimates are fine. Your loan officer will work with you to finalize the numbers.</p>
+
+        <div class="field-row" id="s5_price_row">
+          <div class="field-group">
+            <label class="field-label" for="s5_purchase_price"><span id="s5_price_label">Purchase Price</span> <span class="req">*</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s5_purchase_price" data-key="s5_purchase_price" min="0" step="1000" placeholder="310,000" /></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="s5_loan_amount">Loan Amount <span class="req">*</span></label>
+            <div class="currency-wrap"><input class="field-input" type="number" id="s5_loan_amount" data-key="s5_loan_amount" min="0" step="1000" placeholder="248,000" /></div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Loan Term <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s5_term_months">
+            <button type="button" class="pill-btn" data-value="360">30 years</button>
+            <button type="button" class="pill-btn" data-value="240">20 years</button>
+            <button type="button" class="pill-btn" data-value="180">15 years</button>
+            <button type="button" class="pill-btn" data-value="120">10 years</button>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Loan Program <span class="req">*</span></label>
+          <div class="pill-group" data-pill-key="s5_program">
+            <button type="button" class="pill-btn" data-value="conventional">Conventional</button>
+            <button type="button" class="pill-btn" data-value="fha">FHA</button>
+            <button type="button" class="pill-btn" data-value="va">VA</button>
+            <button type="button" class="pill-btn" data-value="usda">USDA</button>
+            <button type="button" class="pill-btn" data-value="jumbo">Jumbo</button>
+            <button type="button" class="pill-btn" data-value="not_sure">Not sure yet</button>
+          </div>
+          <div class="field-help">Don't worry if you don't know — your loan officer will help you pick.</div>
         </div>
       </div>
     </div>
 
     <!-- ──────────────────────────────────────────────────────────
-         SECTION 6 · A Few Questions (STUB)
+         SECTION 6 · Declarations
     ────────────────────────────────────────────────────────────── -->
     <div class="section" data-section="6">
       <div class="section-eyebrow">Step 6 of 8</div>
       <h1 class="section-title">A few questions.</h1>
-      <p class="section-sub">Standard questions every borrower has to answer. Yes or no.</p>
-      <div class="stub-card">
-        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
-        <h3>Declarations section coming soon.</h3>
-        <p>Standard URLA declarations — bankruptcy in last 7 years, foreclosure in last 7 years, party to a lawsuit, primary residence intent, etc.</p>
-        <div class="stub-fields">
-          <span>•</span> Bankruptcy or foreclosure history<br>
-          <span>•</span> Outstanding judgments or liens<br>
-          <span>•</span> Co-signer on other obligations<br>
-          <span>•</span> U.S. citizen / permanent resident<br>
-          <span>•</span> Primary residence intent
+      <p class="section-sub">Standard yes-or-no questions every borrower has to answer. Honest answers — your loan officer will work with you on anything that needs explaining.</p>
+
+      <div class="section-card">
+        <div class="decl-row">
+          <div class="decl-q">Will you occupy this property as your primary residence?
+            <span class="decl-help">Most loan programs require this.</span></div>
+          <div class="yn-group" data-pill-key="s6_occupy_primary">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Have you had ownership interest in another property in the last 3 years?</div>
+          <div class="yn-group" data-pill-key="s6_prior_ownership">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Are you borrowing any part of the down payment from another source?</div>
+          <div class="yn-group" data-pill-key="s6_borrowed_dp">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Are you a co-signer or guarantor on any loan not disclosed on this application?</div>
+          <div class="yn-group" data-pill-key="s6_cosigner">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.05rem;color:var(--white);margin-bottom:0.85rem;">Legal history</h3>
+        <div class="decl-row">
+          <div class="decl-q">Any outstanding judgments against you?
+            <span class="decl-help">Court orders to pay money.</span></div>
+          <div class="yn-group" data-pill-key="s6_judgments">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Currently delinquent or in default on any federal debt?
+            <span class="decl-help">Student loans, taxes, SBA loans, etc.</span></div>
+          <div class="yn-group" data-pill-key="s6_fed_delinquent">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Are you party to any lawsuit currently?</div>
+          <div class="yn-group" data-pill-key="s6_lawsuit">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Conveyed title in lieu of foreclosure in the last 7 years?</div>
+          <div class="yn-group" data-pill-key="s6_dil">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Had a foreclosure in the last 7 years?</div>
+          <div class="yn-group" data-pill-key="s6_foreclosure">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+        <div class="decl-row">
+          <div class="decl-q">Declared bankruptcy in the last 7 years?</div>
+          <div class="yn-group" data-pill-key="s6_bankruptcy">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.05rem;color:var(--white);margin-bottom:0.85rem;">Obligations</h3>
+        <div class="decl-row">
+          <div class="decl-q">Obligated to pay alimony, child support, or separate maintenance?</div>
+          <div class="yn-group" data-pill-key="s6_alimony">
+            <button type="button" class="yn-btn" data-value="yes">Yes</button>
+            <button type="button" class="yn-btn" data-value="no">No</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ──────────────────────────────────────────────────────────
-         SECTION 7 · Demographics (STUB)
+         SECTION 7 · Demographic Information (HMDA / Reg B Appendix B)
     ────────────────────────────────────────────────────────────── -->
     <div class="section" data-section="7">
       <div class="section-eyebrow">Step 7 of 8</div>
       <h1 class="section-title">Demographic information.</h1>
-      <p class="section-sub">Required by federal fair lending laws to monitor that lenders serve all communities. You're not required to provide this.</p>
-      <div class="stub-card">
-        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
-        <h3>HMDA / Demographics section coming soon.</h3>
-        <p>Reg B Appendix B framing — voluntary disclosure of ethnicity, race, and sex. "I do not wish to provide this information" is a first-class option, visually equivalent to answering. See compliance_copy_v1.md §3 for the full required text.</p>
-        <div class="stub-fields">
-          <span>•</span> Ethnicity (multi-select or decline)<br>
-          <span>•</span> Race (multi-select or decline)<br>
-          <span>•</span> Sex (or decline)<br>
-          <span>•</span> Voluntary · no impact on decision
+      <p class="section-sub">Required by federal fair lending laws to monitor that lenders serve all communities. <strong>You're not required to provide this</strong>, and your decision doesn't affect your application.</p>
+
+      <div class="hmda-notice">
+        <strong>The following information is requested by the federal government</strong> to monitor compliance with federal fair lending laws and to help us determine whether we are serving all communities in our area. You are not required to provide this information, but are encouraged to do so. The law provides that we may not discriminate on the basis of this information, or on whether you choose to provide it.
+      </div>
+
+      <div class="section-card">
+        <!-- ─── Ethnicity ─── -->
+        <div class="hmda-group" data-hmda-group="ethnicity">
+          <label class="hmda-group-label">Ethnicity (check all that apply)</label>
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_eth_hispanic" data-hmda-value="hispanic_or_latino" data-hmda-group="ethnicity" />
+            <label for="s7_eth_hispanic">Hispanic or Latino</label>
+          </div>
+          <div class="hmda-subgroup">
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_eth_mexican" data-hmda-value="mexican" data-hmda-group="ethnicity" />
+              <label for="s7_eth_mexican">Mexican</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_eth_puerto_rican" data-hmda-value="puerto_rican" data-hmda-group="ethnicity" />
+              <label for="s7_eth_puerto_rican">Puerto Rican</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_eth_cuban" data-hmda-value="cuban" data-hmda-group="ethnicity" />
+              <label for="s7_eth_cuban">Cuban</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_eth_other_hisp" data-hmda-value="other_hispanic" data-hmda-group="ethnicity" />
+              <label for="s7_eth_other_hisp">Other Hispanic or Latino — please specify:</label>
+            </div>
+            <input type="text" class="hmda-input-other" id="s7_eth_other_hisp_text" data-key="s7_eth_other_hisp_text" placeholder="origin" />
+          </div>
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_eth_not_hispanic" data-hmda-value="not_hispanic_or_latino" data-hmda-group="ethnicity" />
+            <label for="s7_eth_not_hispanic">Not Hispanic or Latino</label>
+          </div>
+
+          <div class="hmda-decline hmda-option">
+            <input type="checkbox" id="s7_eth_decline" data-hmda-value="not_provided" data-hmda-group="ethnicity" data-hmda-decline="true" />
+            <label for="s7_eth_decline">I do not wish to provide this information</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <!-- ─── Race ─── -->
+        <div class="hmda-group" data-hmda-group="race">
+          <label class="hmda-group-label">Race (check all that apply)</label>
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_race_aian" data-hmda-value="american_indian_alaska_native" data-hmda-group="race" />
+            <label for="s7_race_aian">American Indian or Alaska Native — please specify enrolled or principal tribe:</label>
+          </div>
+          <input type="text" class="hmda-input-other" id="s7_race_aian_text" data-key="s7_race_aian_text" placeholder="tribe" />
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_race_asian" data-hmda-value="asian" data-hmda-group="race" />
+            <label for="s7_race_asian">Asian</label>
+          </div>
+          <div class="hmda-subgroup">
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_asian_indian" data-hmda-value="asian_indian" data-hmda-group="race" />
+              <label for="s7_race_asian_indian">Asian Indian</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_chinese" data-hmda-value="chinese" data-hmda-group="race" />
+              <label for="s7_race_chinese">Chinese</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_filipino" data-hmda-value="filipino" data-hmda-group="race" />
+              <label for="s7_race_filipino">Filipino</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_japanese" data-hmda-value="japanese" data-hmda-group="race" />
+              <label for="s7_race_japanese">Japanese</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_korean" data-hmda-value="korean" data-hmda-group="race" />
+              <label for="s7_race_korean">Korean</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_vietnamese" data-hmda-value="vietnamese" data-hmda-group="race" />
+              <label for="s7_race_vietnamese">Vietnamese</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_other_asian" data-hmda-value="other_asian" data-hmda-group="race" />
+              <label for="s7_race_other_asian">Other Asian — please specify:</label>
+            </div>
+            <input type="text" class="hmda-input-other" id="s7_race_other_asian_text" data-key="s7_race_other_asian_text" placeholder="origin" />
+          </div>
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_race_black" data-hmda-value="black_or_african_american" data-hmda-group="race" />
+            <label for="s7_race_black">Black or African American</label>
+          </div>
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_race_nhpi" data-hmda-value="native_hawaiian_pacific_islander" data-hmda-group="race" />
+            <label for="s7_race_nhpi">Native Hawaiian or Other Pacific Islander</label>
+          </div>
+          <div class="hmda-subgroup">
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_nhpi_hawaiian" data-hmda-value="native_hawaiian" data-hmda-group="race" />
+              <label for="s7_race_nhpi_hawaiian">Native Hawaiian</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_nhpi_guamanian" data-hmda-value="guamanian_chamorro" data-hmda-group="race" />
+              <label for="s7_race_nhpi_guamanian">Guamanian or Chamorro</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_nhpi_samoan" data-hmda-value="samoan" data-hmda-group="race" />
+              <label for="s7_race_nhpi_samoan">Samoan</label>
+            </div>
+            <div class="hmda-option">
+              <input type="checkbox" id="s7_race_nhpi_other" data-hmda-value="other_pacific_islander" data-hmda-group="race" />
+              <label for="s7_race_nhpi_other">Other Pacific Islander — please specify:</label>
+            </div>
+            <input type="text" class="hmda-input-other" id="s7_race_nhpi_other_text" data-key="s7_race_nhpi_other_text" placeholder="origin" />
+          </div>
+
+          <div class="hmda-option">
+            <input type="checkbox" id="s7_race_white" data-hmda-value="white" data-hmda-group="race" />
+            <label for="s7_race_white">White</label>
+          </div>
+
+          <div class="hmda-decline hmda-option">
+            <input type="checkbox" id="s7_race_decline" data-hmda-value="not_provided" data-hmda-group="race" data-hmda-decline="true" />
+            <label for="s7_race_decline">I do not wish to provide this information</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <!-- ─── Sex ─── -->
+        <div class="field-group">
+          <label class="field-label">Sex</label>
+          <div class="pill-group" data-pill-key="s7_sex">
+            <button type="button" class="pill-btn" data-value="female">Female</button>
+            <button type="button" class="pill-btn" data-value="male">Male</button>
+            <button type="button" class="pill-btn" data-value="not_provided">I do not wish to provide</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ──────────────────────────────────────────────────────────
-         SECTION 8 · Review & Submit (STUB)
+         SECTION 8 · Review & Submit
     ────────────────────────────────────────────────────────────── -->
     <div class="section" data-section="8">
       <div class="section-eyebrow">Step 8 of 8</div>
       <h1 class="section-title">Review &amp; submit.</h1>
       <p class="section-sub">One last look. Authorize a credit pull. Send to your loan officer.</p>
-      <div class="stub-card">
-        <div class="stub-eyebrow">⚑ In development · ships in next session (S3b)</div>
-        <h3>Review &amp; Submit section coming soon.</h3>
-        <p>Final step shows a complete summary of everything entered, captures credit pull authorization (FCRA §604(a)(2), see compliance_copy_v1.md §2), and on submit materializes the draft into the loans + borrowers tables with intake_source='borrower_portal'.</p>
-        <div class="stub-fields">
-          <span>•</span> Summary of all sections<br>
-          <span>•</span> Credit pull authorization checkbox<br>
-          <span>•</span> Submit creates loan + borrowers + credit_pull_auth_records<br>
-          <span>•</span> Status moves draft → submitted<br>
-          <span>•</span> LO notification sent
+
+      <div class="section-card">
+        <div class="review-section" id="review-s1">
+          <h3>About You <button type="button" class="review-edit" data-jump="1">Edit</button></h3>
+        </div>
+        <div class="review-section" id="review-s2">
+          <h3>Where You Live <button type="button" class="review-edit" data-jump="2">Edit</button></h3>
+        </div>
+        <div class="review-section" id="review-s3">
+          <h3>Job &amp; Income <button type="button" class="review-edit" data-jump="3">Edit</button></h3>
+        </div>
+        <div class="review-section" id="review-s4">
+          <h3>Money &amp; Debts <button type="button" class="review-edit" data-jump="4">Edit</button></h3>
+        </div>
+        <div class="review-section" id="review-s5">
+          <h3>Property &amp; Loan <button type="button" class="review-edit" data-jump="5">Edit</button></h3>
+        </div>
+        <div class="review-section" id="review-s6">
+          <h3>Declarations <button type="button" class="review-edit" data-jump="6">Edit</button></h3>
+        </div>
+        <div class="review-section" id="review-s7">
+          <h3>Demographic Information <button type="button" class="review-edit" data-jump="7">Edit</button></h3>
         </div>
       </div>
+
+      <div class="section-card">
+        <h3 style="font-family:var(--serif);font-size:1.2rem;color:var(--white);margin-bottom:0.75rem;">Credit Report Authorization</h3>
+        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1rem;line-height:1.7;">FCRA §604(a)(2) requires your written authorization before we can pull your credit. Read carefully, then check the box and submit.</p>
+
+        <!-- The visible text below MUST match CREDIT_AUTH_TEXT_V1 in the JS. -->
+        <div class="auth-text" id="credit-auth-block">
+          <p>By checking the box below, you authorize <strong>your lender</strong> and its agents to obtain a consumer credit report on you from one or more consumer reporting agencies for the purpose of evaluating your application for a mortgage loan.</p>
+          <p>This authorization covers:</p>
+          <ul>
+            <li>An initial credit report at application</li>
+            <li>Updated credit reports as needed during loan processing and underwriting</li>
+            <li>A refresh credit report shortly before closing</li>
+          </ul>
+          <p>A credit inquiry resulting from this authorization is generally classified as a hard inquiry, which may have a small, temporary effect on your credit score.</p>
+          <p>You also authorize your lender to share your credit report and related information with investors, servicers, mortgage insurers, and other parties who have a legitimate business need in connection with your loan.</p>
+          <p><strong>Co-borrower notice:</strong> Each borrower must provide separate authorization. If you have a co-borrower or co-applicant, they will receive their own authorization request.</p>
+        </div>
+
+        <div class="credit-auth-row">
+          <input type="checkbox" id="credit-auth-checkbox" />
+          <label for="credit-auth-checkbox"><strong>I authorize my lender to obtain my credit report.</strong> I understand this will result in a hard inquiry on my credit.</label>
+        </div>
+
+        <p style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.04em;line-height:1.6;">By submitting, you also confirm that the information you've provided is accurate to the best of your knowledge. Knowingly providing false information on a mortgage application is a federal crime under 18 U.S.C. §1014.</p>
+      </div>
+    </div>
+
+    <!-- ─── Success state (replaces wizard after submit) ────────── -->
+    <div id="success-state" class="success-state" style="display:none;">
+      <div class="success-icon">✓</div>
+      <h2>Application submitted.</h2>
+      <p>Your application has been received and assigned a loan number. Your loan officer will review it and reach out within one business day.</p>
+      <div class="success-loan-number" id="success-loan-number">OF-—</div>
+      <p style="font-size:0.85rem;">A confirmation email is on its way. You can return to your portal any time to check status, message your loan officer, or upload documents.</p>
+      <a href="/portal/index.html" class="success-cta">Return to Portal →</a>
     </div>
 
     <!-- ─── Wizard nav ──────────────────────────────────────────── -->
@@ -613,6 +1038,27 @@
   var draftStorageKey = null;  // set after we know borrower_id
   var saveTimer = null;
   var bootstrapComplete = false;
+  var borrowerIdGlobal = null;  // resolved at bootstrap; used by submit handler
+
+  // ─── Credit pull authorization text (FCRA §604(a)(2)) ─────────────
+  // SOURCE OF TRUTH — must match #credit-auth-block textContent visible to the
+  // borrower. Hashed on submit. If you change one, change both, and bump
+  // CREDIT_AUTH_VERSION. Old records keep referencing old hashes.
+  var CREDIT_AUTH_VERSION = 'credit_auth_v1';
+  var CREDIT_AUTH_TEXT_V1 = [
+    'By checking the box below, you authorize your lender and its agents to obtain a consumer credit report on you from one or more consumer reporting agencies for the purpose of evaluating your application for a mortgage loan.',
+    '',
+    'This authorization covers:',
+    '- An initial credit report at application',
+    '- Updated credit reports as needed during loan processing and underwriting',
+    '- A refresh credit report shortly before closing',
+    '',
+    'A credit inquiry resulting from this authorization is generally classified as a hard inquiry, which may have a small, temporary effect on your credit score.',
+    '',
+    'You also authorize your lender to share your credit report and related information with investors, servicers, mortgage insurers, and other parties who have a legitimate business need in connection with your loan.',
+    '',
+    'Co-borrower notice: Each borrower must provide separate authorization. If you have a co-borrower or co-applicant, they will receive their own authorization request.'
+  ].join('\n');
 
   var loadingEl = document.getElementById('state-loading');
   var errorEl = document.getElementById('state-error');
@@ -696,6 +1142,7 @@
 
     // 4. Set the storage key and load any prior draft
     draftStorageKey = 'of_apply_draft_' + borrower.id;
+    borrowerIdGlobal = borrower.id;
     restoreDraft(borrower);
 
     // 5. Show wizard
@@ -830,14 +1277,29 @@
 
     btnBack.disabled = (n === 1);
     btnNext.textContent = (n === SECTIONS) ? 'Submit Application →' : 'Continue →';
+    btnNext.disabled = false;
+    btnNext.title = '';
 
-    // Disable Next on stub sections (5-8) until those ship
-    if (n >= 5) {
-      btnNext.disabled = true;
-      btnNext.title = 'This section is in development. Use Back to return to completed sections.';
-    } else {
-      btnNext.disabled = false;
-      btnNext.title = '';
+    // Section 5: dynamic label on the price field — "Purchase Price" for
+    // purchases, "Current Value" for refis.
+    if (n === 5) {
+      var priceLabel = document.getElementById('s5_price_label');
+      if (priceLabel) {
+        var purpose = formState.s5_purpose;
+        if (purpose === 'refinance' || purpose === 'cashout_refinance') {
+          priceLabel.textContent = 'Current Estimated Value';
+        } else {
+          priceLabel.textContent = 'Purchase Price';
+        }
+      }
+    }
+
+    // Section 8: render the review summary just before showing.
+    if (n === SECTIONS) {
+      renderReview();
+      // Submit button stays disabled until credit auth checkbox is checked.
+      var creditCheckbox = document.getElementById('credit-auth-checkbox');
+      btnNext.disabled = !(creditCheckbox && creditCheckbox.checked);
     }
 
     errorBanner.classList.remove('visible');
@@ -882,6 +1344,38 @@
       // Section 4 is all optional fields by design (asset estimates / debt estimates).
       return null;
     }
+    if (currentSection === 5) {
+      if (!f.s5_purpose) return 'Please tell us whether you\'re buying or refinancing.';
+      if (!f.s5_property_street || !f.s5_property_street.trim()) return 'Property street address is required.';
+      if (!f.s5_property_city || !f.s5_property_city.trim()) return 'Property city is required.';
+      if (!f.s5_property_state) return 'Property state is required.';
+      if (!/^[0-9]{5}$/.test((f.s5_property_zip || '').trim())) return 'Property ZIP must be 5 digits.';
+      if (!f.s5_property_type) return 'Please choose a property type.';
+      if (!f.s5_occupancy) return 'Please choose how the property will be used.';
+      if (!f.s5_purchase_price || parseFloat(f.s5_purchase_price) <= 0) return 'Please enter a purchase price or estimated value.';
+      if (!f.s5_loan_amount || parseFloat(f.s5_loan_amount) <= 0) return 'Please enter a loan amount.';
+      if (!f.s5_term_months) return 'Please choose a loan term.';
+      if (!f.s5_program) return 'Please choose a loan program (Not sure yet is OK).';
+      return null;
+    }
+    if (currentSection === 6) {
+      // Each declaration must be answered yes or no — no skipping.
+      var requiredDecls = [
+        's6_occupy_primary','s6_prior_ownership','s6_borrowed_dp','s6_cosigner',
+        's6_judgments','s6_fed_delinquent','s6_lawsuit','s6_dil',
+        's6_foreclosure','s6_bankruptcy','s6_alimony'
+      ];
+      for (var i = 0; i < requiredDecls.length; i++) {
+        if (!f[requiredDecls[i]]) return 'Please answer all declarations.';
+      }
+      return null;
+    }
+    if (currentSection === 7) {
+      // HMDA is voluntary. Section 7 always validates — formatHmdaSelections()
+      // computes the stored values from checkbox state inside saveDraft().
+      // Blank entries are recorded as 'not_provided' on submit.
+      return null;
+    }
     return null;
   }
 
@@ -890,7 +1384,7 @@
     if (currentSection > 1) showSection(currentSection - 1);
   });
 
-  btnNext.addEventListener('click', function() {
+  btnNext.addEventListener('click', async function() {
     var err = validateCurrentSection();
     if (err) {
       errorBanner.textContent = err;
@@ -900,10 +1394,79 @@
     }
     if (currentSection < SECTIONS) {
       showSection(currentSection + 1);
-    } else {
-      // Section 8 submit — implemented in S3b
-      errorBanner.textContent = 'Submit handler ships in S3b along with sections 5–8.';
+      return;
+    }
+
+    // ─── Section 8 submit ───────────────────────────────────────────
+    var creditCheckbox = document.getElementById('credit-auth-checkbox');
+    if (!creditCheckbox || !creditCheckbox.checked) {
+      errorBanner.textContent = 'Please authorize the credit pull before submitting.';
       errorBanner.classList.add('visible');
+      return;
+    }
+    if (!borrowerIdGlobal) {
+      errorBanner.textContent = 'Your account is not ready. Please refresh and try again.';
+      errorBanner.classList.add('visible');
+      return;
+    }
+    if (!sb) {
+      errorBanner.textContent = 'Could not reach the service. Please refresh.';
+      errorBanner.classList.add('visible');
+      return;
+    }
+
+    // Materialize HMDA selections from checkboxes into formState before submit.
+    // Multi-select groups are joined with commas; the decline option overrides
+    // everything for that group.
+    formState.s7_ethnicity = collectHmdaGroup('ethnicity') || 'not_provided';
+    formState.s7_race      = collectHmdaGroup('race')      || 'not_provided';
+    if (!formState.s7_sex) formState.s7_sex = 'not_provided';
+
+    btnNext.disabled = true;
+    btnNext.textContent = 'Submitting…';
+
+    try {
+      var hash = await sha256(CREDIT_AUTH_TEXT_V1);
+      var rpcRes = await sb.rpc('submit_borrower_application', {
+        p_application_data: formState,
+        p_credit_auth_sha256: hash,
+        p_credit_auth_version: CREDIT_AUTH_VERSION
+      });
+      if (rpcRes.error) throw rpcRes.error;
+      var newLoanId = rpcRes.data;
+
+      // Clear the draft from localStorage — the application is now in the DB.
+      try { if (draftStorageKey) localStorage.removeItem(draftStorageKey); } catch (_) {}
+      try { localStorage.removeItem('of_pending_application'); } catch (_) {}
+
+      // Fetch the loan number for the success screen.
+      var loanNumber = newLoanId;
+      try {
+        var loanRes = await sb
+          .from('loans_borrower_view')
+          .select('loan_number')
+          .eq('id', newLoanId)
+          .maybeSingle();
+        if (loanRes && loanRes.data && loanRes.data.loan_number) {
+          loanNumber = loanRes.data.loan_number;
+        }
+      } catch (_) {}
+
+      // Swap the wizard for the success state.
+      document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+      document.querySelector('.wizard-nav').style.display = 'none';
+      document.querySelector('.progress-wrap').style.display = 'none';
+      document.querySelector('.portal-banner').textContent = 'Application Submitted';
+      document.getElementById('success-loan-number').textContent = loanNumber;
+      document.getElementById('success-state').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('[OF Apply] submit failed:', err);
+      errorBanner.textContent = 'Could not submit your application: ' + ((err && err.message) || 'unknown error') + '. Please try again.';
+      errorBanner.classList.add('visible');
+      btnNext.disabled = false;
+      btnNext.textContent = 'Submit Application →';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 
@@ -912,6 +1475,196 @@
     saveDraft();
     setTimeout(function() { window.location.href = '/portal/index.html'; }, 100);
   });
+
+  // ─── SHA-256 for credit auth text hash ────────────────────────────
+  async function sha256(text) {
+    var enc = new TextEncoder();
+    var buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
+    var arr = Array.from(new Uint8Array(buf));
+    return arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  // ─── HMDA: collect checked values for a group ─────────────────────
+  // Returns a comma-separated string of values, or 'not_provided' if the
+  // decline option is checked, or '' if nothing is selected.
+  function collectHmdaGroup(groupName) {
+    var declineBox = document.querySelector('[data-hmda-group="' + groupName + '"][data-hmda-decline="true"]');
+    if (declineBox && declineBox.checked) return 'not_provided';
+    var boxes = document.querySelectorAll('input[type="checkbox"][data-hmda-group="' + groupName + '"]:not([data-hmda-decline="true"])');
+    var values = [];
+    boxes.forEach(function(b) {
+      if (b.checked) values.push(b.dataset.hmdaValue);
+    });
+    return values.join(',');
+  }
+
+  // ─── HMDA: wire mutual-exclusivity between decline and answer options ──
+  document.querySelectorAll('[data-hmda-group]').forEach(function(box) {
+    if (box.tagName !== 'INPUT') return;
+    box.addEventListener('change', function() {
+      var group = box.dataset.hmdaGroup;
+      var isDecline = box.dataset.hmdaDecline === 'true';
+      if (isDecline && box.checked) {
+        // Uncheck every other box in this group
+        document.querySelectorAll('input[type="checkbox"][data-hmda-group="' + group + '"]:not([data-hmda-decline="true"])').forEach(function(b) {
+          b.checked = false;
+        });
+      } else if (!isDecline && box.checked) {
+        // Uncheck the decline box in this group
+        var declineBox = document.querySelector('[data-hmda-group="' + group + '"][data-hmda-decline="true"]');
+        if (declineBox) declineBox.checked = false;
+      }
+      // Persist the computed group value to formState as it changes.
+      formState['s7_' + (group === 'ethnicity' ? 'ethnicity' : 'race')] = collectHmdaGroup(group);
+      saveDraft();
+    });
+  });
+
+  // ─── Credit auth checkbox: gates the Submit button on section 8 ──
+  var creditCheckbox = document.getElementById('credit-auth-checkbox');
+  if (creditCheckbox) {
+    creditCheckbox.addEventListener('change', function() {
+      if (currentSection === SECTIONS) {
+        btnNext.disabled = !creditCheckbox.checked;
+      }
+    });
+  }
+
+  // ─── Edit jumps in the review section ────────────────────────────
+  document.querySelectorAll('.review-edit').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var target = parseInt(btn.dataset.jump, 10);
+      if (target >= 1 && target <= SECTIONS) showSection(target);
+    });
+  });
+
+  // ─── Render review summary on section 8 ───────────────────────────
+  function fmtCurrency(v) {
+    if (v === undefined || v === null || v === '') return null;
+    var n = parseFloat(v);
+    if (isNaN(n)) return null;
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+  function renderReviewRow(label, value) {
+    var v = (value === undefined || value === null || value === '') ? null : value;
+    return '<div class="review-row"><div class="r-label">' + label + '</div>' +
+           '<div class="r-val' + (v ? '' : ' empty') + '">' + (v || 'Not provided') + '</div></div>';
+  }
+  function titleCase(s) {
+    if (!s) return s;
+    return s.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+  }
+  function renderReview() {
+    var f = formState;
+
+    // S1
+    var s1 = document.getElementById('review-s1');
+    var s1html = '<h3>About You <button type="button" class="review-edit" data-jump="1">Edit</button></h3>';
+    var fullName = [f.s1_legal_first_name, f.s1_middle_name, f.s1_legal_last_name, f.s1_suffix].filter(Boolean).join(' ');
+    s1html += renderReviewRow('Legal Name', fullName || null);
+    s1html += renderReviewRow('Date of Birth', f.s1_dob || null);
+    s1html += renderReviewRow('SSN', f.s1_ssn_last4 ? '***-**-' + f.s1_ssn_last4 : null);
+    s1html += renderReviewRow('Citizenship', titleCase(f.s1_citizenship));
+    s1html += renderReviewRow('Marital Status', titleCase(f.s1_marital_status));
+    if (f.s1_dependents_count) s1html += renderReviewRow('Dependents', f.s1_dependents_count);
+    s1.innerHTML = s1html;
+
+    // S2
+    var s2 = document.getElementById('review-s2');
+    var addr = [f.s2_current_street, f.s2_current_unit, f.s2_current_city, f.s2_current_state, f.s2_current_zip].filter(Boolean).join(' ');
+    var tenure = (f.s2_years_at ? f.s2_years_at + ' yr' : '') + (f.s2_months_at ? ' ' + f.s2_months_at + ' mo' : '');
+    var s2html = '<h3>Where You Live <button type="button" class="review-edit" data-jump="2">Edit</button></h3>';
+    s2html += renderReviewRow('Current Address', addr.trim() || null);
+    s2html += renderReviewRow('Time at Address', tenure.trim() || null);
+    s2html += renderReviewRow('Housing Status', titleCase(f.s2_housing_status));
+    s2.innerHTML = s2html;
+
+    // S3
+    var s3 = document.getElementById('review-s3');
+    var totalMonthly = 0;
+    ['s3_monthly_base','s3_monthly_overtime','s3_monthly_bonus','s3_monthly_commission','s3_monthly_other'].forEach(function(k) {
+      var v = parseFloat(f[k]); if (!isNaN(v)) totalMonthly += v;
+    });
+    var s3html = '<h3>Job &amp; Income <button type="button" class="review-edit" data-jump="3">Edit</button></h3>';
+    s3html += renderReviewRow('Employment Type', titleCase(f.s3_self_employed === 'yes' ? 'self employed' : f.s3_self_employed === 'mixed' ? 'mixed (w-2 & self-employed)' : 'w-2 employee'));
+    s3html += renderReviewRow('Employer', f.s3_employer_name || null);
+    s3html += renderReviewRow('Position', f.s3_position || null);
+    s3html += renderReviewRow('Years at Job', f.s3_years_at_job || null);
+    s3html += renderReviewRow('Monthly Income (gross)', totalMonthly > 0 ? fmtCurrency(totalMonthly) : null);
+    s3.innerHTML = s3html;
+
+    // S4
+    var s4 = document.getElementById('review-s4');
+    var assets = 0, debts = 0;
+    ['s4_checking_total','s4_savings_total','s4_retirement_total','s4_other_assets_total'].forEach(function(k) {
+      var v = parseFloat(f[k]); if (!isNaN(v)) assets += v;
+    });
+    ['s4_credit_card_min','s4_auto_loan_min','s4_student_loan_min','s4_other_debt_min'].forEach(function(k) {
+      var v = parseFloat(f[k]); if (!isNaN(v)) debts += v;
+    });
+    var s4html = '<h3>Money &amp; Debts <button type="button" class="review-edit" data-jump="4">Edit</button></h3>';
+    s4html += renderReviewRow('Total Assets', assets > 0 ? fmtCurrency(assets) : null);
+    s4html += renderReviewRow('Monthly Debt Payments', debts > 0 ? fmtCurrency(debts) : null);
+    s4.innerHTML = s4html;
+
+    // S5
+    var s5 = document.getElementById('review-s5');
+    var propAddr = [f.s5_property_street, f.s5_property_unit, f.s5_property_city, f.s5_property_state, f.s5_property_zip].filter(Boolean).join(' ');
+    var termLabel = ({ '120':'10-year', '180':'15-year', '240':'20-year', '360':'30-year' })[f.s5_term_months] || null;
+    var s5html = '<h3>Property &amp; Loan <button type="button" class="review-edit" data-jump="5">Edit</button></h3>';
+    s5html += renderReviewRow('Purpose', titleCase(f.s5_purpose));
+    s5html += renderReviewRow('Property', propAddr.trim() || null);
+    s5html += renderReviewRow('Property Type', titleCase(f.s5_property_type));
+    s5html += renderReviewRow('Occupancy', titleCase(f.s5_occupancy));
+    s5html += renderReviewRow(f.s5_purpose === 'purchase' ? 'Purchase Price' : 'Current Value', fmtCurrency(f.s5_purchase_price));
+    s5html += renderReviewRow('Loan Amount', fmtCurrency(f.s5_loan_amount));
+    s5html += renderReviewRow('Loan', [termLabel, titleCase(f.s5_program)].filter(Boolean).join(', ') || null);
+    s5.innerHTML = s5html;
+
+    // S6
+    var s6 = document.getElementById('review-s6');
+    var s6html = '<h3>Declarations <button type="button" class="review-edit" data-jump="6">Edit</button></h3>';
+    var declLabels = {
+      s6_occupy_primary: 'Will Occupy as Primary',
+      s6_prior_ownership: 'Prior Property Ownership (3yr)',
+      s6_borrowed_dp: 'Borrowed Down Payment',
+      s6_cosigner: 'Co-signer on Other Loans',
+      s6_judgments: 'Outstanding Judgments',
+      s6_fed_delinquent: 'Federal Debt Delinquency',
+      s6_lawsuit: 'Party to Lawsuit',
+      s6_dil: 'Deed in Lieu (7yr)',
+      s6_foreclosure: 'Foreclosure (7yr)',
+      s6_bankruptcy: 'Bankruptcy (7yr)',
+      s6_alimony: 'Alimony / Child Support'
+    };
+    Object.keys(declLabels).forEach(function(k) {
+      s6html += renderReviewRow(declLabels[k], f[k] === 'yes' ? 'Yes' : (f[k] === 'no' ? 'No' : null));
+    });
+    s6.innerHTML = s6html;
+
+    // S7
+    var s7 = document.getElementById('review-s7');
+    var s7html = '<h3>Demographic Information <button type="button" class="review-edit" data-jump="7">Edit</button></h3>';
+    var ethVal = collectHmdaGroup('ethnicity');
+    var raceVal = collectHmdaGroup('race');
+    function fmtHmda(v) {
+      if (!v) return 'Not answered';
+      if (v === 'not_provided') return 'Chose not to provide';
+      return v.split(',').map(titleCase).join(', ');
+    }
+    s7html += renderReviewRow('Ethnicity', fmtHmda(ethVal));
+    s7html += renderReviewRow('Race', fmtHmda(raceVal));
+    s7html += renderReviewRow('Sex', f.s7_sex ? (f.s7_sex === 'not_provided' ? 'Chose not to provide' : titleCase(f.s7_sex)) : 'Not answered');
+    s7.innerHTML = s7html;
+
+    // Re-wire the Edit buttons (innerHTML wiped the old listeners).
+    document.querySelectorAll('.review-edit').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var target = parseInt(btn.dataset.jump, 10);
+        if (target >= 1 && target <= SECTIONS) showSection(target);
+      });
+    });
+  }
 
   // ─── Boot ─────────────────────────────────────────────────────────
   bootstrap();
