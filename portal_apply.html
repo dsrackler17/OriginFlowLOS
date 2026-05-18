@@ -595,22 +595,22 @@
        formState               — flat key/value object of all field values
        SECTIONS                — total section count (8)
        currentSection          — 1..8
-       draftStorageKey         — 'of_apply_draft_<borrower_account_id>'
+       draftStorageKey         — 'of_apply_draft_<borrower_id>'
        saveDraft()             — debounced write to localStorage
        restoreDraft()          — read on bootstrap, prefill form
        showSection(n)          — hide all, show n, update progress
        validateCurrentSection()— per-section required-field check
-       bootstrap()             — gate logic: session → account → econsent → wizard
+       bootstrap()             — gate logic: session → borrowers → econsent → wizard
      
      Section data lives entirely in localStorage during the draft phase.
-     Materialization into loans + borrowers happens on Section 8 submit
+     Materialization into loans + loan_borrowers happens on Section 8 submit
      (next session). No DB writes happen from sections 1-4.
 ═══════════════════════════════════════════════════════════════════ -->
 <script>
   var SECTIONS = 8;
   var currentSection = 1;
   var formState = {};
-  var draftStorageKey = null;  // set after we know borrower_account_id
+  var draftStorageKey = null;  // set after we know borrower_id
   var saveTimer = null;
   var bootstrapComplete = false;
 
@@ -638,20 +638,21 @@
     var session = sessionRes && sessionRes.data && sessionRes.data.session;
     if (!session) { window.location.href = '/portal/login.html'; return; }
 
-    // 2. Borrower account: lookup, or create via RPC using cached apply form data.
-    var account = null;
+    // 2. Borrowers row lookup, or create via RPC using cached apply form data.
+    var borrower = null;
     try {
-      var accRes = await sb
-        .from('borrower_accounts')
-        .select('id, econsent_granted_at, econsent_withdrawn_at, display_first_name, display_last_name, phone')
+      var bRes = await sb
+        .from('borrowers')
+        .select('id, econsent_granted_at, econsent_withdrawn_at, first_name, last_name, phone')
         .eq('auth_user_id', session.user.id)
         .maybeSingle();
-      account = accRes && accRes.data;
-    } catch (err) { console.warn('[OF Apply] borrower_account lookup:', err); }
+      borrower = bRes && bRes.data;
+    } catch (err) { console.warn('[OF Apply] borrowers lookup:', err); }
 
-    if (!account) {
-      // No row yet — call bootstrap_borrower_account RPC with whatever we cached
-      // from apply.html. The RPC creates the row keyed to the current auth.uid().
+    if (!borrower) {
+      // No row yet — call bootstrap_borrower_application RPC with whatever we
+      // cached from apply.html. The RPC creates the row (or links an existing
+      // unlinked one matching email) keyed to the current auth.uid().
       var pending = readPendingApplication();
       var firstName = null, lastName = null, phone = null;
       if (pending && pending.fullName) {
@@ -662,40 +663,40 @@
       if (pending && pending.phone) phone = pending.phone;
 
       try {
-        var rpcRes = await sb.rpc('bootstrap_borrower_account', {
-          p_phone: phone,
+        var rpcRes = await sb.rpc('bootstrap_borrower_application', {
           p_first_name: firstName,
-          p_last_name: lastName
+          p_last_name: lastName,
+          p_phone: phone
         });
         if (rpcRes.error) throw rpcRes.error;
-        // Re-fetch the row we just created
+        // Re-fetch the row we just created/linked.
         var refetched = await sb
-          .from('borrower_accounts')
-          .select('id, econsent_granted_at, econsent_withdrawn_at, display_first_name, display_last_name, phone')
+          .from('borrowers')
+          .select('id, econsent_granted_at, econsent_withdrawn_at, first_name, last_name, phone')
           .eq('auth_user_id', session.user.id)
           .maybeSingle();
-        account = refetched && refetched.data;
+        borrower = refetched && refetched.data;
       } catch (err) {
-        console.error('[OF Apply] bootstrap_borrower_account failed:', err);
+        console.error('[OF Apply] bootstrap_borrower_application failed:', err);
         showBootstrapError('Could not create your application: ' + ((err && err.message) || 'unknown error') + '.');
         return;
       }
 
-      if (!account) {
-        showBootstrapError('Account bootstrap returned no row. Please refresh and try again.');
+      if (!borrower) {
+        showBootstrapError('Bootstrap returned no row. Please refresh and try again.');
         return;
       }
     }
 
     // 3. eConsent gate
-    var granted = account.econsent_granted_at;
-    var withdrawn = account.econsent_withdrawn_at;
+    var granted = borrower.econsent_granted_at;
+    var withdrawn = borrower.econsent_withdrawn_at;
     var consentActive = granted && (!withdrawn || new Date(withdrawn) < new Date(granted));
     if (!consentActive) { window.location.href = '/portal/econsent.html'; return; }
 
     // 4. Set the storage key and load any prior draft
-    draftStorageKey = 'of_apply_draft_' + account.id;
-    restoreDraft(account);
+    draftStorageKey = 'of_apply_draft_' + borrower.id;
+    restoreDraft(borrower);
 
     // 5. Show wizard
     bootstrapComplete = true;
@@ -727,7 +728,7 @@
   }
 
   // ─── Draft restore ────────────────────────────────────────────────
-  function restoreDraft(account) {
+  function restoreDraft(borrower) {
     var raw = null;
     try { raw = localStorage.getItem(draftStorageKey); } catch(_) {}
     if (raw) {
@@ -738,7 +739,7 @@
       } catch (_) { formState = {}; currentSection = 1; }
     }
 
-    // Prefill from apply.html cached data + borrower_accounts row.
+    // Prefill from apply.html cached data + borrowers row.
     var pending = readPendingApplication();
     if (pending) {
       if (pending.fullName && !formState.s1_legal_first_name) {
@@ -747,9 +748,9 @@
         formState.s1_legal_last_name = formState.s1_legal_last_name || (parts.slice(1).join(' ') || '');
       }
     }
-    // Account-level prefill (in case staff seeded these)
-    if (account.display_first_name && !formState.s1_legal_first_name) formState.s1_legal_first_name = account.display_first_name;
-    if (account.display_last_name && !formState.s1_legal_last_name) formState.s1_legal_last_name = account.display_last_name;
+    // Borrower-row prefill (in case staff seeded these or auth-link pre-populated)
+    if (borrower.first_name && !formState.s1_legal_first_name) formState.s1_legal_first_name = borrower.first_name;
+    if (borrower.last_name && !formState.s1_legal_last_name) formState.s1_legal_last_name = borrower.last_name;
 
     // Apply formState to all inputs
     Object.keys(formState).forEach(function(key) {

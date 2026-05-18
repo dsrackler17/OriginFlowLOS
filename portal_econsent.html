@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electronic Communication Consent — OriginFlow Borrower Portal</title>
+<meta name="description" content="Consent to receive mortgage disclosures electronically.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  :root {
+    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
+    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
+    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
+    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
+  }
+  *,*::before,*::after { box-sizing:border-box;margin:0;padding:0; }
+  body { background:var(--navy); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.7; min-height:100vh; display:flex; flex-direction:column; }
+  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+  nav,.portal-banner,main,footer { position:relative; z-index:1; }
+
+  nav { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 3rem; border-bottom:1px solid var(--border); background:rgba(4,13,26,0.85); backdrop-filter:blur(12px); }
+  .nav-logo { display:flex; align-items:center; gap:0.75rem; text-decoration:none; }
+  .sonar-icon { width:32px; height:32px; }
+  .sonar-icon svg { width:100%; height:100%; }
+  .nav-wordmark { font-family:var(--mono); font-size:0.85rem; font-weight:700; color:var(--white); letter-spacing:0.12em; text-transform:uppercase; }
+  .nav-wordmark span { color:var(--accent); }
+  .nav-right { font-family:var(--mono); font-size:0.72rem; letter-spacing:0.08em; color:var(--muted); }
+  .nav-signout { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); background:transparent; border:1px solid var(--border); padding:0.45rem 0.9rem; cursor:pointer; transition:all 0.15s; }
+  .nav-signout:hover { border-color:var(--accent); color:var(--accent); }
+
+  .portal-banner { background:rgba(245,166,35,0.06); border-bottom:1px solid rgba(245,166,35,0.25); padding:0.55rem 3rem; display:flex; align-items:center; justify-content:center; gap:0.6rem; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.14em; color:var(--amber); text-transform:uppercase; }
+
+  main { flex:1; padding:3rem 3rem 4rem; max-width:840px; margin:0 auto; width:100%; }
+
+  .consent-eyebrow { font-family:var(--mono); font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.75rem; }
+  .consent-eyebrow::before { content:''; display:block; width:1.5rem; height:1px; background:var(--accent); }
+  .consent-title { font-family:var(--serif); font-size:2.2rem; color:var(--white); margin-bottom:0.5rem; line-height:1.15; }
+  .consent-sub { font-size:0.95rem; color:var(--muted); font-weight:300; margin-bottom:2rem; line-height:1.7; }
+
+  .consent-card { background:var(--surface); border:1px solid var(--border); position:relative; overflow:hidden; }
+  .consent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+
+  /* The consent block holds the legal text. The CONSENT_TEXT_V1 constant
+     in JS is the source of truth — what's rendered here, hashed on submit,
+     and stored on the audit record is the same string. Do NOT edit the
+     visible text without simultaneously updating CONSENT_TEXT_V1 and the
+     CONSENT_VERSION identifier, and never edit either in place once any
+     consent record references the old hash. New copy = new version. */
+  .consent-block { padding:2rem 2rem 1rem; }
+  .consent-block h2 { font-family:var(--serif); font-size:1.45rem; color:var(--white); margin-bottom:1.25rem; line-height:1.3; }
+  .consent-block p { color:var(--text); font-size:0.92rem; line-height:1.75; margin-bottom:1rem; font-weight:300; }
+  .consent-block p strong { color:var(--white); font-weight:500; }
+  .consent-block .lender-name { color:var(--accent); font-weight:500; }
+  .consent-block ol { margin:1rem 0 1.25rem 0; padding-left:1.5rem; }
+  .consent-block ol li { margin-bottom:1rem; color:var(--text); font-size:0.92rem; font-weight:300; line-height:1.75; }
+  .consent-block ol li strong { color:var(--white); font-weight:500; }
+
+  .demonstration { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--amber); padding:1.25rem 1.5rem; margin:1.5rem 2rem; }
+  .demonstration h3 { font-family:var(--mono); font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:0.6rem; }
+  .demonstration p { font-size:0.88rem; color:var(--text); font-weight:300; line-height:1.7; margin-bottom:0.9rem; }
+  .demo-btn { display:inline-flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; background:transparent; color:var(--amber); border:1px solid var(--amber); padding:0.65rem 1.1rem; cursor:pointer; text-decoration:none; transition:all 0.15s; font-weight:700; }
+  .demo-btn:hover { background:rgba(245,166,35,0.08); }
+  .demo-btn.viewed { color:var(--accent2); border-color:var(--accent2); }
+  .demo-btn.viewed::before { content:'✓ '; }
+  .demo-status { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; color:var(--muted); margin-top:0.6rem; }
+  .demo-status.viewed { color:var(--accent2); }
+
+  .consent-action { background:var(--deep); border-top:1px solid var(--border); padding:1.75rem 2rem 2rem; }
+  .checkbox-row { display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:1.5rem; cursor:pointer; }
+  .checkbox-row input { margin-top:0.3rem; width:18px; height:18px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
+  .checkbox-row input:disabled { cursor:not-allowed; opacity:0.5; }
+  .checkbox-row label { font-size:0.9rem; color:var(--text); cursor:pointer; line-height:1.6; flex:1; font-weight:300; }
+  .checkbox-row label strong { color:var(--white); font-weight:500; }
+  .checkbox-row.disabled label { color:var(--muted); cursor:not-allowed; }
+
+  .button-row { display:flex; gap:1rem; flex-wrap:wrap; }
+  .btn-consent { flex:1; min-width:200px; font-family:var(--mono); font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; background:var(--accent); color:var(--navy); border:none; padding:1rem 1.5rem; cursor:pointer; font-weight:700; transition:opacity 0.2s; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); }
+  .btn-consent:hover { opacity:0.85; }
+  .btn-consent:disabled { opacity:0.4; cursor:not-allowed; background:var(--muted); }
+  .btn-paper { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; background:transparent; color:var(--muted); border:1px solid var(--border); padding:1rem 1.25rem; cursor:pointer; transition:all 0.2s; }
+  .btn-paper:hover { color:var(--text); border-color:var(--text); }
+
+  .error-box   { background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3); color:var(--red); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; line-height:1.6; }
+  .error-box.visible   { display:block; }
+  .info-box    { background:rgba(0,212,255,0.05); border:1px solid rgba(0,212,255,0.25); color:var(--accent); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; line-height:1.6; }
+  .info-box.visible    { display:block; }
+
+  footer { border-top:1px solid var(--border); font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; color:var(--muted); background:var(--deep); margin-top:auto; }
+  .footer-disclaimer { padding:0.7rem 3rem; border-bottom:1px solid var(--border); text-align:center; font-size:0.58rem; line-height:1.5; color:var(--muted); }
+  .footer-disclaimer strong { color:var(--text); font-weight:700; }
+  .footer-bottom { padding:1.25rem 3rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+  footer a { color:var(--muted); text-decoration:none; }
+  footer a:hover { color:var(--accent); }
+  .footer-links { display:flex; gap:1.5rem; flex-wrap:wrap; }
+
+  @media (max-width:640px) {
+    nav { padding:1rem 1.25rem; }
+    .portal-banner { padding:0.55rem 1rem; font-size:0.58rem; }
+    main { padding:2rem 1.25rem 3rem; }
+    .consent-title { font-size:1.75rem; }
+    .consent-block { padding:1.5rem 1.25rem 0.75rem; }
+    .demonstration { margin:1.25rem 1.25rem; padding:1rem 1.1rem; }
+    .consent-action { padding:1.25rem 1.25rem 1.5rem; }
+    .footer-disclaimer { padding:0.6rem 1rem; }
+    .footer-bottom { padding:1rem 1.25rem; flex-direction:column; gap:0.75rem; text-align:center; }
+    .button-row { flex-direction:column; }
+    .btn-paper { width:100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/portal/index.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
+          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3">
+          <animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <div class="nav-right">
+    <button class="nav-signout" id="nav-signout" type="button">Sign Out</button>
+  </div>
+</nav>
+
+<div class="portal-banner">⚑ Action Required · Electronic Communication Consent</div>
+
+<main>
+  <div class="consent-eyebrow">ESIGN Consent</div>
+  <h1 class="consent-title">One quick step before we begin.</h1>
+  <p class="consent-sub">Federal law requires your consent before we can send mortgage disclosures and documents electronically. Please read carefully — you can decline and receive paper documents instead.</p>
+
+  <div class="error-box" id="error-box"></div>
+  <div class="info-box"  id="info-box"></div>
+
+  <div class="consent-card">
+
+    <!-- ─── CONSENT TEXT BLOCK ─────────────────────────────────────────
+         The textContent of #consent-block is hashed on submit. The visible
+         text MUST match the CONSENT_TEXT_V1 constant in the JS at the
+         bottom of this file. If you edit one, edit both, and update the
+         CONSENT_VERSION identifier (currently 'econsent_v1').
+    ───────────────────────────────────────────────────────────────── -->
+    <div class="consent-block" id="consent-block">
+      <h2>Electronic Communication Consent</h2>
+      <p>You are about to apply for a mortgage loan with <span class="lender-name" id="lender-name">your lender</span> through OriginFlow. Federal law requires that we provide certain disclosures and documents to you in writing. With your consent, we will deliver these documents electronically rather than on paper.</p>
+      <ol>
+        <li><strong>What you are consenting to.</strong> You are consenting to receive the following electronically: your Loan Estimate, Closing Disclosure, initial and annual privacy notices, Adverse Action notices (if applicable), Notice of Right to Receive a Copy of the Appraisal, and any other federal or state disclosures relating to your loan application and closing.</li>
+        <li><strong>Your right to receive paper copies.</strong> You may request a paper copy of any disclosure at no charge by contacting your loan officer. Requesting a paper copy will not be treated as a withdrawal of your consent to receive other documents electronically.</li>
+        <li><strong>Your right to withdraw consent.</strong> You may withdraw your consent at any time by contacting your loan officer. If you withdraw consent, we will deliver all subsequent disclosures on paper. Withdrawal will not affect the legal effectiveness of disclosures already delivered electronically.</li>
+        <li><strong>How to update your contact information.</strong> If your email address changes, you must notify us immediately. You can update your email address in your borrower portal under Account Settings, or by contacting your loan officer.</li>
+        <li><strong>Hardware and software you need.</strong> To receive electronic disclosures, you need: a device with internet access; a current web browser (Chrome, Safari, Firefox, or Edge — last two major versions); the ability to view and save PDF files; an active email address; and sufficient storage to retain documents you choose to save.</li>
+      </ol>
+    </div>
+
+    <!-- ─── DEMONSTRATION STEP ───────────────────────────────────────
+         ESIGN §101(c)(1)(C)(ii) requires the consumer demonstrate they
+         can access the electronic format. The consent button stays
+         disabled until the user clicks "View Sample Disclosure" and a
+         PDF actually opens. We capture sample_disclosure_viewed_at on
+         submit to prove the demonstration occurred.
+    ───────────────────────────────────────────────────────────────── -->
+    <div class="demonstration">
+      <h3>⚑ Required: Confirm You Can Open PDFs</h3>
+      <p>Before consenting, please open the sample disclosure below. This confirms you can read electronic documents in the format we use.</p>
+      <a href="/portal/sample-disclosure.pdf" target="_blank" rel="noopener" class="demo-btn" id="demo-btn">View Sample Disclosure (PDF)</a>
+      <div class="demo-status" id="demo-status">Click the button above to view a sample disclosure. The consent box will unlock afterward.</div>
+    </div>
+
+    <div class="consent-action">
+      <div class="checkbox-row disabled" id="checkbox-row">
+        <input type="checkbox" id="consent-checkbox" disabled />
+        <label for="consent-checkbox">
+          I have read and agree to the Electronic Communication Consent above. <strong>I confirm I was able to view the sample disclosure document.</strong>
+        </label>
+      </div>
+
+      <div class="button-row">
+        <button class="btn-consent" id="btn-consent" type="button" disabled>I Consent to Electronic Delivery</button>
+        <button class="btn-paper"   id="btn-paper"   type="button">I Want Paper Documents</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-disclaimer">
+    <strong>OriginFlow LOS · Borrower Portal</strong> · ESIGN Act §101(c) consent required before electronic delivery of mortgage disclosures
+  </div>
+  <div class="footer-bottom">
+    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="mailto:dsrackler@gmail.com">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── eConsent ceremony logic ──────────────────────────────────────────
+     Flow:
+       1. On load: verify session, lookup borrower_account, redirect away
+          if already consented (gate symmetry with portal/index.html).
+       2. Demonstration: clicking "View Sample Disclosure" sets
+          disclosureViewed=true and records the timestamp. Only then does
+          the checkbox enable.
+       3. Checking the box enables the Consent button.
+       4. On Consent: hash CONSENT_TEXT_V1 (which matches the rendered
+          block), insert econsent_records row with action='granted', hash,
+          version, sample_disclosure_viewed_at. Server trigger captures
+          IP/UA from PostgREST request headers and another server trigger
+          updates borrower_accounts.econsent_granted_at as cache. Then
+          redirect to /portal/index.html.
+       5. On Paper: insert action='paper_requested', redirect to a page
+          explaining their LO will be in touch. (v1 stopgap: just sign
+          out and show a message.)
+─────────────────────────────────────────────────────────────────────── -->
+<script>
+  // SOURCE OF TRUTH — must match the visible text in #consent-block.
+  // If you edit the text, bump CONSENT_VERSION and update the visible
+  // block. Old consent records continue to reference the old hash; new
+  // records will reference the new one. Never edit either in place once
+  // any consent record references the old hash.
+  var CONSENT_VERSION = 'econsent_v1';
+  var CONSENT_TEXT_V1 = [
+    'Electronic Communication Consent',
+    '',
+    'You are about to apply for a mortgage loan with your lender through OriginFlow. Federal law requires that we provide certain disclosures and documents to you in writing. With your consent, we will deliver these documents electronically rather than on paper.',
+    '',
+    '1. What you are consenting to. You are consenting to receive the following electronically: your Loan Estimate, Closing Disclosure, initial and annual privacy notices, Adverse Action notices (if applicable), Notice of Right to Receive a Copy of the Appraisal, and any other federal or state disclosures relating to your loan application and closing.',
+    '',
+    '2. Your right to receive paper copies. You may request a paper copy of any disclosure at no charge by contacting your loan officer. Requesting a paper copy will not be treated as a withdrawal of your consent to receive other documents electronically.',
+    '',
+    '3. Your right to withdraw consent. You may withdraw your consent at any time by contacting your loan officer. If you withdraw consent, we will deliver all subsequent disclosures on paper. Withdrawal will not affect the legal effectiveness of disclosures already delivered electronically.',
+    '',
+    '4. How to update your contact information. If your email address changes, you must notify us immediately. You can update your email address in your borrower portal under Account Settings, or by contacting your loan officer.',
+    '',
+    '5. Hardware and software you need. To receive electronic disclosures, you need: a device with internet access; a current web browser (Chrome, Safari, Firefox, or Edge — last two major versions); the ability to view and save PDF files; an active email address; and sufficient storage to retain documents you choose to save.'
+  ].join('\n');
+
+  var sb = null;
+  try { sb = (typeof getSupabase === 'function') ? getSupabase() : null; } catch(_) {}
+
+  var errorBox = document.getElementById('error-box');
+  var infoBox  = document.getElementById('info-box');
+  var demoBtn  = document.getElementById('demo-btn');
+  var demoStatus = document.getElementById('demo-status');
+  var checkboxRow = document.getElementById('checkbox-row');
+  var checkbox = document.getElementById('consent-checkbox');
+  var btnConsent = document.getElementById('btn-consent');
+  var btnPaper = document.getElementById('btn-paper');
+
+  function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); infoBox.classList.remove('visible'); }
+  function showInfo(msg)  { infoBox.textContent = msg;  infoBox.classList.add('visible');  errorBox.classList.remove('visible'); }
+
+  // State:
+  //   disclosureViewedAt - timestamp of the click on "View Sample Disclosure"
+  //   borrowerId         - borrowers.id, resolved on bootstrap
+  var disclosureViewedAt = null;
+  var borrowerId = null;
+
+  // ─── Bootstrap ─────────────────────────────────────────────────────
+  async function bootstrap() {
+    if (!sb) {
+      showError('Cannot reach authentication service. Refresh and try again.');
+      return;
+    }
+
+    var sessionRes;
+    try { sessionRes = await sb.auth.getSession(); } catch(_) { sessionRes = null; }
+    var session = sessionRes && sessionRes.data && sessionRes.data.session;
+    if (!session) {
+      window.location.href = '/portal/login.html';
+      return;
+    }
+
+    try {
+      var res = await sb
+        .from('borrowers')
+        .select('id, econsent_granted_at, econsent_withdrawn_at')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+      var borrower = res && res.data;
+      if (!borrower) {
+        // No borrowers row — they shouldn't be on this page.
+        window.location.href = '/portal/index.html';
+        return;
+      }
+      borrowerId = borrower.id;
+
+      // If they've already consented (and not subsequently withdrawn),
+      // bounce them to the dashboard. This page is single-purpose.
+      var granted = borrower.econsent_granted_at;
+      var withdrawn = borrower.econsent_withdrawn_at;
+      var consentActive = granted && (!withdrawn || new Date(withdrawn) < new Date(granted));
+      if (consentActive) {
+        window.location.href = '/portal/index.html';
+        return;
+      }
+    } catch (err) {
+      console.warn('[OF eConsent] borrowers lookup failed:', err);
+      showError('Could not verify your account. Please refresh.');
+    }
+  }
+
+  // ─── Demonstration step ────────────────────────────────────────────
+  // Capture the click that opens the sample PDF. The link itself opens
+  // in a new tab via target=_blank; we just record that the user
+  // interacted with the demonstration artifact.
+  demoBtn.addEventListener('click', function() {
+    if (!disclosureViewedAt) {
+      disclosureViewedAt = new Date().toISOString();
+      demoBtn.classList.add('viewed');
+      demoBtn.textContent = 'Sample Disclosure Viewed';
+      demoStatus.classList.add('viewed');
+      demoStatus.textContent = '✓ Demonstration complete at ' + new Date(disclosureViewedAt).toLocaleTimeString() + '. You may now check the box below.';
+      checkbox.disabled = false;
+      checkboxRow.classList.remove('disabled');
+    }
+  });
+
+  // ─── Checkbox gates the consent button ─────────────────────────────
+  checkbox.addEventListener('change', function() {
+    btnConsent.disabled = !checkbox.checked;
+  });
+
+  // ─── SHA-256 hash of consent text ──────────────────────────────────
+  async function sha256(text) {
+    var enc = new TextEncoder();
+    var buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
+    var arr = Array.from(new Uint8Array(buf));
+    return arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  // ─── Consent submit ────────────────────────────────────────────────
+  btnConsent.addEventListener('click', async function() {
+    if (!checkbox.checked || !disclosureViewedAt || !borrowerId) return;
+    errorBox.classList.remove('visible');
+    btnConsent.disabled = true;
+    btnConsent.textContent = 'Recording consent…';
+
+    try {
+      var hash = await sha256(CONSENT_TEXT_V1);
+      var res = await sb.from('econsent_records').insert({
+        borrower_id: borrowerId,
+        action: 'granted',
+        consent_text_sha256: hash,
+        consent_text_version: CONSENT_VERSION,
+        sample_disclosure_viewed_at: disclosureViewedAt
+      }).select().maybeSingle();
+      if (res.error) throw res.error;
+      // Server-side trigger updates borrowers.econsent_granted_at as cache.
+      // Dashboard's eConsent gate will pass on the next load.
+      window.location.href = '/portal/index.html';
+    } catch (err) {
+      console.error('[OF eConsent] grant failed:', err);
+      showError('Could not record your consent: ' + ((err && err.message) || 'unknown error') + '. Please try again.');
+      btnConsent.disabled = false;
+      btnConsent.textContent = 'I Consent to Electronic Delivery';
+    }
+  });
+
+  // ─── Paper request ─────────────────────────────────────────────────
+  // For v1 we sign the borrower out and explain their LO will follow up.
+  // A future iteration can route them to a "we'll mail you" landing
+  // page and notify the LO via the notification outbox.
+  btnPaper.addEventListener('click', async function() {
+    if (!borrowerId) return;
+    var ok = confirm(
+      'You\'ve chosen to receive paper documents.\n\n' +
+      'You will be signed out, and your loan officer will be in touch to arrange paper delivery. ' +
+      'You can re-consent to electronic delivery later by signing back in.\n\n' +
+      'Continue?'
+    );
+    if (!ok) return;
+    btnPaper.disabled = true;
+    btnPaper.textContent = 'Recording…';
+
+    try {
+      var hash = await sha256(CONSENT_TEXT_V1);
+      await sb.from('econsent_records').insert({
+        borrower_id: borrowerId,
+        action: 'paper_requested',
+        consent_text_sha256: hash,
+        consent_text_version: CONSENT_VERSION,
+        sample_disclosure_viewed_at: disclosureViewedAt  // null is fine — viewing the sample is for consent, not for paper request
+      });
+    } catch (err) {
+      console.warn('[OF eConsent] paper record failed (continuing anyway):', err);
+    }
+
+    try { await sb.auth.signOut(); } catch(_) {}
+    alert('You have been signed out. Your loan officer will contact you to arrange paper delivery of your mortgage documents.');
+    window.location.href = '/portal/login.html';
+  });
+
+  document.getElementById('nav-signout').addEventListener('click', async function() {
+    try { if (sb) await sb.auth.signOut(); } catch(_) {}
+    window.location.href = '/portal/login.html';
+  });
+
+  bootstrap();
+</script>
+
+</body>
+</html>
