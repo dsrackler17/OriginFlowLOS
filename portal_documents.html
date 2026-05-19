@@ -151,7 +151,7 @@
 <body>
 
 <nav>
-  <a href="/portal/index.html" class="nav-logo" aria-label="Back to portal">
+  <a href="/portal_index.html" class="nav-logo" aria-label="Back to portal">
     <svg class="sonar-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <circle cx="50" cy="50" r="6" fill="#00d4ff"/>
       <circle cx="50" cy="50" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.7"/>
@@ -161,7 +161,7 @@
     <span class="nav-wordmark">Origin<span>Flow</span></span>
   </a>
   <div class="nav-right">
-    <a href="" class="nav-back" id="back-to-loan">← Back to loan</a>
+    <a href="/portal_index.html" class="nav-back" id="back-to-loan">← Back to loan</a>
     <button class="nav-signout" id="signout-btn" type="button">Sign Out</button>
   </div>
 </nav>
@@ -179,14 +179,14 @@
   <div id="state-signed-out" class="state-block" hidden>
     <h2>You're not signed in</h2>
     <p>Please sign in to view your loan's documents.</p>
-    <a href="/portal/login.html" class="state-cta">Sign in →</a>
+    <a href="/portal_signin.html" class="state-cta">Sign in →</a>
   </div>
 
   <!-- No loan / no access -->
   <div id="state-not-found" class="state-block" hidden>
     <h2>Loan not found</h2>
     <p>This loan doesn't exist or you don't have access to it. If you think this is wrong, contact your loan officer.</p>
-    <a href="/portal/index.html" class="state-cta">Return to Portal →</a>
+    <a href="/portal_index.html" class="state-cta">Return to Portal →</a>
   </div>
 
   <!-- Main content -->
@@ -226,7 +226,7 @@
 <footer>
   <div>Equal Housing Opportunity · NMLS ID #—</div>
   <div style="margin-top:0.4rem;">
-    <a href="/portal/index.html">Portal</a> ·
+    <a href="/portal_index.html">Portal</a> ·
     <a href="/privacy.html">Privacy</a> ·
     <a href="/terms.html">Terms</a>
   </div>
@@ -241,7 +241,7 @@
 
 <script>
   // ═══════════════════════════════════════════════════════════════════════
-  // /portal/documents.html — borrower-facing categorized doc upload
+  // portal_documents.html — borrower-facing categorized doc upload
   //
   // Bootstrap:
   //   ?loan_id=<uuid> from the URL → session → borrowers row → eConsent gate
@@ -371,7 +371,7 @@
     if (borRes.error || !borRes.data) {
       console.warn('[OF Docs] no borrowers row:', borRes.error);
       // Not a borrower (e.g. staff). Send to portal index to sort out.
-      window.location.href = '/portal/index.html';
+      window.location.href = '/portal_index.html';
       return;
     }
     borrower = borRes.data;
@@ -381,7 +381,7 @@
                   (!borrower.econsent_withdrawn_at ||
                    new Date(borrower.econsent_withdrawn_at) < new Date(borrower.econsent_granted_at));
     if (!granted) {
-      window.location.href = '/portal/econsent.html';
+      window.location.href = '/portal_econsent.html';
       return;
     }
 
@@ -398,8 +398,11 @@
     }
     loan = loanRes.data;
 
-    // Wire the back-to-loan link now that we know the id
-    document.getElementById('back-to-loan').setAttribute('href', '/portal/loan.html?id=' + encodeURIComponent(loanId));
+    // Back-to-loan link → portal home. (Davis's repo has no per-loan
+    // borrower view; portal_index resolves the loan via OF_bootstrap and
+    // displays the loan card. If a multi-loan picker lands later, this is
+    // the natural place to add a query param.)
+    document.getElementById('back-to-loan').setAttribute('href', '/portal_index.html');
 
     // 7. Load requests + uploads
     await loadRequests();
@@ -689,7 +692,7 @@
     // Sign out
     document.getElementById('signout-btn').addEventListener('click', async function() {
       await sb.auth.signOut();
-      window.location.href = '/portal/login.html';
+      window.location.href = '/portal_signin.html';
     });
   }
 

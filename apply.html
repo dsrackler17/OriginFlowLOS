@@ -8,9 +8,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG + portal-auth.js
+       ------------------------------------------------------------
+       apply.html is the ONE portal-adjacent page that calls
+       OF_submitApplication without ever calling OF_bootstrap (user
+       isn't signed in yet — they're submitting the public form
+       that creates a borrower account + magic-link invite).
+
+       Without these script tags, OF_submitApplication is undefined
+       at runtime and the form falls back to the local stub — which
+       just logs the payload to console. That's silent-failure
+       territory in production, so the scripts MUST be loaded here.
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* =========================================================================
-       Phase 11.5.6 — Public /apply landing
+       Phase 11.5.6 — Public apply.html landing
        -----------------------------------------------------------------------
        This is the FRONT DOOR. Designed differently from internal LO surfaces
        and the borrower portal:
@@ -19,29 +42,33 @@
          - Three-step form, conversational copy, not "fill out this 1003"
          - Same design tokens as the rest of the system but warmer in tone:
            we lean on the cyan accent and the serif for emotional weight
+
        The user lands here from a branch-specific URL like:
          https://apply.submarinecatalyst.com/
          https://submarinecatalyst.originflow.app/apply
+
        Branch identification happens via `?branch=<slug>` query param OR via
-       subdomain detection. The page reads branch info from a /api/branch-info
+       subdomain detection. The page reads branch info from a public read-only
        endpoint (stubbed below) so the LO's photo, name, and NMLS show up.
 
        Submission flow:
          1. Validate client-side (required fields, email format, phone format)
-         2. POST to window.OF_submitApplication(payload) — the hook does:
-            a. inserts a borrowers row (if email is new for this branch)
-            b. inserts a loans row with intake_source='borrower_portal',
-               status='lead'
-            c. links loan_borrowers with role='primary'
-            d. assigns lo_id by branch round-robin or default LO
-            e. creates a borrower_invites row with a fresh token
-            f. sends magic-link email to the borrower
-            g. returns { success: true, masked_email: 'm***@example.com' }
+         2. POST to window.OF_submitApplication(payload) — the hook
+            (portal-auth.js → submit-application edge function) does:
+              a. inserts a borrowers row (if email is new for this branch)
+              b. inserts a loans row with intake_source='borrower_portal',
+                 status='lead'
+              c. links loan_borrowers with role='primary'
+              d. assigns lo_id by branch round-robin or default LO
+              e. creates a borrower_invites row with a fresh token
+              f. records the eConsent (text hash + IP + UA + timestamp)
+              g. sends magic-link email to the borrower
+              h. returns { success: true, masked_email: 'm***@example.com' }
          3. UI swaps to a "Check your email" success state
        =========================================================================
-       Colors and fonts mirror /portal/index.html exactly — same person who
-       fills out /apply ends up in /portal, so the visual transition needs
-       to feel continuous.
+       Colors and fonts mirror portal_index.html exactly — same person who
+       fills out apply.html ends up in the portal, so the visual transition
+       needs to feel continuous.
        ========================================================================= */
     :root {
       --bg: #0b1220;
@@ -83,7 +110,6 @@
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* ─── HEADER (lighter than internal nav — this is a public page) ─── */
     .apply-nav {
       padding: 18px 24px;
       display: flex;
@@ -140,7 +166,6 @@
       box-shadow: 0 0 8px var(--accent-green);
     }
 
-    /* ─── HERO ─── */
     .apply-hero {
       max-width: 720px;
       margin: 0 auto;
@@ -175,7 +200,6 @@
       margin: 0 auto;
     }
 
-    /* ─── LO CARD (branch-specific) ─── */
     .apply-lo-card {
       max-width: 540px;
       margin: 32px auto 0;
@@ -219,7 +243,6 @@
       letter-spacing: 0.03em;
     }
 
-    /* ─── FORM ─── */
     .apply-form {
       max-width: 540px;
       margin: 32px auto 0;
@@ -259,7 +282,6 @@
       margin-top: 6px;
     }
 
-    /* ─── PROGRESS DOTS ─── */
     .progress-dots {
       display: flex;
       gap: 8px;
@@ -282,7 +304,6 @@
       background: var(--accent-green);
     }
 
-    /* ─── FIELDS ─── */
     .field {
       margin-bottom: 18px;
     }
@@ -304,7 +325,7 @@
       border-radius: 10px;
       color: var(--text);
       font-family: var(--font-sans);
-      font-size: 16px; /* 16px = no zoom on iOS */
+      font-size: 16px;
       outline: none;
       transition: border-color 0.15s, background 0.15s;
     }
@@ -340,7 +361,6 @@
       letter-spacing: 0.02em;
     }
 
-    /* ─── ECONSENT BLOCK ─── */
     .econsent-block {
       margin: 24px 0 8px;
       padding: 16px 18px;
@@ -392,7 +412,6 @@
       font: inherit;
     }
 
-    /* ─── BUTTONS ─── */
     .button-row {
       display: flex;
       gap: 12px;
@@ -435,7 +454,6 @@
       border-color: var(--text-dim);
     }
 
-    /* ─── SUCCESS STATE ─── */
     .success-screen {
       display: none;
       max-width: 540px;
@@ -478,7 +496,6 @@
       font-size: 14px;
     }
 
-    /* ─── ERROR BANNER ─── */
     .error-banner {
       display: none;
       padding: 12px 16px;
@@ -493,7 +510,6 @@
       display: block;
     }
 
-    /* ─── FOOTER ─── */
     .apply-footer {
       padding: 32px 24px 24px;
       text-align: center;
@@ -516,7 +532,6 @@
       line-height: 1.7;
     }
 
-    /* ─── ECONSENT MODAL (the full disclosure text) ─── */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -586,20 +601,6 @@
 </head>
 <body>
 
-<!-- =============================================================================
-     /apply — public landing
-     -----------------------------------------------------------------------------
-     This page is intentionally separate from internal LO surfaces and
-     borrower portal surfaces. It's marketing-meets-form: the user has
-     just clicked an "Apply now" link on the LO's website and we want them
-     through this in under 90 seconds.
-
-     The form is three steps so it never feels like a wall:
-       Step 1: who you are (name, email, phone)
-       Step 2: what you want (loan purpose, property type, ballpark amount)
-       Step 3: where it is + eConsent
-     ============================================================================= -->
-
 <header class="apply-nav">
   <div class="apply-brand">
     <div class="apply-brand-mark">OF</div>
@@ -631,14 +632,12 @@
 
 <form class="apply-form" id="apply-form" autocomplete="on" novalidate>
 
-  <!-- ─── PROGRESS ─── -->
   <div class="progress-dots" id="progress">
     <span class="progress-dot is-active" data-step="1"></span>
     <span class="progress-dot" data-step="2"></span>
     <span class="progress-dot" data-step="3"></span>
   </div>
 
-  <!-- ─── ERROR BANNER ─── -->
   <div class="error-banner" id="error-banner"></div>
 
   <!-- ─── STEP 1 — Identity ─── -->
@@ -772,7 +771,6 @@
       </div>
     </div>
 
-    <!-- ─── ECONSENT BLOCK ─── -->
     <!--
       ESIGN Act § 7001 requires affirmative consent to receive disclosures
       electronically. Without this checkbox checked, we cannot send the
@@ -820,9 +818,9 @@
 </div>
 
 <footer class="apply-footer">
-  <a href="#">Privacy</a> ·
-  <a href="#">Terms</a> ·
-  <a href="#">Help</a>
+  <a href="/privacy.html">Privacy</a> ·
+  <a href="/terms.html">Terms</a> ·
+  <a href="mailto:dsrackler@gmail.com">Help</a>
   <div class="apply-footer-disclaimer">
     OriginFlow is a software platform. The loan itself will be originated by your local branch.
     Equal Housing Lender. NMLS ID #—.
@@ -841,6 +839,10 @@
         The exact text below is what gets hashed into econsent_records.disclosure_hash.
         Any change to this copy = a new hash = a new "version" of the consent.
         Old consents remain bound to whichever hash they agreed to.
+
+        IMPORTANT: this text must stay BYTE-IDENTICAL with the
+        ESIGN_DISCLOSURE_V1 constant in submit-application/index.ts.
+        If you change one and not the other, hashes won't match.
       -->
       <h3>Your consent to electronic records and signatures (ESIGN Act)</h3>
       <p>
@@ -898,26 +900,31 @@
 
 <script>
 /* =============================================================================
-   /apply page wiring
+   apply.html page wiring
    -----------------------------------------------------------------------------
    Three pieces of behavior:
      1. Branch context loading — figures out which branch's LO this lead
         should be assigned to, populates the LO card up top.
      2. Multi-step form navigation — client-side validation per step,
         progress dots update.
-     3. Submission — calls window.OF_submitApplication(payload) which is
-        the server-side hook that creates rows in borrowers, loans,
-        loan_borrowers, borrower_invites, and econsent_records (atomic).
+     3. Submission — calls window.OF_submitApplication(payload) (from
+        portal-auth.js) which posts to the submit-application edge
+        function. The edge function creates the multi-table rows
+        atomically and sends the magic-link email.
    ============================================================================= */
 
 // =============================================================================
-// BRANCH BOOTSTRAP — replace with real fetch when API is wired
-// =============================================================================
+// BRANCH BOOTSTRAP
+// -----------------------------------------------------------------------------
 // In production, this reads either:
 //   (a) the subdomain (e.g. submarinecatalyst.originflow.app → branch slug)
 //   (b) a ?branch=slug query param
 // then calls a public, read-only edge function to get back the branch + LO
-// metadata. NO authentication required — this is a public marketing page.
+// metadata.
+//
+// TODO: replace the placeholder branch_id with the real Submarine Catalyst
+//       branch UUID once the seeded row id is confirmed in production.
+// =============================================================================
 window.OF_BRANCH_BOOTSTRAP = {
   branch: {
     id:   '00000000-0000-0000-0000-000000000001',
@@ -951,7 +958,6 @@ const stepFields = {
     { id: 'purpose',        required: true, label: 'Loan purpose' },
     { id: 'property-type',  required: true, label: 'Property type' },
     { id: 'occupancy',      required: true, label: 'Occupancy' },
-    // amount + price are optional but if filled must parse
   ],
   3: [
     { id: 'property-city',  required: true, label: 'City' },
@@ -968,7 +974,6 @@ function validateStep(stepNum) {
     const el = document.getElementById(f.id);
     if (!el) continue;
 
-    // Clear previous error styling
     el.classList.remove('is-error');
 
     if (f.type === 'checkbox') {
@@ -1100,11 +1105,14 @@ async function handleSubmit(e) {
   try {
     let result;
     if (typeof window.OF_submitApplication === 'function') {
-      // Real backend hook (lands with 11.5.2 wiring + edge function)
+      // Real backend hook — POSTs to submit-application edge function
       result = await window.OF_submitApplication(payload);
     } else {
-      // Stub for local testing — pretend it worked
-      console.log('OF_submitApplication not wired. Payload would have been:', payload);
+      // Stub fallback. Should not be reached in production — portal-auth.js
+      // defines OF_submitApplication. If you see this in console, the
+      // script tag for /js/portal-auth.js is missing from the page head.
+      console.warn('[apply] OF_submitApplication is not defined. Is /js/portal-auth.js loaded?');
+      console.log('[apply] Payload that would have been submitted:', payload);
       result = {
         success:      true,
         masked_email: maskEmail(payload.borrower.email),
@@ -1112,7 +1120,7 @@ async function handleSubmit(e) {
     }
 
     if (!result || !result.success) {
-      throw new Error(result?.error || 'Application could not be submitted.');
+      throw new Error((result && result.error) || 'Application could not be submitted.');
     }
 
     // Swap to success state
@@ -1158,7 +1166,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-action="back"]').forEach(b => b.addEventListener('click', handleBack));
   document.getElementById('apply-form').addEventListener('submit', handleSubmit);
 
-  // eConsent modal
   document.getElementById('econsent-modal-open').addEventListener('click', () => {
     document.getElementById('econsent-modal').classList.add('is-active');
   });
@@ -1169,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'econsent-modal') closeModal();
   });
 
-  // Phone formatting on the fly — purely cosmetic, doesn't affect submitted value much
+  // Phone formatting on the fly — cosmetic
   document.getElementById('phone').addEventListener('input', (e) => {
     const d = e.target.value.replace(/\D/g, '').slice(0, 10);
     if (d.length === 0) return;
