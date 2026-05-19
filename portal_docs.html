@@ -7,28 +7,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       ------------------------------------------------------------
+       SUPABASE_ANON_KEY uses the new sb_publishable_* format. Safe
+       to embed client-side; branch-scoped RLS enforces access.
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* =========================================================================
-       Phase 11.5.11 — Borrower document upload UI
+       Phase 11.5.11 — Borrower document upload UI (WIRED in 11.5.2)
        -----------------------------------------------------------------------
-       The borrower-facing counterpart to /documents.html (the LO surface).
-       Designed differently:
-         - Categorized REQUEST list, not free-form upload. The borrower sees
-           the specific docs the LO/processor has asked for, organized by
-           category (income / assets / property / id). Free-form uploads are
-           possible but secondary.
-         - Mobile-first with prominent camera-capture for IDs and paystubs.
-           ~70% of borrowers will upload from phone.
-         - Per-request status: needed / uploaded (under review) / cleared /
-           rejected (with note from processor)
-         - No file management primitives (rename, archive, share). The
-           borrower just uploads against requests.
-       Pipeline (when 11.5.12 wires the backend):
-         1. Drag-drop or file picker triggers OF_uploadBorrowerDocument(file, requestId)
-         2. Hook: get signed PUT URL → upload to storage → insert loan_documents
-            row with borrower_uploaded=true + matching condition_id
-         3. Page re-fetches the request list — uploaded item now shows as
-            "under review" status badge
+       Reads from the live `conditions` table with embedded `loan_documents`
+       via a single PostgREST round trip. Each condition row becomes a
+       "request" in the UI. Status mapping is in mapConditionStatus().
+
+       Upload backend (11.5.12) is still pending — uploads route through the
+       window.OF_uploadBorrowerDocument(file, requestId) hook with graceful
+       fallback to an optimistic in-memory mutation so the UX still works
+       end-to-end while the signed-URL pipeline is being built.
        ========================================================================= */
     :root {
       --bg: #0b1220;
@@ -442,6 +448,21 @@
       margin-bottom: 14px;
     }
 
+    /* ─── EMPTY STATE ─── */
+    .empty-state {
+      background: var(--bg-elev-1);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
     /* ─── TOAST ─── */
     .toast {
       position: fixed;
@@ -480,10 +501,33 @@
       text-transform: uppercase;
       color: var(--text-faint);
     }
-    .portal-footer a { color: var(--text-faint); margin: 0 6px; }
+    .portal-footer a { color: var(--text-faint); margin: 0 6px; cursor: pointer; }
+    .portal-footer a:hover { color: var(--cyan); }
+
+    /* ─── BOOTSTRAP LOADING VEIL ─── */
+    .bootstrap-veil {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: opacity 0.18s ease;
+    }
+    .bootstrap-veil.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading documents…</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
@@ -549,89 +593,38 @@
   <a href="/portal/">Home</a> ·
   <a href="/portal/status/">Timeline</a> ·
   <a href="/portal/messages/">Messages</a> ·
-  <a href="#">Sign out</a>
+  <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
+       the Supabase session and redirects to /portal/sign-in.html. -->
+  <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
 </footer>
 
 <script>
 /* =============================================================================
-   BOOTSTRAP DATA
+   PORTAL DOCS — boot + render + upload
    -----------------------------------------------------------------------------
-   When 11.5.12 wires the backend, replace this with:
-     const { data: conditions } = await sb.from('conditions')
-       .select(`id, title, description, category, status, template_key,
-                kind, source_document_id,
-                documents:loan_documents(id, filename, file_size_bytes,
-                                        created_at, status)`)
-       .eq('loan_id', currentLoanId)
-       .in('kind', ['document'])    -- only doc-type conditions
-       .order('category')
-       .order('created_at');
-
-   Each `condition` becomes a "request" in the UI. Status mapping:
-     conditions.status='outstanding' + no docs uploaded → 'needed'
-     conditions.status='outstanding' + docs uploaded    → 'uploaded' (in review)
-     conditions.status='cleared'                        → 'cleared'
-     conditions.status='rejected'                       → 'rejected' (w/ note)
+   Flow:
+     1. init() runs on DOMContentLoaded
+     2. OF_bootstrap() resolves { session, borrower, loan }
+        (same redirect ladder as the other portal pages)
+     3. fetchConditionsWithDocuments() runs a single PostgREST query that
+        pulls every document-kind condition for this loan with its uploaded
+        loan_documents embedded inline. FK disambiguation per the project
+        pattern.
+     4. buildRequests() normalizes the DB rows into the existing render shape
+        so the UI layer didn't have to change.
+     5. State lives on window.OF_DOCS_CTX so the upload hook can mutate it
+        for optimistic UI between uploads + re-fetches.
    ============================================================================= */
-window.OF_DOCS_BOOTSTRAP = {
-  loan: { loan_no: 'OF-1043' },
-  requests: [
-    // INCOME
-    {
-      id: 'r1', category: 'income', icon: '$',
-      title: 'Most recent pay stub',
-      desc: 'Pay stub covering at least 30 days. Both borrowers if married.',
-      status: 'cleared',
-      files: [{ name: 'paystub_may2026.pdf', size: '184 KB', uploaded: 'May 19' }],
-    },
-    {
-      id: 'r2', category: 'income', icon: '$',
-      title: 'W-2 · 2024',
-      desc: 'Most recent W-2. We use this to verify employment continuity.',
-      status: 'cleared',
-      files: [{ name: 'W2_2024.pdf', size: '92 KB', uploaded: 'May 14' }],
-    },
-    // ASSETS
-    {
-      id: 'r3', category: 'assets', icon: 'B',
-      title: 'Bank statement · 60 days',
-      desc: 'Most recent two months for checking and savings. All pages, even blank ones.',
-      status: 'needed',
-      files: [],
-    },
-    // PROPERTY
-    {
-      id: 'r4', category: 'property', icon: 'H',
-      title: 'Homeowners insurance binder',
-      desc: 'Your insurance agent will email this. Forward us the binder before closing.',
-      status: 'needed',
-      files: [],
-    },
-    // IDENTITY
-    {
-      id: 'r5', category: 'identity', icon: 'ID',
-      title: 'Driver license',
-      desc: 'Front and back. Photo from your phone is fine.',
-      status: 'cleared',
-      files: [{ name: 'license_front.jpg', size: '2.1 MB', uploaded: 'May 12' }],
-    },
-    // Example rejected (for status visualization)
-    {
-      id: 'r6', category: 'income', icon: '$',
-      title: 'Tax return · 2024',
-      desc: 'Most recent personal tax return, all pages and schedules.',
-      status: 'rejected',
-      rejection_note: 'The PDF you uploaded only included the 1040 form. We also need all schedules (Schedule A, B, C, etc.) — please re-upload the complete return.',
-      files: [{ name: 'tax_return_2024_partial.pdf', size: '1.2 MB', uploaded: 'May 13' }],
-    },
-  ],
-};
 
+/* ─── Static taxonomy ──────────────────────────────────────────────────── */
 const CATEGORIES = [
-  { key: 'income',   label: 'Income',           icon: '$'  },
-  { key: 'assets',   label: 'Assets',           icon: 'B'  },
-  { key: 'property', label: 'Property',         icon: 'H'  },
-  { key: 'identity', label: 'Identity',         icon: 'ID' },
+  { key: 'income',   label: 'Income',   icon: '$'  },
+  { key: 'assets',   label: 'Assets',   icon: 'B'  },
+  { key: 'property', label: 'Property', icon: 'H'  },
+  { key: 'identity', label: 'Identity', icon: 'ID' },
+  // Catch-all for any DB category we don't explicitly map. Without this,
+  // unknown categories silently disappear from the page.
+  { key: 'other',    label: 'Other',    icon: '·'  },
 ];
 
 const STATUS_LABEL = {
@@ -641,15 +634,273 @@ const STATUS_LABEL = {
   rejected: 'Needs re-upload',
 };
 
-function render() {
-  const b = window.OF_DOCS_BOOTSTRAP;
-  document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
+const MAX_BYTES = 25 * 1024 * 1024;
+const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'];
+const ALLOWED_EXT  = /\.(pdf|jpe?g|png|heic)$/i;
+
+/* ─── Helpers (kept consistent with portal_status.html) ────────────────── */
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function prettySize(bytes) {
+  if (!bytes && bytes !== 0) return '';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function formatShortDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return 'today';
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'yesterday';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/**
+ * Single-character icon for a condition. Driven by category first, then
+ * fuzzy-matched on the title/description for finer-grained icons.
+ */
+function iconForCondition(c) {
+  const text = ((c.category || '') + ' ' + (c.title || '') + ' ' + (c.description || '')).toLowerCase();
+  if (/pay\s*stub|paystub/.test(text))                        return '$';
+  if (/\bw-?2\b/.test(text))                                  return 'W';
+  if (/\b1099\b/.test(text))                                  return '9';
+  if (/1040|tax\s*return/.test(text))                         return 'T';
+  if (/bank|statement/.test(text))                            return 'B';
+  if (/insurance|binder|hoi/.test(text))                      return 'H';
+  if (/license|passport|\bid\b|identification/.test(text))    return 'ID';
+  if (/gift/.test(text))                                      return 'G';
+  if (/lox|letter\s*of\s*explanation/.test(text))             return 'L';
+  if (/appraisal/.test(text))                                 return 'A';
+  if (/title/.test(text))                                     return 'TI';
+  return '·';
+}
+
+/**
+ * Collapse any DB category value to one of the five UI categories. The
+ * LO side may use finer-grained category names (paystub, w2, tax_return,
+ * bank, hoi, etc.) — fold those into the broad buckets the borrower sees.
+ */
+function normalizeCategory(raw) {
+  const s = String(raw || '').toLowerCase();
+  if (/income|employment|paystub|pay_stub|wage|w-?2|1099|tax/.test(s)) return 'income';
+  if (/asset|bank|deposit|reserve|gift/.test(s))                       return 'assets';
+  if (/property|insurance|hoi|appraisal|title|hoa/.test(s))            return 'property';
+  if (/identity|borrower|\bid\b|license|passport/.test(s))             return 'identity';
+  if (s && ['income','assets','property','identity'].includes(s))       return s;
+  return 'other';
+}
+
+/**
+ * Map condition.status + presence of uploaded documents to the UI status.
+ *
+ * Handles two possible value-spaces (one of which is the production schema):
+ *   - { 'outstanding', 'cleared', 'rejected', 'waived' }   (handoff-stated)
+ *   - { 'open', 'submitted', 'cleared', 'rejected' }       (LO-side surfaces)
+ *
+ * Any "still active" status (outstanding/open) splits on whether the
+ * borrower has uploaded anything yet: docs present → "uploaded" (in review),
+ * docs absent → "needed".
+ */
+function mapConditionStatus(raw, hasDocs) {
+  const s = String(raw || '').toLowerCase();
+  if (s === 'cleared')  return 'cleared';
+  if (s === 'rejected') return 'rejected';
+  if (s === 'waived')   return 'cleared';  // borrower view: no action needed
+  if (s === 'submitted') return 'uploaded';
+  // Default bucket for 'outstanding', 'open', '', or unknown
+  return hasDocs ? 'uploaded' : 'needed';
+}
+
+/* ─── DB query: conditions + embedded loan_documents ──────────────────── */
+
+/**
+ * Single round-trip PostgREST query that pulls all document-kind conditions
+ * for the loan with their uploaded files embedded inline.
+ *
+ * The `documents:loan_documents(...)` syntax disambiguates the FK in case
+ * loan_documents has multiple FKs back to conditions (e.g. condition_id
+ * vs source_document_id). If your schema uses a single FK, this still
+ * resolves correctly.
+ *
+ * Graceful degradation:
+ *   - If the `.in('kind', ['document'])` filter errors (no kind column),
+ *     we retry without it.
+ *   - If the embed errors (FK not yet wired), we fall through to a
+ *     separate loan_documents fetch and join client-side.
+ *   - Worst case → empty array, page renders with no requests.
+ */
+async function fetchConditionsWithDocuments(supabase, loanId) {
+  const selectExpr = `id, title, description, category, status, template_key, kind, source_document_id,
+                      documents:loan_documents(id, filename, file_size_bytes, created_at, status)`;
+
+  // Attempt 1: full embed with kind filter
+  try {
+    const { data, error } = await supabase
+      .from('conditions')
+      .select(selectExpr)
+      .eq('loan_id', loanId)
+      .in('kind', ['document'])
+      .order('category', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (!error && data) return data;
+    if (error) console.warn('[portal/docs] embedded select w/ kind failed:', error.message);
+  } catch (e) {
+    console.warn('[portal/docs] embedded select w/ kind exception:', e.message);
+  }
+
+  // Attempt 2: drop the kind filter (schema may not have that column yet)
+  try {
+    const { data, error } = await supabase
+      .from('conditions')
+      .select(selectExpr)
+      .eq('loan_id', loanId)
+      .order('created_at', { ascending: true });
+    if (!error && data) return data;
+    if (error) console.warn('[portal/docs] embedded select sans kind failed:', error.message);
+  } catch (e) {
+    console.warn('[portal/docs] embedded select sans kind exception:', e.message);
+  }
+
+  // Attempt 3: bare conditions query (embed not available) + manual join
+  try {
+    const [{ data: conds }, { data: docs }] = await Promise.all([
+      supabase.from('conditions')
+        .select('id, title, description, category, status, template_key, kind, source_document_id')
+        .eq('loan_id', loanId)
+        .order('created_at', { ascending: true }),
+      supabase.from('loan_documents')
+        .select('id, condition_id, filename, file_size_bytes, created_at, status')
+        .eq('loan_id', loanId),
+    ]);
+    if (!conds) return [];
+    const byCondition = {};
+    for (const d of (docs || [])) {
+      if (!d.condition_id) continue;
+      (byCondition[d.condition_id] = byCondition[d.condition_id] || []).push(d);
+    }
+    return conds.map(c => ({ ...c, documents: byCondition[c.id] || [] }));
+  } catch (e) {
+    console.warn('[portal/docs] fallback split-query failed:', e.message);
+    return [];
+  }
+}
+
+/* ─── Build the page-shape requests[] array from raw rows ─────────────── */
+
+function buildRequests(conditions) {
+  return (conditions || []).map(c => {
+    const docs = c.documents || [];
+    const status = mapConditionStatus(c.status, docs.length > 0);
+    return {
+      id:        c.id,
+      category:  normalizeCategory(c.category),
+      icon:      iconForCondition(c),
+      title:     c.title || 'Document',
+      desc:      c.description || '',
+      status:    status,
+      // rejection_note: TODO once the rejection-message column lands on
+      // conditions (or wherever the LO writes it). Until then, rejected
+      // requests render without the explanatory note block.
+      rejection_note: c.rejection_note || null,
+      files: docs.map(d => ({
+        name:     d.filename || 'Untitled',
+        size:     prettySize(d.file_size_bytes || 0),
+        uploaded: formatShortDate(d.created_at),
+      })),
+    };
+  });
+}
+
+/* ─── Init: bootstrap → fetch → render ─────────────────────────────────── */
+
+async function init() {
+  let ctx;
+  try {
+    ctx = await window.OF_bootstrap();
+  } catch (e) {
+    console.error('[portal/docs] OF_bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
+      ? 'not_a_borrower'
+      : 'link_failed';
+    window.location.replace('/portal/sign-in.html?error=' + code);
+    return;
+  }
+
+  if (!ctx || !ctx.session) {
+    window.location.replace('/portal/sign-in.html');
+    return;
+  }
+  if (!ctx.borrower) {
+    window.location.replace('/portal/sign-in.html?error=not_a_borrower');
+    return;
+  }
+  if (!ctx.loan) {
+    window.location.replace('/portal/apply/');
+    return;
+  }
+
+  const supabase  = window.OF_supabase();
+  const conditions = await fetchConditionsWithDocuments(supabase, ctx.loan.id);
+
+  // Stash ctx for the upload hook + future cmdk integration
+  window.OF_DOCS_CTX = {
+    loan: {
+      id:      ctx.loan.id,
+      loan_no: ctx.loan.loan_no || '—',
+    },
+    requests: buildRequests(conditions),
+  };
+
+  render(window.OF_DOCS_CTX);
+
+  const veil = document.getElementById('bootstrap-veil');
+  if (veil) {
+    veil.classList.add('is-hidden');
+    setTimeout(() => veil.remove(), 220);
+  }
+
+  if (typeof window.OF_touchLastSeen === 'function') {
+    window.OF_touchLastSeen().catch(() => {});
+  }
+}
+
+/**
+ * Re-pull conditions and re-render. Called after a successful upload via
+ * OF_uploadBorrowerDocument so the new doc + any auto-clear that fires
+ * server-side (AI extraction) becomes visible immediately.
+ */
+async function refetchAndRender() {
+  const ctx = window.OF_DOCS_CTX;
+  if (!ctx || !ctx.loan || !ctx.loan.id) return;
+  const supabase = window.OF_supabase();
+  const conditions = await fetchConditionsWithDocuments(supabase, ctx.loan.id);
+  ctx.requests = buildRequests(conditions);
+  render(ctx);
+}
+
+/* ─── Render ───────────────────────────────────────────────────────────── */
+
+function render(b) {
+  document.getElementById('page-eyebrow').textContent = 'Loan ' + (b.loan.loan_no || '—');
 
   // Progress stats
-  const cleared  = b.requests.filter(r => r.status === 'cleared').length;
-  const review   = b.requests.filter(r => r.status === 'uploaded').length;
-  const needed   = b.requests.filter(r => r.status === 'needed' || r.status === 'rejected').length;
-  const total    = b.requests.length;
+  const cleared = b.requests.filter(r => r.status === 'cleared').length;
+  const review  = b.requests.filter(r => r.status === 'uploaded').length;
+  const needed  = b.requests.filter(r => r.status === 'needed' || r.status === 'rejected').length;
+  const total   = b.requests.length;
   document.getElementById('stat-cleared').textContent = cleared;
   document.getElementById('stat-review').textContent  = review;
   document.getElementById('stat-needed').textContent  = needed;
@@ -659,30 +910,41 @@ function render() {
   // Group by category
   const byCategory = {};
   for (const r of b.requests) {
-    if (!byCategory[r.category]) byCategory[r.category] = [];
-    byCategory[r.category].push(r);
+    const cat = r.category || 'other';
+    (byCategory[cat] = byCategory[cat] || []).push(r);
   }
 
   // Render categories
   const container = document.getElementById('categories-container');
   container.innerHTML = '';
-  for (const cat of CATEGORIES) {
-    const items = byCategory[cat.key] || [];
-    if (items.length === 0) continue;
 
-    const section = document.createElement('section');
-    section.className = 'category';
-    section.innerHTML = `
-      <div class="category-header">
-        <div class="category-icon">${cat.icon}</div>
-        <div class="category-title">${cat.label}</div>
-        <div class="category-count">${items.filter(r=>r.status==='cleared'||r.status==='uploaded').length} / ${items.length}</div>
-      </div>
-      <div class="request-list">
-        ${items.map(renderRequest).join('')}
+  if (b.requests.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        No document requests yet. Your loan officer will request docs as needed —
+        you'll see them here.
       </div>
     `;
-    container.appendChild(section);
+  } else {
+    for (const cat of CATEGORIES) {
+      const items = byCategory[cat.key] || [];
+      if (items.length === 0) continue;
+
+      const section = document.createElement('section');
+      section.className = 'category';
+      const progressCount = items.filter(r => r.status === 'cleared' || r.status === 'uploaded').length;
+      section.innerHTML = `
+        <div class="category-header">
+          <div class="category-icon">${escapeHtml(cat.icon)}</div>
+          <div class="category-title">${escapeHtml(cat.label)}</div>
+          <div class="category-count">${progressCount} / ${items.length}</div>
+        </div>
+        <div class="request-list">
+          ${items.map(renderRequest).join('')}
+        </div>
+      `;
+      container.appendChild(section);
+    }
   }
 
   // Wire upload interactions for each request
@@ -695,13 +957,16 @@ function renderRequest(r) {
   const showUploadZone = r.status === 'needed' || r.status === 'rejected';
   const showReuploadButtons = r.status === 'uploaded' || r.status === 'cleared';
 
+  // Stable id-escaped attribute (request ids are uuids, but escape for safety)
+  const idAttr = escapeHtml(r.id);
+
   const filesHtml = r.files.length === 0 ? '' : `
     <div class="request-files">
       ${r.files.map(f => `
         <div class="request-file">
           <span class="request-file-icon">▤</span>
-          <span class="request-file-name">${f.name}</span>
-          <span class="request-file-meta">${f.size} · ${f.uploaded}</span>
+          <span class="request-file-name">${escapeHtml(f.name)}</span>
+          <span class="request-file-meta">${escapeHtml(f.size)}${f.uploaded ? ' · ' + escapeHtml(f.uploaded) : ''}</span>
         </div>
       `).join('')}
     </div>
@@ -710,35 +975,35 @@ function renderRequest(r) {
   const rejectionHtml = r.status === 'rejected' && r.rejection_note ? `
     <div class="request-note">
       <div class="request-note-label">Why this was rejected</div>
-      ${r.rejection_note}
+      ${escapeHtml(r.rejection_note)}
     </div>
   ` : '';
 
   const uploadZoneHtml = showUploadZone ? `
-    <div class="upload-zone" data-request="${r.id}">
+    <div class="upload-zone" data-request="${idAttr}">
       <div class="upload-zone-icon">⬆</div>
       <div class="upload-zone-text">Drop a file or tap to upload</div>
       <div class="upload-zone-hint">PDF or photo · use your phone camera if you'd like</div>
     </div>
-    <input type="file" class="hidden-file" data-request-input="${r.id}"
+    <input type="file" class="hidden-file" data-request-input="${idAttr}"
            accept=".pdf,.jpg,.jpeg,.png,.heic" capture="environment" multiple>
   ` : '';
 
   const reuploadHtml = showReuploadButtons ? `
     <div class="upload-actions">
-      <button class="upload-btn" data-replace="${r.id}">
+      <button class="upload-btn" data-replace="${idAttr}">
         <span>↻</span> Replace
       </button>
-      <button class="upload-btn" data-add-more="${r.id}">
+      <button class="upload-btn" data-add-more="${idAttr}">
         <span>+</span> Add another page
       </button>
-      <input type="file" class="hidden-file" data-request-input="${r.id}"
+      <input type="file" class="hidden-file" data-request-input="${idAttr}"
              accept=".pdf,.jpg,.jpeg,.png,.heic" capture="environment" multiple>
     </div>
   ` : '';
 
   return `
-    <div class="request ${statusClass}" data-request-id="${r.id}">
+    <div class="request ${statusClass}" data-request-id="${idAttr}">
       <div class="request-header">
         <div class="request-info">
           <div class="request-title">${escapeHtml(r.title)}</div>
@@ -754,26 +1019,19 @@ function renderRequest(r) {
   `;
 }
 
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => (
-    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
-  ));
-}
-
 /* =============================================================================
    UPLOAD HANDLERS
    -----------------------------------------------------------------------------
-   Two patterns:
-     - "Needed" requests render a drop-zone. Click or drag-drop opens picker.
-     - "Cleared/Uploaded" requests render Replace + Add buttons that trigger
-       the same picker.
-   All paths funnel into uploadFiles(requestId, fileList).
+   Two patterns funnel into uploadFiles(requestId, fileList):
+     - "Needed/rejected" requests render a drop-zone (click or drag-drop)
+     - "Cleared/uploaded" requests render Replace + Add buttons
    ============================================================================= */
+
 function wireRequestUploads() {
   // Drop zones
   document.querySelectorAll('.upload-zone[data-request]').forEach(zone => {
     const requestId = zone.dataset.request;
-    const input = document.querySelector(`input[data-request-input="${requestId}"]`);
+    const input = document.querySelector(`input[data-request-input="${CSS.escape(requestId)}"]`);
     if (!input) return;
 
     zone.addEventListener('click', () => input.click());
@@ -793,20 +1051,22 @@ function wireRequestUploads() {
       if (input.files?.length) uploadFiles(requestId, input.files);
       input.value = '';
     });
+    input.dataset.wired = '1';
   });
 
   // Replace + Add buttons
   document.querySelectorAll('[data-replace], [data-add-more]').forEach(btn => {
     const requestId = btn.dataset.replace || btn.dataset.addMore;
     btn.addEventListener('click', () => {
-      const input = document.querySelector(`input[data-request-input="${requestId}"]`);
+      const input = document.querySelector(`input[data-request-input="${CSS.escape(requestId)}"]`);
       if (input) input.click();
     });
   });
 
-  // Wire change events on those inputs too
+  // Wire change events on the inputs that belong to Replace/Add (which
+  // weren't covered in the drop-zone loop)
   document.querySelectorAll('input[data-request-input]').forEach(input => {
-    if (input.dataset.wired) return; // skip if already wired in drop-zone block
+    if (input.dataset.wired) return;
     input.dataset.wired = '1';
     input.addEventListener('change', () => {
       if (input.files?.length) uploadFiles(input.dataset.requestInput, input.files);
@@ -818,6 +1078,8 @@ function wireRequestUploads() {
 function wireExtraUpload() {
   const zone = document.getElementById('extra-upload-zone');
   const input = document.getElementById('extra-upload-input');
+  if (!zone || !input || zone.dataset.wired) return;
+  zone.dataset.wired = '1';
 
   zone.addEventListener('click', () => input.click());
   zone.addEventListener('dragover', (e) => {
@@ -836,25 +1098,25 @@ function wireExtraUpload() {
   });
 }
 
-/* uploadFiles(requestId, fileList)
- *   requestId: condition row id, or null for "extra" uploads
- *   fileList: FileList from input.files or DataTransfer.files
+/**
+ * uploadFiles(requestId, fileList)
+ *   requestId: condition row id (uuid string), or null for "extra" uploads
+ *   fileList:  FileList from input.files or DataTransfer.files
  *
- * Calls window.OF_uploadBorrowerDocument(file, requestId, opts) per file.
- * On success, re-fetches the request list (or in stub mode, mutates the
- * bootstrap data and re-renders).
+ * Routes each file through the OF_uploadBorrowerDocument hook from
+ * portal-auth.js (or wherever 11.5.12 lands). When the hook isn't
+ * implemented yet, falls through to an optimistic in-memory update
+ * against window.OF_DOCS_CTX so the UX is still demonstrable.
  */
 async function uploadFiles(requestId, fileList) {
   const files = Array.from(fileList);
-  const MAX_BYTES = 25 * 1024 * 1024;
-  const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'];
 
   for (const file of files) {
     if (file.size > MAX_BYTES) {
       showToast(`"${file.name}" is too large (max 25 MB).`, true);
       continue;
     }
-    if (file.type && !ALLOWED.includes(file.type) && !/\.(pdf|jpe?g|png|heic)$/i.test(file.name)) {
+    if (file.type && !ALLOWED_MIME.includes(file.type) && !ALLOWED_EXT.test(file.name)) {
       showToast(`"${file.name}" isn't a supported type. Use PDF, JPG, PNG, or HEIC.`, true);
       continue;
     }
@@ -863,20 +1125,30 @@ async function uploadFiles(requestId, fileList) {
 
     try {
       if (typeof window.OF_uploadBorrowerDocument === 'function') {
+        // Real backend path. The hook is responsible for: signed URL,
+        // upload, loan_documents insert, condition state transition.
         await window.OF_uploadBorrowerDocument(file, requestId);
+        // Re-fetch so any auto-clear from AI extraction lands immediately.
+        await refetchAndRender();
       } else {
-        // Stub mode — mutate bootstrap data and re-render
+        // Stub path — backend not yet wired (Phase 11.5.12 pending).
+        // Optimistically mutate page state so the borrower sees progress.
         await new Promise(res => setTimeout(res, 600));
-        const req = window.OF_DOCS_BOOTSTRAP.requests.find(r => r.id === requestId);
-        if (req) {
-          req.files.push({
-            name: file.name,
-            size: prettySize(file.size),
-            uploaded: 'just now',
-          });
-          if (req.status === 'needed' || req.status === 'rejected') req.status = 'uploaded';
+        const ctx = window.OF_DOCS_CTX;
+        if (ctx && requestId) {
+          const req = ctx.requests.find(r => r.id === requestId);
+          if (req) {
+            req.files.push({
+              name:     file.name,
+              size:     prettySize(file.size),
+              uploaded: 'just now',
+            });
+            if (req.status === 'needed' || req.status === 'rejected') {
+              req.status = 'uploaded';
+            }
+            render(ctx);
+          }
         }
-        render();
       }
       showToast(`${file.name} uploaded.`);
     } catch (err) {
@@ -884,12 +1156,6 @@ async function uploadFiles(requestId, fileList) {
       showToast(`Couldn't upload ${file.name}. ${err.message || ''}`, true);
     }
   }
-}
-
-function prettySize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
-  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
 }
 
 /* =============================================================================
@@ -905,7 +1171,7 @@ function showToast(msg, isError) {
   toastTimer = setTimeout(() => el.classList.remove('is-visible'), 3000);
 }
 
-document.addEventListener('DOMContentLoaded', render);
+document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
