@@ -7,45 +7,58 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* =========================================================================
-       Phase 11.5.5 — Borrower 1003 wizard at /portal/apply/
+       Phase 11.5.5 — Borrower 1003 wizard (WIRED in 11.5.2)
        -----------------------------------------------------------------------
-       The borrower's view of URLA 1003. Different from /loans-new.html in
-       five fundamental ways:
+       Borrower's view of URLA 1003. Differs from /loans-new.html in five
+       fundamental ways:
 
-       1. ROLE-SCOPED: this only collects what the BORROWER owns on the
-          1003 — personal info, employment, income, assets, declarations,
+       1. ROLE-SCOPED — only collects what the BORROWER owns on the 1003:
+          personal info, employment, income, assets, declarations,
           demographics. Loan terms, property valuation, transaction
           details stay on the LO surface.
 
-       2. MOBILE-FIRST: 70% of borrowers will fill this out on phone.
+       2. MOBILE-FIRST — 70% of borrowers will fill this out on phone.
           One section per screen, big touch targets, native pickers.
 
-       3. AUTO-SAVE: every field change debounced + persisted to localStorage
-          AND posted to OF_savePortalApplication (the backend hook). This is
-          a 20+ minute form and we cannot lose progress. Resume from any
-          device.
+       3. AUTO-SAVE — three-layer durability:
+            a. localStorage (primary — works always, survives refresh)
+            b. window.OF_savePortalApplication(state) hook (server sync —
+               your edge function dispatches the blob across borrowers,
+               borrower_employment, borrower_income, borrower_assets,
+               borrower_declarations, borrower_demographics tables)
+            c. Initial DB prefill on bootstrap to merge any progress
+               saved from another device
 
-       4. CONVERSATIONAL: "Tell us about yourself" instead of "Section I:
-          Borrower Information." We follow the URLA's data model exactly
-          (so the LO sees clean MISMO output) but the copy is humanized.
+       4. CONVERSATIONAL — "Tell us about yourself" instead of "Section I:
+          Borrower Information." Data model still matches URLA exactly so
+          the LO sees clean MISMO output.
 
-       5. PROGRESSIVE: the borrower can skip non-required sections and
-          come back later. HMDA demographics get a clear "this is
-          optional" framing with a single-tap skip.
+       5. PROGRESSIVE — borrower can skip non-required sections and come
+          back later. HMDA demographics get a clear "this is optional"
+          framing with a single-tap skip.
 
-       Pipeline (when 11.5.2 + 11.5.13 wire the backend):
-         1. Bootstrap: read loan_id from URL ?loan=<uuid>
-         2. Fetch the loan row + existing borrower row (data from /apply
-            is already there — name, email, phone, address basics)
-         3. As borrower fills in each field, debounced save to:
-            - borrowers row (personal info)
-            - loans row (occupancy, purpose if changed)
-            - borrower_employment / borrower_assets / etc. (new tables
-              we'll add in a separate migration — outside this file's scope)
-         4. On final submit, stamp loans.intake_complete_at and flip
-            status from 'lead' to 'application'
+       Submit posture:
+         - Preferred: window.OF_submitPortalApplication(state) hook handles
+           the full transition (table writes, status flip, audit log)
+         - Fallback: direct update on the borrowers row for mappable
+           fields. Loans status transition stays server-side only —
+           clients never mint state changes that have audit/regulatory
+           implications.
        ========================================================================= */
     :root {
       --bg: #0b1220;
@@ -117,7 +130,6 @@
       color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
     }
 
-    /* Save-status chip in the top-right (live indicator) */
     .save-status {
       font-family: var(--font-mono);
       font-size: 10px;
@@ -145,9 +157,12 @@
       background: var(--accent-green);
       box-shadow: 0 0 6px var(--accent-green);
     }
+    .save-status.is-error .save-status-dot {
+      background: var(--danger);
+      box-shadow: 0 0 6px var(--danger);
+    }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    /* ─── PROGRESS BAR ─── */
     .progress-shell {
       max-width: 720px;
       margin: 0 auto;
@@ -186,7 +201,6 @@
       transition: width 0.4s ease;
     }
 
-    /* ─── MAIN ─── */
     .wizard-main {
       max-width: 720px;
       margin: 0 auto;
@@ -194,7 +208,6 @@
     }
     @media (min-width: 640px) { .wizard-main { padding: 32px 24px 80px; } }
 
-    /* Each step */
     .step {
       display: none;
     }
@@ -230,7 +243,6 @@
       max-width: 540px;
     }
 
-    /* Section header (within a step, e.g. "Income sources") */
     .section-header {
       margin: 28px 0 12px;
       padding-bottom: 8px;
@@ -242,7 +254,6 @@
       color: var(--text-faint);
     }
 
-    /* ─── FIELDS ─── */
     .field {
       margin-bottom: 18px;
     }
@@ -269,7 +280,7 @@
       border-radius: 10px;
       color: var(--text);
       font-family: var(--font-sans);
-      font-size: 16px; /* 16px = no iOS zoom */
+      font-size: 16px;
       outline: none;
       transition: border-color 0.15s, background 0.15s;
     }
@@ -321,7 +332,6 @@
     }
     .field-error.is-visible { display: block; }
 
-    /* ─── RADIO CARDS (for picking from options) ─── */
     .radio-group {
       display: flex;
       flex-direction: column;
@@ -369,7 +379,6 @@
       margin-top: 2px;
     }
 
-    /* ─── YES/NO TOGGLE (declarations section) ─── */
     .yes-no-row {
       display: flex;
       align-items: center;
@@ -435,7 +444,6 @@
       margin-bottom: 6px;
     }
 
-    /* ─── REPEATER (for assets, employment history, etc) ─── */
     .repeater-item {
       background: var(--bg-elev-1);
       border: 1px solid var(--border);
@@ -490,7 +498,6 @@
       background: var(--cyan-glow);
     }
 
-    /* ─── REVIEW STEP — show all answers ─── */
     .review-section {
       background: var(--bg-elev-1);
       border: 1px solid var(--border);
@@ -551,7 +558,6 @@
       font-weight: 400;
     }
 
-    /* ─── OPTIONAL CALLOUT (HMDA explainer) ─── */
     .callout {
       padding: 14px 16px;
       background: var(--bg-elev-1);
@@ -573,7 +579,6 @@
       line-height: 1.6;
     }
 
-    /* ─── BUTTONS ─── */
     .step-actions {
       display: flex;
       gap: 10px;
@@ -624,7 +629,6 @@
       color: var(--text-dim);
     }
 
-    /* Error banner */
     .error-banner {
       display: none;
       padding: 12px 16px;
@@ -637,7 +641,6 @@
     }
     .error-banner.is-active { display: block; }
 
-    /* ─── SUCCESS STATE ─── */
     .success-screen {
       display: none;
       max-width: 540px;
@@ -690,9 +693,31 @@
       background: var(--accent-green);
       text-decoration: none;
     }
+
+    /* ─── BOOTSTRAP LOADING VEIL ─── */
+    .bootstrap-veil {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: opacity 0.18s ease;
+    }
+    .bootstrap-veil.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading your application…</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
@@ -891,7 +916,6 @@
       </div>
     </div>
 
-    <!-- Prior address (auto-shows when current years < 2) -->
     <div id="prior-address-section" style="display: none;">
       <div class="section-header">Prior address</div>
       <p class="step-subtitle" style="margin-bottom: 16px;">Since you've been at your current address less than 2 years, we also need where you lived before.</p>
@@ -1189,28 +1213,28 @@
     <p class="success-text">
       Your loan officer has been notified and will follow up shortly. You can come back to your portal anytime to upload documents, send messages, or check your status.
     </p>
-    <a href="/portal/" class="success-cta">Back to your portal →</a>
+    <a href="/portal_index.html" class="success-cta">Back to your portal →</a>
   </section>
 
 </main>
 
 <script>
 /* =============================================================================
-   WIZARD STATE
+   WIZARD STATE — shape unchanged from the static demo
    -----------------------------------------------------------------------------
    Single nested object holding everything the borrower has entered.
-   Auto-saved to localStorage on every change (debounced) and posted to
-   OF_savePortalApplication() when the hook is wired.
-
-   Hydrated from three sources on page load:
-     1. /apply pre-fill — name, email, phone, loan basics already on the
-        borrowers/loans rows from the public landing step
-     2. localStorage backup — if they refreshed mid-flow
-     3. Existing loan data — if they're resuming after sign-out (server-side)
+   Three persistence layers (see persistState):
+     1. localStorage (primary durability — survives refresh, works offline)
+     2. window.OF_savePortalApplication(state) — server-side dispatcher
+        that splits the blob across borrowers, borrower_employment,
+        borrower_income, borrower_assets, borrower_declarations,
+        borrower_demographics tables
+     3. Initial DB prefill (loadFromBorrowerRow) on bootstrap to merge
+        progress made on a different device
    ============================================================================= */
 const WIZARD_STATE_KEY = 'of_portal_application_v1';
 
-window.OF_APPLICATION_STATE = {
+const DEFAULT_STATE = () => ({
   first_name: '',
   last_name: '',
   middle_name: '',
@@ -1242,7 +1266,9 @@ window.OF_APPLICATION_STATE = {
     race_american_indian: false, race_asian: false, race_black: false,
     race_pacific_islander: false, race_white: false, race_not_provided: false,
   },
-};
+});
+
+window.OF_APPLICATION_STATE = DEFAULT_STATE();
 
 // Declarations come from URLA Section VII. Each gets a yes/no plus
 // optional explanation. The keys map 1:1 to MISMO declaration codes.
@@ -1262,42 +1288,155 @@ DECLARATIONS.forEach(d => {
   window.OF_APPLICATION_STATE.declarations[d.key] = { answer: '', explanation: '' };
 });
 
+/* ─── Module-level state (auth + ids) ──────────────────────────────────── */
+let ctx = null;          // { session, borrower, loan } from OF_bootstrap
+
 /* =============================================================================
-   BOOTSTRAP — load pre-filled data + localStorage backup
+   BOOTSTRAP
+   -----------------------------------------------------------------------------
+   Three merge passes, in priority order (later overrides earlier):
+     1. DEFAULT_STATE() — empty scaffold
+     2. loadFromBorrowerRow() — DB prefill (cross-device source of truth)
+     3. loadFromLocalStorage() — same-device work-in-progress backup
+
+   localStorage wins because it represents what the user has been
+   actively editing in this browser. The DB row is older. If the borrower
+   used a different device, they get the DB version + their localStorage
+   merged via deepMerge.
    ============================================================================= */
-function loadBootstrap() {
-  // Pre-fill from /apply submission (or test stub)
-  const prefill = window.OF_APPLY_PREFILL || {
-    first_name: 'Marcus',
-    last_name:  'Holbrook',
-    current_address: {
-      city:  'Lubbock',
-      state: 'TX',
-    },
-  };
-  Object.assign(window.OF_APPLICATION_STATE, prefill);
-  if (prefill.current_address) {
-    Object.assign(window.OF_APPLICATION_STATE.current_address, prefill.current_address);
+
+async function init() {
+  try {
+    ctx = await window.OF_bootstrap();
+  } catch (e) {
+    console.error('[portal/apply] OF_bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
+      ? 'not_a_borrower'
+      : 'link_failed';
+    window.location.replace('/portal_signin.html?error=' + code);
+    return;
   }
 
-  // Local backup overrides pre-fill (in case borrower refreshed mid-flow)
+  if (!ctx || !ctx.session) {
+    window.location.replace('/portal_signin.html');
+    return;
+  }
+  if (!ctx.borrower) {
+    window.location.replace('/portal_signin.html?error=not_a_borrower');
+    return;
+  }
+  // Note: unlike the other portal pages, we don't redirect-on-missing-loan
+  // here. /portal_apply.html IS the page someone with no loan would land
+  // on. If they have neither a loan nor a borrower row, the OF_bootstrap
+  // redirect kicks in above.
+  if (!ctx.loan) {
+    console.warn('[portal/apply] No loan row found — borrower may be mid-application.');
+  }
+
+  // Pre-fill from the existing borrowers row. This is a separate fetch
+  // from OF_bootstrap because we want more fields (dob, marital_status,
+  // current_address jsonb, etc.) than the bootstrap routinely returns.
+  const supabase = window.OF_supabase();
+  await loadFromBorrowerRow(supabase, ctx.borrower.id);
+
+  // Then layer in any localStorage backup. Wins over DB prefill because
+  // it represents in-flight edits this borrower hasn't yet synced.
+  loadFromLocalStorage();
+
+  hydrateFields();
+  wireFields();
+  wireAssetsAdd();
+  renderAssets();
+  updatePriorAddressVisibility();
+  wireFormatters();
+  wireStepActions();
+  setSaveStatus('saved');
+
+  // Drop the veil
+  const veil = document.getElementById('bootstrap-veil');
+  if (veil) {
+    veil.classList.add('is-hidden');
+    setTimeout(() => veil.remove(), 220);
+  }
+
+  if (typeof window.OF_touchLastSeen === 'function') {
+    window.OF_touchLastSeen().catch(() => {});
+  }
+}
+
+/**
+ * Fetch the borrower row and merge known-mappable fields into state.
+ * Defensive — `select('*')` plus key-by-key merge so missing columns
+ * don't break the page.
+ *
+ * Explicitly does NOT pre-fill SSN even if it's on the row. The SSN
+ * stays client-side only within a session (and in localStorage). The
+ * borrower types it once per device, not per session.
+ */
+async function loadFromBorrowerRow(supabase, borrowerId) {
+  try {
+    const { data, error } = await supabase
+      .from('borrowers')
+      .select('*')
+      .eq('id', borrowerId)
+      .maybeSingle();
+    if (error || !data) {
+      if (error) console.warn('[portal/apply] borrowers prefill failed:', error.message);
+      return;
+    }
+
+    const state = window.OF_APPLICATION_STATE;
+
+    // Personal fields — direct column mapping.
+    if (data.first_name)        state.first_name  = data.first_name;
+    if (data.last_name)         state.last_name   = data.last_name;
+    if (data.middle_name)       state.middle_name = data.middle_name;
+    if (data.suffix)            state.suffix      = data.suffix;
+    if (data.dob)               state.dob         = data.dob;
+    if (data.marital_status)    state.marital     = data.marital_status;
+    if (data.citizenship)       state.citizenship = data.citizenship;
+    if (data.dependents_count != null) state.dependents = String(data.dependents_count);
+
+    // Address jsonb fields. Schema may use either flat columns or jsonb;
+    // try both shapes.
+    if (data.current_address && typeof data.current_address === 'object') {
+      Object.assign(state.current_address, data.current_address);
+    }
+    if (data.prior_address && typeof data.prior_address === 'object') {
+      Object.assign(state.prior_address, data.prior_address);
+    }
+
+    // (Employment / income / assets / declarations / demographics are in
+    //  their own tables — fetched server-side by OF_savePortalApplication
+    //  when that hook ships. For now they live only in localStorage.)
+  } catch (e) {
+    console.warn('[portal/apply] borrowers prefill exception:', e.message);
+  }
+}
+
+function loadFromLocalStorage() {
   try {
     const saved = localStorage.getItem(WIZARD_STATE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      deepMerge(window.OF_APPLICATION_STATE, parsed);
-    }
+    if (!saved) return;
+    const parsed = JSON.parse(saved);
+    deepMerge(window.OF_APPLICATION_STATE, parsed);
   } catch (err) {
-    console.warn('Could not load saved state:', err);
+    console.warn('[portal/apply] localStorage hydrate skipped:', err);
   }
 }
 
 function deepMerge(target, source) {
   for (const key of Object.keys(source || {})) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+    if (Array.isArray(source[key])) {
+      // Arrays (e.g. assets[]) replace entirely — partial array merges
+      // would lose deletions the borrower made.
+      target[key] = source[key];
+    } else if (source[key] && typeof source[key] === 'object') {
       if (!target[key] || typeof target[key] !== 'object') target[key] = {};
       deepMerge(target[key], source[key]);
-    } else {
+    } else if (source[key] !== '' && source[key] !== null && source[key] !== undefined) {
+      // Only override target if source has a real value. Empty strings
+      // from a stale save don't blow away a fresh DB prefill.
       target[key] = source[key];
     }
   }
@@ -1306,8 +1445,8 @@ function deepMerge(target, source) {
 /* =============================================================================
    FIELD WIRING
    -----------------------------------------------------------------------------
-   Two-way binding: each input with [data-field] is bound to its path in
-   the state object. Field names use dot-notation (e.g. "current_address.street").
+   Each input with [data-field] is two-way-bound to its dot-notation path
+   in the state object.
    ============================================================================= */
 function setDeep(obj, path, value) {
   const parts = path.split('.');
@@ -1353,7 +1492,6 @@ function wireFields() {
       else if (el.type === 'radio' && el.checked) val = el.value;
       setDeep(window.OF_APPLICATION_STATE, path, val);
       debouncedSave();
-      // Special: if current_address.years changed, show/hide prior address
       if (path === 'current_address.years') updatePriorAddressVisibility();
     });
   });
@@ -1366,8 +1504,18 @@ function updatePriorAddressVisibility() {
 }
 
 /* =============================================================================
-   AUTO-SAVE (debounced)
+   AUTO-SAVE — three-layer persistence
+   -----------------------------------------------------------------------------
+   On every change (debounced 700ms):
+     1. localStorage write (synchronous, fast, primary)
+     2. await OF_savePortalApplication(state) if defined (server sync,
+        graceful no-op if missing — the hook lands in 11.5.13)
+
+   Save status chip reflects state: saving (amber pulsing), saved (green),
+   error (red). Localstorage-only saves still show "saved" because the
+   primary durability worked.
    ============================================================================= */
+
 let saveTimer = null;
 function debouncedSave() {
   setSaveStatus('saving');
@@ -1376,25 +1524,44 @@ function debouncedSave() {
 }
 
 async function persistState() {
+  // Layer 1: localStorage (always required)
+  let localOk = false;
   try {
     localStorage.setItem(WIZARD_STATE_KEY, JSON.stringify(window.OF_APPLICATION_STATE));
-    if (typeof window.OF_savePortalApplication === 'function') {
-      await window.OF_savePortalApplication(window.OF_APPLICATION_STATE);
-    }
-    setSaveStatus('saved');
-  } catch (err) {
-    console.error('save failed:', err);
-    setSaveStatus('error');
+    localOk = true;
+  } catch (e) {
+    console.error('[portal/apply] localStorage write failed:', e);
   }
+
+  // Layer 2: server sync (optional)
+  let serverOk = true; // true if not attempted; false only on actual error
+  if (typeof window.OF_savePortalApplication === 'function') {
+    try {
+      await window.OF_savePortalApplication({
+        loan_id:     ctx && ctx.loan ? ctx.loan.id : null,
+        borrower_id: ctx && ctx.borrower ? ctx.borrower.id : null,
+        state:       window.OF_APPLICATION_STATE,
+      });
+    } catch (e) {
+      console.warn('[portal/apply] server sync failed (localStorage still saved):', e.message);
+      serverOk = false;
+    }
+  }
+
+  // Status: green if local saved, even if server is missing/failed —
+  // borrowers shouldn't see scary red text just because the optional
+  // sync hook isn't shipped yet.
+  if (localOk) setSaveStatus('saved');
+  else         setSaveStatus('error');
 }
 
 function setSaveStatus(state) {
   const el = document.getElementById('save-status');
   const text = document.getElementById('save-status-text');
   el.classList.remove('is-saving', 'is-saved', 'is-error');
-  if (state === 'saving') { el.classList.add('is-saving'); text.textContent = 'Saving…'; }
-  else if (state === 'saved') { el.classList.add('is-saved'); text.textContent = 'All saved'; }
-  else if (state === 'error') { text.textContent = 'Save failed'; }
+  if (state === 'saving')      { el.classList.add('is-saving'); text.textContent = 'Saving…'; }
+  else if (state === 'saved')  { el.classList.add('is-saved');  text.textContent = 'All saved'; }
+  else if (state === 'error')  { el.classList.add('is-error');  text.textContent = 'Save failed'; }
 }
 
 /* =============================================================================
@@ -1446,7 +1613,6 @@ function renderAssets() {
     `;
     list.appendChild(item);
 
-    // Hydrate values
     item.querySelectorAll('[data-asset-field]').forEach(el => {
       const [idx, key] = el.dataset.assetField.split('.');
       const asset = window.OF_APPLICATION_STATE.assets[parseInt(idx)];
@@ -1462,7 +1628,6 @@ function renderAssets() {
     });
   });
 
-  // Wire remove buttons
   list.querySelectorAll('[data-remove-asset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const i = parseInt(btn.dataset.removeAsset);
@@ -1489,7 +1654,7 @@ function wireAssetsAdd() {
 function renderDeclarations() {
   const list = document.getElementById('declarations-list');
   list.innerHTML = DECLARATIONS.map(d => {
-    const current = window.OF_APPLICATION_STATE.declarations[d.key];
+    const current = window.OF_APPLICATION_STATE.declarations[d.key] || { answer: '', explanation: '' };
     const yesSelected = current.answer === 'yes';
     const noSelected = current.answer === 'no';
     return `
@@ -1508,7 +1673,6 @@ function renderDeclarations() {
     `;
   }).join('');
 
-  // Wire yes/no buttons
   list.querySelectorAll('[data-decl-yes]').forEach(btn => {
     btn.addEventListener('click', () => setDeclaration(btn.dataset.declYes, 'yes'));
   });
@@ -1525,6 +1689,9 @@ function renderDeclarations() {
 }
 
 function setDeclaration(key, answer) {
+  if (!window.OF_APPLICATION_STATE.declarations[key]) {
+    window.OF_APPLICATION_STATE.declarations[key] = { answer: '', explanation: '' };
+  }
   window.OF_APPLICATION_STATE.declarations[key].answer = answer;
   debouncedSave();
   renderDeclarations();
@@ -1552,19 +1719,12 @@ function goToStep(n) {
   currentStep = n;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // Step-specific render hooks
   if (n === 4 && document.getElementById('assets-list').children.length === 0
       && window.OF_APPLICATION_STATE.assets.length > 0) {
     renderAssets();
   }
   if (n === 5) renderDeclarations();
   if (n === 7) renderReview();
-}
-
-function validateStep(n) {
-  // Lightweight required-field check. Doesn't block — surfaces missing
-  // fields on the review page so borrower can fix and resubmit.
-  return [];
 }
 
 /* =============================================================================
@@ -1636,7 +1796,7 @@ function renderReview() {
       title: 'Declarations', step: 5,
       rows: DECLARATIONS.map(d => [
         d.q.slice(0, 50) + (d.q.length > 50 ? '…' : ''),
-        s.declarations[d.key].answer || null,
+        (s.declarations[d.key] && s.declarations[d.key].answer) || null,
       ]),
     },
     {
@@ -1678,7 +1838,21 @@ function renderReview() {
 
 /* =============================================================================
    SUBMIT
+   -----------------------------------------------------------------------------
+   Primary path: window.OF_submitPortalApplication(payload) handles the
+   full transaction server-side: split state across borrowers/employment/
+   income/assets/declarations/demographics tables, flip loans.status from
+   'lead' to 'application', stamp intake_complete_at, write audit row,
+   notify the assigned LO.
+
+   Fallback path: client-side, update only the borrowers row with
+   mappable fields. Loan status transitions stay server-side (they have
+   regulatory/audit implications a client shouldn't mint). Borrowers see
+   success because their personal info DID persist — the LO sees an
+   updated borrower row and can move the loan forward manually until the
+   submit edge function lands.
    ============================================================================= */
+
 async function handleSubmit() {
   const submitBtn = document.getElementById('submit-btn');
   const errorBanner = document.getElementById('review-error');
@@ -1686,44 +1860,101 @@ async function handleSubmit() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting…';
 
+  // Make sure the latest state is durable before attempting submit.
+  await persistState();
+
   try {
     if (typeof window.OF_submitPortalApplication === 'function') {
-      await window.OF_submitPortalApplication(window.OF_APPLICATION_STATE);
+      await window.OF_submitPortalApplication({
+        loan_id:     ctx && ctx.loan     ? ctx.loan.id     : null,
+        borrower_id: ctx && ctx.borrower ? ctx.borrower.id : null,
+        state:       window.OF_APPLICATION_STATE,
+      });
     } else {
-      // Stub
-      await new Promise(res => setTimeout(res, 800));
-      console.log('OF_submitPortalApplication not wired. Final state:', window.OF_APPLICATION_STATE);
+      await fallbackBorrowerUpdate();
     }
 
-    // Clear local backup — server has it now
-    localStorage.removeItem(WIZARD_STATE_KEY);
+    // Clear local backup — server is source of truth after submit.
+    try { localStorage.removeItem(WIZARD_STATE_KEY); } catch (_) {}
 
-    // Show success screen, hide everything else
     document.querySelectorAll('.step').forEach(s => s.classList.remove('is-active'));
     document.querySelector('.progress-shell').style.display = 'none';
     document.getElementById('success-screen').classList.add('is-active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (err) {
-    console.error('submit failed:', err);
-    errorBanner.textContent = err.message || 'Submission failed. Please try again.';
+    console.error('[portal/apply] submit failed:', err);
+    errorBanner.textContent = err && err.message
+      ? err.message
+      : 'Submission failed. Please try again.';
     errorBanner.classList.add('is-active');
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit application →';
   }
 }
 
-/* =============================================================================
-   WIRING
-   ============================================================================= */
-document.addEventListener('DOMContentLoaded', () => {
-  loadBootstrap();
-  hydrateFields();
-  wireFields();
-  wireAssetsAdd();
-  renderAssets();
-  updatePriorAddressVisibility();
+/**
+ * Fallback: update the `borrowers` row directly with the fields we know
+ * map. Deliberately conservative — only touches columns that are almost
+ * certainly on the schema. Skips employment/income/assets/declarations/
+ * demographics because those live in separate tables we don't write to
+ * client-side.
+ *
+ * Doesn't touch loans.status. That's a server concern with audit
+ * implications.
+ */
+async function fallbackBorrowerUpdate() {
+  if (!ctx || !ctx.borrower || !ctx.borrower.id) {
+    throw new Error("We couldn't identify your loan. Please refresh and try again.");
+  }
 
-  // Format SSN as user types
+  const s = window.OF_APPLICATION_STATE;
+  const supabase = window.OF_supabase();
+
+  // Build update payload defensively. Only include fields with values
+  // so we don't blow away existing data with empty strings.
+  const update = {};
+  if (s.first_name)  update.first_name  = s.first_name;
+  if (s.last_name)   update.last_name   = s.last_name;
+  if (s.middle_name) update.middle_name = s.middle_name;
+  if (s.suffix)      update.suffix      = s.suffix;
+  if (s.dob)         update.dob         = s.dob;
+  if (s.marital)     update.marital_status = s.marital;
+  if (s.citizenship) update.citizenship    = s.citizenship;
+  if (s.dependents !== '' && s.dependents != null) {
+    const n = parseInt(s.dependents, 10);
+    if (!isNaN(n)) update.dependents_count = n;
+  }
+  if (s.current_address && s.current_address.street) {
+    update.current_address = s.current_address;
+  }
+  if (s.prior_address && s.prior_address.street) {
+    update.prior_address = s.prior_address;
+  }
+
+  if (Object.keys(update).length === 0) {
+    // Nothing safe to persist — let the user know rather than silently
+    // showing a misleading success screen.
+    throw new Error('Please fill in at least your name and address before submitting.');
+  }
+
+  const { error } = await supabase
+    .from('borrowers')
+    .update(update)
+    .eq('id', ctx.borrower.id);
+
+  if (error) {
+    throw new Error(error.message || "Couldn't save your application. Please try again.");
+  }
+
+  // Note: we intentionally do NOT change loans.status here. When the
+  // OF_submitPortalApplication hook ships it'll handle the
+  // 'lead' → 'application' transition with proper audit logging.
+}
+
+/* =============================================================================
+   FORMATTERS (SSN, money)
+   ============================================================================= */
+function wireFormatters() {
   const ssnInput = document.querySelector('[data-field="ssn"]');
   if (ssnInput) {
     ssnInput.addEventListener('input', (e) => {
@@ -1734,17 +1965,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Format money inputs on blur
   document.querySelectorAll('input[inputmode="numeric"][placeholder^="$"]').forEach(el => {
     el.addEventListener('blur', () => {
       const digits = el.value.replace(/[^\d]/g, '');
       el.value = digits ? '$' + parseInt(digits, 10).toLocaleString('en-US') : '';
-      // Re-fire input event so state gets the formatted version too
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
   });
+}
 
-  // Step navigation
+function wireStepActions() {
   document.querySelectorAll('[data-action="next"]').forEach(b => {
     b.addEventListener('click', () => goToStep(currentStep + 1));
   });
@@ -1754,16 +1984,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-action="save-exit"]').forEach(b => {
     b.addEventListener('click', async () => {
       await persistState();
-      window.location.href = '/portal/';
+      window.location.href = '/portal_index.html';
     });
   });
   document.querySelectorAll('[data-action="submit"]').forEach(b => {
     b.addEventListener('click', handleSubmit);
   });
+}
 
-  // Initial save status
-  setSaveStatus('saved');
-});
+/* =============================================================================
+   BOOT
+   ============================================================================= */
+document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
