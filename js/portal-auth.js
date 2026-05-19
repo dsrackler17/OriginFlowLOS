@@ -6,8 +6,9 @@
      window.OF_supabase()        — singleton Supabase client (loads UMD if needed)
      window.OF_bootstrap()       — resolves session → borrower → loan,
                                    returns { session, borrower, loan }
-     window.OF_signOut()         — clears session + redirects to /portal/sign-in
-     window.OF_submitApplication(payload)  — public /apply submit hook
+     window.OF_signOut()         — clears session + redirects to /portal_signin.html
+     window.OF_submitApplication(payload)  — public /apply.html submit hook
+     window.OF_signInWithEmail(email)      — magic-link for returning users
 
    Inclusion pattern in each portal HTML:
      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,19 +17,25 @@
        (async () => {
          const ctx = await window.OF_bootstrap();
          if (!ctx) return;   // OF_bootstrap handles redirect if signed out
-         window.OF_BORROWER_BOOTSTRAP = mapContextToPageShape(ctx);
-         renderPage();
+         renderPage(ctx);
        })();
      </script>
 
-   /apply (the public page) is the EXCEPTION — it doesn't call OF_bootstrap
-   because the user isn't signed in yet. It only calls OF_submitApplication.
+   apply.html (the public landing) is the EXCEPTION — it doesn't call
+   OF_bootstrap because the user isn't signed in yet. It only calls
+   OF_submitApplication.
 
    Environment:
      This module reads SUPABASE_URL + SUPABASE_ANON_KEY from window.OF_CONFIG
-     which the host page populates before loading this module. Falls back
-     to hard-coded values for local development (see CONFIG defaults below).
-   ============================================================================= */
+     which the host page populates before loading this module. CONFIG
+     defaults below match the production Submarine Catalyst project so the
+     module is usable standalone — but the host page should still set
+     OF_CONFIG for environment-specific overrides.
+
+   Path conventions:
+     URLs use the flat-filename layout (e.g. /portal_signin.html, NOT
+     /portal/sign-in.html) to match the GitHub Pages repo structure.
+     ============================================================================= */
 
 (function () {
   'use strict';
@@ -37,17 +44,18 @@
   // CONFIG
   // ─────────────────────────────────────────────────────────────────────────
   const CONFIG = Object.assign({
-    // Set these on window.OF_CONFIG before this script loads. Hard-coded
-    // values here are placeholders for local dev — REPLACE with real values
-    // in production via window.OF_CONFIG injection.
+    // Override these on window.OF_CONFIG before this script loads. The
+    // defaults here match the Submarine Catalyst production project so the
+    // module is usable standalone (e.g. on a page that forgot to set
+    // OF_CONFIG).
     SUPABASE_URL:        'https://dipagzqrvivposqjkdkx.supabase.co',
-    SUPABASE_ANON_KEY:   'REPLACE_ME_WITH_ANON_KEY',
+    SUPABASE_ANON_KEY:   'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
     // Endpoint paths. Override to point at a different project.
     SUBMIT_APPLICATION_URL: null,  // computed from SUPABASE_URL if null
-    // Sign-in landing route — where to redirect when no session
-    SIGN_IN_URL: '/portal/sign-in.html',
-    // Portal home — where to land after sign-in success
-    PORTAL_HOME_URL: '/portal/',
+    // Sign-in landing route — flat filename to match repo layout.
+    SIGN_IN_URL: '/portal_signin.html',
+    // Portal home — flat filename to match repo layout.
+    PORTAL_HOME_URL: '/portal_index.html',
   }, window.OF_CONFIG || {});
 
   if (!CONFIG.SUBMIT_APPLICATION_URL) {
@@ -90,9 +98,7 @@
   //                                    (this is the first-sign-in case)
   //   3. Session + linked borrower  → fetch borrower + most recent active loan
   //
-  //   Returns: { session, borrower, loan, loBriefcase? }
-  //              loBriefcase is the LO assigned to the loan (name, email, etc.)
-  //              for displaying in the portal nav / contact cards.
+  //   Returns: { session, borrower, loan }
   // ─────────────────────────────────────────────────────────────────────────
   async function bootstrap() {
     const sb = getClient();
@@ -188,7 +194,7 @@
           id, loan_number, status, intake_source,
           purpose, property_type, occupancy,
           loan_amount_cents, purchase_price_cents,
-          property_address, rate_bps, term_months,
+          property_address, rate_bps, term_months, branch_id,
           lo:profiles!lo_id ( id, full_name, email, phone )
         `)
         .in('id', loanIds)
@@ -211,6 +217,21 @@
   window.OF_bootstrap = bootstrap;
 
   // ─────────────────────────────────────────────────────────────────────────
+  // OF_touchLastSeen() — convenience for portal pages that want to ping
+  // last_seen_at without going through full bootstrap. Fire-and-forget.
+  // ─────────────────────────────────────────────────────────────────────────
+  async function touchLastSeen() {
+    const sb = getClient();
+    if (!sb) return;
+    try {
+      await sb.rpc('touch_borrower_last_seen');
+    } catch (err) {
+      console.warn('[portal-auth] touch_borrower_last_seen:', err);
+    }
+  }
+  window.OF_touchLastSeen = touchLastSeen;
+
+  // ─────────────────────────────────────────────────────────────────────────
   // OF_signOut()
   // ─────────────────────────────────────────────────────────────────────────
   async function signOut() {
@@ -222,8 +243,8 @@
 
   // ─────────────────────────────────────────────────────────────────────────
   // OF_submitApplication(payload)
-  //   The /apply form posts here. Called UNAUTHENTICATED — this is the only
-  //   hook that doesn't require a session.
+  //   The /apply.html form posts here. Called UNAUTHENTICATED — this is
+  //   the only hook that doesn't require a session.
   //
   //   Returns: { success, masked_email, loan_number, is_new_borrower }
   // ─────────────────────────────────────────────────────────────────────────
@@ -254,8 +275,12 @@
 
   // ─────────────────────────────────────────────────────────────────────────
   // OF_signInWithEmail(email)
-  //   Sends a magic link to an existing borrower (returning user flow).
-  //   The /portal/sign-in.html page calls this.
+  //   Sends a magic link to an existing borrower (returning-user flow).
+  //   The portal_signin.html page calls this.
+  //
+  //   The emailRedirectTo lands on PORTAL_HOME_URL (flat-path
+  //   /portal_index.html by default). portal_index then runs OF_bootstrap
+  //   which handles the post-magic-link session pickup.
   // ─────────────────────────────────────────────────────────────────────────
   async function signInWithEmail(email) {
     const sb = getClient();
