@@ -539,7 +539,7 @@
       <span class="subtitle">Borrower portal</span>
     </div>
   </div>
-  <a class="back-link" href="/portal/">← Home</a>
+  <a class="back-link" href="/portal_index.html">← Home</a>
 </header>
 
 <main class="portal-main">
@@ -590,11 +590,11 @@
 <div class="toast" id="toast"></div>
 
 <footer class="portal-footer">
-  <a href="/portal/">Home</a> ·
-  <a href="/portal/status/">Timeline</a> ·
-  <a href="/portal/messages/">Messages</a> ·
+  <a href="/portal_index.html">Home</a> ·
+  <a href="/portal_status.html">Timeline</a> ·
+  <a href="/portal_messages.html">Messages</a> ·
   <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
-       the Supabase session and redirects to /portal/sign-in.html. -->
+       the Supabase session and redirects to /portal_signin.html. -->
   <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
 </footer>
 
@@ -835,20 +835,20 @@ async function init() {
     const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
       ? 'not_a_borrower'
       : 'link_failed';
-    window.location.replace('/portal/sign-in.html?error=' + code);
+    window.location.replace('/portal_signin.html?error=' + code);
     return;
   }
 
   if (!ctx || !ctx.session) {
-    window.location.replace('/portal/sign-in.html');
+    window.location.replace('/portal_signin.html');
     return;
   }
   if (!ctx.borrower) {
-    window.location.replace('/portal/sign-in.html?error=not_a_borrower');
+    window.location.replace('/portal_signin.html?error=not_a_borrower');
     return;
   }
   if (!ctx.loan) {
-    window.location.replace('/portal/apply/');
+    window.location.replace('/portal_apply.html');
     return;
   }
 

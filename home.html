@@ -834,15 +834,15 @@ footer a:hover { color: var(--accent); }
     <li class="dropdown">
       <button class="dropdown-trigger" type="button" aria-haspopup="true">Borrower</button>
       <div class="dropdown-menu" role="menu">
-        <a class="dropdown-item is-external" href="/portal/" target="_blank" rel="noopener" role="menuitem">
+        <a class="dropdown-item is-external" href="/portal_index.html" target="_blank" rel="noopener" role="menuitem">
           <span class="dropdown-item-title">Borrower Portal</span>
           <span class="dropdown-item-sub">What your borrowers see when signed in</span>
         </a>
-        <a class="dropdown-item is-external" href="/apply/" target="_blank" rel="noopener" role="menuitem">
+        <a class="dropdown-item is-external" href="/apply.html" target="_blank" rel="noopener" role="menuitem">
           <span class="dropdown-item-title">Apply Now Page</span>
           <span class="dropdown-item-sub">Public application landing · share this link</span>
         </a>
-        <a class="dropdown-item is-external" href="/portal/sign-in.html" target="_blank" rel="noopener" role="menuitem">
+        <a class="dropdown-item is-external" href="/portal_signin.html" target="_blank" rel="noopener" role="menuitem">
           <span class="dropdown-item-title">Borrower Sign-in</span>
           <span class="dropdown-item-sub">Magic-link entry for returning borrowers</span>
         </a>
@@ -978,7 +978,7 @@ footer a:hover { color: var(--accent); }
       <a href="/reports.html" class="btn">Reports</a>
       <a href="/investor-delivery.html" class="btn">Delivery</a>
       <a href="/integrations.html" class="btn">Integrations</a>
-      <a href="/portal/" class="btn" target="_blank" rel="noopener">Borrower Portal ↗</a>
+      <a href="/portal_index.html" class="btn" target="_blank" rel="noopener">Borrower Portal ↗</a>
       <a href="/team.html" class="btn" id="cta-team" style="display:none;">Team & Branch</a>
     </div>
 
@@ -1051,7 +1051,7 @@ footer a:hover { color: var(--accent); }
       <a href="/reports.html">Reports</a>
       <a href="/investor-delivery.html">Delivery</a>
       <a href="/integrations.html">Integrations</a>
-      <a href="/portal/" target="_blank" rel="noopener">Borrower Portal ↗</a>
+      <a href="/portal_index.html" target="_blank" rel="noopener">Borrower Portal ↗</a>
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
     </div>
@@ -1071,9 +1071,9 @@ footer a:hover { color: var(--accent); }
 //   /team.html              — admin: users, roles, assignments (admin only)
 //   /loans-new.html         — new loan intake form
 //   /login.html             — sign in
-//   /portal/                — borrower portal (separate auth domain)
-//   /portal/sign-in.html    — borrower magic-link entry
-//   /apply/                 — public-facing application landing
+//   /portal_index.html                — borrower portal (separate auth domain)
+//   /portal_signin.html    — borrower magic-link entry
+//   /apply.html                 — public-facing application landing
 //
 // All loan/condition deep-links route to /dashboard.html#<loan_id>.
 // CRM failure rows surface in the Action Needed queue and link to
@@ -2116,8 +2116,8 @@ function renderCmdkNavShortcuts() {
     { icon:'∷', title:'Reports',        sub:'pipeline · funded',   href:'/reports.html',   tag:'GO' },
     { icon:'⇆', title:'Investor Delivery', sub:'sell funded loans', href:'/investor-delivery.html', tag:'GO' },
     { icon:'⇌', title:'Integrations',   sub:'CRM · Encompass · Arive', href:'/integrations.html', tag:'GO' },
-    { icon:'◐', title:'Borrower Portal', sub:'open in new tab',    href:'/portal/', tag:'OPEN' },
-    { icon:'◑', title:'Apply Now Page',  sub:'public application',  href:'/apply/',  tag:'OPEN' },
+    { icon:'◐', title:'Borrower Portal', sub:'open in new tab',    href:'/portal_index.html', tag:'OPEN' },
+    { icon:'◑', title:'Apply Now Page',  sub:'public application',  href:'/apply.html',  tag:'OPEN' },
   ];
   if (me.role !== 'viewer') {
     shortcuts.unshift({ icon:'+', title:'Start a New Loan', sub:'/loans-new.html', href:'/loans-new.html', tag:'NEW' });

@@ -490,7 +490,7 @@
      * AUTH IS LIVE. The page calls window.OF_bootstrap() from portal-auth.js,
        which resolves session → borrower → loan and handles first-sign-in
        linking via the link_auth_user_to_borrower RPC. If any step fails the
-       page redirects to /portal/sign-in.html with a contextual ?error= code.
+       page redirects to /portal_signin.html with a contextual ?error= code.
 
      * SUPPLEMENTARY QUERIES run in parallel after bootstrap resolves:
          - assigned LO  (read from a borrower-readable LO view)
@@ -502,10 +502,10 @@
      * MOBILE FIRST: all media queries use min-width to upgrade the layout.
 
      * NAVIGATION: this is the home tile. Links go to:
-         /portal/apply/    → 11.5.5 1003 wizard
-         /portal/status/   → 11.5.7 detailed timeline
-         /portal/docs/     → 11.5.11 document upload UI
-         /portal/messages/ → 11.5.8 LO chat (UI shipped, backend pending)
+         /portal_apply.html    → 11.5.5 1003 wizard
+         /portal_status.html   → 11.5.7 detailed timeline
+         /portal_docs.html     → 11.5.11 document upload UI
+         /portal_messages.html → 11.5.8 LO chat (UI shipped, backend pending)
 
      * NO DATA MUTATIONS HAPPEN ON THIS PAGE. It's pure read.
      ============================================================================= -->
@@ -549,7 +549,7 @@
 
   <!-- ─── ACTION CARDS ─── -->
   <section class="action-grid">
-    <a class="action-card" href="/portal/docs/">
+    <a class="action-card" href="/portal_docs.html">
       <div class="action-card-header">
         <span class="action-card-tag warn" id="docs-tag">Action needed</span>
         <span class="action-card-count" id="docs-count">—</span>
@@ -558,7 +558,7 @@
       <div class="action-card-desc" id="docs-desc">Upload your remaining documents to keep your loan moving.</div>
       <div class="action-card-cta">Open documents →</div>
     </a>
-    <a class="action-card" href="/portal/messages/">
+    <a class="action-card" href="/portal_messages.html">
       <div class="action-card-header">
         <span class="action-card-tag" id="messages-tag">No new messages</span>
         <span class="action-card-count" id="messages-count">0</span>
@@ -567,7 +567,7 @@
       <div class="action-card-desc">Chat with your loan officer or send a question to the team.</div>
       <div class="action-card-cta">Open messages →</div>
     </a>
-    <a class="action-card" href="/portal/apply/">
+    <a class="action-card" href="/portal_apply.html">
       <div class="action-card-header">
         <span class="action-card-tag" id="apply-tag">Saved progress</span>
         <span class="action-card-count" id="apply-count">—</span>
@@ -576,7 +576,7 @@
       <div class="action-card-desc">Review or update the information on your URLA 1003.</div>
       <div class="action-card-cta">Open application →</div>
     </a>
-    <a class="action-card" href="/portal/status/">
+    <a class="action-card" href="/portal_status.html">
       <div class="action-card-header">
         <span class="action-card-tag" id="status-tag">All on track</span>
         <span class="action-card-count">—</span>
@@ -639,7 +639,7 @@
   <a href="#">Terms</a> ·
   <a href="#">Help</a> ·
   <!-- Sign-out delegates entirely to portal-auth.js → OF_signOut, which
-       clears the Supabase session and redirects to /portal/sign-in.html.
+       clears the Supabase session and redirects to /portal_signin.html.
        preventDefault keeps the hash from getting appended on the way out. -->
   <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
 </footer>
@@ -652,9 +652,9 @@
 
      1. init() runs on DOMContentLoaded
      2. OF_bootstrap() resolves { session, borrower, loan }
-        - missing session            → redirect to /portal/sign-in.html
+        - missing session            → redirect to /portal_signin.html
         - email-mismatch on linking  → redirect with ?error=not_a_borrower
-        - borrower but no loan yet   → redirect to /portal/apply/
+        - borrower but no loan yet   → redirect to /portal_apply.html
      3. Three supplementary queries run in parallel:
           a. assigned LO (loan_officers_public view, RLS-scoped)
           b. open conditions count (drives docs card)
@@ -872,22 +872,22 @@ async function init() {
     const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
       ? 'not_a_borrower'
       : 'link_failed';
-    window.location.replace('/portal/sign-in.html?error=' + code);
+    window.location.replace('/portal_signin.html?error=' + code);
     return;
   }
 
   if (!ctx || !ctx.session) {
-    window.location.replace('/portal/sign-in.html');
+    window.location.replace('/portal_signin.html');
     return;
   }
   if (!ctx.borrower) {
-    window.location.replace('/portal/sign-in.html?error=not_a_borrower');
+    window.location.replace('/portal_signin.html?error=not_a_borrower');
     return;
   }
   if (!ctx.loan) {
     // Authenticated borrower with no loan yet — they completed the magic
     // link flow before finishing the application wizard. Punt to apply.
-    window.location.replace('/portal/apply/');
+    window.location.replace('/portal_apply.html');
     return;
   }
 

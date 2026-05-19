@@ -253,7 +253,7 @@
     }
 
     /* Pre-auth session check — covers the body while we decide
-       whether to redirect a still-signed-in user to /portal/.
+       whether to redirect a still-signed-in user to /portal_index.html.
        Without this, the form briefly flashes before redirect. */
     .session-veil {
       position: fixed;
@@ -278,7 +278,7 @@
 <body>
 
 <!-- Veil covers the page until the session check resolves. If a session
-     already exists we redirect to /portal/ and the veil stays up; if not
+     already exists we redirect to /portal_index.html and the veil stays up; if not
      we drop the veil and show the form. Prevents the "flash of sign-in
      form" for already-authenticated users hitting this URL by mistake. -->
 <div class="session-veil" id="session-veil">Checking session…</div>
@@ -313,7 +313,7 @@
       </form>
 
       <div class="helper">
-        Don't have a loan with us yet? <a href="/apply/">Start an application</a>
+        Don't have a loan with us yet? <a href="/apply.html">Start an application</a>
       </div>
     </div>
 
@@ -338,9 +338,9 @@
 // Pre-auth session check
 // ------------------------------------------------------------
 // If the user already holds a valid Supabase session (most common
-// causes: bookmarked /portal/sign-in while signed in elsewhere, or
-// hit the browser back button after landing on /portal/), short-
-// circuit the magic-link dance and punt them straight to /portal/.
+// causes: bookmarked /portal_signin.html while signed in elsewhere, or
+// hit the browser back button after landing on /portal_index.html), short-
+// circuit the magic-link dance and punt them straight to /portal_index.html.
 //
 // We do NOT call OF_bootstrap() here — that resolves the borrower
 // row and is the responsibility of the page they land on. All we
@@ -358,7 +358,7 @@
     if (session) {
       // Don't drop the veil — keep it up through the redirect to
       // avoid a flash of the sign-in form mid-navigation.
-      window.location.replace('/portal/');
+      window.location.replace('/portal_index.html');
       return;
     }
   } catch (e) {

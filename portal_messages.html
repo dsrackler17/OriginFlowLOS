@@ -522,9 +522,9 @@
     </div>
   </div>
   <nav class="nav-actions">
-    <a class="back-link" href="/portal/">← Home</a>
+    <a class="back-link" href="/portal_index.html">← Home</a>
     <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
-         the Supabase session and redirects to /portal/sign-in.html. -->
+         the Supabase session and redirects to /portal_signin.html. -->
     <button class="signout-link" type="button" onclick="window.OF_signOut();">Sign out</button>
   </nav>
 </header>
@@ -897,20 +897,20 @@ async function init() {
     const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
       ? 'not_a_borrower'
       : 'link_failed';
-    window.location.replace('/portal/sign-in.html?error=' + code);
+    window.location.replace('/portal_signin.html?error=' + code);
     return;
   }
 
   if (!ctx || !ctx.session) {
-    window.location.replace('/portal/sign-in.html');
+    window.location.replace('/portal_signin.html');
     return;
   }
   if (!ctx.borrower) {
-    window.location.replace('/portal/sign-in.html?error=not_a_borrower');
+    window.location.replace('/portal_signin.html?error=not_a_borrower');
     return;
   }
   if (!ctx.loan) {
-    window.location.replace('/portal/apply/');
+    window.location.replace('/portal_apply.html');
     return;
   }
 
