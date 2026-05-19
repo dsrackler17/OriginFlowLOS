@@ -381,7 +381,10 @@
                   (!borrower.econsent_withdrawn_at ||
                    new Date(borrower.econsent_withdrawn_at) < new Date(borrower.econsent_granted_at));
     if (!granted) {
-      window.location.href = '/portal_econsent.html';
+      // Preserve the current URL (including loan_id query param) so the
+      // borrower lands back on the same docs page after granting consent.
+      var returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = '/portal_econsent.html?return_to=' + returnTo;
       return;
     }
 

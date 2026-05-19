@@ -1,421 +1,836 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Electronic Communication Consent — OriginFlow Borrower Portal</title>
-<meta name="description" content="Consent to receive mortgage disclosures electronically.">
-<meta name="robots" content="noindex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/js/config.js"></script>
-<style>
-  :root {
-    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
-    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
-    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
-    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
-  }
-  *,*::before,*::after { box-sizing:border-box;margin:0;padding:0; }
-  body { background:var(--navy); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.7; min-height:100vh; display:flex; flex-direction:column; }
-  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
-  nav,.portal-banner,main,footer { position:relative; z-index:1; }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Electronic consent — OriginFlow Borrower Portal</title>
+  <meta name="description" content="Grant electronic consent to receive loan documents and disclosures online.">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-  nav { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 3rem; border-bottom:1px solid var(--border); background:rgba(4,13,26,0.85); backdrop-filter:blur(12px); }
-  .nav-logo { display:flex; align-items:center; gap:0.75rem; text-decoration:none; }
-  .sonar-icon { width:32px; height:32px; }
-  .sonar-icon svg { width:100%; height:100%; }
-  .nav-wordmark { font-family:var(--mono); font-size:0.85rem; font-weight:700; color:var(--white); letter-spacing:0.12em; text-transform:uppercase; }
-  .nav-wordmark span { color:var(--accent); }
-  .nav-right { font-family:var(--mono); font-size:0.72rem; letter-spacing:0.08em; color:var(--muted); }
-  .nav-signout { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); background:transparent; border:1px solid var(--border); padding:0.45rem 0.9rem; cursor:pointer; transition:all 0.15s; }
-  .nav-signout:hover { border-color:var(--accent); color:var(--accent); }
+  <!-- ============================================================
+       OF_CONFIG + portal-auth.js
+       ------------------------------------------------------------
+       This page IS gated — the borrower must be signed in before
+       granting consent (otherwise we can't link the grant to their
+       borrowers row). OF_bootstrap handles that redirect.
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
 
-  .portal-banner { background:rgba(245,166,35,0.06); border-bottom:1px solid rgba(245,166,35,0.25); padding:0.55rem 3rem; display:flex; align-items:center; justify-content:center; gap:0.6rem; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.14em; color:var(--amber); text-transform:uppercase; }
+  <style>
+    /* =========================================================================
+       portal_econsent.html — Phase 11.5 borrower eConsent capture page
+       -------------------------------------------------------------------------
+       Purpose: ESIGN Act § 7001 affirmative consent for borrowers whose
+       consent wasn't captured during apply.html (or who withdrew and now
+       need to re-grant). This is a GATE — portal_documents.html will
+       redirect any borrower without active consent here before allowing
+       document uploads.
 
-  main { flex:1; padding:3rem 3rem 4rem; max-width:840px; margin:0 auto; width:100%; }
+       Why a dedicated page vs. an inline modal:
+         - The disclosure text is long and needs full visibility
+         - Mobile borrowers shouldn't have to scroll inside a modal
+         - The grant is an atomic event we want to confirm with its own
+           URL/page (analytics, "are you sure" semantics, deep linkability)
 
-  .consent-eyebrow { font-family:var(--mono); font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.75rem; }
-  .consent-eyebrow::before { content:''; display:block; width:1.5rem; height:1px; background:var(--accent); }
-  .consent-title { font-family:var(--serif); font-size:2.2rem; color:var(--white); margin-bottom:0.5rem; line-height:1.15; }
-  .consent-sub { font-size:0.95rem; color:var(--muted); font-weight:300; margin-bottom:2rem; line-height:1.7; }
+       Flow:
+         1. OF_bootstrap → session + borrower
+         2. Check borrower.econsent_granted_at:
+              - granted and not withdrawn → "Already granted" state
+                (with link to revoke — Phase 11.6 — currently hidden)
+              - not granted OR withdrawn → "Form" state (default)
+         3. On submit: call OF_grantEConsent hook (preferred), fall back to
+            direct UPDATE on borrowers + INSERT into econsent_records
+         4. Redirect to ?return_to= or /portal_documents.html
 
-  .consent-card { background:var(--surface); border:1px solid var(--border); position:relative; overflow:hidden; }
-  .consent-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--accent),var(--accent2)); }
+       Tokens match portal_index.html / portal_signin.html — this page sits
+       inside the same portal flow as those pages.
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-deep: #0891b2;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
 
-  /* The consent block holds the legal text. The CONSENT_TEXT_V1 constant
-     in JS is the source of truth — what's rendered here, hashed on submit,
-     and stored on the audit record is the same string. Do NOT edit the
-     visible text without simultaneously updating CONSENT_TEXT_V1 and the
-     CONSENT_VERSION identifier, and never edit either in place once any
-     consent record references the old hash. New copy = new version. */
-  .consent-block { padding:2rem 2rem 1rem; }
-  .consent-block h2 { font-family:var(--serif); font-size:1.45rem; color:var(--white); margin-bottom:1.25rem; line-height:1.3; }
-  .consent-block p { color:var(--text); font-size:0.92rem; line-height:1.75; margin-bottom:1rem; font-weight:300; }
-  .consent-block p strong { color:var(--white); font-weight:500; }
-  .consent-block .lender-name { color:var(--accent); font-weight:500; }
-  .consent-block ol { margin:1rem 0 1.25rem 0; padding-left:1.5rem; }
-  .consent-block ol li { margin-bottom:1rem; color:var(--text); font-size:0.92rem; font-weight:300; line-height:1.75; }
-  .consent-block ol li strong { color:var(--white); font-weight:500; }
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
 
-  .demonstration { background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--amber); padding:1.25rem 1.5rem; margin:1.5rem 2rem; }
-  .demonstration h3 { font-family:var(--mono); font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:0.6rem; }
-  .demonstration p { font-size:0.88rem; color:var(--text); font-weight:300; line-height:1.7; margin-bottom:0.9rem; }
-  .demo-btn { display:inline-flex; align-items:center; gap:0.5rem; font-family:var(--mono); font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase; background:transparent; color:var(--amber); border:1px solid var(--amber); padding:0.65rem 1.1rem; cursor:pointer; text-decoration:none; transition:all 0.15s; font-weight:700; }
-  .demo-btn:hover { background:rgba(245,166,35,0.08); }
-  .demo-btn.viewed { color:var(--accent2); border-color:var(--accent2); }
-  .demo-btn.viewed::before { content:'✓ '; }
-  .demo-status { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; color:var(--muted); margin-top:0.6rem; }
-  .demo-status.viewed { color:var(--accent2); }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34, 211, 238, 0.06), transparent 60%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-  .consent-action { background:var(--deep); border-top:1px solid var(--border); padding:1.75rem 2rem 2rem; }
-  .checkbox-row { display:flex; align-items:flex-start; gap:0.75rem; margin-bottom:1.5rem; cursor:pointer; }
-  .checkbox-row input { margin-top:0.3rem; width:18px; height:18px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
-  .checkbox-row input:disabled { cursor:not-allowed; opacity:0.5; }
-  .checkbox-row label { font-size:0.9rem; color:var(--text); cursor:pointer; line-height:1.6; flex:1; font-weight:300; }
-  .checkbox-row label strong { color:var(--white); font-weight:500; }
-  .checkbox-row.disabled label { color:var(--muted); cursor:not-allowed; }
+    /* ─── NAV ─── */
+    .portal-nav {
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 18, 32, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .portal-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .portal-brand-mark {
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
+      display: grid; place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 16px rgba(34, 211, 238, 0.15);
+    }
+    .portal-brand-text {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .portal-brand-text span { color: var(--cyan); }
+    .portal-signout {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 7px 14px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .portal-signout:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
 
-  .button-row { display:flex; gap:1rem; flex-wrap:wrap; }
-  .btn-consent { flex:1; min-width:200px; font-family:var(--mono); font-size:0.82rem; letter-spacing:0.12em; text-transform:uppercase; background:var(--accent); color:var(--navy); border:none; padding:1rem 1.5rem; cursor:pointer; font-weight:700; transition:opacity 0.2s; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); }
-  .btn-consent:hover { opacity:0.85; }
-  .btn-consent:disabled { opacity:0.4; cursor:not-allowed; background:var(--muted); }
-  .btn-paper { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; background:transparent; color:var(--muted); border:1px solid var(--border); padding:1rem 1.25rem; cursor:pointer; transition:all 0.2s; }
-  .btn-paper:hover { color:var(--text); border-color:var(--text); }
+    /* ─── BANNER ─── */
+    .portal-banner {
+      background: rgba(34, 211, 238, 0.06);
+      border-bottom: 1px solid rgba(34, 211, 238, 0.25);
+      padding: 8px 24px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .portal-banner-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      margin-right: 8px;
+      vertical-align: middle;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
 
-  .error-box   { background:rgba(255,68,68,0.08); border:1px solid rgba(255,68,68,0.3); color:var(--red); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; line-height:1.6; }
-  .error-box.visible   { display:block; }
-  .info-box    { background:rgba(0,212,255,0.05); border:1px solid rgba(0,212,255,0.25); color:var(--accent); font-family:var(--mono); font-size:0.72rem; padding:0.75rem 1rem; margin-bottom:1.25rem; display:none; letter-spacing:0.04em; line-height:1.6; }
-  .info-box.visible    { display:block; }
+    /* ─── MAIN ─── */
+    main {
+      flex: 1;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    @media (max-width: 640px) {
+      main { padding: 32px 18px 60px; }
+    }
 
-  footer { border-top:1px solid var(--border); font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; color:var(--muted); background:var(--deep); margin-top:auto; }
-  .footer-disclaimer { padding:0.7rem 3rem; border-bottom:1px solid var(--border); text-align:center; font-size:0.58rem; line-height:1.5; color:var(--muted); }
-  .footer-disclaimer strong { color:var(--text); font-weight:700; }
-  .footer-bottom { padding:1.25rem 3rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
-  footer a { color:var(--muted); text-decoration:none; }
-  footer a:hover { color:var(--accent); }
-  .footer-links { display:flex; gap:1.5rem; flex-wrap:wrap; }
+    /* ─── STATES ─── */
+    .state {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .state.is-active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .state-loading {
+      text-align: center;
+      padding: 60px 0;
+    }
+    .spinner {
+      display: inline-block;
+      width: 32px; height: 32px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-loading-text {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
 
-  @media (max-width:640px) {
-    nav { padding:1rem 1.25rem; }
-    .portal-banner { padding:0.55rem 1rem; font-size:0.58rem; }
-    main { padding:2rem 1.25rem 3rem; }
-    .consent-title { font-size:1.75rem; }
-    .consent-block { padding:1.5rem 1.25rem 0.75rem; }
-    .demonstration { margin:1.25rem 1.25rem; padding:1rem 1.1rem; }
-    .consent-action { padding:1.25rem 1.25rem 1.5rem; }
-    .footer-disclaimer { padding:0.6rem 1rem; }
-    .footer-bottom { padding:1rem 1.25rem; flex-direction:column; gap:0.75rem; text-align:center; }
-    .button-row { flex-direction:column; }
-    .btn-paper { width:100%; }
-  }
-</style>
+    /* ─── HEADER ─── */
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .eyebrow::before {
+      content: '';
+      display: block;
+      width: 1.5rem;
+      height: 1px;
+      background: var(--cyan);
+    }
+    h1.page-title {
+      font-family: var(--font-serif);
+      font-size: clamp(1.9rem, 4vw, 2.6rem);
+      color: var(--text);
+      line-height: 1.15;
+      margin: 0 0 12px;
+    }
+    .page-lede {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      max-width: 560px;
+      margin-bottom: 32px;
+    }
+
+    /* ─── ALREADY-GRANTED CARD ─── */
+    .already-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-green);
+      border-radius: 12px;
+      padding: 24px 24px 20px;
+      margin-bottom: 24px;
+    }
+    .already-card h2 {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      margin: 0 0 8px;
+      color: var(--text);
+    }
+    .already-card p {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 14px;
+    }
+    .already-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.04em;
+      margin-bottom: 16px;
+    }
+    .already-meta strong { color: var(--cyan); font-weight: 700; }
+    .already-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ─── DISCLOSURE CARD ─── */
+    .disclosure-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .disclosure-head {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: rgba(34, 211, 238, 0.03);
+    }
+    .disclosure-body {
+      padding: 22px;
+      max-height: 360px;
+      overflow-y: auto;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+    .disclosure-body h3 {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 16px 0 6px;
+      letter-spacing: 0.01em;
+    }
+    .disclosure-body h3:first-child { margin-top: 0; }
+    .disclosure-body p { margin: 0 0 4px; }
+    /* Custom scrollbar for the disclosure */
+    .disclosure-body::-webkit-scrollbar { width: 8px; }
+    .disclosure-body::-webkit-scrollbar-track { background: var(--bg-elev-2); }
+    .disclosure-body::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 4px;
+    }
+    .disclosure-body::-webkit-scrollbar-thumb:hover { background: var(--cyan-deep); }
+
+    /* ─── CONSENT BLOCK ─── */
+    .consent-block {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin-bottom: 20px;
+    }
+    .consent-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      cursor: pointer;
+    }
+    .consent-row input[type="checkbox"] {
+      width: 20px; height: 20px;
+      margin-top: 1px;
+      flex-shrink: 0;
+      cursor: pointer;
+      accent-color: var(--cyan);
+    }
+    .consent-label {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .consent-label strong { color: var(--text); font-weight: 600; }
+
+    /* ─── BUTTONS ─── */
+    .button-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 13px 26px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.25);
+    }
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dim);
+      border-color: var(--border-strong);
+    }
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-faint);
+      border-color: transparent;
+      padding: 13px 18px;
+    }
+    .btn-ghost:hover {
+      color: var(--text-dim);
+    }
+
+    /* ─── ERROR BANNER ─── */
+    .error-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      border-radius: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .error-banner.is-active { display: block; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 20px 24px 28px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      line-height: 1.7;
+    }
+    footer a {
+      color: var(--text-faint);
+      margin: 0 6px;
+      text-decoration: none;
+    }
+    footer a:hover { color: var(--cyan); }
+  </style>
 </head>
 <body>
 
-<nav>
-  <a href="/portal/index.html" class="nav-logo">
-    <div class="sonar-icon">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
-        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
-        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
-        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
-          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
-        </circle>
-        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3">
-          <animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/>
-        </path>
-      </svg>
-    </div>
-    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+<!-- ─── NAV ─── -->
+<nav class="portal-nav">
+  <a class="portal-brand" href="/portal_index.html" aria-label="Back to portal home">
+    <div class="portal-brand-mark">OF</div>
+    <div class="portal-brand-text">Origin<span>Flow</span></div>
   </a>
-  <div class="nav-right">
-    <button class="nav-signout" id="nav-signout" type="button">Sign Out</button>
-  </div>
+  <button class="portal-signout" id="signout-btn" type="button">Sign out</button>
 </nav>
 
-<div class="portal-banner">⚑ Action Required · Electronic Communication Consent</div>
+<div class="portal-banner">
+  <span class="portal-banner-dot"></span>Borrower Portal · Electronic Consent
+</div>
 
 <main>
-  <div class="consent-eyebrow">ESIGN Consent</div>
-  <h1 class="consent-title">One quick step before we begin.</h1>
-  <p class="consent-sub">Federal law requires your consent before we can send mortgage disclosures and documents electronically. Please read carefully — you can decline and receive paper documents instead.</p>
 
-  <div class="error-box" id="error-box"></div>
-  <div class="info-box"  id="info-box"></div>
-
-  <div class="consent-card">
-
-    <!-- ─── CONSENT TEXT BLOCK ─────────────────────────────────────────
-         The textContent of #consent-block is hashed on submit. The visible
-         text MUST match the CONSENT_TEXT_V1 constant in the JS at the
-         bottom of this file. If you edit one, edit both, and update the
-         CONSENT_VERSION identifier (currently 'econsent_v1').
-    ───────────────────────────────────────────────────────────────── -->
-    <div class="consent-block" id="consent-block">
-      <h2>Electronic Communication Consent</h2>
-      <p>You are about to apply for a mortgage loan with <span class="lender-name" id="lender-name">your lender</span> through OriginFlow. Federal law requires that we provide certain disclosures and documents to you in writing. With your consent, we will deliver these documents electronically rather than on paper.</p>
-      <ol>
-        <li><strong>What you are consenting to.</strong> You are consenting to receive the following electronically: your Loan Estimate, Closing Disclosure, initial and annual privacy notices, Adverse Action notices (if applicable), Notice of Right to Receive a Copy of the Appraisal, and any other federal or state disclosures relating to your loan application and closing.</li>
-        <li><strong>Your right to receive paper copies.</strong> You may request a paper copy of any disclosure at no charge by contacting your loan officer. Requesting a paper copy will not be treated as a withdrawal of your consent to receive other documents electronically.</li>
-        <li><strong>Your right to withdraw consent.</strong> You may withdraw your consent at any time by contacting your loan officer. If you withdraw consent, we will deliver all subsequent disclosures on paper. Withdrawal will not affect the legal effectiveness of disclosures already delivered electronically.</li>
-        <li><strong>How to update your contact information.</strong> If your email address changes, you must notify us immediately. You can update your email address in your borrower portal under Account Settings, or by contacting your loan officer.</li>
-        <li><strong>Hardware and software you need.</strong> To receive electronic disclosures, you need: a device with internet access; a current web browser (Chrome, Safari, Firefox, or Edge — last two major versions); the ability to view and save PDF files; an active email address; and sufficient storage to retain documents you choose to save.</li>
-      </ol>
-    </div>
-
-    <!-- ─── DEMONSTRATION STEP ───────────────────────────────────────
-         ESIGN §101(c)(1)(C)(ii) requires the consumer demonstrate they
-         can access the electronic format. The consent button stays
-         disabled until the user clicks "View Sample Disclosure" and a
-         PDF actually opens. We capture sample_disclosure_viewed_at on
-         submit to prove the demonstration occurred.
-    ───────────────────────────────────────────────────────────────── -->
-    <div class="demonstration">
-      <h3>⚑ Required: Confirm You Can Open PDFs</h3>
-      <p>Before consenting, please open the sample disclosure below. This confirms you can read electronic documents in the format we use.</p>
-      <a href="/portal/sample-disclosure.pdf" target="_blank" rel="noopener" class="demo-btn" id="demo-btn">View Sample Disclosure (PDF)</a>
-      <div class="demo-status" id="demo-status">Click the button above to view a sample disclosure. The consent box will unlock afterward.</div>
-    </div>
-
-    <div class="consent-action">
-      <div class="checkbox-row disabled" id="checkbox-row">
-        <input type="checkbox" id="consent-checkbox" disabled />
-        <label for="consent-checkbox">
-          I have read and agree to the Electronic Communication Consent above. <strong>I confirm I was able to view the sample disclosure document.</strong>
-        </label>
-      </div>
-
-      <div class="button-row">
-        <button class="btn-consent" id="btn-consent" type="button" disabled>I Consent to Electronic Delivery</button>
-        <button class="btn-paper"   id="btn-paper"   type="button">I Want Paper Documents</button>
-      </div>
-    </div>
-
+  <!-- Loading -->
+  <div id="state-loading" class="state is-active state-loading">
+    <div class="spinner"></div>
+    <div class="state-loading-text">Loading consent status…</div>
   </div>
+
+  <!-- Already granted -->
+  <div id="state-already" class="state">
+    <div class="eyebrow">eConsent · ✓ active</div>
+    <h1 class="page-title">You're already set up for electronic delivery.</h1>
+    <p class="page-lede">
+      Your electronic consent is on file. You'll receive disclosures, loan
+      estimates, and closing documents through your borrower portal and email
+      instead of by paper mail.
+    </p>
+
+    <div class="already-card">
+      <h2>Current consent</h2>
+      <p>You agreed to receive loan documents electronically. You can withdraw at any time and switch to paper delivery by contacting your loan officer.</p>
+      <div class="already-meta" id="already-meta">Granted —</div>
+      <div class="already-actions">
+        <a href="/portal_index.html" class="btn btn-primary">Back to portal →</a>
+        <a href="/portal_documents.html" class="btn btn-secondary">Go to documents →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consent form -->
+  <div id="state-form" class="state">
+    <div class="eyebrow" id="form-eyebrow">eConsent · required</div>
+    <h1 class="page-title" id="form-title">One quick consent and you're in.</h1>
+    <p class="page-lede" id="form-lede">
+      To send you disclosures, loan estimates, and closing documents
+      <strong style="color:var(--text);">electronically</strong> — instead of by
+      paper mail — we need your consent under the federal ESIGN Act. You can
+      withdraw any time and switch back to paper.
+    </p>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <!--
+      ESIGN_DISCLOSURE_V1 — canonical disclosure text
+      -----------------------------------------------------------------------
+      This text must stay BYTE-IDENTICAL with:
+        - apply.html's ESIGN modal body
+        - submit-application/index.ts's ESIGN_DISCLOSURE_V1 constant
+        - grant_econsent RPC's hash input (if/when added)
+
+      Any change to this copy ⇒ new hash ⇒ new template_key version.
+      Existing consents stay bound to whichever hash they originally
+      agreed to (audit trail integrity).
+    -->
+    <div class="disclosure-card">
+      <div class="disclosure-head">ESIGN Act § 7001 — full disclosure</div>
+      <div class="disclosure-body" id="disclosure-body">
+        <h3>Your consent to electronic records and signatures (ESIGN Act)</h3>
+        <p>
+          By checking the consent box, you agree to receive all mortgage-related
+          documents — including Loan Estimates (LE), Closing Disclosures (CD),
+          privacy notices, adverse action notices, and any other communications
+          we are required to deliver — in electronic form rather than on paper.
+        </p>
+
+        <h3>What you'll need to view the documents</h3>
+        <p>
+          A device with internet access, a modern web browser
+          (Chrome, Safari, Firefox, or Edge from the last 24 months), and a
+          valid email address. PDFs require any PDF reader. If you can't view
+          a particular document, contact your loan officer and we'll provide
+          an alternative.
+        </p>
+
+        <h3>Withdrawing consent</h3>
+        <p>
+          You can withdraw consent at any time at no cost by emailing your
+          loan officer or replying to any disclosure email. After withdrawal,
+          we'll deliver future disclosures on paper. Withdrawing consent will
+          not invalidate any electronic record or signature you've already
+          made.
+        </p>
+
+        <h3>Updating your contact information</h3>
+        <p>
+          You're responsible for keeping your email address current with us.
+          If your email changes, sign in to your borrower portal and update it
+          — or contact your loan officer directly.
+        </p>
+
+        <h3>Requesting paper copies</h3>
+        <p>
+          You may request a paper copy of any document at any time at no charge.
+          Email your loan officer with the document name and we'll mail it
+          within five business days.
+        </p>
+
+        <h3>Confirming consent</h3>
+        <p>
+          Checking the consent box on this page constitutes your affirmative
+          consent under ESIGN Act § 7001. The date, time, IP address, and
+          device information of your consent will be recorded and retained
+          as part of your loan file.
+        </p>
+      </div>
+    </div>
+
+    <div class="consent-block">
+      <label class="consent-row" for="consent-checkbox">
+        <input type="checkbox" id="consent-checkbox">
+        <div class="consent-label">
+          <strong>I agree to receive loan documents and disclosures electronically.</strong>
+          I've reviewed the disclosure above and understand I can withdraw consent at any time.
+        </div>
+      </label>
+    </div>
+
+    <div class="button-row">
+      <button type="button" class="btn btn-primary" id="grant-btn" disabled>Grant consent →</button>
+      <a href="/portal_index.html" class="btn btn-ghost">Not right now</a>
+    </div>
+  </div>
+
 </main>
 
 <footer>
-  <div class="footer-disclaimer">
-    <strong>OriginFlow LOS · Borrower Portal</strong> · ESIGN Act §101(c) consent required before electronic delivery of mortgage disclosures
-  </div>
-  <div class="footer-bottom">
-    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
-    <div class="footer-links">
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="mailto:dsrackler@gmail.com">Contact</a>
-    </div>
+  <a href="/portal_index.html">Portal</a> ·
+  <a href="/privacy.html">Privacy</a> ·
+  <a href="/terms.html">Terms</a>
+  <div style="margin-top: 8px; font-size: 9px; color: var(--text-faint);">
+    Equal Housing Lender · NMLS ID #—
   </div>
 </footer>
 
-<!-- ─── eConsent ceremony logic ──────────────────────────────────────────
-     Flow:
-       1. On load: verify session, lookup borrower_account, redirect away
-          if already consented (gate symmetry with portal/index.html).
-       2. Demonstration: clicking "View Sample Disclosure" sets
-          disclosureViewed=true and records the timestamp. Only then does
-          the checkbox enable.
-       3. Checking the box enables the Consent button.
-       4. On Consent: hash CONSENT_TEXT_V1 (which matches the rendered
-          block), insert econsent_records row with action='granted', hash,
-          version, sample_disclosure_viewed_at. Server trigger captures
-          IP/UA from PostgREST request headers and another server trigger
-          updates borrower_accounts.econsent_granted_at as cache. Then
-          redirect to /portal/index.html.
-       5. On Paper: insert action='paper_requested', redirect to a page
-          explaining their LO will be in touch. (v1 stopgap: just sign
-          out and show a message.)
-─────────────────────────────────────────────────────────────────────── -->
 <script>
-  // SOURCE OF TRUTH — must match the visible text in #consent-block.
-  // If you edit the text, bump CONSENT_VERSION and update the visible
-  // block. Old consent records continue to reference the old hash; new
-  // records will reference the new one. Never edit either in place once
-  // any consent record references the old hash.
-  var CONSENT_VERSION = 'econsent_v1';
-  var CONSENT_TEXT_V1 = [
-    'Electronic Communication Consent',
-    '',
-    'You are about to apply for a mortgage loan with your lender through OriginFlow. Federal law requires that we provide certain disclosures and documents to you in writing. With your consent, we will deliver these documents electronically rather than on paper.',
-    '',
-    '1. What you are consenting to. You are consenting to receive the following electronically: your Loan Estimate, Closing Disclosure, initial and annual privacy notices, Adverse Action notices (if applicable), Notice of Right to Receive a Copy of the Appraisal, and any other federal or state disclosures relating to your loan application and closing.',
-    '',
-    '2. Your right to receive paper copies. You may request a paper copy of any disclosure at no charge by contacting your loan officer. Requesting a paper copy will not be treated as a withdrawal of your consent to receive other documents electronically.',
-    '',
-    '3. Your right to withdraw consent. You may withdraw your consent at any time by contacting your loan officer. If you withdraw consent, we will deliver all subsequent disclosures on paper. Withdrawal will not affect the legal effectiveness of disclosures already delivered electronically.',
-    '',
-    '4. How to update your contact information. If your email address changes, you must notify us immediately. You can update your email address in your borrower portal under Account Settings, or by contacting your loan officer.',
-    '',
-    '5. Hardware and software you need. To receive electronic disclosures, you need: a device with internet access; a current web browser (Chrome, Safari, Firefox, or Edge — last two major versions); the ability to view and save PDF files; an active email address; and sufficient storage to retain documents you choose to save.'
-  ].join('\n');
+/* =============================================================================
+   portal_econsent.html wiring
+   -----------------------------------------------------------------------------
+   Flow:
+     1. OF_bootstrap → resolves session + borrower. Redirects if signed out.
+     2. Check borrower.econsent_granted_at and borrower.econsent_withdrawn_at:
+          - Active grant       → show "already" state
+          - No grant or withdrawn → show "form" state
+     3. On form submit: prefer OF_grantEConsent hook; fallback writes
+        borrowers.econsent_granted_at directly + best-effort
+        econsent_records insert.
+     4. After grant: redirect to ?return_to=<url> if present, else to
+        /portal_documents.html (the most common arrival point).
 
-  var sb = null;
-  try { sb = (typeof getSupabase === 'function') ? getSupabase() : null; } catch(_) {}
+   The OF_grantEConsent hook is intentionally undefined right now —
+   Davis will add it (probably as a SECURITY DEFINER RPC) so the hash
+   computation, IP, and UA fingerprinting happen server-side where they
+   can be trusted. Until then, the direct fallback gets the page working.
+   ============================================================================= */
 
-  var errorBox = document.getElementById('error-box');
-  var infoBox  = document.getElementById('info-box');
-  var demoBtn  = document.getElementById('demo-btn');
-  var demoStatus = document.getElementById('demo-status');
-  var checkboxRow = document.getElementById('checkbox-row');
-  var checkbox = document.getElementById('consent-checkbox');
-  var btnConsent = document.getElementById('btn-consent');
-  var btnPaper = document.getElementById('btn-paper');
+let _borrower = null;
 
-  function showError(msg) { errorBox.textContent = msg; errorBox.classList.add('visible'); infoBox.classList.remove('visible'); }
-  function showInfo(msg)  { infoBox.textContent = msg;  infoBox.classList.add('visible');  errorBox.classList.remove('visible'); }
+// ─────────────────────────────────────────────────────────────────────────
+// State helpers
+// ─────────────────────────────────────────────────────────────────────────
+function showState(id) {
+  ['state-loading', 'state-already', 'state-form'].forEach(s => {
+    document.getElementById(s).classList.toggle('is-active', s === id);
+  });
+}
+function showError(msg) {
+  const banner = document.getElementById('error-banner');
+  banner.textContent = msg;
+  banner.classList.add('is-active');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearError() {
+  document.getElementById('error-banner').classList.remove('is-active');
+}
+function fmtTimestamp(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit'
+  });
+}
+function getReturnTo() {
+  // Parse ?return_to= from URL. Only accept paths starting with /portal_ or
+  // /apply.html — never accept external URLs (open-redirect protection).
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('return_to');
+  if (!raw) return '/portal_documents.html';
+  let decoded;
+  try { decoded = decodeURIComponent(raw); } catch { return '/portal_documents.html'; }
+  // Whitelist: only relative paths beginning with allowed prefixes
+  if (!/^\/(portal_|apply\.html|portal\.html|$)/.test(decoded)) {
+    console.warn('[OF EConsent] rejecting unsafe return_to:', decoded);
+    return '/portal_documents.html';
+  }
+  return decoded;
+}
 
-  // State:
-  //   disclosureViewedAt - timestamp of the click on "View Sample Disclosure"
-  //   borrowerId         - borrowers.id, resolved on bootstrap
-  var disclosureViewedAt = null;
-  var borrowerId = null;
+// ─────────────────────────────────────────────────────────────────────────
+// Bootstrap
+// ─────────────────────────────────────────────────────────────────────────
+async function bootstrap() {
+  let ctx;
+  try {
+    ctx = await window.OF_bootstrap();
+  } catch (err) {
+    console.error('[OF EConsent] bootstrap threw:', err);
+    showError('Could not load your account. Please refresh and try again.');
+    return;
+  }
+  if (!ctx) return;  // OF_bootstrap handled the sign-out redirect
 
-  // ─── Bootstrap ─────────────────────────────────────────────────────
-  async function bootstrap() {
-    if (!sb) {
-      showError('Cannot reach authentication service. Refresh and try again.');
-      return;
-    }
+  _borrower = ctx.borrower;
 
-    var sessionRes;
-    try { sessionRes = await sb.auth.getSession(); } catch(_) { sessionRes = null; }
-    var session = sessionRes && sessionRes.data && sessionRes.data.session;
-    if (!session) {
-      window.location.href = '/portal/login.html';
-      return;
-    }
+  // Re-fetch with consent columns. OF_bootstrap's SELECT doesn't include them.
+  const sb = window.OF_supabase();
+  const { data: extraData, error: extraErr } = await sb
+    .from('borrowers')
+    .select('id, econsent_granted_at, econsent_withdrawn_at')
+    .eq('id', _borrower.id)
+    .maybeSingle();
 
-    try {
-      var res = await sb
-        .from('borrowers')
-        .select('id, econsent_granted_at, econsent_withdrawn_at')
-        .eq('auth_user_id', session.user.id)
-        .maybeSingle();
-      var borrower = res && res.data;
-      if (!borrower) {
-        // No borrowers row — they shouldn't be on this page.
-        window.location.href = '/portal/index.html';
-        return;
-      }
-      borrowerId = borrower.id;
-
-      // If they've already consented (and not subsequently withdrawn),
-      // bounce them to the dashboard. This page is single-purpose.
-      var granted = borrower.econsent_granted_at;
-      var withdrawn = borrower.econsent_withdrawn_at;
-      var consentActive = granted && (!withdrawn || new Date(withdrawn) < new Date(granted));
-      if (consentActive) {
-        window.location.href = '/portal/index.html';
-        return;
-      }
-    } catch (err) {
-      console.warn('[OF eConsent] borrowers lookup failed:', err);
-      showError('Could not verify your account. Please refresh.');
-    }
+  if (extraErr) {
+    console.warn('[OF EConsent] econsent column fetch failed:', extraErr);
+    // Don't block — assume not granted, let them grant
+    _borrower.econsent_granted_at = null;
+    _borrower.econsent_withdrawn_at = null;
+  } else if (extraData) {
+    _borrower.econsent_granted_at = extraData.econsent_granted_at;
+    _borrower.econsent_withdrawn_at = extraData.econsent_withdrawn_at;
   }
 
-  // ─── Demonstration step ────────────────────────────────────────────
-  // Capture the click that opens the sample PDF. The link itself opens
-  // in a new tab via target=_blank; we just record that the user
-  // interacted with the demonstration artifact.
-  demoBtn.addEventListener('click', function() {
-    if (!disclosureViewedAt) {
-      disclosureViewedAt = new Date().toISOString();
-      demoBtn.classList.add('viewed');
-      demoBtn.textContent = 'Sample Disclosure Viewed';
-      demoStatus.classList.add('viewed');
-      demoStatus.textContent = '✓ Demonstration complete at ' + new Date(disclosureViewedAt).toLocaleTimeString() + '. You may now check the box below.';
-      checkbox.disabled = false;
-      checkboxRow.classList.remove('disabled');
+  // Active grant: granted_at exists AND (no withdrawn OR withdrawn < granted)
+  const granted = _borrower.econsent_granted_at &&
+    (!_borrower.econsent_withdrawn_at ||
+     new Date(_borrower.econsent_withdrawn_at) < new Date(_borrower.econsent_granted_at));
+
+  if (granted) {
+    document.getElementById('already-meta').innerHTML =
+      'Granted <strong>' + fmtTimestamp(_borrower.econsent_granted_at) + '</strong>';
+    showState('state-already');
+  } else {
+    // Form state — adjust copy if they previously withdrew
+    if (_borrower.econsent_withdrawn_at) {
+      document.getElementById('form-eyebrow').textContent = 'eConsent · re-grant';
+      document.getElementById('form-title').textContent = "Let's get your electronic consent back on file.";
+      document.getElementById('form-lede').innerHTML =
+        "You previously withdrew consent on <strong style='color:var(--text);'>" +
+        fmtTimestamp(_borrower.econsent_withdrawn_at) +
+        "</strong>. To send you new disclosures and loan documents electronically, we need a fresh consent.";
     }
-  });
+    showState('state-form');
+  }
+}
 
-  // ─── Checkbox gates the consent button ─────────────────────────────
-  checkbox.addEventListener('change', function() {
-    btnConsent.disabled = !checkbox.checked;
-  });
+// ─────────────────────────────────────────────────────────────────────────
+// Grant handler
+// ─────────────────────────────────────────────────────────────────────────
+async function handleGrant() {
+  const checkbox = document.getElementById('consent-checkbox');
+  if (!checkbox.checked) {
+    showError('Please check the consent box to continue.');
+    return;
+  }
+  clearError();
 
-  // ─── SHA-256 hash of consent text ──────────────────────────────────
-  async function sha256(text) {
-    var enc = new TextEncoder();
-    var buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
-    var arr = Array.from(new Uint8Array(buf));
-    return arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  const btn = document.getElementById('grant-btn');
+  btn.disabled = true;
+  btn.textContent = 'Granting…';
+
+  const payload = {
+    disclosure_template_key: 'esign_consent_v1',
+    // Server is the source of truth for hash + IP + UA. Don't send client guesses.
+  };
+
+  try {
+    if (typeof window.OF_grantEConsent === 'function') {
+      // Preferred path — SECURITY DEFINER RPC server-side does the proper
+      // hash, IP, and UA stamping into econsent_records, then updates the
+      // borrowers row.
+      await window.OF_grantEConsent(payload);
+    } else {
+      // Fallback — direct writes. Works as long as RLS allows the borrower
+      // to self-update their own econsent_granted_at column.
+      await directGrantFallback(payload);
+    }
+
+    // Successful grant — redirect to return_to (or docs page by default)
+    const dest = getReturnTo();
+    window.location.href = dest;
+  } catch (err) {
+    console.error('[OF EConsent] grant failed:', err);
+    showError(err.message || 'Could not record your consent. Please try again or contact your loan officer.');
+    btn.disabled = false;
+    btn.textContent = 'Grant consent →';
+  }
+}
+
+async function directGrantFallback(payload) {
+  const sb = window.OF_supabase();
+  const nowIso = new Date().toISOString();
+
+  // 1. Update borrowers row — clear any previous withdrawal, stamp granted_at
+  const { error: borrowerErr } = await sb
+    .from('borrowers')
+    .update({
+      econsent_granted_at: nowIso,
+      econsent_withdrawn_at: null,
+    })
+    .eq('id', _borrower.id);
+
+  if (borrowerErr) {
+    console.error('[OF EConsent] borrowers update failed:', borrowerErr);
+    throw new Error('Could not save your consent. Your loan officer may need to fix permissions.');
   }
 
-  // ─── Consent submit ────────────────────────────────────────────────
-  btnConsent.addEventListener('click', async function() {
-    if (!checkbox.checked || !disclosureViewedAt || !borrowerId) return;
-    errorBox.classList.remove('visible');
-    btnConsent.disabled = true;
-    btnConsent.textContent = 'Recording consent…';
-
-    try {
-      var hash = await sha256(CONSENT_TEXT_V1);
-      var res = await sb.from('econsent_records').insert({
-        borrower_id: borrowerId,
-        action: 'granted',
-        consent_text_sha256: hash,
-        consent_text_version: CONSENT_VERSION,
-        sample_disclosure_viewed_at: disclosureViewedAt
-      }).select().maybeSingle();
-      if (res.error) throw res.error;
-      // Server-side trigger updates borrowers.econsent_granted_at as cache.
-      // Dashboard's eConsent gate will pass on the next load.
-      window.location.href = '/portal/index.html';
-    } catch (err) {
-      console.error('[OF eConsent] grant failed:', err);
-      showError('Could not record your consent: ' + ((err && err.message) || 'unknown error') + '. Please try again.');
-      btnConsent.disabled = false;
-      btnConsent.textContent = 'I Consent to Electronic Delivery';
-    }
-  });
-
-  // ─── Paper request ─────────────────────────────────────────────────
-  // For v1 we sign the borrower out and explain their LO will follow up.
-  // A future iteration can route them to a "we'll mail you" landing
-  // page and notify the LO via the notification outbox.
-  btnPaper.addEventListener('click', async function() {
-    if (!borrowerId) return;
-    var ok = confirm(
-      'You\'ve chosen to receive paper documents.\n\n' +
-      'You will be signed out, and your loan officer will be in touch to arrange paper delivery. ' +
-      'You can re-consent to electronic delivery later by signing back in.\n\n' +
-      'Continue?'
-    );
-    if (!ok) return;
-    btnPaper.disabled = true;
-    btnPaper.textContent = 'Recording…';
-
-    try {
-      var hash = await sha256(CONSENT_TEXT_V1);
-      await sb.from('econsent_records').insert({
-        borrower_id: borrowerId,
-        action: 'paper_requested',
-        consent_text_sha256: hash,
-        consent_text_version: CONSENT_VERSION,
-        sample_disclosure_viewed_at: disclosureViewedAt  // null is fine — viewing the sample is for consent, not for paper request
+  // 2. Best-effort econsent_records insert. The table may not exist yet
+  //    (Phase 11.5.x migration pending), so swallow errors and log.
+  //    When the RPC lands this whole path goes away.
+  try {
+    const { error: recordErr } = await sb
+      .from('econsent_records')
+      .insert({
+        borrower_id: _borrower.id,
+        disclosure_template_key: payload.disclosure_template_key,
+        granted_at: nowIso,
+        // disclosure_hash, ip_address, user_agent ideally stamped server-side
       });
-    } catch (err) {
-      console.warn('[OF eConsent] paper record failed (continuing anyway):', err);
+    if (recordErr) {
+      console.warn('[OF EConsent] econsent_records insert failed (non-fatal):', recordErr);
     }
+  } catch (err) {
+    console.warn('[OF EConsent] econsent_records insert threw (non-fatal):', err);
+  }
+}
 
-    try { await sb.auth.signOut(); } catch(_) {}
-    alert('You have been signed out. Your loan officer will contact you to arrange paper delivery of your mortgage documents.');
-    window.location.href = '/portal/login.html';
+// ─────────────────────────────────────────────────────────────────────────
+// Sign-out
+// ─────────────────────────────────────────────────────────────────────────
+async function handleSignOut() {
+  if (typeof window.OF_signOut === 'function') {
+    await window.OF_signOut();
+  } else {
+    window.location.href = '/portal_signin.html';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Wiring
+// ─────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('signout-btn').addEventListener('click', handleSignOut);
+
+  // Enable the grant button only when the checkbox is checked
+  document.getElementById('consent-checkbox').addEventListener('change', (e) => {
+    document.getElementById('grant-btn').disabled = !e.target.checked;
   });
 
-  document.getElementById('nav-signout').addEventListener('click', async function() {
-    try { if (sb) await sb.auth.signOut(); } catch(_) {}
-    window.location.href = '/portal/login.html';
-  });
+  document.getElementById('grant-btn').addEventListener('click', handleGrant);
 
+  // Boot
   bootstrap();
+});
 </script>
 
 </body>
