@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OriginFlow Portal — Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* Sign-in page — minimal, single-column, friendly tone. Same design
+       tokens as the rest of the portal so the visual transition from
+       sign-in → first portal page is seamless. */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-deep: #0891b2;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
+
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34, 211, 238, 0.08), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nav {
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark {
+      width: 32px; height: 32px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
+      display: grid; place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 24px rgba(34, 211, 238, 0.2);
+    }
+    .brand-text {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .brand-subtitle {
+      display: block;
+      font-weight: 400;
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      padding: 32px 28px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 10px;
+    }
+    .title {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      margin: 0 0 8px;
+      line-height: 1.1;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+    .field-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .field-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .field-input:focus {
+      border-color: var(--cyan);
+      background: var(--bg-elev-3);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--cyan);
+      background: var(--cyan);
+      color: var(--navy);
+      transition: all 0.15s;
+    }
+    .btn:hover:not(:disabled) {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .error-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .error-banner.is-active { display: block; }
+
+    .helper {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .helper a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+    .helper a:hover { text-decoration: underline; }
+
+    /* Success state — replaces the form once email is sent */
+    .success {
+      display: none;
+      text-align: center;
+    }
+    .success.is-active { display: block; }
+    .success-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: rgba(134, 239, 172, 0.1);
+      border: 2px solid var(--accent-green);
+      display: grid; place-items: center;
+      color: var(--accent-green);
+      font-size: 24px;
+      font-family: var(--font-mono);
+    }
+    .success-title {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      margin: 0 0 8px;
+    }
+    .success-text {
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+    .success-email {
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      margin-top: 12px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="brand-mark">OF</div>
+  <div class="brand-text">
+    OriginFlow
+    <span class="brand-subtitle">Borrower portal</span>
+  </div>
+</header>
+
+<main class="center">
+  <div class="card">
+
+    <!-- Sign-in form -->
+    <div id="form-state">
+      <div class="eyebrow">Sign in</div>
+      <h1 class="title">Welcome back.</h1>
+      <p class="subtitle">Enter the email on your loan and we'll send you a one-time sign-in link.</p>
+
+      <div class="error-banner" id="error-banner"></div>
+
+      <form id="signin-form" autocomplete="on" novalidate>
+        <div class="field">
+          <label class="field-label" for="email">Email</label>
+          <input class="field-input" id="email" type="email"
+                 autocomplete="email" required inputmode="email"
+                 placeholder="you@example.com" maxlength="120">
+        </div>
+        <button class="btn" type="submit" id="submit-btn">Email me a sign-in link →</button>
+      </form>
+
+      <div class="helper">
+        Don't have a loan with us yet? <a href="/apply/">Start an application</a>
+      </div>
+    </div>
+
+    <!-- Success state -->
+    <div class="success" id="success-state">
+      <div class="success-icon">✓</div>
+      <h2 class="success-title">Check your email.</h2>
+      <p class="success-text">
+        We just sent a sign-in link. Click it to land back here, already signed in.
+      </p>
+      <p class="success-email" id="success-email">—</p>
+      <p class="success-text" style="margin-top: 20px;">
+        The link expires in an hour. If you don't see it, check your spam folder.
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/js/portal-auth.js"></script>
+<script>
+// Show a contextual error message if redirected here with ?error=... param
+(function showRedirectError() {
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get('error');
+  if (!error) return;
+  const banner = document.getElementById('error-banner');
+  const messages = {
+    not_a_borrower: 'That email is registered with us, but not as a borrower. Use a different email or contact your loan officer.',
+    link_failed:    'We couldn\'t sign you in with that link. Try again — request a fresh link below.',
+    expired:        'That sign-in link expired. Request a new one below.',
+  };
+  banner.textContent = messages[error] || 'Sign-in failed. Please try again.';
+  banner.classList.add('is-active');
+})();
+
+// Form submission
+document.getElementById('signin-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const emailInput = document.getElementById('email');
+  const submitBtn = document.getElementById('submit-btn');
+  const banner = document.getElementById('error-banner');
+  banner.classList.remove('is-active');
+
+  const email = emailInput.value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    banner.textContent = 'Please enter a valid email.';
+    banner.classList.add('is-active');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending…';
+
+  try {
+    await window.OF_signInWithEmail(email);
+    // Swap to success state
+    document.getElementById('form-state').style.display = 'none';
+    document.getElementById('success-state').classList.add('is-active');
+    document.getElementById('success-email').textContent = maskEmail(email);
+  } catch (err) {
+    console.error('Sign-in failed:', err);
+    banner.textContent = err.message || 'Could not send link. Please try again.';
+    banner.classList.add('is-active');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Email me a sign-in link →';
+  }
+});
+
+function maskEmail(email) {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  if (local.length <= 2) return local[0] + '***@' + domain;
+  return local[0] + '***' + local.slice(-1) + '@' + domain;
+}
+</script>
+
+</body>
+</html>
