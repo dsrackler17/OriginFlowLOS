@@ -70,15 +70,109 @@ nav {
 }
 .nav-wordmark span { color: var(--accent); }
 .nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
-.nav-center a {
+.nav-center > li > a {
   font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--muted); text-decoration: none;
   transition: color 0.2s;
 }
-.nav-center a:hover, .nav-center a.active { color: var(--accent); }
+.nav-center > li > a:hover, .nav-center > li > a.active { color: var(--accent); }
+
+/* ─── NAV DROPDOWNS ────────────────────────────────────────────────────
+   Hover-driven dropdowns for grouped nav items. Pure CSS — opens on
+   :hover AND :focus-within so keyboard tab navigation works too. The
+   invisible bridge (::before pseudo on the menu) prevents the
+   hover-flicker when the cursor traverses the small gap between the
+   trigger and the menu.
+
+   Strategic note: the Borrower group exists because the LO/borrower
+   experience is meant to be inside ONE app (the Blend+Encompass thesis
+   inverted). Putting "Open Borrower Portal" one click from the LO's
+   home is the operational expression of that — the LO can preview
+   their borrower's view without leaving their workspace.
+   ─────────────────────────────────────────────────────────────────── */
+.nav-center .dropdown { position: relative; }
+.nav-center .dropdown-trigger {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  background: none; border: none; padding: 0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.nav-center .dropdown:hover .dropdown-trigger,
+.nav-center .dropdown:focus-within .dropdown-trigger,
+.nav-center .dropdown-trigger:hover { color: var(--accent); }
+.nav-center .dropdown-trigger::after {
+  content: '▾';
+  font-size: 0.55rem;
+  opacity: 0.7;
+  margin-top: 0.05rem;
+}
+.nav-center .dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: -0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,212,255,0.06);
+  min-width: 260px;
+  padding: 0.4rem;
+  display: none;
+  z-index: 200;
+}
+.nav-center .dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -0.6rem; left: 0; right: 0; height: 0.6rem;
+}
+.nav-center .dropdown:hover .dropdown-menu,
+.nav-center .dropdown:focus-within .dropdown-menu {
+  display: block;
+  animation: dropdownIn 0.12s ease both;
+}
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nav-center .dropdown-item {
+  display: flex; flex-direction: column;
+  padding: 0.55rem 0.75rem;
+  text-decoration: none;
+  color: var(--text);
+  font-family: var(--sans);
+  transition: background 0.12s, color 0.12s;
+  border-left: 2px solid transparent;
+}
+.nav-center .dropdown-item:hover,
+.nav-center .dropdown-item:focus {
+  background: var(--panel);
+  color: var(--white);
+  border-left-color: var(--accent);
+  outline: none;
+}
+.dropdown-item-title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.dropdown-item-sub {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 0.2rem;
+  text-transform: uppercase;
+}
+.dropdown-item.is-external .dropdown-item-title::after {
+  content: ' ↗';
+  color: var(--accent);
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 
-/* Cmd+K trigger button in nav */
 .nav-search {
   display: flex; align-items: center; gap: 0.5rem;
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.06em;
@@ -97,7 +191,6 @@ nav {
   color: var(--muted);
 }
 
-/* New loan button — primary action */
 .nav-newloan {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.1em;
   text-transform: uppercase; font-weight: 700;
@@ -128,7 +221,6 @@ nav {
 }
 .nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
 
-/* ─── MAIN LAYOUT ──────────────────────────────────────────────────── */
 main {
   flex: 1;
   display: grid;
@@ -139,7 +231,6 @@ main {
 .home-content { background: var(--navy); padding: 2rem; overflow-y: auto; }
 .chat-rail    { background: var(--deep); display: flex; flex-direction: column; min-height: 0; }
 
-/* ─── LOADING / PENDING STATES ─────────────────────────────────────── */
 .state-screen {
   grid-column: 1 / -1;
   background: var(--navy);
@@ -168,7 +259,6 @@ main {
 .btn.primary { background: var(--accent); color: var(--navy); border-color: var(--accent); font-weight: 700; }
 .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); color: var(--navy); }
 
-/* spinner */
 .spinner {
   width: 32px; height: 32px;
   border: 2px solid var(--border);
@@ -179,7 +269,6 @@ main {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ─── HOME HEADER ──────────────────────────────────────────────────── */
 .home-header { margin-bottom: 1.5rem; }
 .home-eyebrow {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.18em;
@@ -188,7 +277,6 @@ main {
 .home-greeting { font-family: var(--serif); font-size: 2rem; color: var(--white); line-height: 1.15; }
 .home-sub { color: var(--muted); margin-top: 0.4rem; max-width: 640px; }
 
-/* ─── QUICK ACTIONS ────────────────────────────────────────────────── */
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -235,7 +323,6 @@ main {
   border-radius: 2px;
 }
 
-/* ─── METRIC STRIP ─────────────────────────────────────────────────── */
 .metric-row {
   display: grid; grid-template-columns: repeat(4, 1fr);
   gap: 1px; background: var(--border);
@@ -256,7 +343,6 @@ main {
   color: var(--muted); margin-top: 0.2rem;
 }
 
-/* ─── CONTENT GRID ─────────────────────────────────────────────────── */
 .content-grid {
   display: grid; grid-template-columns: 1.2fr 1fr;
   gap: 1.25rem; margin-bottom: 1.75rem;
@@ -293,7 +379,6 @@ main {
   text-align: center; padding: 2.5rem 1rem; letter-spacing: 0.04em;
 }
 
-/* ─── FILE ROW ─────────────────────────────────────────────────────── */
 .file-row {
   display: grid; grid-template-columns: auto 1fr auto;
   gap: 0.85rem; align-items: center;
@@ -333,7 +418,6 @@ main {
 .file-status.docs    { color: var(--accent2); border-color: rgba(0,255,157,0.4); }
 .file-status.funded  { color: var(--accent2); border-color: rgba(0,255,157,0.5); background: rgba(0,255,157,0.1); }
 
-/* ─── ACTION ROW ───────────────────────────────────────────────────── */
 .action-row {
   display: grid; grid-template-columns: auto 1fr auto;
   gap: 0.75rem; align-items: center;
@@ -355,13 +439,8 @@ main {
   border: 1px solid rgba(0,212,255,0.3);
 }
 
-/* ─── CTA ROW ──────────────────────────────────────────────────────── */
-.cta-row {
-  display: flex; gap: 0.75rem; flex-wrap: wrap;
-  padding-top: 0.5rem;
-}
+.cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; padding-top: 0.5rem; }
 
-/* ─── CHAT RAIL ────────────────────────────────────────────────────── */
 .chat-rail-head {
   padding: 0.85rem 1.1rem;
   border-bottom: 1px solid var(--border);
@@ -481,7 +560,6 @@ main {
   letter-spacing: 0.04em; padding: 0.2rem 0;
 }
 
-/* ─── COMMAND PALETTE (CMD+K) ──────────────────────────────────────── */
 .cmdk-overlay {
   position: fixed; inset: 0;
   background: rgba(4,13,26,0.85);
@@ -575,7 +653,6 @@ main {
   margin: 0 0.15rem;
 }
 
-/* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
   border-top: 1px solid var(--border); padding: 0.85rem 2rem;
   display: flex; flex-direction: column; gap: 0.55rem;
@@ -610,7 +687,6 @@ footer a:hover { color: var(--accent); }
   margin: 0 0.15rem;
 }
 
-/* ─── COOKIE BANNER ────────────────────────────────────────────────── */
 .cookie-banner {
   position: fixed;
   bottom: 1rem; left: 1rem; right: 1rem;
@@ -648,10 +724,10 @@ footer a:hover { color: var(--accent); }
 }
 .cb-btn.cb-accept:hover { background: var(--accent2); border-color: var(--accent2); }
 
-/* ─── MOBILE ───────────────────────────────────────────────────────── */
 @media (max-width: 1180px) {
   .nav-search { min-width: 160px; }
   .nav-search-text { display: none; }
+  .nav-center { gap: 1.2rem; }
 }
 @media (max-width: 1024px) {
   .nav-center { display: none; }
@@ -719,16 +795,77 @@ footer a:hover { color: var(--accent); }
     </div>
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
+
+  <!-- =================================================================
+       NAV CENTER — six top-level items, three dropdown groups.
+       -----------------------------------------------------------------
+       Solo links:    Home, Pipeline, Team
+       Dropdowns:     Workspace, Borrower, Tools
+
+       The Borrower group is the strategic seat. Both the LO surface
+       and the borrower portal live in OriginFlow — this dropdown is
+       how the LO previews the borrower experience without leaving
+       their workspace.
+       ================================================================= -->
   <ul class="nav-center">
     <li><a href="/home.html" class="active">Home</a></li>
     <li><a href="/dashboard.html">Pipeline</a></li>
-    <li><a href="/branch-library.html">Library</a></li>
-    <li><a href="/documents.html">Documents</a></li>
-    <li><a href="/reports.html">Reports</a></li>
-    <li><a href="/investor-delivery.html">Delivery</a></li>
-    <li><a href="/integrations.html">Integrations</a></li>
-    <li id="nav-team-li"><a href="/team.html">Team</a></li>
+
+    <li class="dropdown">
+      <button class="dropdown-trigger" type="button" aria-haspopup="true">Workspace</button>
+      <div class="dropdown-menu" role="menu">
+        <a class="dropdown-item" href="/documents.html" role="menuitem">
+          <span class="dropdown-item-title">Documents</span>
+          <span class="dropdown-item-sub">Branch document library</span>
+        </a>
+        <a class="dropdown-item" href="/branch-library.html" role="menuitem">
+          <span class="dropdown-item-title">Library</span>
+          <span class="dropdown-item-sub">Templates · checklists · resources</span>
+        </a>
+        <a class="dropdown-item" href="/reports.html" role="menuitem">
+          <span class="dropdown-item-title">Reports</span>
+          <span class="dropdown-item-sub">Pipeline · funded · LO performance</span>
+        </a>
+      </div>
+    </li>
+
+    <!-- Borrower-facing surfaces, all opened in a new tab so the LO
+         can preview them without losing their place. -->
+    <li class="dropdown">
+      <button class="dropdown-trigger" type="button" aria-haspopup="true">Borrower</button>
+      <div class="dropdown-menu" role="menu">
+        <a class="dropdown-item is-external" href="/portal/" target="_blank" rel="noopener" role="menuitem">
+          <span class="dropdown-item-title">Borrower Portal</span>
+          <span class="dropdown-item-sub">What your borrowers see when signed in</span>
+        </a>
+        <a class="dropdown-item is-external" href="/apply/" target="_blank" rel="noopener" role="menuitem">
+          <span class="dropdown-item-title">Apply Now Page</span>
+          <span class="dropdown-item-sub">Public application landing · share this link</span>
+        </a>
+        <a class="dropdown-item is-external" href="/portal/sign-in.html" target="_blank" rel="noopener" role="menuitem">
+          <span class="dropdown-item-title">Borrower Sign-in</span>
+          <span class="dropdown-item-sub">Magic-link entry for returning borrowers</span>
+        </a>
+      </div>
+    </li>
+
+    <li class="dropdown">
+      <button class="dropdown-trigger" type="button" aria-haspopup="true">Tools</button>
+      <div class="dropdown-menu" role="menu">
+        <a class="dropdown-item" href="/investor-delivery.html" role="menuitem">
+          <span class="dropdown-item-title">Investor Delivery</span>
+          <span class="dropdown-item-sub">Sell funded loans · MISMO export</span>
+        </a>
+        <a class="dropdown-item" href="/integrations.html" role="menuitem">
+          <span class="dropdown-item-title">Integrations</span>
+          <span class="dropdown-item-sub">CRM · Encompass · Arive sync</span>
+        </a>
+      </div>
+    </li>
+
+    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
   </ul>
+
   <div class="nav-right">
     <button class="nav-search" id="nav-search-btn" type="button" aria-label="Search loans (Cmd+K)">
       <span class="nav-search-icon">⌕</span>
@@ -841,6 +978,7 @@ footer a:hover { color: var(--accent); }
       <a href="/reports.html" class="btn">Reports</a>
       <a href="/investor-delivery.html" class="btn">Delivery</a>
       <a href="/integrations.html" class="btn">Integrations</a>
+      <a href="/portal/" class="btn" target="_blank" rel="noopener">Borrower Portal ↗</a>
       <a href="/team.html" class="btn" id="cta-team" style="display:none;">Team & Branch</a>
     </div>
 
@@ -913,6 +1051,7 @@ footer a:hover { color: var(--accent); }
       <a href="/reports.html">Reports</a>
       <a href="/investor-delivery.html">Delivery</a>
       <a href="/integrations.html">Integrations</a>
+      <a href="/portal/" target="_blank" rel="noopener">Borrower Portal ↗</a>
       <a href="/privacy.html">Privacy</a>
       <a href="/terms.html">Terms</a>
     </div>
@@ -924,14 +1063,17 @@ footer a:hover { color: var(--accent); }
 // home.html — wiring
 //
 // Routes used by this file:
-//   /home.html           — this page
-//   /dashboard.html      — full pipeline view (stage columns, every loan)
-//   /documents.html      — branch document library
-//   /reports.html        — branch reports
-//   /integrations.html   — CRM / Encompass / Arive sync surface (10.7)
-//   /team.html           — admin: users, roles, assignments (admin only)
-//   /loans-new.html      — new loan intake form
-//   /login.html          — sign in
+//   /home.html              — this page
+//   /dashboard.html         — full pipeline view (stage columns, every loan)
+//   /documents.html         — branch document library
+//   /reports.html           — branch reports
+//   /integrations.html      — CRM / Encompass / Arive sync surface (10.7)
+//   /team.html              — admin: users, roles, assignments (admin only)
+//   /loans-new.html         — new loan intake form
+//   /login.html             — sign in
+//   /portal/                — borrower portal (separate auth domain)
+//   /portal/sign-in.html    — borrower magic-link entry
+//   /apply/                 — public-facing application landing
 //
 // All loan/condition deep-links route to /dashboard.html#<loan_id>.
 // CRM failure rows surface in the Action Needed queue and link to
@@ -968,7 +1110,6 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// ─── Last-seen tracking ─────────────────────────────────────────────────
 async function touchLastSeen() {
   try {
     if (!supa || !me?.id) return;
@@ -1467,14 +1608,8 @@ async function loadMyFiles(cfg) {
 // ═══════════════════════════════════════════════════════════════════════════
 // loadQueue — role-scoped Action Needed panel
 //
-// PATCH C (this revision): CRM sync failures from /integrations.html surface
-// here so an LO/processor never has to remember to check that page. The
-// integration sales lever lives or dies on whether failures get TRIAGED;
-// surfacing them in-line in the queue is the easiest way to enforce that.
-// Each branch (LO/LOA, Processor, Admin/Viewer) gets its own CRM-failures
-// query because the scoping rule differs by role:
-//   - LO/LOA + Processor → only failures on loans I'm assigned to
-//   - Admin/Viewer       → all branch-wide failures in last 24h
+// PATCH C: CRM sync failures from /integrations.html surface here so an
+// LO/processor never has to remember to check that page.
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function loadQueue(cfg) {
@@ -1482,12 +1617,10 @@ async function loadQueue(cfg) {
   $('#queue-panel-tag').textContent = '';
 
   try {
-    // ─── LO / LOA ─────────────────────────────────────────────────────
     if (me.role === 'lo' || me.role === 'loa') {
       const myLoans = await myLoanIds(cfg.filterCol);
       const items = [];
 
-      // 1. Stale leads & app-stage files (24h+ no activity)
       const cutoff = new Date(Date.now() - 24*3600*1000).toISOString();
       const { data: stale } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
@@ -1503,7 +1636,6 @@ async function loadQueue(cfg) {
         });
       }
 
-      // 2. Rate locks expiring in ≤ 3 days
       if (myLoans.length > 0) {
         const soon = new Date(Date.now() + 3*86400*1000).toISOString();
         const { data: locks } = await supa.from('loans')
@@ -1520,7 +1652,6 @@ async function loadQueue(cfg) {
         }
       }
 
-      // 3. eSign envelopes awaiting return > 48h
       if (myLoans.length > 0) {
         try {
           const cutoff48 = new Date(Date.now() - 48*3600*1000).toISOString();
@@ -1538,15 +1669,6 @@ async function loadQueue(cfg) {
         } catch (_) { }
       }
 
-      // 4. CRM sync failures on my files in last 24h (Patch C)
-      //    Surfaces inbound/outbound failures so the LO sees them without
-      //    needing to remember to check /integrations.html. crm_connections
-      //    is joined via !inner so the vendor label is in scope on the chip.
-      //    loans is also !inner so loan_number prints inline; the inner
-      //    constraint also filters out events on loans we no longer own
-      //    (the assignment changed). All errors are non-fatal — if
-      //    crm_sync_events or crm_connections aren't deployed yet the
-      //    queue just doesn't show CRM rows.
       if (myLoans.length > 0) {
         try {
           const crmCutoff = new Date(Date.now() - 24*3600*1000).toISOString();
@@ -1570,17 +1692,15 @@ async function loadQueue(cfg) {
               href: `/integrations.html`,
             });
           }
-        } catch (_) { /* crm tables not yet deployed */ }
+        } catch (_) { }
       }
 
       renderActionList(list, items.slice(0, 8), x => x, 'No stale leads, no expiring locks, no pending signatures. Good hunting.');
       $('#queue-panel-tag').textContent = items.length + (items.length === 1 ? ' item' : ' items');
 
-    // ─── PROCESSOR ────────────────────────────────────────────────────
     } else if (me.role === 'processor') {
       const items = [];
 
-      // 1. Open conditions on assigned files
       const { data: conds } = await supa.from('conditions')
         .select(`id, title, category, created_at,
                  loans!inner ( id, loan_number, branch_id, processor_id )`)
@@ -1594,7 +1714,6 @@ async function loadQueue(cfg) {
         });
       }
 
-      // 2. TRID timers
       const myProcLoans = await myLoanIds('processor_id');
       if (myProcLoans.length > 0) {
         const { data: trid } = await supa.from('loans')
@@ -1615,7 +1734,6 @@ async function loadQueue(cfg) {
         }
       }
 
-      // 3. AUS recommendations on assigned files
       try {
         if (myProcLoans.length > 0) {
           const { data: aus } = await supa.from('aus_runs')
@@ -1636,14 +1754,6 @@ async function loadQueue(cfg) {
         }
       } catch (_) { }
 
-      // 4. CRM sync failures on assigned files in last 24h (Patch C)
-      //    Same shape as the LO branch — processor scoped to their files
-      //    by processor_id rather than lo_id/loa_id. Surfaces inbound
-      //    pull failures so the processor sees a borrower-email or
-      //    status-mismatch failure WITHOUT needing to remember to check
-      //    /integrations.html. Failed inbound pulls especially matter
-      //    here since they're often the thing standing between a file
-      //    in processing and the data being right for UW.
       if (myProcLoans.length > 0) {
         try {
           const crmCutoff = new Date(Date.now() - 24*3600*1000).toISOString();
@@ -1673,7 +1783,6 @@ async function loadQueue(cfg) {
       renderActionList(list, items.slice(0, 8), x => x, 'All conditions cleared, no TRID timers in the next 36h. Nice.');
       $('#queue-panel-tag').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
 
-    // ─── UNDERWRITER ──────────────────────────────────────────────────
     } else if (me.role === 'underwriter') {
       const { data, error } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
@@ -1692,7 +1801,6 @@ async function loadQueue(cfg) {
       }, 'UW queue is empty.');
       $('#queue-panel-tag').textContent = (data || []).length + ' files';
 
-    // ─── CLOSER ───────────────────────────────────────────────────────
     } else if (me.role === 'closer') {
       const { data } = await supa.from('loans')
         .select('id, loan_number, status, updated_at, cd_sent_at, borrowers:loan_borrowers(position, borrower:borrower_id(first_name, last_name))')
@@ -1708,17 +1816,7 @@ async function loadQueue(cfg) {
       }, 'No CTC or docs-out files right now.');
       $('#queue-panel-tag').textContent = (data || []).length + ' files';
 
-    // ─── ADMIN / VIEWER ───────────────────────────────────────────────
-    //
-    // PATCH C: branch-wide CRM failures get TOP-of-list placement. An
-    // admin reading their home page should see "Encompass push failed
-    // on OF-1043" as the first thing in the queue, not buried under 10
-    // stage-change audit rows. The CRM rows render with the action-row
-    // pattern (left-amber bar) so they read as actionable; audit rows
-    // stay in the .info variant (left-cyan bar) so the visual hierarchy
-    // is clear at a glance.
     } else {
-      // Pull branch-wide CRM failures first (last 24h, max 3)
       let crmHtml = '';
       try {
         const crmCutoff = new Date(Date.now() - 24*3600*1000).toISOString();
@@ -1747,7 +1845,7 @@ async function loadQueue(cfg) {
             </div>
           `;
         }).join('');
-      } catch (_) { /* crm tables not yet deployed */ }
+      } catch (_) { }
 
       const { data, error } = await supa.from('audit_logs')
         .select('id, table_name, operation, actor_role, created_at, loan_id')
@@ -2018,6 +2116,8 @@ function renderCmdkNavShortcuts() {
     { icon:'∷', title:'Reports',        sub:'pipeline · funded',   href:'/reports.html',   tag:'GO' },
     { icon:'⇆', title:'Investor Delivery', sub:'sell funded loans', href:'/investor-delivery.html', tag:'GO' },
     { icon:'⇌', title:'Integrations',   sub:'CRM · Encompass · Arive', href:'/integrations.html', tag:'GO' },
+    { icon:'◐', title:'Borrower Portal', sub:'open in new tab',    href:'/portal/', tag:'OPEN' },
+    { icon:'◑', title:'Apply Now Page',  sub:'public application',  href:'/apply/',  tag:'OPEN' },
   ];
   if (me.role !== 'viewer') {
     shortcuts.unshift({ icon:'+', title:'Start a New Loan', sub:'/loans-new.html', href:'/loans-new.html', tag:'NEW' });
