@@ -7,22 +7,41 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* =========================================================================
-       Phase 11.5.3 — Co-borrower invite UI
+       Phase 11.5.3 — Co-borrower invite UI (WIRED in 11.5.2)
        -----------------------------------------------------------------------
-       The primary borrower invites their spouse/partner/co-borrower to fill
-       out their portion of the application. This is one of two paths into
-       the borrower_invites table — the other is /apply for the primary.
+       Primary borrower invites their spouse/partner/co-applicant. Two data
+       sources:
+         1. loan_borrowers — anyone already on the loan (the primary plus any
+            previously-joined co-borrowers). Embeds the borrowers row via FK
+            so we get name/email/verified_at in one round trip.
+         2. borrower_invites — pending invites not yet accepted, not revoked,
+            and not expired.
 
-       Three sections:
-         1. Status of existing invites (pending / accepted / expired / revoked)
-         2. Form to send a new invite (name, email, role)
-         3. Educational copy explaining the difference between co-borrower
-            and non-borrowing spouse — borrowers don't know the distinction
+       The form submission goes through window.OF_inviteCoBorrower(payload) —
+       a server-side SECURITY DEFINER RPC (or edge function) that validates
+       the inviter, generates a magic-link token, creates the invite row,
+       and triggers the email send. Direct-insert fallback exists for
+       development but should fail under properly-locked RLS in production.
 
-       The invite token + email send happens server-side via
-       window.OF_inviteCoBorrower(payload).
+       Three rows of UI:
+         1. People on this loan (status of every party on the file)
+         2. Form to send a new invite
+         3. Educational copy: co-borrower vs non-borrowing spouse
        ========================================================================= */
     :root {
       --bg: #0b1220;
@@ -129,7 +148,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* ─── EXISTING INVITES LIST ─── */
     .invite-list {
       display: flex;
       flex-direction: column;
@@ -157,6 +175,11 @@
       color: var(--text-dim);
       flex-shrink: 0;
     }
+    .invite-row.is-self .invite-avatar {
+      background: linear-gradient(135deg, var(--cyan), #0891b2);
+      color: var(--navy);
+      border: 0;
+    }
     .invite-row.is-accepted .invite-avatar {
       background: linear-gradient(135deg, var(--accent-green), #4ade80);
       color: var(--navy);
@@ -171,12 +194,18 @@
       color: var(--text);
       margin: 0 0 2px;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .invite-meta {
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--text-faint);
       letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .invite-status {
       font-family: var(--font-mono);
@@ -187,6 +216,11 @@
       border-radius: 6px;
       border: 1px solid;
       flex-shrink: 0;
+    }
+    .invite-status.is-self {
+      color: var(--cyan);
+      background: var(--cyan-glow);
+      border-color: rgba(34, 211, 238, 0.25);
     }
     .invite-status.is-pending {
       color: var(--warn);
@@ -204,7 +238,6 @@
       border-color: var(--border);
     }
 
-    /* Empty state for invite list */
     .invite-empty {
       padding: 24px;
       text-align: center;
@@ -216,7 +249,6 @@
       margin-bottom: 32px;
     }
 
-    /* ─── INVITE FORM ─── */
     .form-card {
       background: var(--bg-elev-1);
       border: 1px solid var(--border);
@@ -265,6 +297,10 @@
     .field-input.is-error {
       border-color: var(--danger);
     }
+    .field-input:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     .field-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -281,7 +317,6 @@
       letter-spacing: 0.02em;
     }
 
-    /* Role picker (radio cards) */
     .role-options {
       display: flex;
       flex-direction: column;
@@ -329,7 +364,6 @@
       line-height: 1.5;
     }
 
-    /* Submit */
     .submit-row {
       display: flex;
       gap: 10px;
@@ -362,7 +396,6 @@
       cursor: not-allowed;
     }
 
-    /* Error banner */
     .error-banner {
       display: none;
       padding: 10px 14px;
@@ -375,7 +408,6 @@
     }
     .error-banner.is-active { display: block; }
 
-    /* ─── EDUCATIONAL CALLOUT ─── */
     .callout {
       padding: 16px 18px;
       background: var(--bg-elev-1);
@@ -398,7 +430,6 @@
     }
     .callout-text strong { color: var(--text); }
 
-    /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -415,6 +446,7 @@
       pointer-events: none;
       transition: all 0.3s ease;
       z-index: 100;
+      max-width: calc(100% - 32px);
     }
     .toast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.is-error { border-color: var(--danger); }
@@ -428,10 +460,47 @@
       text-transform: uppercase;
       color: var(--text-faint);
     }
-    .portal-footer a { color: var(--text-faint); margin: 0 6px; }
+    .portal-footer a, .portal-footer button {
+      color: var(--text-faint);
+      margin: 0 6px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      padding: 0;
+    }
+    .portal-footer a:hover, .portal-footer button:hover {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+
+    /* ─── BOOTSTRAP LOADING VEIL ─── */
+    .bootstrap-veil {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: opacity 0.18s ease;
+    }
+    .bootstrap-veil.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading…</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
@@ -443,7 +512,7 @@
       <span class="subtitle">Borrower portal</span>
     </div>
   </div>
-  <a class="back-link" href="/portal/">← Home</a>
+  <a class="back-link" href="/portal_index.html">← Home</a>
 </header>
 
 <main class="portal-main">
@@ -452,13 +521,11 @@
   <h1 class="page-title">Invite a co-borrower</h1>
   <p class="page-subtitle">Add a spouse or co-applicant to your loan. They'll get a magic-link email to fill out their portion.</p>
 
-  <!-- ─── EXISTING INVITES ─── -->
   <h2 class="section-title">People on this loan</h2>
   <div id="invite-list-container">
     <!-- populated by render() -->
   </div>
 
-  <!-- ─── INVITE FORM ─── -->
   <section class="form-card">
     <div class="form-card-title">Send an invite</div>
     <div class="form-card-subtitle">We'll email them a link to join your loan and fill out their information.</div>
@@ -469,18 +536,18 @@
       <div class="field-row">
         <div class="field">
           <label class="field-label" for="first-name">First name</label>
-          <input class="field-input" id="first-name" type="text" required maxlength="60">
+          <input class="field-input" id="first-name" type="text" required maxlength="60" disabled>
         </div>
         <div class="field">
           <label class="field-label" for="last-name">Last name</label>
-          <input class="field-input" id="last-name" type="text" required maxlength="60">
+          <input class="field-input" id="last-name" type="text" required maxlength="60" disabled>
         </div>
       </div>
 
       <div class="field">
         <label class="field-label" for="email">Email</label>
         <input class="field-input" id="email" type="email" required maxlength="120"
-               inputmode="email" placeholder="them@example.com">
+               inputmode="email" placeholder="them@example.com" disabled>
         <div class="field-hint">We'll send the magic-link invite here. They click it, they're in.</div>
       </div>
 
@@ -505,12 +572,11 @@
       </div>
 
       <div class="submit-row">
-        <button type="submit" class="btn btn-primary" id="submit-btn">Send invite →</button>
+        <button type="submit" class="btn btn-primary" id="submit-btn" disabled>Send invite →</button>
       </div>
     </form>
   </section>
 
-  <!-- ─── EDUCATIONAL CALLOUT ─── -->
   <section class="callout">
     <div class="callout-title">Not sure which to pick?</div>
     <div class="callout-text">
@@ -525,88 +591,293 @@
 <div class="toast" id="toast"></div>
 
 <footer class="portal-footer">
-  <a href="/portal/">Home</a> ·
-  <a href="/portal/docs/">Documents</a> ·
-  <a href="/portal/messages/">Messages</a> ·
-  <a href="#">Sign out</a>
+  <a href="/portal_index.html">Home</a> ·
+  <a href="/portal_docs.html">Documents</a> ·
+  <a href="/portal_messages.html">Messages</a> ·
+  <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
+       the Supabase session and redirects to /portal_signin.html. -->
+  <button type="button" onclick="window.OF_signOut();">Sign out</button>
 </footer>
 
 <script>
 /* =============================================================================
-   BOOTSTRAP DATA
+   PORTAL INVITE — boot + queries + submission
    -----------------------------------------------------------------------------
-   When 11.5.3 wires the backend:
-     // Existing co-borrowers (already accepted invites + on loan_borrowers)
-     const { data: coBorrowers } = await sb.from('loan_borrowers')
-       .select('role, borrower:borrowers(first_name, last_name, email, verified_at)')
-       .eq('loan_id', currentLoanId)
-       .neq('borrower_id', currentBorrowerId);   // exclude self
-
-     // Pending invites (not yet accepted)
-     const { data: pendingInvites } = await sb.from('borrower_invites')
-       .select('id, email, expires_at, accepted_at, revoked_at')
-       .eq('loan_id', currentLoanId)
-       .is('accepted_at', null)
-       .is('revoked_at', null);
+   Flow:
+     1. OF_bootstrap() resolves session/borrower/loan with the standard
+        redirect ladder
+     2. In parallel: fetch loan_borrowers (with embedded borrower row) and
+        fetch borrower_invites (pending only — not accepted, not revoked,
+        not expired)
+     3. Render the unified people-on-this-loan list (primary + joined +
+        pending) and enable the form
+     4. On submit:
+          a. Client-side dedupe / format validation
+          b. Call window.OF_inviteCoBorrower(payload) — preferred path
+          c. Fall through to direct insert into borrower_invites if no
+             hook is shipped (will fail under proper RLS; that's the
+             correct posture)
+          d. On success: refetch the pending list so the displayed state
+             matches the DB rather than a synthesized optimistic row
    ============================================================================= */
-window.OF_INVITES_BOOTSTRAP = {
-  loan: { loan_no: 'OF-1043' },
-  primary: {
-    first_name: 'Marcus',
-    last_name:  'Holbrook',
-    email:      'marcus.holbrook@example.com',
-  },
-  existing: [
-    // Example: an already-accepted co-borrower would appear here
-    // {
-    //   id: 'b2', first_name: 'Jennifer', last_name: 'Holbrook',
-    //   email: 'jennifer.h@example.com', role: 'co_borrower',
-    //   status: 'accepted', accepted_at: '2026-05-13',
-    // },
-  ],
-  pending: [
-    // Example: a pending invite
-    // {
-    //   id: 'i1', email: 'jennifer.h@example.com',
-    //   first_name: 'Jennifer', last_name: 'Holbrook',
-    //   sent_at: '2026-05-19', expires_at: '2026-06-02',
-    // },
-  ],
-};
+
+/* ─── Module-level state ───────────────────────────────────────────────── */
+let ctx     = null;   // { session, borrower, loan } from OF_bootstrap
+let joined  = [];     // loan_borrowers (other parties already on the loan)
+let pending = [];     // borrower_invites filtered to actually-pending
+
+/* ─── Helpers ──────────────────────────────────────────────────────────── */
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function titleCase(s) {
+  if (!s) return '';
+  return String(s).toLowerCase()
+    .split(/(\s+|-|')/)
+    .map(part => part.length && /^[a-zà-ÿ]/i.test(part)
+      ? part.charAt(0).toUpperCase() + part.slice(1)
+      : part)
+    .join('');
+}
+
+function initials(name) {
+  if (!name) return '?';
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function shortDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function roleLabel(role) {
+  return ({
+    primary:              'Primary borrower',
+    co_borrower:          'Co-borrower',
+    non_borrowing_spouse: 'Non-borrowing spouse',
+  })[role] || role || 'Borrower';
+}
+
+/* ─── DB queries ───────────────────────────────────────────────────────── */
+
+/**
+ * Fetch everyone on this loan EXCEPT the current borrower (we render the
+ * primary directly from ctx). Embeds the borrowers row via FK so we get
+ * first_name/last_name/email/verified_at in one round trip.
+ *
+ * Returns [{ borrower_id, role, position, first_name, last_name, email,
+ *            verified_at, joined_at }] or [] on error.
+ */
+async function fetchJoinedBorrowers(supabase, loanId, currentBorrowerId) {
+  try {
+    const { data, error } = await supabase
+      .from('loan_borrowers')
+      .select(`
+        borrower_id,
+        role,
+        position,
+        borrowers:borrower_id (
+          id, first_name, last_name, email, verified_at, created_at
+        )
+      `)
+      .eq('loan_id', loanId)
+      .order('position', { ascending: true });
+    if (error) {
+      console.warn('[portal/invite] loan_borrowers fetch failed:', error.message);
+      return [];
+    }
+
+    return (data || [])
+      // Exclude the current borrower — they're rendered as the "self" row
+      // from ctx directly.
+      .filter(row => row.borrower_id !== currentBorrowerId)
+      .map(row => {
+        const b = row.borrowers || {};
+        return {
+          borrower_id: row.borrower_id,
+          role:        row.role,
+          position:    row.position,
+          first_name:  b.first_name || '',
+          last_name:   b.last_name || '',
+          email:       b.email || '',
+          verified_at: b.verified_at,
+          joined_at:   b.verified_at || b.created_at,
+        };
+      });
+  } catch (e) {
+    console.warn('[portal/invite] loan_borrowers exception:', e.message);
+    return [];
+  }
+}
+
+/**
+ * Fetch invites for this loan that are still actionable: not accepted,
+ * not revoked, and not yet expired. Each row carries first_name +
+ * last_name as captured at invite time, the email, role, and an
+ * expires_at the recipient must beat.
+ *
+ * `select('*')` keeps the call resilient to schema variations — the
+ * actual schema may use 'sent_at' vs 'created_at', and may have or not
+ * have a separate 'invited_by' column.
+ */
+async function fetchPendingInvites(supabase, loanId) {
+  try {
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('borrower_invites')
+      .select('*')
+      .eq('loan_id', loanId)
+      .is('accepted_at', null)
+      .is('revoked_at', null)
+      .gt('expires_at', nowIso)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.warn('[portal/invite] borrower_invites fetch failed:', error.message);
+      return [];
+    }
+    return (data || []).map(row => ({
+      id:         row.id,
+      first_name: row.first_name || '',
+      last_name:  row.last_name || '',
+      email:      row.email || '',
+      role:       row.role || 'co_borrower',
+      sent_at:    row.sent_at || row.created_at,
+      expires_at: row.expires_at,
+    }));
+  } catch (e) {
+    console.warn('[portal/invite] borrower_invites exception:', e.message);
+    return [];
+  }
+}
+
+async function refetchPendingInvites() {
+  const supabase = window.OF_supabase();
+  pending = await fetchPendingInvites(supabase, ctx.loan.id);
+  render();
+}
+
+/* ─── Init ─────────────────────────────────────────────────────────────── */
+
+async function init() {
+  try {
+    ctx = await window.OF_bootstrap();
+  } catch (e) {
+    console.error('[portal/invite] OF_bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
+      ? 'not_a_borrower'
+      : 'link_failed';
+    window.location.replace('/portal_signin.html?error=' + code);
+    return;
+  }
+
+  if (!ctx || !ctx.session) {
+    window.location.replace('/portal_signin.html');
+    return;
+  }
+  if (!ctx.borrower) {
+    window.location.replace('/portal_signin.html?error=not_a_borrower');
+    return;
+  }
+  if (!ctx.loan) {
+    window.location.replace('/portal_apply.html');
+    return;
+  }
+
+  const supabase = window.OF_supabase();
+
+  // Two queries in parallel — both small, both single-loan-scoped.
+  const [joinedRes, pendingRes] = await Promise.allSettled([
+    fetchJoinedBorrowers(supabase, ctx.loan.id, ctx.borrower.id),
+    fetchPendingInvites(supabase, ctx.loan.id),
+  ]);
+  joined  = joinedRes.status  === 'fulfilled' ? joinedRes.value  : [];
+  pending = pendingRes.status === 'fulfilled' ? pendingRes.value : [];
+
+  render();
+  enableForm(true);
+
+  // Drop the veil
+  const veil = document.getElementById('bootstrap-veil');
+  if (veil) {
+    veil.classList.add('is-hidden');
+    setTimeout(() => veil.remove(), 220);
+  }
+
+  if (typeof window.OF_touchLastSeen === 'function') {
+    window.OF_touchLastSeen().catch(() => {});
+  }
+}
+
+/* ─── Render ───────────────────────────────────────────────────────────── */
 
 function render() {
-  const b = window.OF_INVITES_BOOTSTRAP;
-  document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
+  // Page eyebrow with loan number
+  document.getElementById('page-eyebrow').textContent =
+    'Loan ' + (ctx.loan.loan_no || '—');
+
+  // Compose the unified rows list: self + joined + pending. Pending and
+  // joined have different "kinds" so we can color them appropriately.
+  const rows = [];
+
+  // Self
+  const selfFirst = titleCase(ctx.borrower.first_name || '');
+  const selfLast  = titleCase(ctx.borrower.last_name  || '');
+  const selfName  = [selfFirst, selfLast].filter(Boolean).join(' ') || 'You';
+  rows.push({
+    kind:   'self',
+    status: 'self',
+    name:   selfName,
+    meta:   "Primary borrower (that's you)",
+  });
+
+  // Joined
+  for (const j of joined) {
+    const first = titleCase(j.first_name);
+    const last  = titleCase(j.last_name);
+    const name  = [first, last].filter(Boolean).join(' ') || j.email || 'Co-borrower';
+    const joinedDate = j.joined_at ? shortDate(j.joined_at) : null;
+    const meta = joinedDate
+      ? `${roleLabel(j.role)} · joined ${joinedDate}`
+      : roleLabel(j.role);
+    rows.push({
+      kind:   'joined',
+      status: 'accepted',
+      name,
+      meta,
+    });
+  }
+
+  // Pending
+  for (const p of pending) {
+    const first = titleCase(p.first_name);
+    const last  = titleCase(p.last_name);
+    const name  = [first, last].filter(Boolean).join(' ') || p.email;
+    const sent  = p.sent_at    ? shortDate(p.sent_at)    : '—';
+    const exp   = p.expires_at ? shortDate(p.expires_at) : '—';
+    rows.push({
+      kind:   'pending',
+      status: 'pending',
+      name,
+      meta:   `${roleLabel(p.role)} · invite sent ${sent} · expires ${exp}`,
+    });
+  }
 
   const container = document.getElementById('invite-list-container');
-
-  // Build a flat list: primary + existing co-borrowers + pending invites
-  const rows = [];
-  rows.push({
-    kind: 'self',
-    name: b.primary.first_name + ' ' + b.primary.last_name,
-    meta: 'Primary borrower (that\'s you)',
-    status: 'self',
-  });
-  for (const e of b.existing) {
-    rows.push({
-      kind: 'accepted',
-      name: e.first_name + ' ' + e.last_name,
-      meta: roleLabel(e.role) + ' · joined ' + e.accepted_at,
-      status: 'accepted',
-    });
-  }
-  for (const p of b.pending) {
-    rows.push({
-      kind: 'pending',
-      name: (p.first_name + ' ' + p.last_name).trim() || p.email,
-      meta: 'Invite sent ' + p.sent_at + ' · expires ' + p.expires_at,
-      status: 'pending',
-    });
-  }
-
   if (rows.length === 1) {
-    // Just the primary — no co-borrowers yet
+    // Just the primary — no one else on the loan yet
     container.innerHTML = `
       <div class="invite-list">
         ${renderInviteRow(rows[0])}
@@ -623,17 +894,17 @@ function render() {
 }
 
 function renderInviteRow(r) {
-  const initials = (r.name || '?').split(' ').map(p => p.charAt(0)).join('').slice(0, 2).toUpperCase();
-  const statusHtml = r.status === 'self'
-    ? `<span class="invite-status is-accepted">You</span>`
-    : r.status === 'accepted'
-      ? `<span class="invite-status is-accepted">Joined</span>`
-      : r.status === 'pending'
-        ? `<span class="invite-status is-pending">Pending</span>`
-        : `<span class="invite-status is-expired">Expired</span>`;
+  const av = initials(r.name);
+  const statusHtml = ({
+    self:     `<span class="invite-status is-self">You</span>`,
+    accepted: `<span class="invite-status is-accepted">Joined</span>`,
+    pending:  `<span class="invite-status is-pending">Pending</span>`,
+    expired:  `<span class="invite-status is-expired">Expired</span>`,
+  })[r.status] || `<span class="invite-status is-expired">—</span>`;
+
   return `
     <div class="invite-row is-${r.status}">
-      <div class="invite-avatar">${escapeHtml(initials)}</div>
+      <div class="invite-avatar">${escapeHtml(av)}</div>
       <div class="invite-info">
         <div class="invite-name">${escapeHtml(r.name)}</div>
         <div class="invite-meta">${escapeHtml(r.meta)}</div>
@@ -643,91 +914,140 @@ function renderInviteRow(r) {
   `;
 }
 
-function roleLabel(role) {
-  return ({
-    primary: 'Primary borrower',
-    co_borrower: 'Co-borrower',
-    non_borrowing_spouse: 'Non-borrowing spouse',
-  })[role] || role;
+/* ─── Form ─────────────────────────────────────────────────────────────── */
+
+function enableForm(enabled) {
+  document.getElementById('first-name').disabled = !enabled;
+  document.getElementById('last-name').disabled  = !enabled;
+  document.getElementById('email').disabled      = !enabled;
+  document.getElementById('submit-btn').disabled = !enabled;
 }
 
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => (
-    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
-  ));
-}
-
-/* =============================================================================
-   INVITE SUBMISSION
-   ============================================================================= */
 function wireForm() {
   const form = document.getElementById('invite-form');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const firstName = document.getElementById('first-name').value.trim();
-    const lastName  = document.getElementById('last-name').value.trim();
-    const email     = document.getElementById('email').value.trim().toLowerCase();
-    const role      = document.querySelector('input[name="role"]:checked').value;
-
-    clearError();
-
-    // Validate
-    if (!firstName || !lastName) { showError('First and last name are required.'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('Please enter a valid email.'); return; }
-    if (email === window.OF_INVITES_BOOTSTRAP.primary.email.toLowerCase()) {
-      showError("That's your own email — pick someone else.");
-      return;
-    }
-    if (window.OF_INVITES_BOOTSTRAP.pending.some(p => p.email?.toLowerCase() === email)) {
-      showError("You've already sent an invite to that email. Check the list above.");
-      return;
-    }
-
-    const submitBtn = document.getElementById('submit-btn');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Sending…';
-
-    try {
-      const payload = {
-        first_name: firstName,
-        last_name:  lastName,
-        email,
-        role,
-      };
-
-      if (typeof window.OF_inviteCoBorrower === 'function') {
-        await window.OF_inviteCoBorrower(payload);
-      } else {
-        // Stub mode — mutate bootstrap and re-render
-        await new Promise(res => setTimeout(res, 500));
-        const today = new Date();
-        const expires = new Date();
-        expires.setDate(today.getDate() + 14);
-        window.OF_INVITES_BOOTSTRAP.pending.push({
-          id: 'tmp_' + Date.now(),
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          role,
-          sent_at:    today.toLocaleDateString('en-US', { month:'short', day:'numeric' }),
-          expires_at: expires.toLocaleDateString('en-US', { month:'short', day:'numeric' }),
-        });
-      }
-
-      showToast('Invite sent to ' + email);
-      form.reset();
-      document.querySelector('input[name="role"][value="co_borrower"]').checked = true;
-      render();
-    } catch (err) {
-      console.error('invite failed:', err);
-      showError(err.message || "Couldn't send invite. Try again.");
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Send invite →';
-    }
-  });
+  form.addEventListener('submit', handleSubmit);
 }
+
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const firstNameEl = document.getElementById('first-name');
+  const lastNameEl  = document.getElementById('last-name');
+  const emailEl     = document.getElementById('email');
+
+  const firstName = firstNameEl.value.trim();
+  const lastName  = lastNameEl.value.trim();
+  const email     = emailEl.value.trim().toLowerCase();
+  const role      = document.querySelector('input[name="role"]:checked').value;
+
+  clearError();
+
+  // Client-side validation — server-side enforcement still required.
+  if (!firstName || !lastName) {
+    showError('First and last name are required.');
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showError('Please enter a valid email.');
+    return;
+  }
+
+  // Dedupe: can't invite yourself
+  const myEmail = (ctx.borrower.email || '').toLowerCase();
+  if (myEmail && email === myEmail) {
+    showError("That's your own email — pick someone else.");
+    return;
+  }
+
+  // Dedupe: can't invite someone already joined
+  const joinedEmails = new Set(joined.map(j => (j.email || '').toLowerCase()).filter(Boolean));
+  if (joinedEmails.has(email)) {
+    showError("That person is already on this loan.");
+    return;
+  }
+
+  // Dedupe: can't invite someone with a still-pending invite
+  const pendingEmails = new Set(pending.map(p => (p.email || '').toLowerCase()).filter(Boolean));
+  if (pendingEmails.has(email)) {
+    showError("You've already sent an invite to that email. Check the list above.");
+    return;
+  }
+
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending…';
+
+  try {
+    const payload = {
+      loan_id:    ctx.loan.id,
+      branch_id:  ctx.loan.branch_id || ctx.borrower.branch_id,
+      first_name: firstName,
+      last_name:  lastName,
+      email,
+      role,
+    };
+
+    await sendInvite(payload);
+
+    // Refetch authoritative pending list so the row renders with the
+    // server-canonical sent_at / expires_at / id values rather than
+    // anything we'd have synthesized client-side.
+    await refetchPendingInvites();
+
+    showToast('Invite sent to ' + email);
+    document.getElementById('invite-form').reset();
+    document.querySelector('input[name="role"][value="co_borrower"]').checked = true;
+  } catch (err) {
+    console.error('[portal/invite] send failed:', err);
+    showError(err && err.message
+      ? err.message
+      : "Couldn't send invite. Try again in a moment.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send invite →';
+  }
+}
+
+/**
+ * Send the invite. Preferred path: OF_inviteCoBorrower hook (server-
+ * side SECURITY DEFINER or edge function — generates the token, creates
+ * the borrower_invites row, triggers the email send).
+ *
+ * Fallback: direct INSERT into borrower_invites. Will likely fail under
+ * properly-locked RLS, and that's the correct posture — borrowers
+ * shouldn't be able to mint invite tokens client-side. The thrown error
+ * surfaces to the toast so the user knows their loan officer needs to
+ * help.
+ */
+async function sendInvite(payload) {
+  if (typeof window.OF_inviteCoBorrower === 'function') {
+    await window.OF_inviteCoBorrower(payload);
+    return;
+  }
+
+  // Direct insert fallback. We intentionally don't synthesize a token —
+  // that's the schema's job (default value or trigger). Same for
+  // expires_at and created_at.
+  const supabase = window.OF_supabase();
+  const insertRow = {
+    loan_id:    payload.loan_id,
+    branch_id:  payload.branch_id,
+    email:      payload.email,
+    first_name: payload.first_name,
+    last_name:  payload.last_name,
+    role:       payload.role,
+    invited_by: ctx.session.user.id,
+  };
+  const { error } = await supabase
+    .from('borrower_invites')
+    .insert(insertRow);
+  if (error) {
+    throw new Error(error.message ||
+      "Invite system isn't ready yet — your loan officer can add them for you.");
+  }
+}
+
+/* ─── Error + toast ────────────────────────────────────────────────────── */
 
 function showError(msg) {
   const el = document.getElementById('error-banner');
@@ -746,11 +1066,13 @@ function showToast(msg, isError) {
   el.classList.toggle('is-error', !!isError);
   el.classList.add('is-visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('is-visible'), 3000);
+  toastTimer = setTimeout(() => el.classList.remove('is-visible'), 3500);
 }
 
+/* ─── Boot ─────────────────────────────────────────────────────────────── */
+
 document.addEventListener('DOMContentLoaded', () => {
-  render();
+  init();
   wireForm();
 });
 </script>
