@@ -1,544 +1,1193 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Start Your Mortgage Application — OriginFlow</title>
-<meta name="description" content="Apply for a mortgage in 15 minutes. Online. Plain-English questions, save your progress anytime.">
-<meta name="author" content="OriginFlow LOS">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Start your mortgage application — OriginFlow</title>
+  <meta name="description" content="Apply for a mortgage in minutes. Your loan officer will follow up the same day.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       Phase 11.5.6 — Public /apply landing
+       -----------------------------------------------------------------------
+       This is the FRONT DOOR. Designed differently from internal LO surfaces
+       and the borrower portal:
+         - Marketing tone (this is a sales surface, not an operating surface)
+         - One-column, mobile-first, big touch targets
+         - Three-step form, conversational copy, not "fill out this 1003"
+         - Same design tokens as the rest of the system but warmer in tone:
+           we lean on the cyan accent and the serif for emotional weight
+       The user lands here from a branch-specific URL like:
+         https://apply.submarinecatalyst.com/
+         https://submarinecatalyst.originflow.app/apply
+       Branch identification happens via `?branch=<slug>` query param OR via
+       subdomain detection. The page reads branch info from a /api/branch-info
+       endpoint (stubbed below) so the LO's photo, name, and NMLS show up.
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-6LRWPMYK9C"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  var ofConsent = null;
-  try { ofConsent = localStorage.getItem('of_cookie_consent'); } catch(_) {}
-  gtag('consent', 'default', {
-    'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied',
-    'analytics_storage': ofConsent === 'granted' ? 'granted' : 'denied',
-    'wait_for_update': 500
-  });
-  gtag('js', new Date());
-  gtag('config', 'G-6LRWPMYK9C');
-</script>
+       Submission flow:
+         1. Validate client-side (required fields, email format, phone format)
+         2. POST to window.OF_submitApplication(payload) — the hook does:
+            a. inserts a borrowers row (if email is new for this branch)
+            b. inserts a loans row with intake_source='borrower_portal',
+               status='lead'
+            c. links loan_borrowers with role='primary'
+            d. assigns lo_id by branch round-robin or default LO
+            e. creates a borrower_invites row with a fresh token
+            f. sends magic-link email to the borrower
+            g. returns { success: true, masked_email: 'm***@example.com' }
+         3. UI swaps to a "Check your email" success state
+       =========================================================================
+       Colors and fonts mirror /portal/index.html exactly — same person who
+       fills out /apply ends up in /portal, so the visual transition needs
+       to feel continuous.
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-deep: #0891b2;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/js/config.js"></script>
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
 
-<style>
-:root {
-  --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
-  --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
-  --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
-  --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-nav,.urgency-bar,section,footer{position:relative;z-index:1}
-a{color:inherit}
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34, 211, 238, 0.08), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(134, 239, 172, 0.04), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 3rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
-.nav-logo{display:flex;align-items:center;gap:0.75rem;text-decoration:none}
-.sonar-icon{width:32px;height:32px}
-.nav-wordmark{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase}
-.nav-wordmark span{color:var(--accent)}
-.nav-right{display:flex;align-items:center;gap:1rem}
-.nav-link{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted)}
-.nav-link a{color:var(--accent);text-decoration:none}
-.nav-link a:hover{text-decoration:underline}
-.nav-portal{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);text-decoration:none;padding:0.5rem 1rem;border:1px solid var(--border);transition:all 0.2s}
-.nav-portal:hover{color:var(--accent);border-color:var(--accent)}
+    /* ─── HEADER (lighter than internal nav — this is a public page) ─── */
+    .apply-nav {
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .apply-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .apply-brand-mark {
+      width: 32px; height: 32px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
+      display: grid; place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 24px rgba(34, 211, 238, 0.2);
+    }
+    .apply-brand-text {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .apply-brand-subtitle {
+      display: block;
+      font-weight: 400;
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .apply-nav-secure {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .apply-nav-secure::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
 
-.urgency-bar{background:rgba(0,255,157,0.08);border-bottom:1px solid rgba(0,255,157,0.25);padding:0.55rem 3rem;display:flex;align-items:center;justify-content:center;gap:1rem;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.08em;color:var(--accent2);flex-wrap:wrap}
-.ub-pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent2);margin-right:0.4rem;animation:pulse 1.4s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
-.urgency-bar strong{color:var(--white);font-weight:700}
+    /* ─── HERO ─── */
+    .apply-hero {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 24px;
+      text-align: center;
+    }
+    @media (min-width: 640px) {
+      .apply-hero { padding: 80px 24px 40px; }
+    }
+    .apply-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 16px;
+    }
+    .apply-title {
+      font-family: var(--font-serif);
+      font-size: 38px;
+      line-height: 1.05;
+      color: var(--text);
+      margin: 0 0 16px 0;
+    }
+    @media (min-width: 640px) {
+      .apply-title { font-size: 56px; }
+    }
+    .apply-subtitle {
+      font-size: 17px;
+      color: var(--text-dim);
+      max-width: 540px;
+      margin: 0 auto;
+    }
 
-.hero{min-height:80vh;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:4rem;padding:4rem 3rem;max-width:1300px;margin:0 auto}
-.hero-eyebrow{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;display:flex;align-items:center;gap:0.75rem}
-.hero-eyebrow::before{content:'';display:block;width:2rem;height:1px;background:var(--accent)}
-.hero-headline{font-family:var(--serif);font-size:clamp(2.4rem,4.6vw,3.8rem);line-height:1.05;color:var(--white);margin-bottom:1.5rem}
-.hero-headline em{color:var(--accent);font-style:normal}
-.hero-sub{font-size:1.05rem;color:var(--text);max-width:510px;margin-bottom:2rem;line-height:1.7;font-weight:300}
-.hero-sub strong{color:var(--white);font-weight:400}
-.hero-note{font-family:var(--mono);font-size:0.68rem;color:var(--muted);letter-spacing:0.06em;line-height:1.8}
-.hero-note span{color:var(--accent2)}
+    /* ─── LO CARD (branch-specific) ─── */
+    .apply-lo-card {
+      max-width: 540px;
+      margin: 32px auto 0;
+      padding: 16px 18px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .apply-lo-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
+      display: grid; place-items: center;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+    .apply-lo-info { flex: 1; min-width: 0; text-align: left; }
+    .apply-lo-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .apply-lo-name {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      color: var(--text);
+      margin: 2px 0 1px;
+    }
+    .apply-lo-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      letter-spacing: 0.03em;
+    }
 
-.apply-card{background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;animation:fadeUp 0.7s ease both 0.2s}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.apply-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.apply-card-head{padding:1.5rem 1.75rem 1rem;border-bottom:1px solid var(--border)}
-.apply-card-eyebrow{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem}
-.apply-card-title{font-family:var(--serif);font-size:1.4rem;color:var(--white);line-height:1.3}
-.apply-card-sub{font-size:0.85rem;color:var(--muted);font-weight:300;margin-top:0.4rem}
-.apply-card-body{padding:1.5rem 1.75rem 1.75rem}
+    /* ─── FORM ─── */
+    .apply-form {
+      max-width: 540px;
+      margin: 32px auto 0;
+      padding: 0 24px 80px;
+    }
+    .form-step {
+      display: none;
+    }
+    .form-step.is-active {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .form-step-header {
+      margin-bottom: 24px;
+    }
+    .form-step-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 6px;
+    }
+    .form-step-title {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      color: var(--text);
+      margin: 0;
+    }
+    .form-step-subtitle {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
 
-.form-group{margin-bottom:1rem}
-.form-label{display:block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.45rem}
-.form-label .req{color:var(--accent)}
-.form-label .opt{color:var(--muted);font-size:0.55rem;margin-left:0.4rem;text-transform:none;letter-spacing:0.06em}
-.form-input,.form-select{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.85rem;padding:0.7rem 0.9rem;outline:none;transition:border-color 0.2s;-webkit-appearance:none;appearance:none}
-.form-input::placeholder{color:var(--muted)}
-.form-input:focus,.form-select:focus{border-color:var(--accent)}
-.form-select{background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235a7a99' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2rem}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
-.purpose-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem}
-.purpose-btn{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:0.7rem 0.5rem;cursor:pointer;transition:all 0.15s;text-align:center;line-height:1.3}
-.purpose-btn:hover{border-color:var(--accent);color:var(--accent)}
-.purpose-btn.selected{background:rgba(0,212,255,0.08);border-color:var(--accent);color:var(--accent)}
-.btn-submit{display:block;width:100%;font-family:var(--mono);font-size:0.8rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.95rem;cursor:pointer;font-weight:700;transition:opacity 0.2s;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));margin-top:0.75rem}
-.btn-submit:hover{opacity:0.85}
-.btn-submit:disabled{opacity:0.5;cursor:not-allowed}
-.legal-tiny{font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-top:0.85rem;line-height:1.6;letter-spacing:0.02em;text-align:center}
-.legal-tiny a{color:var(--accent);text-decoration:none}
-.legal-tiny a:hover{text-decoration:underline}
+    /* ─── PROGRESS DOTS ─── */
+    .progress-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .progress-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border-strong);
+      transition: all 0.2s;
+    }
+    .progress-dot.is-active {
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      width: 24px;
+      border-radius: 3px;
+    }
+    .progress-dot.is-done {
+      background: var(--accent-green);
+    }
 
-.error-box{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);color:var(--red);font-family:var(--mono);font-size:0.7rem;padding:0.65rem 0.85rem;margin-bottom:1rem;display:none;letter-spacing:0.04em;line-height:1.6}
-.error-box.visible{display:block}
-.sent-pane{text-align:center;padding:1.5rem 0.5rem 0.5rem;display:none}
-.sent-pane.visible{display:block}
-.sent-icon{display:inline-block;width:48px;height:48px;border-radius:50%;background:rgba(0,255,157,0.1);border:1px solid var(--accent2);color:var(--accent2);font-family:var(--mono);font-size:1.5rem;line-height:48px;margin-bottom:1rem}
-.sent-pane h3{font-family:var(--serif);font-size:1.35rem;color:var(--white);margin-bottom:0.4rem}
-.sent-pane p{font-size:0.88rem;color:var(--text);font-weight:300;line-height:1.65;max-width:340px;margin:0 auto 1rem}
-.sent-pane p strong{color:var(--white);font-weight:500}
-.sent-email{font-family:var(--mono);font-size:0.78rem;color:var(--accent);padding:0.5rem 0.85rem;background:var(--panel);border:1px solid var(--border);display:inline-block;margin:0.5rem 0}
-.sent-note{font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.04em;margin-top:1rem}
+    /* ─── FIELDS ─── */
+    .field {
+      margin-bottom: 18px;
+    }
+    .field-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .field-input,
+    .field-select {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px; /* 16px = no zoom on iOS */
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .field-input:focus,
+    .field-select:focus {
+      border-color: var(--cyan);
+      background: var(--bg-elev-2);
+    }
+    .field-input.is-error,
+    .field-select.is-error {
+      border-color: var(--danger);
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 480px) {
+      .field-row { grid-template-columns: 1fr; }
+    }
+    .field-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+    }
+    .field-error {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--danger);
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+    }
 
-.section-block{padding:5rem 3rem}
-.section-block.alt{background:var(--deep);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.section-inner{max-width:1100px;margin:0 auto}
-.section-label{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem}
-.section-label::after{content:'';flex:1;height:1px;background:var(--border);max-width:80px}
-.section-heading{font-family:var(--serif);font-size:clamp(1.9rem,3.2vw,2.6rem);color:var(--white);margin-bottom:0.75rem;line-height:1.15}
-.section-sub{color:var(--muted);max-width:580px;font-weight:300;font-size:1rem;line-height:1.7}
+    /* ─── ECONSENT BLOCK ─── */
+    .econsent-block {
+      margin: 24px 0 8px;
+      padding: 16px 18px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .econsent-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 12px;
+    }
+    .econsent-text {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .econsent-text strong { color: var(--text); }
+    .econsent-checkbox-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      cursor: pointer;
+    }
+    .econsent-checkbox-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      cursor: pointer;
+      accent-color: var(--cyan);
+    }
+    .econsent-checkbox-label {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .econsent-link {
+      color: var(--cyan);
+      text-decoration: underline;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+    }
 
-.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:3rem}
-.step-card{background:var(--surface);border:1px solid var(--border);padding:1.75rem;position:relative}
-.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
-.step-card:nth-child(2)::before{background:var(--accent2)}
-.step-card:nth-child(3)::before{background:var(--amber)}
-.step-num{font-family:var(--serif);font-size:2.5rem;line-height:1;color:var(--accent);margin-bottom:0.75rem}
-.step-card:nth-child(2) .step-num{color:var(--accent2)}
-.step-card:nth-child(3) .step-num{color:var(--amber)}
-.step-time{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
-.step-title{font-family:var(--serif);font-size:1.3rem;color:var(--white);margin-bottom:0.6rem;line-height:1.25}
-.step-desc{font-size:0.88rem;color:var(--muted);line-height:1.7;font-weight:300}
+    /* ─── BUTTONS ─── */
+    .button-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dim);
+      border-color: var(--border-strong);
+    }
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
 
-.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:3rem}
-.trust-cell{background:var(--surface);border:1px solid var(--border);padding:1.5rem 1.25rem;text-align:center}
-.trust-icon{font-family:var(--mono);font-size:1.4rem;color:var(--accent);margin-bottom:0.5rem}
-.trust-cell:nth-child(2) .trust-icon{color:var(--accent2)}
-.trust-cell:nth-child(3) .trust-icon{color:var(--amber)}
-.trust-cell:nth-child(4) .trust-icon{color:var(--accent)}
-.trust-title{font-family:var(--mono);font-size:0.66rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--white);margin-bottom:0.4rem}
-.trust-desc{font-size:0.76rem;color:var(--muted);font-weight:300;line-height:1.6}
+    /* ─── SUCCESS STATE ─── */
+    .success-screen {
+      display: none;
+      max-width: 540px;
+      margin: 60px auto;
+      padding: 40px 32px;
+      text-align: center;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .success-screen.is-active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    .success-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: rgba(134, 239, 172, 0.1);
+      border: 2px solid var(--accent-green);
+      display: grid;
+      place-items: center;
+      color: var(--accent-green);
+      font-size: 28px;
+      font-family: var(--font-mono);
+    }
+    .success-title {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      color: var(--text);
+      margin: 0 0 12px;
+    }
+    .success-text {
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .success-email {
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      font-size: 14px;
+    }
 
-footer{border-top:1px solid var(--border);background:var(--deep);font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted)}
-.footer-state{padding:1rem 3rem;border-bottom:1px solid var(--border);text-align:center;font-size:0.58rem;line-height:1.7;color:var(--muted);max-width:900px;margin:0 auto}
-.footer-state strong{color:var(--text);font-weight:700}
-.footer-bottom{padding:1.5rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-footer a{color:var(--muted);text-decoration:none}
-footer a:hover{color:var(--accent)}
-.footer-links{display:flex;gap:1.25rem;flex-wrap:wrap}
+    /* ─── ERROR BANNER ─── */
+    .error-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .error-banner.is-active {
+      display: block;
+    }
 
-.cookie-banner{position:fixed;bottom:1rem;left:1rem;right:1rem;max-width:680px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:0.85rem 1.1rem;display:flex;align-items:center;gap:1rem;font-family:var(--mono);font-size:0.7rem;color:var(--text);letter-spacing:0.04em;z-index:500;box-shadow:0 12px 40px rgba(0,0,0,0.5)}
-.cookie-banner.hidden{display:none}
-.cb-text{flex:1;line-height:1.6}
-.cb-text strong{color:var(--white);font-weight:500}
-.cb-text a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
-.cb-buttons{display:flex;gap:0.5rem;flex-shrink:0}
-.cb-btn{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 0.9rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);transition:all 0.15s}
-.cb-btn.cb-accept{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700}
-.cb-btn.cb-accept:hover{background:var(--accent2);border-color:var(--accent2)}
-.cb-btn.cb-decline:hover{border-color:var(--muted);color:var(--white)}
+    /* ─── FOOTER ─── */
+    .apply-footer {
+      padding: 32px 24px 24px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      line-height: 1.8;
+    }
+    .apply-footer a { color: var(--text-faint); margin: 0 8px; }
+    .apply-footer-disclaimer {
+      margin-top: 12px;
+      max-width: 540px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      text-transform: none;
+      line-height: 1.7;
+    }
 
-@media (max-width:1024px){
-  .hero{grid-template-columns:1fr;padding:3rem 2rem;gap:2.5rem}
-  .steps-grid{grid-template-columns:1fr}
-  .trust-grid{grid-template-columns:repeat(2,1fr)}
-  nav{padding:1rem 1.5rem}
-  .urgency-bar{padding:0.55rem 1rem;font-size:0.62rem}
-}
-@media (max-width:640px){
-  .section-block{padding:3.5rem 1.5rem}
-  .footer-state{padding:1rem 1.25rem}
-  .footer-bottom{padding:1.25rem 1.25rem;flex-direction:column;gap:1rem;text-align:center}
-  .form-row{grid-template-columns:1fr}
-  .purpose-grid{grid-template-columns:1fr}
-  .nav-portal{padding:0.4rem 0.7rem;font-size:0.62rem}
-  .nav-link{display:none}
-}
-@media (max-width:540px){
-  .cookie-banner{flex-direction:column;align-items:stretch;gap:0.75rem;bottom:0.5rem;left:0.5rem;right:0.5rem;padding:0.75rem 0.9rem}
-  .cb-buttons{justify-content:flex-end}
-}
-</style>
+    /* ─── ECONSENT MODAL (the full disclosure text) ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 18, 32, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.is-active {
+      display: flex;
+    }
+    .modal {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 640px;
+      max-height: 85vh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      color: var(--text);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+    .modal-body h3 {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      color: var(--text);
+      margin: 16px 0 6px;
+    }
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      text-align: right;
+    }
+  </style>
 </head>
 <body>
 
-<nav>
-  <a href="/" class="nav-logo">
-    <div class="sonar-icon">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
-        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
-        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
-        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
-        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/></path>
-      </svg>
-    </div>
-    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
-  </a>
-  <div class="nav-right">
-    <span class="nav-link">Already started? <a href="/portal/login.html">Sign in →</a></span>
-    <a href="/portal/login.html" class="nav-portal">Borrower Sign In</a>
-  </div>
-</nav>
+<!-- =============================================================================
+     /apply — public landing
+     -----------------------------------------------------------------------------
+     This page is intentionally separate from internal LO surfaces and
+     borrower portal surfaces. It's marketing-meets-form: the user has
+     just clicked an "Apply now" link on the LO's website and we want them
+     through this in under 90 seconds.
 
-<div class="urgency-bar">
-  <span><span class="ub-pulse"></span>Bank-grade encryption · <strong>Equal Housing Opportunity</strong> · We never sell your data · Real loan officer assigned to every application</span>
+     The form is three steps so it never feels like a wall:
+       Step 1: who you are (name, email, phone)
+       Step 2: what you want (loan purpose, property type, ballpark amount)
+       Step 3: where it is + eConsent
+     ============================================================================= -->
+
+<header class="apply-nav">
+  <div class="apply-brand">
+    <div class="apply-brand-mark">OF</div>
+    <div class="apply-brand-text">
+      <span id="branch-name">OriginFlow</span>
+      <span class="apply-brand-subtitle">Powered by OriginFlow</span>
+    </div>
+  </div>
+  <span class="apply-nav-secure">Secure · encrypted</span>
+</header>
+
+<section class="apply-hero" id="hero">
+  <div class="apply-eyebrow">Mortgage application</div>
+  <h1 class="apply-title">Get started in under 2 minutes.</h1>
+  <p class="apply-subtitle">
+    A quick application your loan officer will follow up on the same business day.
+    No credit check yet — that comes later when you decide to move forward.
+  </p>
+
+  <div class="apply-lo-card">
+    <div class="apply-lo-avatar" id="lo-avatar">—</div>
+    <div class="apply-lo-info">
+      <div class="apply-lo-label">Your loan officer will be</div>
+      <div class="apply-lo-name" id="lo-name">—</div>
+      <div class="apply-lo-meta" id="lo-meta">—</div>
+    </div>
+  </div>
+</section>
+
+<form class="apply-form" id="apply-form" autocomplete="on" novalidate>
+
+  <!-- ─── PROGRESS ─── -->
+  <div class="progress-dots" id="progress">
+    <span class="progress-dot is-active" data-step="1"></span>
+    <span class="progress-dot" data-step="2"></span>
+    <span class="progress-dot" data-step="3"></span>
+  </div>
+
+  <!-- ─── ERROR BANNER ─── -->
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- ─── STEP 1 — Identity ─── -->
+  <div class="form-step is-active" data-step="1">
+    <div class="form-step-header">
+      <div class="form-step-eyebrow">Step 1 of 3</div>
+      <h2 class="form-step-title">Tell us who you are.</h2>
+      <div class="form-step-subtitle">We'll send a magic link to your email — no password needed.</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="first-name">First name</label>
+        <input class="field-input" id="first-name" name="first_name" type="text"
+               autocomplete="given-name" required maxlength="60">
+      </div>
+      <div class="field">
+        <label class="field-label" for="last-name">Last name</label>
+        <input class="field-input" id="last-name" name="last_name" type="text"
+               autocomplete="family-name" required maxlength="60">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="email">Email</label>
+      <input class="field-input" id="email" name="email" type="email"
+             autocomplete="email" required maxlength="120"
+             inputmode="email" placeholder="you@example.com">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="phone">Mobile phone</label>
+      <input class="field-input" id="phone" name="phone" type="tel"
+             autocomplete="tel" required maxlength="20"
+             inputmode="tel" placeholder="(806) 555-0118">
+      <div class="field-hint">For your loan officer to reach you — never sold or shared.</div>
+    </div>
+
+    <div class="button-row">
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 2 — Loan basics ─── -->
+  <div class="form-step" data-step="2">
+    <div class="form-step-header">
+      <div class="form-step-eyebrow">Step 2 of 3</div>
+      <h2 class="form-step-title">What kind of loan?</h2>
+      <div class="form-step-subtitle">Rough estimates are fine — we'll dial it in together.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="purpose">Loan purpose</label>
+      <select class="field-select" id="purpose" name="purpose" required>
+        <option value="">Choose one…</option>
+        <option value="purchase">Buying a home</option>
+        <option value="refinance_rate_term">Refinancing for a better rate</option>
+        <option value="refinance_cash_out">Refinancing to take cash out</option>
+        <option value="construction">New construction</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="property-type">Property type</label>
+      <select class="field-select" id="property-type" name="property_type" required>
+        <option value="">Choose one…</option>
+        <option value="single_family">Single-family home</option>
+        <option value="condo">Condo</option>
+        <option value="townhouse">Townhouse</option>
+        <option value="multi_family_2_4">2–4 unit</option>
+        <option value="manufactured">Manufactured home</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="occupancy">How will you use it?</label>
+      <select class="field-select" id="occupancy" name="occupancy" required>
+        <option value="">Choose one…</option>
+        <option value="primary">Primary residence</option>
+        <option value="second_home">Second home / vacation</option>
+        <option value="investment">Investment property</option>
+      </select>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="loan-amount">Loan amount (estimate)</label>
+        <input class="field-input" id="loan-amount" name="loan_amount" type="text"
+               inputmode="numeric" placeholder="$310,000">
+        <div class="field-hint">Approximate — we'll refine it.</div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="purchase-price">Property value</label>
+        <input class="field-input" id="purchase-price" name="purchase_price" type="text"
+               inputmode="numeric" placeholder="$390,000">
+        <div class="field-hint">Purchase price or current value.</div>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 3 — Property + eConsent ─── -->
+  <div class="form-step" data-step="3">
+    <div class="form-step-header">
+      <div class="form-step-eyebrow">Step 3 of 3</div>
+      <h2 class="form-step-title">Where's the property?</h2>
+      <div class="form-step-subtitle">Just the basics — full address comes later.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="property-city">City</label>
+      <input class="field-input" id="property-city" name="property_city" type="text"
+             autocomplete="address-level2" maxlength="60" placeholder="Lubbock">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="property-state">State</label>
+        <input class="field-input" id="property-state" name="property_state" type="text"
+               autocomplete="address-level1" maxlength="2" placeholder="TX"
+               style="text-transform: uppercase;">
+      </div>
+      <div class="field">
+        <label class="field-label" for="property-zip">ZIP</label>
+        <input class="field-input" id="property-zip" name="property_zip" type="text"
+               autocomplete="postal-code" inputmode="numeric" maxlength="10" placeholder="79410">
+      </div>
+    </div>
+
+    <!-- ─── ECONSENT BLOCK ─── -->
+    <!--
+      ESIGN Act § 7001 requires affirmative consent to receive disclosures
+      electronically. Without this checkbox checked, we cannot send the
+      borrower their LE, CD, or any disclosure via email/portal — only
+      paper mail. So this is a real gate, not a UX nicety.
+
+      The consent record (consent text hash + IP + UA + timestamp) is
+      created server-side in OF_submitApplication() when the form posts.
+    -->
+    <div class="econsent-block">
+      <div class="econsent-title">Electronic consent</div>
+      <div class="econsent-text">
+        To send you disclosures and loan documents <strong>electronically</strong>
+        (instead of by paper mail), we need your consent. You can revoke
+        anytime and switch to paper.
+      </div>
+      <label class="econsent-checkbox-row">
+        <input type="checkbox" id="econsent-checkbox" required>
+        <span class="econsent-checkbox-label">
+          I agree to receive loan documents and disclosures electronically.
+          <button type="button" class="econsent-link" id="econsent-modal-open">Read the full disclosure</button>
+        </span>
+      </label>
+    </div>
+
+    <div class="button-row">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="submit" class="btn btn-primary" id="submit-btn">Submit application</button>
+    </div>
+  </div>
+</form>
+
+<!-- ─── SUCCESS STATE ─── -->
+<div class="success-screen" id="success-screen">
+  <div class="success-icon">✓</div>
+  <h2 class="success-title">Application received.</h2>
+  <p class="success-text">
+    We just sent a magic-link sign-in to your email.
+  </p>
+  <p class="success-email" id="success-email">—</p>
+  <p class="success-text" style="margin-top: 20px; font-size: 14px;">
+    Open it on your phone, sign in, and you'll land in your borrower portal.
+    Your loan officer is also notified — expect a call within a few business hours.
+  </p>
 </div>
 
-<section>
-  <div class="hero">
-    <div>
-      <div class="hero-eyebrow">Online Mortgage Application</div>
-      <h1 class="hero-headline">Apply for a mortgage.<br>Online. In <em>15 minutes.</em></h1>
-      <p class="hero-sub">Plain-English questions. <strong>No paperwork yet.</strong> Save your progress and finish whenever you've got coffee. A real loan officer reviews every application — no chatbots, no upsells, no spam.</p>
-      <p class="hero-note">
-        <span>✓</span> No commitment · <span>✓</span> No credit pull until you authorize one<br>
-        <span>✓</span> ESIGN compliant · <span>✓</span> Your data stays with your lender
-      </p>
-    </div>
-
-    <div class="apply-card">
-      <div class="apply-card-head">
-        <div class="apply-card-eyebrow">Start your application</div>
-        <h2 class="apply-card-title">Tell us a bit about you.</h2>
-        <p class="apply-card-sub">We'll email you a link to continue. No password.</p>
-      </div>
-      <div class="apply-card-body">
-
-        <div class="error-box" id="error-box"></div>
-
-        <!-- ─── Default form pane ────────────────────────────────── -->
-        <form id="apply-form" novalidate>
-          <div class="form-group">
-            <label class="form-label" for="full-name">Your Full Name <span class="req">*</span></label>
-            <input class="form-input" type="text" id="full-name" autocomplete="name" placeholder="Maria Esquivel" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="email">Email Address <span class="req">*</span></label>
-            <input class="form-input" type="email" id="email" autocomplete="email" placeholder="you@example.com" required />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="phone">Phone <span class="opt">optional</span></label>
-              <input class="form-input" type="tel" id="phone" autocomplete="tel" placeholder="(806) 555-0123" />
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="property-state">Property State <span class="req">*</span></label>
-              <select class="form-select" id="property-state" required>
-                <option value="">Select…</option>
-                <option value="TX">Texas</option>
-                <option value="" disabled>──────────</option>
-                <option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option>
-                <option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option>
-                <option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="FL">Florida</option>
-                <option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option>
-                <option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option>
-                <option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option>
-                <option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option>
-                <option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option>
-                <option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option>
-                <option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option>
-                <option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option>
-                <option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option>
-                <option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option>
-                <option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option>
-                <option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option>
-                <option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option>
-                <option value="WY">Wyoming</option><option value="DC">District of Columbia</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">What are you looking to do? <span class="req">*</span></label>
-            <div class="purpose-grid" id="purpose-grid">
-              <button type="button" class="purpose-btn" data-purpose="purchase">Buying<br>a home</button>
-              <button type="button" class="purpose-btn" data-purpose="refinance">Refinancing</button>
-              <button type="button" class="purpose-btn" data-purpose="cashout_refinance">Cash-out<br>refinance</button>
-            </div>
-          </div>
-
-          <button type="submit" class="btn-submit" id="submit-btn">Send My Sign-In Link</button>
-
-          <p class="legal-tiny">
-            By continuing, you agree to receive an email with a sign-in link. No credit pull happens at this step. Once you sign in, you'll be asked to consent to electronic delivery of mortgage disclosures (ESIGN) before continuing your application. See our <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.
-          </p>
-        </form>
-
-        <!-- ─── Sent pane (success state after magic link send) ──── -->
-        <div class="sent-pane" id="sent-pane">
-          <div class="sent-icon">✓</div>
-          <h3>Check your email.</h3>
-          <p>We sent a sign-in link to</p>
-          <div class="sent-email" id="sent-email-display">—</div>
-          <p>Click the link in the email to <strong>continue your application</strong>. The link expires in 1 hour.</p>
-          <p class="sent-note">Don't see it? Check your spam folder, or <a href="#" id="resend-link" style="color:var(--accent);text-decoration:underline;">send it again</a>.</p>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section-block alt">
-  <div class="section-inner">
-    <div class="section-label">How it works</div>
-    <h2 class="section-heading">Three steps. About 15 minutes total.</h2>
-    <p class="section-sub">No paperwork to gather upfront. We ask for documents only when we need them, and you upload them right from your phone.</p>
-
-    <div class="steps-grid">
-      <div class="step-card">
-        <div class="step-num">01</div>
-        <div class="step-time">~30 seconds</div>
-        <div class="step-title">Tell us how to reach you.</div>
-        <div class="step-desc">Just your name, email, and what you're looking to do. We'll send a sign-in link so you can pick up from any device — phone, laptop, or your spouse's iPad.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">02</div>
-        <div class="step-time">~1 minute</div>
-        <div class="step-title">Sign in. Consent to e-delivery.</div>
-        <div class="step-desc">Click the link in your email. Read and accept the electronic communication consent (federal law requires us to ask). Then your application starts.</div>
-      </div>
-      <div class="step-card">
-        <div class="step-num">03</div>
-        <div class="step-time">~12 minutes</div>
-        <div class="step-title">Walk through the application.</div>
-        <div class="step-desc">Plain-English questions — about you, your home, your finances. Save progress whenever you want. When you finish, a real loan officer reviews everything and reaches out.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section-block">
-  <div class="section-inner">
-    <div class="section-label">Built around protection</div>
-    <h2 class="section-heading">Your data, secured at every step.</h2>
-    <p class="section-sub">Bank-grade encryption. Row-level database isolation. ESIGN-compliant audit trails. Your application belongs to your lender — not to us.</p>
-
-    <div class="trust-grid">
-      <div class="trust-cell">
-        <div class="trust-icon">🔒</div>
-        <div class="trust-title">Encryption in transit</div>
-        <div class="trust-desc">TLS 1.3 on every connection. Your data is never sent in the clear.</div>
-      </div>
-      <div class="trust-cell">
-        <div class="trust-icon">🏷</div>
-        <div class="trust-title">No data sales</div>
-        <div class="trust-desc">We never sell, rent, or share your information with marketers. Your application is between you and your lender.</div>
-      </div>
-      <div class="trust-cell">
-        <div class="trust-icon">⚖</div>
-        <div class="trust-title">ESIGN & TRID compliant</div>
-        <div class="trust-desc">Every disclosure delivery is logged with timestamp, IP, and your consent hash — required by federal law.</div>
-      </div>
-      <div class="trust-cell">
-        <div class="trust-icon">⌂</div>
-        <div class="trust-title">Equal Housing Opportunity</div>
-        <div class="trust-desc">We don't discriminate. Your race, ethnicity, sex, or whether you provide that info — none of it affects your decision.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="cookie-banner hidden" id="cookie-banner" role="dialog" aria-label="Cookie consent">
-  <div class="cb-text">
-    <strong>We use cookies for analytics.</strong>
-    Helps us see which features people actually use. Nothing tied to a loan ever leaves your browser.
-    Details in our <a href="/privacy.html">Privacy Policy</a>.
-  </div>
-  <div class="cb-buttons">
-    <button class="cb-btn cb-decline" type="button" id="cb-decline">Decline</button>
-    <button class="cb-btn cb-accept" type="button" id="cb-accept">Accept</button>
-  </div>
-</div>
-
-<footer>
-  <div class="footer-state">
-    <strong>Texas property?</strong> [Lender Name] is licensed by the Texas Department of Savings and Mortgage Lending. Consumers wishing to file a complaint should complete the form at www.sml.texas.gov or call 1-877-276-5550. NMLS ID: [pending]. Equal Housing Opportunity. State licensing varies; we will route your application to a licensed loan officer for your property state.
-  </div>
-  <div class="footer-bottom">
-    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
-    <div class="footer-links">
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/portal/login.html">Sign In</a>
-      <a href="mailto:dsrackler@gmail.com">Contact</a>
-    </div>
+<footer class="apply-footer">
+  <a href="#">Privacy</a> ·
+  <a href="#">Terms</a> ·
+  <a href="#">Help</a>
+  <div class="apply-footer-disclaimer">
+    OriginFlow is a software platform. The loan itself will be originated by your local branch.
+    Equal Housing Lender. NMLS ID #—.
   </div>
 </footer>
 
-<!-- ─── Cookie banner IIFE (landing pattern, 'granted'/'denied') ─────── -->
+<!-- ─── ECONSENT MODAL ─── -->
+<div class="modal-overlay" id="econsent-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Electronic disclosure consent</h2>
+      <button class="modal-close" id="econsent-modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" id="econsent-disclosure-body">
+      <!--
+        The exact text below is what gets hashed into econsent_records.disclosure_hash.
+        Any change to this copy = a new hash = a new "version" of the consent.
+        Old consents remain bound to whichever hash they agreed to.
+      -->
+      <h3>Your consent to electronic records and signatures (ESIGN Act)</h3>
+      <p>
+        By checking the consent box, you agree to receive all mortgage-related
+        documents — including Loan Estimates (LE), Closing Disclosures (CD),
+        privacy notices, adverse action notices, and any other communications
+        we are required to deliver — in electronic form rather than on paper.
+      </p>
+
+      <h3>What you'll need to view the documents</h3>
+      <p>
+        A device with internet access, a modern web browser
+        (Chrome, Safari, Firefox, or Edge from the last 24 months), and a
+        valid email address. PDFs require any PDF reader. If you can't view
+        a particular document, contact your loan officer and we'll provide
+        an alternative.
+      </p>
+
+      <h3>Withdrawing consent</h3>
+      <p>
+        You can withdraw consent at any time at no cost by emailing your
+        loan officer or replying to any disclosure email. After withdrawal,
+        we'll deliver future disclosures on paper. Withdrawing consent will
+        not invalidate any electronic record or signature you've already
+        made.
+      </p>
+
+      <h3>Updating your contact information</h3>
+      <p>
+        You're responsible for keeping your email address current with us.
+        If your email changes, sign in to your borrower portal and update it
+        — or contact your loan officer directly.
+      </p>
+
+      <h3>Requesting paper copies</h3>
+      <p>
+        You may request a paper copy of any document at any time at no charge.
+        Email your loan officer with the document name and we'll mail it
+        within five business days.
+      </p>
+
+      <h3>Confirming consent</h3>
+      <p>
+        Checking the consent box on the application page constitutes your
+        affirmative consent under ESIGN Act § 7001. The date, time, IP
+        address, and device information of your consent will be recorded and
+        retained as part of your loan file.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="econsent-modal-close-btn" style="flex: none; padding: 10px 24px;">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
-(function() {
-  var KEY = 'of_cookie_consent';
-  var banner = document.getElementById('cookie-banner');
-  if (!banner) return;
-  var prior = null;
-  try { prior = localStorage.getItem(KEY); } catch(_) {}
-  if (prior !== 'granted' && prior !== 'denied') {
-    banner.classList.remove('hidden');
-  }
-  function setConsent(v) {
-    try { localStorage.setItem(KEY, v); } catch(_) {}
-    if (typeof gtag === 'function') {
-      gtag('consent','update',{ 'analytics_storage': v === 'granted' ? 'granted' : 'denied' });
+/* =============================================================================
+   /apply page wiring
+   -----------------------------------------------------------------------------
+   Three pieces of behavior:
+     1. Branch context loading — figures out which branch's LO this lead
+        should be assigned to, populates the LO card up top.
+     2. Multi-step form navigation — client-side validation per step,
+        progress dots update.
+     3. Submission — calls window.OF_submitApplication(payload) which is
+        the server-side hook that creates rows in borrowers, loans,
+        loan_borrowers, borrower_invites, and econsent_records (atomic).
+   ============================================================================= */
+
+// =============================================================================
+// BRANCH BOOTSTRAP — replace with real fetch when API is wired
+// =============================================================================
+// In production, this reads either:
+//   (a) the subdomain (e.g. submarinecatalyst.originflow.app → branch slug)
+//   (b) a ?branch=slug query param
+// then calls a public, read-only edge function to get back the branch + LO
+// metadata. NO authentication required — this is a public marketing page.
+window.OF_BRANCH_BOOTSTRAP = {
+  branch: {
+    id:   '00000000-0000-0000-0000-000000000001',
+    name: 'Submarine Catalyst',
+    slug: 'submarinecatalyst',
+  },
+  intake_lo: {
+    name:    'Avery Sutton',
+    title:   'Loan Officer · NMLS #1924401',
+    initials: 'AS',
+  },
+};
+
+// =============================================================================
+// FORM STATE
+// =============================================================================
+let currentStep = 1;
+const totalSteps = 3;
+
+// =============================================================================
+// FIELD VALIDATORS — per step
+// =============================================================================
+const stepFields = {
+  1: [
+    { id: 'first-name',  required: true, label: 'First name' },
+    { id: 'last-name',   required: true, label: 'Last name' },
+    { id: 'email',       required: true, label: 'Email', type: 'email' },
+    { id: 'phone',       required: true, label: 'Mobile phone', type: 'phone' },
+  ],
+  2: [
+    { id: 'purpose',        required: true, label: 'Loan purpose' },
+    { id: 'property-type',  required: true, label: 'Property type' },
+    { id: 'occupancy',      required: true, label: 'Occupancy' },
+    // amount + price are optional but if filled must parse
+  ],
+  3: [
+    { id: 'property-city',  required: true, label: 'City' },
+    { id: 'property-state', required: true, label: 'State', maxLen: 2 },
+    { id: 'property-zip',   required: true, label: 'ZIP' },
+    { id: 'econsent-checkbox', required: true, label: 'Electronic consent', type: 'checkbox' },
+  ],
+};
+
+function validateStep(stepNum) {
+  const fields = stepFields[stepNum] || [];
+  const errors = [];
+  for (const f of fields) {
+    const el = document.getElementById(f.id);
+    if (!el) continue;
+
+    // Clear previous error styling
+    el.classList.remove('is-error');
+
+    if (f.type === 'checkbox') {
+      if (f.required && !el.checked) errors.push(`Please check the ${f.label.toLowerCase()} box.`);
+      continue;
     }
-    banner.classList.add('hidden');
+
+    const val = (el.value || '').trim();
+    if (f.required && !val) {
+      el.classList.add('is-error');
+      errors.push(`${f.label} is required.`);
+      continue;
+    }
+    if (f.type === 'email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      el.classList.add('is-error');
+      errors.push('Please enter a valid email.');
+    }
+    if (f.type === 'phone' && val) {
+      const digits = val.replace(/\D/g, '');
+      if (digits.length < 10) {
+        el.classList.add('is-error');
+        errors.push('Please enter a valid phone number.');
+      }
+    }
   }
-  document.getElementById('cb-accept').addEventListener('click', function() { setConsent('granted'); });
-  document.getElementById('cb-decline').addEventListener('click', function() { setConsent('denied'); });
-})();
-</script>
+  return errors;
+}
 
-<!-- ─── Apply submission ────────────────────────────────────────────────
-     Flow:
-       1. Validate required fields (name, email, state, purpose).
-       2. Stash {fullName, phone, propertyState, loanPurpose} in localStorage
-          under 'of_pending_application' so /portal/apply.html can pick it
-          up on first authenticated load and prefill the wizard.
-       3. Call signInWithOtp with shouldCreateUser:true and emailRedirectTo
-          /portal/apply.html. Supabase creates auth.users on first verify.
-       4. Show the "Check your email" pane.
+function showError(msg) {
+  const banner = document.getElementById('error-banner');
+  banner.textContent = msg;
+  banner.classList.add('is-active');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
-     Why we don't insert into borrower_accounts here:
-       The anon role can't write to borrower_accounts (RLS), and exposing
-       a permissive insert policy to anon is a spam vector. Migration 003
-       provides bootstrap_borrower_account() — a security-definer RPC that
-       /portal/apply.html calls AFTER the borrower is authenticated, using
-       the values we cached in localStorage to fill in display name + phone.
-─────────────────────────────────────────────────────────────────────── -->
-<script>
-  var errorBox = document.getElementById('error-box');
-  var submitBtn = document.getElementById('submit-btn');
-  var form = document.getElementById('apply-form');
-  var sentPane = document.getElementById('sent-pane');
-  var sentEmailDisplay = document.getElementById('sent-email-display');
+function clearError() {
+  document.getElementById('error-banner').classList.remove('is-active');
+}
 
-  // Purpose buttons — radio-like behavior on a button group.
-  var selectedPurpose = null;
-  document.querySelectorAll('.purpose-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.purpose-btn').forEach(function(b) { b.classList.remove('selected'); });
-      btn.classList.add('selected');
-      selectedPurpose = btn.dataset.purpose;
+// =============================================================================
+// STEP NAVIGATION
+// =============================================================================
+function goToStep(n) {
+  if (n < 1 || n > totalSteps) return;
+
+  document.querySelectorAll('.form-step').forEach(el => {
+    el.classList.toggle('is-active', parseInt(el.dataset.step) === n);
+  });
+
+  document.querySelectorAll('.progress-dot').forEach(el => {
+    const dotStep = parseInt(el.dataset.step);
+    el.classList.remove('is-active', 'is-done');
+    if (dotStep === n) el.classList.add('is-active');
+    else if (dotStep < n) el.classList.add('is-done');
+  });
+
+  currentStep = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function handleNext() {
+  const errors = validateStep(currentStep);
+  if (errors.length > 0) { showError(errors[0]); return; }
+  clearError();
+  goToStep(currentStep + 1);
+}
+
+function handleBack() {
+  clearError();
+  goToStep(currentStep - 1);
+}
+
+// =============================================================================
+// FORM SERIALIZATION
+// =============================================================================
+function parseMoney(str) {
+  if (!str) return null;
+  const digits = String(str).replace(/[^\d]/g, '');
+  return digits ? parseInt(digits, 10) : null;
+}
+
+function collectPayload() {
+  return {
+    branch_id: window.OF_BRANCH_BOOTSTRAP.branch.id,
+    borrower: {
+      first_name: document.getElementById('first-name').value.trim(),
+      last_name:  document.getElementById('last-name').value.trim(),
+      email:      document.getElementById('email').value.trim().toLowerCase(),
+      phone:      document.getElementById('phone').value.trim(),
+    },
+    loan: {
+      purpose:           document.getElementById('purpose').value,
+      property_type:     document.getElementById('property-type').value,
+      occupancy:         document.getElementById('occupancy').value,
+      loan_amount_cents: (parseMoney(document.getElementById('loan-amount').value) || 0) * 100,
+      purchase_price_cents: (parseMoney(document.getElementById('purchase-price').value) || 0) * 100,
+      property_address: {
+        city:  document.getElementById('property-city').value.trim(),
+        state: document.getElementById('property-state').value.trim().toUpperCase(),
+        zip:   document.getElementById('property-zip').value.trim(),
+      },
+      intake_source: 'borrower_portal',
+    },
+    econsent: {
+      consented: document.getElementById('econsent-checkbox').checked,
+      disclosure_template_key: 'esign_consent_v1',
+      // Server hashes the actual disclosure text (it has the canonical copy)
+      // — we don't trust the client to compute the hash.
+    },
+  };
+}
+
+// =============================================================================
+// SUBMISSION
+// =============================================================================
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const errors = validateStep(currentStep);
+  if (errors.length > 0) { showError(errors[0]); return; }
+
+  const submitBtn = document.getElementById('submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting…';
+  clearError();
+
+  const payload = collectPayload();
+
+  try {
+    let result;
+    if (typeof window.OF_submitApplication === 'function') {
+      // Real backend hook (lands with 11.5.2 wiring + edge function)
+      result = await window.OF_submitApplication(payload);
+    } else {
+      // Stub for local testing — pretend it worked
+      console.log('OF_submitApplication not wired. Payload would have been:', payload);
+      result = {
+        success:      true,
+        masked_email: maskEmail(payload.borrower.email),
+      };
+    }
+
+    if (!result || !result.success) {
+      throw new Error(result?.error || 'Application could not be submitted.');
+    }
+
+    // Swap to success state
+    document.getElementById('hero').style.display = 'none';
+    document.getElementById('apply-form').style.display = 'none';
+    document.getElementById('success-email').textContent = result.masked_email || payload.borrower.email;
+    document.getElementById('success-screen').classList.add('is-active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (err) {
+    console.error(err);
+    showError(err.message || "Something went wrong. Please try again or call your loan officer.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit application';
+  }
+}
+
+function maskEmail(email) {
+  if (!email) return '';
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  if (local.length <= 2) return local[0] + '***@' + domain;
+  return local[0] + '***' + local.slice(-1) + '@' + domain;
+}
+
+// =============================================================================
+// RENDER BOOTSTRAP CONTENT (branch + LO card)
+// =============================================================================
+function renderBootstrap() {
+  const b = window.OF_BRANCH_BOOTSTRAP;
+  document.getElementById('branch-name').textContent = b.branch.name;
+  document.getElementById('lo-avatar').textContent = b.intake_lo.initials;
+  document.getElementById('lo-name').textContent = b.intake_lo.name;
+  document.getElementById('lo-meta').textContent = b.intake_lo.title;
+}
+
+// =============================================================================
+// WIRING
+// =============================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  renderBootstrap();
+
+  document.querySelectorAll('[data-action="next"]').forEach(b => b.addEventListener('click', handleNext));
+  document.querySelectorAll('[data-action="back"]').forEach(b => b.addEventListener('click', handleBack));
+  document.getElementById('apply-form').addEventListener('submit', handleSubmit);
+
+  // eConsent modal
+  document.getElementById('econsent-modal-open').addEventListener('click', () => {
+    document.getElementById('econsent-modal').classList.add('is-active');
+  });
+  const closeModal = () => document.getElementById('econsent-modal').classList.remove('is-active');
+  document.getElementById('econsent-modal-close').addEventListener('click', closeModal);
+  document.getElementById('econsent-modal-close-btn').addEventListener('click', closeModal);
+  document.getElementById('econsent-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'econsent-modal') closeModal();
+  });
+
+  // Phone formatting on the fly — purely cosmetic, doesn't affect submitted value much
+  document.getElementById('phone').addEventListener('input', (e) => {
+    const d = e.target.value.replace(/\D/g, '').slice(0, 10);
+    if (d.length === 0) return;
+    let f = d;
+    if (d.length > 6)      f = `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    else if (d.length > 3) f = `(${d.slice(0,3)}) ${d.slice(3)}`;
+    else                   f = `(${d}`;
+    e.target.value = f;
+  });
+
+  // Money formatting on loan_amount and purchase_price
+  ['loan-amount','purchase-price'].forEach(id => {
+    document.getElementById(id).addEventListener('blur', (e) => {
+      const n = parseMoney(e.target.value);
+      e.target.value = n ? '$' + n.toLocaleString('en-US') : '';
     });
   });
-
-  function showError(msg) {
-    errorBox.textContent = msg;
-    errorBox.classList.add('visible');
-  }
-  function resetBtn() {
-    submitBtn.textContent = 'Send My Sign-In Link';
-    submitBtn.disabled = false;
-    submitBtn.style.opacity = '1';
-  }
-
-  function validEmail(e) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-  }
-
-  async function submitApply(email, fullName, phone, propertyState, loanPurpose) {
-    var sb = (typeof getSupabase === 'function') ? getSupabase() : null;
-    if (!sb) {
-      showError('Could not reach the service. Please refresh and try again.');
-      resetBtn();
-      return;
-    }
-
-    // Cache the captured fields for /portal/apply.html to pick up after
-    // the borrower verifies their magic link. Includes a timestamp so we
-    // can age out stale drafts on the portal side (>24h = ignore).
-    try {
-      localStorage.setItem('of_pending_application', JSON.stringify({
-        fullName: fullName,
-        email: email,
-        phone: phone || null,
-        propertyState: propertyState,
-        loanPurpose: loanPurpose,
-        capturedAt: new Date().toISOString()
-      }));
-    } catch (_) { /* localStorage unavailable, the wizard will just have less prefill */ }
-
-    try {
-      var result = await sb.auth.signInWithOtp({
-        email: email,
-        options: {
-          emailRedirectTo: window.location.origin + '/portal/apply.html',
-          shouldCreateUser: true
-        }
-      });
-      if (result.error) throw result.error;
-
-      sentEmailDisplay.textContent = email;
-      form.style.display = 'none';
-      sentPane.classList.add('visible');
-    } catch (err) {
-      if (err && err.message && err.message.toLowerCase().includes('rate limit')) {
-        showError('Too many attempts. Please wait a minute before trying again.');
-      } else {
-        showError((err && err.message) || 'Could not send sign-in link. Please try again.');
-      }
-      resetBtn();
-    }
-  }
-
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    errorBox.classList.remove('visible');
-
-    var fullName = document.getElementById('full-name').value.trim();
-    var email = document.getElementById('email').value.trim();
-    var phone = document.getElementById('phone').value.trim();
-    var propertyState = document.getElementById('property-state').value;
-
-    if (!fullName) return showError('Your full name is required.');
-    if (!email || !validEmail(email)) return showError('A valid email address is required.');
-    if (!propertyState) return showError('Please select the state of the property.');
-    if (!selectedPurpose) return showError('Please choose what you\'re looking to do.');
-
-    submitBtn.textContent = 'Sending…';
-    submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.7';
-
-    submitApply(email, fullName, phone, propertyState, selectedPurpose);
-  });
-
-  // Resend link from the sent pane
-  document.getElementById('resend-link').addEventListener('click', function(e) {
-    e.preventDefault();
-    var cached = null;
-    try { cached = JSON.parse(localStorage.getItem('of_pending_application') || 'null'); } catch(_) {}
-    if (!cached || !cached.email) {
-      sentPane.classList.remove('visible');
-      form.style.display = '';
-      return;
-    }
-    submitApply(cached.email, cached.fullName, cached.phone, cached.propertyState, cached.loanPurpose);
-  });
+});
 </script>
 
 </body>
