@@ -7,6 +7,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       ------------------------------------------------------------
+       SUPABASE_ANON_KEY uses the new sb_publishable_* format. This
+       replaces the legacy anon JWT and is safe to embed client-side;
+       branch-scoped RLS enforces all access control server-side.
+
+       Loaded in <head> so that portal-auth.js (which reads
+       window.OF_CONFIG synchronously inside OF_supabase()) and the
+       inline scripts at the bottom of <body> can both rely on it
+       being defined before any other JS runs.
+
+       supabase-js MUST load before portal-auth.js — portal-auth.js
+       calls window.supabase.createClient() on its first invocation.
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* Sign-in page — minimal, single-column, friendly tone. Same design
        tokens as the rest of the portal so the visual transition from
@@ -226,9 +251,37 @@
       margin-top: 12px;
       font-size: 13px;
     }
+
+    /* Pre-auth session check — covers the body while we decide
+       whether to redirect a still-signed-in user to /portal/.
+       Without this, the form briefly flashes before redirect. */
+    .session-veil {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: opacity 0.15s;
+    }
+    .session-veil.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+
+<!-- Veil covers the page until the session check resolves. If a session
+     already exists we redirect to /portal/ and the veil stays up; if not
+     we drop the veil and show the form. Prevents the "flash of sign-in
+     form" for already-authenticated users hitting this URL by mistake. -->
+<div class="session-veil" id="session-veil">Checking session…</div>
 
 <header class="nav">
   <div class="brand-mark">OF</div>
@@ -280,10 +333,51 @@
   </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/js/portal-auth.js"></script>
 <script>
-// Show a contextual error message if redirected here with ?error=... param
+// ============================================================
+// Pre-auth session check
+// ------------------------------------------------------------
+// If the user already holds a valid Supabase session (most common
+// causes: bookmarked /portal/sign-in while signed in elsewhere, or
+// hit the browser back button after landing on /portal/), short-
+// circuit the magic-link dance and punt them straight to /portal/.
+//
+// We do NOT call OF_bootstrap() here — that resolves the borrower
+// row and is the responsibility of the page they land on. All we
+// need is the raw session.
+//
+// If OF_supabase() throws (config missing) we fall through to the
+// form rather than blocking the page; the form submit handler will
+// surface the real error if the SDK is unreachable.
+// ============================================================
+(async function redirectIfSignedIn() {
+  const veil = document.getElementById('session-veil');
+  try {
+    const supabase = window.OF_supabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // Don't drop the veil — keep it up through the redirect to
+      // avoid a flash of the sign-in form mid-navigation.
+      window.location.replace('/portal/');
+      return;
+    }
+  } catch (e) {
+    console.warn('[portal/sign-in] session check skipped:', e);
+  }
+  // No session — reveal the form.
+  veil.classList.add('is-hidden');
+  // Remove from DOM after fade so it doesn't trap pointer events.
+  setTimeout(() => veil.remove(), 200);
+})();
+
+// ============================================================
+// Redirect-error banner
+// ------------------------------------------------------------
+// Other portal pages send users back here with ?error=<code> when
+// they cannot establish a session. The codes are part of the
+// portal-auth.js contract; if a new code is added there it needs
+// a matching entry in this map.
+// ============================================================
 (function showRedirectError() {
   const params = new URLSearchParams(window.location.search);
   const error = params.get('error');
@@ -298,7 +392,19 @@
   banner.classList.add('is-active');
 })();
 
+// ============================================================
 // Form submission
+// ------------------------------------------------------------
+// Delegates entirely to OF_signInWithEmail() from portal-auth.js,
+// which wraps supabase.auth.signInWithOtp(). The function returns
+// a promise that resolves once the magic-link email is dispatched
+// (NOT once the user clicks it — that's handled by the auth flow
+// on the landing page via detectSessionInUrl: true).
+//
+// Email validation here is intentionally loose. Supabase performs
+// the real validation server-side and we'd rather show the user a
+// generic "could not send" than try to outguess valid TLDs.
+// ============================================================
 document.getElementById('signin-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const emailInput = document.getElementById('email');
@@ -318,7 +424,11 @@ document.getElementById('signin-form').addEventListener('submit', async (e) => {
 
   try {
     await window.OF_signInWithEmail(email);
-    // Swap to success state
+    // Swap to success state. We intentionally do NOT confirm whether
+    // the email matched a known borrower — that's an account-
+    // enumeration leak. Supabase's signInWithOtp returns success
+    // either way; if no account exists, no email is sent and the
+    // user simply never receives a link.
     document.getElementById('form-state').style.display = 'none';
     document.getElementById('success-state').classList.add('is-active');
     document.getElementById('success-email').textContent = maskEmail(email);
