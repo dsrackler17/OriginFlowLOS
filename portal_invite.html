@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OriginFlow Portal — Invite a co-borrower</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       Phase 11.5.3 — Co-borrower invite UI
+       -----------------------------------------------------------------------
+       The primary borrower invites their spouse/partner/co-borrower to fill
+       out their portion of the application. This is one of two paths into
+       the borrower_invites table — the other is /apply for the primary.
+
+       Three sections:
+         1. Status of existing invites (pending / accepted / expired / revoked)
+         2. Form to send a new invite (name, email, role)
+         3. Educational copy explaining the difference between co-borrower
+            and non-borrowing spouse — borrowers don't know the distinction
+
+       The invite token + email send happens server-side via
+       window.OF_inviteCoBorrower(payload).
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
+
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .portal-banner {
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-align: center;
+    }
+    .portal-nav {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .portal-brand { display: flex; align-items: center; gap: 10px; }
+    .portal-brand-mark {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: linear-gradient(135deg, var(--cyan), #0891b2);
+      display: grid; place-items: center;
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+    .portal-brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
+    .portal-brand-text .subtitle {
+      display: block; font-weight: 400; font-size: 10px;
+      color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
+    }
+    .back-link {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-dim); display: flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { color: var(--cyan); text-decoration: none; }
+
+    .portal-main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    @media (min-width: 640px) { .portal-main { padding: 32px 24px 80px; } }
+
+    .page-eyebrow {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--cyan); margin-bottom: 6px;
+    }
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 30px; line-height: 1.1; margin: 0 0 4px 0;
+    }
+    @media (min-width: 640px) { .page-title { font-size: 38px; } }
+    .page-subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 32px; max-width: 540px; }
+
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ─── EXISTING INVITES LIST ─── */
+    .invite-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .invite-row {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .invite-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border-strong);
+      display: grid; place-items: center;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+    }
+    .invite-row.is-accepted .invite-avatar {
+      background: linear-gradient(135deg, var(--accent-green), #4ade80);
+      color: var(--navy);
+      border: 0;
+    }
+    .invite-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .invite-name {
+      font-size: 15px;
+      color: var(--text);
+      margin: 0 0 2px;
+      font-weight: 500;
+    }
+    .invite-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.02em;
+    }
+    .invite-status {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid;
+      flex-shrink: 0;
+    }
+    .invite-status.is-pending {
+      color: var(--warn);
+      background: rgba(251, 191, 36, 0.06);
+      border-color: rgba(251, 191, 36, 0.25);
+    }
+    .invite-status.is-accepted {
+      color: var(--accent-green);
+      background: rgba(134, 239, 172, 0.06);
+      border-color: rgba(134, 239, 172, 0.25);
+    }
+    .invite-status.is-expired {
+      color: var(--text-faint);
+      background: var(--bg-elev-2);
+      border-color: var(--border);
+    }
+
+    /* Empty state for invite list */
+    .invite-empty {
+      padding: 24px;
+      text-align: center;
+      background: var(--bg-elev-1);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    /* ─── INVITE FORM ─── */
+    .form-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .form-card-title {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      margin: 0 0 6px;
+    }
+    .form-card-subtitle {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    .field-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .field-input, .field-select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .field-input:focus, .field-select:focus {
+      border-color: var(--cyan);
+      background: var(--bg-elev-3);
+    }
+    .field-input.is-error {
+      border-color: var(--danger);
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 480px) {
+      .field-row { grid-template-columns: 1fr; }
+    }
+    .field-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 6px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Role picker (radio cards) */
+    .role-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .role-option {
+      display: flex;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .role-option:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-elev-3);
+    }
+    .role-option input[type="radio"] {
+      margin-top: 3px;
+      accent-color: var(--cyan);
+      flex-shrink: 0;
+    }
+    .role-option input[type="radio"]:checked + .role-content .role-name {
+      color: var(--cyan);
+    }
+    .role-option:has(input:checked) {
+      border-color: var(--cyan);
+      background: var(--cyan-glow);
+    }
+    .role-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .role-name {
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .role-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* Submit */
+    .submit-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      flex: 1;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Error banner */
+    .error-banner {
+      display: none;
+      padding: 10px 14px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .error-banner.is-active { display: block; }
+
+    /* ─── EDUCATIONAL CALLOUT ─── */
+    .callout {
+      padding: 16px 18px;
+      background: var(--bg-elev-1);
+      border-left: 3px solid var(--cyan);
+      border-radius: 0 10px 10px 0;
+      margin-bottom: 24px;
+    }
+    .callout-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 8px;
+    }
+    .callout-text {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+    .callout-text strong { color: var(--text); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg-elev-2);
+      border: 1px solid var(--cyan);
+      border-radius: 10px;
+      padding: 12px 18px;
+      color: var(--text);
+      font-size: 13px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+    .toast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.is-error { border-color: var(--danger); }
+
+    .portal-footer {
+      padding: 24px 20px 40px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .portal-footer a { color: var(--text-faint); margin: 0 6px; }
+  </style>
+</head>
+<body>
+
+<div class="portal-banner">Your loan — secured borrower portal</div>
+
+<header class="portal-nav">
+  <div class="portal-brand">
+    <div class="portal-brand-mark">OF</div>
+    <div class="portal-brand-text">
+      OriginFlow
+      <span class="subtitle">Borrower portal</span>
+    </div>
+  </div>
+  <a class="back-link" href="/portal/">← Home</a>
+</header>
+
+<main class="portal-main">
+
+  <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
+  <h1 class="page-title">Invite a co-borrower</h1>
+  <p class="page-subtitle">Add a spouse or co-applicant to your loan. They'll get a magic-link email to fill out their portion.</p>
+
+  <!-- ─── EXISTING INVITES ─── -->
+  <h2 class="section-title">People on this loan</h2>
+  <div id="invite-list-container">
+    <!-- populated by render() -->
+  </div>
+
+  <!-- ─── INVITE FORM ─── -->
+  <section class="form-card">
+    <div class="form-card-title">Send an invite</div>
+    <div class="form-card-subtitle">We'll email them a link to join your loan and fill out their information.</div>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <form id="invite-form" autocomplete="off" novalidate>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label" for="first-name">First name</label>
+          <input class="field-input" id="first-name" type="text" required maxlength="60">
+        </div>
+        <div class="field">
+          <label class="field-label" for="last-name">Last name</label>
+          <input class="field-input" id="last-name" type="text" required maxlength="60">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="email">Email</label>
+        <input class="field-input" id="email" type="email" required maxlength="120"
+               inputmode="email" placeholder="them@example.com">
+        <div class="field-hint">We'll send the magic-link invite here. They click it, they're in.</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Their role on this loan</label>
+        <div class="role-options">
+          <label class="role-option">
+            <input type="radio" name="role" value="co_borrower" checked>
+            <div class="role-content">
+              <div class="role-name">Co-borrower</div>
+              <div class="role-desc">Their income and credit count toward qualifying. They sign all loan documents and are on the mortgage.</div>
+            </div>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="role" value="non_borrowing_spouse">
+            <div class="role-content">
+              <div class="role-name">Non-borrowing spouse</div>
+              <div class="role-desc">In community-property states (TX, CA, AZ, NM, etc.) your spouse signs certain documents at closing even if they're not on the loan.</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="submit-row">
+        <button type="submit" class="btn btn-primary" id="submit-btn">Send invite →</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ─── EDUCATIONAL CALLOUT ─── -->
+  <section class="callout">
+    <div class="callout-title">Not sure which to pick?</div>
+    <div class="callout-text">
+      <strong>Pick co-borrower</strong> if you want their income, credit, or assets to help you qualify — typical for a spouse or partner buying together.<br><br>
+      <strong>Pick non-borrowing spouse</strong> if you're married but only one of you is going on the loan, and you live in a community-property state. They sign at closing but don't qualify.<br><br>
+      Not sure? Send the co-borrower invite — your loan officer can change the role later.
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<footer class="portal-footer">
+  <a href="/portal/">Home</a> ·
+  <a href="/portal/docs/">Documents</a> ·
+  <a href="/portal/messages/">Messages</a> ·
+  <a href="#">Sign out</a>
+</footer>
+
+<script>
+/* =============================================================================
+   BOOTSTRAP DATA
+   -----------------------------------------------------------------------------
+   When 11.5.3 wires the backend:
+     // Existing co-borrowers (already accepted invites + on loan_borrowers)
+     const { data: coBorrowers } = await sb.from('loan_borrowers')
+       .select('role, borrower:borrowers(first_name, last_name, email, verified_at)')
+       .eq('loan_id', currentLoanId)
+       .neq('borrower_id', currentBorrowerId);   // exclude self
+
+     // Pending invites (not yet accepted)
+     const { data: pendingInvites } = await sb.from('borrower_invites')
+       .select('id, email, expires_at, accepted_at, revoked_at')
+       .eq('loan_id', currentLoanId)
+       .is('accepted_at', null)
+       .is('revoked_at', null);
+   ============================================================================= */
+window.OF_INVITES_BOOTSTRAP = {
+  loan: { loan_no: 'OF-1043' },
+  primary: {
+    first_name: 'Marcus',
+    last_name:  'Holbrook',
+    email:      'marcus.holbrook@example.com',
+  },
+  existing: [
+    // Example: an already-accepted co-borrower would appear here
+    // {
+    //   id: 'b2', first_name: 'Jennifer', last_name: 'Holbrook',
+    //   email: 'jennifer.h@example.com', role: 'co_borrower',
+    //   status: 'accepted', accepted_at: '2026-05-13',
+    // },
+  ],
+  pending: [
+    // Example: a pending invite
+    // {
+    //   id: 'i1', email: 'jennifer.h@example.com',
+    //   first_name: 'Jennifer', last_name: 'Holbrook',
+    //   sent_at: '2026-05-19', expires_at: '2026-06-02',
+    // },
+  ],
+};
+
+function render() {
+  const b = window.OF_INVITES_BOOTSTRAP;
+  document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
+
+  const container = document.getElementById('invite-list-container');
+
+  // Build a flat list: primary + existing co-borrowers + pending invites
+  const rows = [];
+  rows.push({
+    kind: 'self',
+    name: b.primary.first_name + ' ' + b.primary.last_name,
+    meta: 'Primary borrower (that\'s you)',
+    status: 'self',
+  });
+  for (const e of b.existing) {
+    rows.push({
+      kind: 'accepted',
+      name: e.first_name + ' ' + e.last_name,
+      meta: roleLabel(e.role) + ' · joined ' + e.accepted_at,
+      status: 'accepted',
+    });
+  }
+  for (const p of b.pending) {
+    rows.push({
+      kind: 'pending',
+      name: (p.first_name + ' ' + p.last_name).trim() || p.email,
+      meta: 'Invite sent ' + p.sent_at + ' · expires ' + p.expires_at,
+      status: 'pending',
+    });
+  }
+
+  if (rows.length === 1) {
+    // Just the primary — no co-borrowers yet
+    container.innerHTML = `
+      <div class="invite-list">
+        ${renderInviteRow(rows[0])}
+      </div>
+      <div class="invite-empty">No one else is on this loan yet. Use the form below to invite someone.</div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="invite-list">
+        ${rows.map(renderInviteRow).join('')}
+      </div>
+    `;
+  }
+}
+
+function renderInviteRow(r) {
+  const initials = (r.name || '?').split(' ').map(p => p.charAt(0)).join('').slice(0, 2).toUpperCase();
+  const statusHtml = r.status === 'self'
+    ? `<span class="invite-status is-accepted">You</span>`
+    : r.status === 'accepted'
+      ? `<span class="invite-status is-accepted">Joined</span>`
+      : r.status === 'pending'
+        ? `<span class="invite-status is-pending">Pending</span>`
+        : `<span class="invite-status is-expired">Expired</span>`;
+  return `
+    <div class="invite-row is-${r.status}">
+      <div class="invite-avatar">${escapeHtml(initials)}</div>
+      <div class="invite-info">
+        <div class="invite-name">${escapeHtml(r.name)}</div>
+        <div class="invite-meta">${escapeHtml(r.meta)}</div>
+      </div>
+      ${statusHtml}
+    </div>
+  `;
+}
+
+function roleLabel(role) {
+  return ({
+    primary: 'Primary borrower',
+    co_borrower: 'Co-borrower',
+    non_borrowing_spouse: 'Non-borrowing spouse',
+  })[role] || role;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => (
+    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+  ));
+}
+
+/* =============================================================================
+   INVITE SUBMISSION
+   ============================================================================= */
+function wireForm() {
+  const form = document.getElementById('invite-form');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const firstName = document.getElementById('first-name').value.trim();
+    const lastName  = document.getElementById('last-name').value.trim();
+    const email     = document.getElementById('email').value.trim().toLowerCase();
+    const role      = document.querySelector('input[name="role"]:checked').value;
+
+    clearError();
+
+    // Validate
+    if (!firstName || !lastName) { showError('First and last name are required.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('Please enter a valid email.'); return; }
+    if (email === window.OF_INVITES_BOOTSTRAP.primary.email.toLowerCase()) {
+      showError("That's your own email — pick someone else.");
+      return;
+    }
+    if (window.OF_INVITES_BOOTSTRAP.pending.some(p => p.email?.toLowerCase() === email)) {
+      showError("You've already sent an invite to that email. Check the list above.");
+      return;
+    }
+
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending…';
+
+    try {
+      const payload = {
+        first_name: firstName,
+        last_name:  lastName,
+        email,
+        role,
+      };
+
+      if (typeof window.OF_inviteCoBorrower === 'function') {
+        await window.OF_inviteCoBorrower(payload);
+      } else {
+        // Stub mode — mutate bootstrap and re-render
+        await new Promise(res => setTimeout(res, 500));
+        const today = new Date();
+        const expires = new Date();
+        expires.setDate(today.getDate() + 14);
+        window.OF_INVITES_BOOTSTRAP.pending.push({
+          id: 'tmp_' + Date.now(),
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          role,
+          sent_at:    today.toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+          expires_at: expires.toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+        });
+      }
+
+      showToast('Invite sent to ' + email);
+      form.reset();
+      document.querySelector('input[name="role"][value="co_borrower"]').checked = true;
+      render();
+    } catch (err) {
+      console.error('invite failed:', err);
+      showError(err.message || "Couldn't send invite. Try again.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Send invite →';
+    }
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = msg;
+  el.classList.add('is-active');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearError() {
+  document.getElementById('error-banner').classList.remove('is-active');
+}
+
+let toastTimer = null;
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('is-error', !!isError);
+  el.classList.add('is-visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-visible'), 3000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  render();
+  wireForm();
+});
+</script>
+
+</body>
+</html>
