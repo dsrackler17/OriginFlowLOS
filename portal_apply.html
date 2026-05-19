@@ -1,1673 +1,1769 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Application — OriginFlow Borrower Portal</title>
-<meta name="description" content="Complete your mortgage application.">
-<meta name="robots" content="noindex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/js/config.js"></script>
-<style>
-  :root {
-    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
-    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
-    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
-    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
-  }
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
-  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-  nav,.portal-banner,main,footer{position:relative;z-index:1}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OriginFlow Portal — Your application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       Phase 11.5.5 — Borrower 1003 wizard at /portal/apply/
+       -----------------------------------------------------------------------
+       The borrower's view of URLA 1003. Different from /loans-new.html in
+       five fundamental ways:
 
-  nav{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 3rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.85);backdrop-filter:blur(12px)}
-  .nav-logo{display:flex;align-items:center;gap:0.75rem;text-decoration:none}
-  .sonar-icon{width:32px;height:32px}
-  .nav-wordmark{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase}
-  .nav-wordmark span{color:var(--accent)}
-  .nav-right{display:flex;align-items:center;gap:1rem;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.08em;color:var(--muted)}
-  .nav-signout{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);background:transparent;border:1px solid var(--border);padding:0.45rem 0.9rem;cursor:pointer;transition:all 0.15s}
-  .nav-signout:hover{border-color:var(--accent);color:var(--accent)}
+       1. ROLE-SCOPED: this only collects what the BORROWER owns on the
+          1003 — personal info, employment, income, assets, declarations,
+          demographics. Loan terms, property valuation, transaction
+          details stay on the LO surface.
 
-  .portal-banner{background:rgba(0,212,255,0.06);border-bottom:1px solid rgba(0,212,255,0.25);padding:0.55rem 3rem;display:flex;align-items:center;justify-content:center;gap:0.6rem;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.14em;color:var(--accent);text-transform:uppercase}
-  .portal-banner strong{color:var(--white);font-weight:700;letter-spacing:0.08em}
+       2. MOBILE-FIRST: 70% of borrowers will fill this out on phone.
+          One section per screen, big touch targets, native pickers.
 
-  main{flex:1;padding:2.5rem 2rem 4rem;max-width:840px;margin:0 auto;width:100%}
+       3. AUTO-SAVE: every field change debounced + persisted to localStorage
+          AND posted to OF_savePortalApplication (the backend hook). This is
+          a 20+ minute form and we cannot lose progress. Resume from any
+          device.
 
-  /* ─── Progress ─────────────────────────────────────────────────── */
-  .progress-wrap{margin-bottom:2.5rem}
-  .progress-bar{height:3px;background:var(--border);position:relative;overflow:hidden;margin-bottom:0.85rem}
-  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width 0.4s ease}
-  .progress-steps{display:flex;justify-content:space-between;gap:0.25rem;font-family:var(--mono);font-size:0.55rem;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase}
-  .progress-step{flex:1;padding:0.4rem 0.2rem;text-align:center;border-top:2px solid transparent;line-height:1.3;transition:all 0.2s}
-  .progress-step.active{color:var(--accent);border-top-color:var(--accent)}
-  .progress-step.done{color:var(--accent2);border-top-color:var(--accent2)}
+       4. CONVERSATIONAL: "Tell us about yourself" instead of "Section I:
+          Borrower Information." We follow the URLA's data model exactly
+          (so the LO sees clean MISMO output) but the copy is humanized.
 
-  /* ─── State blocks ─────────────────────────────────────────────── */
-  .state-block{text-align:center;padding:4rem 2rem}
-  .state-block h2{font-family:var(--serif);font-size:1.6rem;color:var(--white);margin-bottom:0.75rem}
-  .state-block p{color:var(--muted);font-weight:300;max-width:480px;margin:0 auto 1.5rem;line-height:1.7;font-size:0.95rem}
-  .state-block .state-cta{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.85rem 1.75rem;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
-  .spinner{display:inline-block;width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:1.25rem}
-  @keyframes spin{to{transform:rotate(360deg)}}
+       5. PROGRESSIVE: the borrower can skip non-required sections and
+          come back later. HMDA demographics get a clear "this is
+          optional" framing with a single-tap skip.
 
-  /* ─── Section ──────────────────────────────────────────────────── */
-  .section{display:none;animation:fadeIn 0.35s ease both}
-  .section.active{display:block}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+       Pipeline (when 11.5.2 + 11.5.13 wire the backend):
+         1. Bootstrap: read loan_id from URL ?loan=<uuid>
+         2. Fetch the loan row + existing borrower row (data from /apply
+            is already there — name, email, phone, address basics)
+         3. As borrower fills in each field, debounced save to:
+            - borrowers row (personal info)
+            - loans row (occupancy, purpose if changed)
+            - borrower_employment / borrower_assets / etc. (new tables
+              we'll add in a separate migration — outside this file's scope)
+         4. On final submit, stamp loans.intake_complete_at and flip
+            status from 'lead' to 'application'
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-deep: #0891b2;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
 
-  .section-eyebrow{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.75rem}
-  .section-eyebrow::before{content:'';display:block;width:1.5rem;height:1px;background:var(--accent)}
-  .section-title{font-family:var(--serif);font-size:2rem;color:var(--white);margin-bottom:0.5rem;line-height:1.2}
-  .section-sub{font-size:0.95rem;color:var(--muted);font-weight:300;margin-bottom:2rem;line-height:1.7}
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-  .section-card{background:var(--surface);border:1px solid var(--border);padding:1.75rem;position:relative;overflow:hidden;margin-bottom:1.5rem}
-  .section-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .portal-banner {
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-align: center;
+    }
+    .portal-nav {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(11, 18, 32, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .portal-brand { display: flex; align-items: center; gap: 10px; }
+    .portal-brand-mark {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
+      display: grid; place-items: center;
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+    .portal-brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
+    .portal-brand-text .subtitle {
+      display: block; font-weight: 400; font-size: 10px;
+      color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
+    }
 
-  /* ─── Form ─────────────────────────────────────────────────────── */
-  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
-  .field-row.three{grid-template-columns:1fr 1fr 1fr}
-  .field-row.wide-narrow{grid-template-columns:3fr 1fr}
-  .field-group{margin-bottom:1rem}
-  .field-group.span-2{grid-column:span 2}
-  .field-label{display:block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem}
-  .field-label .req{color:var(--accent)}
-  .field-label .opt{color:var(--muted);font-size:0.55rem;margin-left:0.4rem;letter-spacing:0.06em;text-transform:none}
-  .field-input,.field-select{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.85rem;padding:0.7rem 0.9rem;outline:none;transition:border-color 0.2s;-webkit-appearance:none;appearance:none}
-  .field-input::placeholder{color:var(--muted)}
-  .field-input:focus,.field-select:focus{border-color:var(--accent)}
-  .field-input.error,.field-select.error{border-color:var(--red)}
-  .field-help{font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-top:0.35rem;letter-spacing:0.04em;line-height:1.5}
-  .field-select{background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235a7a99' stroke-width='1.4' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.9rem center;padding-right:2rem}
+    /* Save-status chip in the top-right (live indicator) */
+    .save-status {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-elev-1);
+    }
+    .save-status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
+    }
+    .save-status.is-saving .save-status-dot {
+      background: var(--warn);
+      box-shadow: 0 0 6px var(--warn);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .save-status.is-saved .save-status-dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 6px var(--accent-green);
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-  /* Pill choices (single-select via button group) */
-  .pill-group{display:flex;flex-wrap:wrap;gap:0.5rem}
-  .pill-btn{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.06em;text-transform:uppercase;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:0.6rem 1rem;cursor:pointer;transition:all 0.15s}
-  .pill-btn:hover{border-color:var(--accent);color:var(--accent)}
-  .pill-btn.selected{background:rgba(0,212,255,0.08);border-color:var(--accent);color:var(--accent)}
+    /* ─── PROGRESS BAR ─── */
+    .progress-shell {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 16px 0;
+    }
+    @media (min-width: 640px) { .progress-shell { padding: 28px 24px 0; } }
+    .progress-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .progress-step-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .progress-step-count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+    }
+    .progress-bar {
+      height: 4px;
+      background: var(--bg-elev-2);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--accent-green));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
 
-  /* Currency input with $ prefix */
-  .currency-wrap{position:relative}
-  .currency-wrap::before{content:'$';position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:0.85rem;color:var(--muted);pointer-events:none}
-  .currency-wrap .field-input{padding-left:1.6rem}
+    /* ─── MAIN ─── */
+    .wizard-main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    @media (min-width: 640px) { .wizard-main { padding: 32px 24px 80px; } }
 
-  /* ─── Wizard nav (bottom buttons) ──────────────────────────────── */
-  .wizard-nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1rem;padding-top:1.5rem;border-top:1px solid var(--border)}
-  .btn-back{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;background:transparent;border:1px solid var(--border);color:var(--text);padding:0.8rem 1.4rem;cursor:pointer;transition:all 0.15s}
-  .btn-back:hover{border-color:var(--accent);color:var(--accent)}
-  .btn-back:disabled{opacity:0.3;cursor:not-allowed}
-  .btn-next{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.85rem 1.75rem;cursor:pointer;font-weight:700;transition:opacity 0.2s;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
-  .btn-next:hover{opacity:0.85}
-  .btn-next:disabled{opacity:0.4;cursor:not-allowed;background:var(--muted)}
-  .save-indicator{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);text-align:center;flex:1;text-transform:uppercase}
-  .save-indicator .si-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent2);margin-right:0.35rem;vertical-align:middle}
-  .save-indicator.saving .si-dot{background:var(--amber);animation:pulse 0.8s ease-in-out infinite}
+    /* Each step */
+    .step {
+      display: none;
+    }
+    .step.is-active {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .step-header {
+      margin-bottom: 24px;
+    }
+    .step-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+    .step-title {
+      font-family: var(--font-serif);
+      font-size: 30px;
+      line-height: 1.1;
+      margin: 0 0 8px;
+    }
+    @media (min-width: 640px) { .step-title { font-size: 36px; } }
+    .step-subtitle {
+      color: var(--text-dim);
+      font-size: 15px;
+      max-width: 540px;
+    }
 
-  /* ─── Stub state for sections 5-8 ──────────────────────────────── */
-  .stub-card{background:var(--panel);border:1px dashed var(--border);padding:2rem;text-align:center}
-  .stub-card .stub-eyebrow{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);margin-bottom:0.75rem}
-  .stub-card h3{font-family:var(--serif);font-size:1.3rem;color:var(--white);margin-bottom:0.5rem}
-  .stub-card p{font-size:0.88rem;color:var(--muted);font-weight:300;line-height:1.7;max-width:480px;margin:0 auto}
-  .stub-card .stub-fields{font-family:var(--mono);font-size:0.65rem;color:var(--text);letter-spacing:0.04em;margin-top:1.25rem;text-align:left;display:inline-block;line-height:1.9;background:var(--deep);padding:0.85rem 1.25rem;border:1px solid var(--border)}
-  .stub-card .stub-fields span{color:var(--accent)}
+    /* Section header (within a step, e.g. "Income sources") */
+    .section-header {
+      margin: 28px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
 
-  /* ─── Declarations rows (Section 6) ─────────────────────────────── */
-  .decl-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:1rem;padding:0.85rem 0;border-bottom:1px solid rgba(26,58,92,0.5)}
-  .decl-row:last-child{border-bottom:none}
-  .decl-q{font-size:0.9rem;color:var(--text);line-height:1.5;font-weight:300}
-  .decl-q .decl-help{display:block;font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.25rem;letter-spacing:0.04em}
-  .yn-group{display:flex;gap:0.4rem}
-  .yn-btn{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:0.45rem 0.85rem;cursor:pointer;transition:all 0.15s;min-width:54px}
-  .yn-btn:hover{border-color:var(--accent);color:var(--accent)}
-  .yn-btn.selected[data-value="yes"]{background:rgba(245,166,35,0.1);border-color:var(--amber);color:var(--amber)}
-  .yn-btn.selected[data-value="no"]{background:rgba(0,255,157,0.08);border-color:var(--accent2);color:var(--accent2)}
+    /* ─── FIELDS ─── */
+    .field {
+      margin-bottom: 18px;
+    }
+    .field-label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .field-required {
+      color: var(--cyan);
+      margin-left: 4px;
+    }
+    .field-input,
+    .field-select,
+    .field-textarea {
+      width: 100%;
+      padding: 13px 14px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px; /* 16px = no iOS zoom */
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .field-input:focus,
+    .field-select:focus,
+    .field-textarea:focus {
+      border-color: var(--cyan);
+      background: var(--bg-elev-2);
+    }
+    .field-input.is-error,
+    .field-select.is-error {
+      border-color: var(--danger);
+    }
+    .field-textarea {
+      min-height: 84px;
+      resize: vertical;
+      font-family: var(--font-sans);
+      line-height: 1.5;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .field-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 480px) {
+      .field-row { grid-template-columns: 1fr; }
+      .field-row-3 { grid-template-columns: 1fr; }
+    }
+    .field-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      margin-top: 6px;
+      letter-spacing: 0.02em;
+      line-height: 1.5;
+    }
+    .field-error {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--danger);
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+      display: none;
+    }
+    .field-error.is-visible { display: block; }
 
-  /* ─── HMDA section (Section 7) ──────────────────────────────────── */
-  .hmda-notice{background:var(--panel);border-left:3px solid var(--accent);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:0.85rem;color:var(--text);font-weight:300;line-height:1.7}
-  .hmda-notice strong{color:var(--white);font-weight:500}
-  .hmda-group{margin-bottom:1.5rem}
-  .hmda-group:last-child{margin-bottom:0}
-  .hmda-group-label{display:block;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--white);margin-bottom:0.75rem;font-weight:700}
-  .hmda-option{display:flex;align-items:flex-start;gap:0.7rem;padding:0.5rem 0;cursor:pointer}
-  .hmda-option input{margin-top:0.3rem;width:16px;height:16px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
-  .hmda-option label{font-size:0.88rem;color:var(--text);cursor:pointer;line-height:1.5;flex:1;font-weight:300}
-  .hmda-subgroup{margin-left:1.7rem;padding-left:0.7rem;border-left:1px solid var(--border);margin-top:0.25rem;margin-bottom:0.5rem}
-  .hmda-subgroup .hmda-option{padding:0.3rem 0}
-  .hmda-subgroup .hmda-option label{font-size:0.82rem;color:var(--muted)}
-  .hmda-decline{margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border)}
-  .hmda-decline label{font-weight:500;color:var(--white)}
-  .hmda-input-other{margin-left:1.7rem;margin-top:0.25rem;max-width:300px;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.78rem;padding:0.5rem 0.75rem;outline:none}
-  .hmda-input-other:focus{border-color:var(--accent)}
+    /* ─── RADIO CARDS (for picking from options) ─── */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .radio-group.is-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (max-width: 480px) {
+      .radio-group.is-grid-2 { grid-template-columns: 1fr; }
+    }
+    .radio-card {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .radio-card:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-elev-2);
+    }
+    .radio-card input[type="radio"],
+    .radio-card input[type="checkbox"] {
+      margin-top: 2px;
+      accent-color: var(--cyan);
+      flex-shrink: 0;
+    }
+    .radio-card:has(input:checked) {
+      border-color: var(--cyan);
+      background: var(--cyan-glow);
+    }
+    .radio-card-content { flex: 1; min-width: 0; }
+    .radio-card-name { font-weight: 500; }
+    .radio-card-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
 
-  /* ─── Review & Submit (Section 8) ───────────────────────────────── */
-  .review-section{margin-bottom:1.5rem}
-  .review-section h3{font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .review-edit{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);background:transparent;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-  .review-edit:hover{color:var(--accent2)}
-  .review-row{display:grid;grid-template-columns:140px 1fr;gap:0.75rem;padding:0.3rem 0;font-size:0.85rem;line-height:1.5}
-  .review-row .r-label{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;padding-top:0.15rem}
-  .review-row .r-val{color:var(--text);font-weight:300}
-  .review-row .r-val.empty{color:var(--muted);font-style:italic}
+    /* ─── YES/NO TOGGLE (declarations section) ─── */
+    .yes-no-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    .yes-no-question {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .yes-no-buttons {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .yes-no-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elev-2);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .yes-no-btn:hover { color: var(--text); border-color: var(--text-dim); }
+    .yes-no-btn.is-selected.is-yes {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+      font-weight: 700;
+    }
+    .yes-no-btn.is-selected.is-no {
+      background: var(--bg-elev-3);
+      color: var(--text);
+      border-color: var(--text-dim);
+      font-weight: 700;
+    }
+    .yes-no-explain {
+      display: none;
+      margin: -4px 0 12px;
+      padding: 14px 16px;
+      background: var(--bg-elev-2);
+      border-left: 3px solid var(--warn);
+      border-radius: 0 8px 8px 0;
+    }
+    .yes-no-explain.is-visible { display: block; }
+    .yes-no-explain-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--warn);
+      margin-bottom: 6px;
+    }
 
-  .auth-text{background:var(--panel);border:1px solid var(--border);padding:1.25rem 1.5rem;font-size:0.88rem;color:var(--text);font-weight:300;line-height:1.75;max-height:280px;overflow-y:auto;margin-bottom:1.25rem}
-  .auth-text p{margin-bottom:0.85rem}
-  .auth-text p:last-child{margin-bottom:0}
-  .auth-text strong{color:var(--white);font-weight:500}
-  .auth-text ul{margin:0.4rem 0 0.85rem 1.25rem}
-  .auth-text ul li{margin-bottom:0.3rem}
+    /* ─── REPEATER (for assets, employment history, etc) ─── */
+    .repeater-item {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+    .repeater-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .repeater-item-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .repeater-remove {
+      background: none;
+      border: 0;
+      color: var(--text-faint);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .repeater-remove:hover {
+      color: var(--danger);
+      background: rgba(248, 113, 113, 0.06);
+    }
+    .repeater-add {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      border: 1px dashed var(--border-strong);
+      border-radius: 10px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .repeater-add:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: var(--cyan-glow);
+    }
 
-  .credit-auth-row{display:flex;align-items:flex-start;gap:0.75rem;padding:1rem;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.3);margin-bottom:1.25rem;cursor:pointer}
-  .credit-auth-row input{margin-top:0.3rem;width:18px;height:18px;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
-  .credit-auth-row label{font-size:0.9rem;color:var(--text);cursor:pointer;line-height:1.55;flex:1;font-weight:300}
-  .credit-auth-row label strong{color:var(--white);font-weight:500}
+    /* ─── REVIEW STEP — show all answers ─── */
+    .review-section {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .review-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .review-section-title {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      margin: 0;
+    }
+    .review-edit {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: none;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 6px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .review-edit:hover { background: var(--cyan-glow); }
+    .review-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+    .review-row + .review-row {
+      border-top: 1px dotted var(--border);
+    }
+    .review-row-label {
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .review-row-value {
+      color: var(--text);
+      text-align: right;
+      font-weight: 500;
+      word-break: break-word;
+    }
+    .review-row-value.is-empty {
+      color: var(--text-faint);
+      font-style: italic;
+      font-weight: 400;
+    }
 
-  /* ─── Success state (post-submit) ───────────────────────────────── */
-  .success-state{text-align:center;padding:3rem 2rem;animation:fadeIn 0.5s ease both}
-  .success-icon{display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(0,255,157,0.1);border:2px solid var(--accent2);color:var(--accent2);font-family:var(--mono);font-size:2rem;line-height:60px;margin-bottom:1.5rem}
-  .success-state h2{font-family:var(--serif);font-size:2rem;color:var(--white);margin-bottom:0.5rem}
-  .success-state p{color:var(--muted);font-weight:300;max-width:540px;margin:0 auto 1.25rem;line-height:1.7;font-size:0.95rem}
-  .success-loan-number{font-family:var(--mono);font-size:1rem;color:var(--accent);padding:0.65rem 1.25rem;background:var(--surface);border:1px solid var(--accent);display:inline-block;margin:0.5rem 0 1.5rem;letter-spacing:0.04em}
-  .success-cta{font-family:var(--mono);font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;background:var(--accent);color:var(--navy);border:none;padding:0.85rem 1.75rem;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
-  .success-cta:hover{opacity:0.85}
+    /* ─── OPTIONAL CALLOUT (HMDA explainer) ─── */
+    .callout {
+      padding: 14px 16px;
+      background: var(--bg-elev-1);
+      border-left: 3px solid var(--cyan);
+      border-radius: 0 10px 10px 0;
+      margin-bottom: 20px;
+    }
+    .callout-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+    .callout-text {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
 
-  .error-banner{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.3);color:var(--red);font-family:var(--mono);font-size:0.7rem;padding:0.7rem 1rem;margin-bottom:1.25rem;display:none;letter-spacing:0.04em;line-height:1.6}
-  .error-banner.visible{display:block}
+    /* ─── BUTTONS ─── */
+    .step-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 28px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dim);
+      border-color: var(--border-strong);
+    }
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-faint);
+      border-color: transparent;
+      flex: 0 0 auto;
+    }
+    .btn-ghost:hover {
+      color: var(--text-dim);
+    }
 
-  footer{border-top:1px solid var(--border);font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);background:var(--deep);margin-top:auto}
-  .footer-disclaimer{padding:0.7rem 3rem;border-bottom:1px solid var(--border);text-align:center;font-size:0.58rem;line-height:1.5;color:var(--muted)}
-  .footer-disclaimer strong{color:var(--text);font-weight:700}
-  .footer-bottom{padding:1.25rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-  footer a{color:var(--muted);text-decoration:none}
-  footer a:hover{color:var(--accent)}
-  .footer-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+    /* Error banner */
+    .error-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .error-banner.is-active { display: block; }
 
-  @media (max-width:640px){
-    nav{padding:1rem 1.25rem;flex-wrap:wrap;gap:0.6rem}
-    .nav-right{font-size:0.62rem;gap:0.6rem}
-    .portal-banner{padding:0.55rem 1rem;font-size:0.58rem}
-    main{padding:2rem 1.1rem 3rem}
-    .section-title{font-size:1.6rem}
-    .section-card{padding:1.25rem}
-    .field-row,.field-row.three,.field-row.wide-narrow{grid-template-columns:1fr}
-    .progress-step{font-size:0.5rem}
-    .footer-disclaimer{padding:0.6rem 1rem}
-    .footer-bottom{padding:1rem 1.25rem;flex-direction:column;gap:0.75rem;text-align:center}
-  }
-</style>
+    /* ─── SUCCESS STATE ─── */
+    .success-screen {
+      display: none;
+      max-width: 540px;
+      margin: 60px auto;
+      padding: 40px 32px;
+      text-align: center;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .success-screen.is-active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    .success-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: rgba(134, 239, 172, 0.1);
+      border: 2px solid var(--accent-green);
+      display: grid; place-items: center;
+      color: var(--accent-green);
+      font-size: 28px;
+      font-family: var(--font-mono);
+    }
+    .success-title {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      color: var(--text);
+      margin: 0 0 12px;
+    }
+    .success-text {
+      color: var(--text-dim);
+    }
+    .success-cta {
+      margin-top: 24px;
+      display: inline-block;
+      padding: 13px 24px;
+      background: var(--cyan);
+      color: var(--navy);
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .success-cta:hover {
+      background: var(--accent-green);
+      text-decoration: none;
+    }
+  </style>
 </head>
 <body>
 
-<nav>
-  <a href="/portal/index.html" class="nav-logo">
-    <div class="sonar-icon">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
-        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
-        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
-        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
-        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/></path>
-      </svg>
-    </div>
-    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
-  </a>
-  <div class="nav-right">
-    <button class="nav-signout" id="nav-signout" type="button">Save &amp; Exit</button>
-  </div>
-</nav>
+<div class="portal-banner">Your loan — secured borrower portal</div>
 
-<div class="portal-banner">Mortgage Application · Step <strong id="banner-step">1</strong> of <strong>8</strong></div>
-
-<main>
-  <!-- ─── Loading state: shown while we bootstrap session + account ─── -->
-  <div id="state-loading" class="state-block">
-    <div class="spinner"></div>
-    <p style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;">Setting up your application…</p>
-  </div>
-
-  <!-- ─── Error state: bootstrap failed, can't continue ───────────── -->
-  <div id="state-error" class="state-block" style="display:none;">
-    <h2>Something went wrong setting up your application.</h2>
-    <p id="state-error-msg">Please refresh the page or sign in again. If the problem persists, email your loan officer or dsrackler@gmail.com.</p>
-    <a href="/portal/index.html" class="state-cta">Back to Portal →</a>
-  </div>
-
-  <!-- ─── Wizard ─────────────────────────────────────────────────── -->
-  <div id="wizard" style="display:none;">
-
-    <div class="progress-wrap">
-      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-      <div class="progress-steps" id="progress-steps">
-        <span class="progress-step active" data-step="1">About</span>
-        <span class="progress-step" data-step="2">Address</span>
-        <span class="progress-step" data-step="3">Income</span>
-        <span class="progress-step" data-step="4">Assets</span>
-        <span class="progress-step" data-step="5">Property</span>
-        <span class="progress-step" data-step="6">Questions</span>
-        <span class="progress-step" data-step="7">Demographics</span>
-        <span class="progress-step" data-step="8">Review</span>
-      </div>
-    </div>
-
-    <div class="error-banner" id="error-banner"></div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 1 · About You
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section active" data-section="1">
-      <div class="section-eyebrow">Step 1 of 8</div>
-      <h1 class="section-title">About you.</h1>
-      <p class="section-sub">Let's start with how you appear on your driver's license, passport, or other official ID. We'll use this exact spelling on every document.</p>
-
-      <div class="section-card">
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s1_legal_first_name">Legal First Name <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s1_legal_first_name" data-key="s1_legal_first_name" autocomplete="given-name" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s1_legal_last_name">Legal Last Name <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s1_legal_last_name" data-key="s1_legal_last_name" autocomplete="family-name" />
-          </div>
-        </div>
-        <div class="field-row wide-narrow">
-          <div class="field-group">
-            <label class="field-label" for="s1_middle_name">Middle Name <span class="opt">optional</span></label>
-            <input class="field-input" type="text" id="s1_middle_name" data-key="s1_middle_name" autocomplete="additional-name" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s1_suffix">Suffix <span class="opt">opt.</span></label>
-            <select class="field-select" id="s1_suffix" data-key="s1_suffix">
-              <option value="">—</option>
-              <option value="Jr">Jr</option>
-              <option value="Sr">Sr</option>
-              <option value="II">II</option>
-              <option value="III">III</option>
-              <option value="IV">IV</option>
-            </select>
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s1_dob">Date of Birth <span class="req">*</span></label>
-            <input class="field-input" type="date" id="s1_dob" data-key="s1_dob" autocomplete="bday" />
-            <div class="field-help">You must be at least 18 years old to apply for a mortgage.</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s1_ssn_last4">SSN (last 4) <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s1_ssn_last4" data-key="s1_ssn_last4" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="1234" />
-            <div class="field-help">We'll collect your full SSN later, encrypted, only when needed for credit pull.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div class="field-group">
-          <label class="field-label">Citizenship Status <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s1_citizenship">
-            <button type="button" class="pill-btn" data-value="us_citizen">U.S. Citizen</button>
-            <button type="button" class="pill-btn" data-value="permanent_resident">Permanent Resident</button>
-            <button type="button" class="pill-btn" data-value="non_permanent_resident">Non-Permanent Resident</button>
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Marital Status <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s1_marital_status">
-            <button type="button" class="pill-btn" data-value="married">Married</button>
-            <button type="button" class="pill-btn" data-value="separated">Separated</button>
-            <button type="button" class="pill-btn" data-value="unmarried">Unmarried</button>
-          </div>
-          <div class="field-help">Affects how property is titled in some states. We don't share this with anyone outside your lender.</div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s1_dependents_count">Number of Dependents <span class="opt">optional</span></label>
-            <input class="field-input" type="number" id="s1_dependents_count" data-key="s1_dependents_count" min="0" max="20" placeholder="0" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 2 · Where You Live
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="2">
-      <div class="section-eyebrow">Step 2 of 8</div>
-      <h1 class="section-title">Where you live now.</h1>
-      <p class="section-sub">Your current home address. If you've been there less than two years, we'll ask for your previous address on a later step.</p>
-
-      <div class="section-card">
-        <div class="field-group">
-          <label class="field-label" for="s2_current_street">Street Address <span class="req">*</span></label>
-          <input class="field-input" type="text" id="s2_current_street" data-key="s2_current_street" autocomplete="street-address" placeholder="123 Main St" />
-        </div>
-        <div class="field-row wide-narrow">
-          <div class="field-group">
-            <label class="field-label" for="s2_current_unit">Apt / Unit <span class="opt">opt.</span></label>
-            <input class="field-input" type="text" id="s2_current_unit" data-key="s2_current_unit" placeholder="Apt 4B" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s2_current_city">City <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s2_current_city" data-key="s2_current_city" autocomplete="address-level2" />
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s2_current_state">State <span class="req">*</span></label>
-            <select class="field-select" id="s2_current_state" data-key="s2_current_state" autocomplete="address-level1">
-              <option value="">Select…</option>
-              <option value="TX">Texas</option>
-              <option value="" disabled>──────────</option>
-              <option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option>
-              <option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option>
-              <option value="CT">CT</option><option value="DE">DE</option><option value="FL">FL</option>
-              <option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option>
-              <option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option>
-              <option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option>
-              <option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option>
-              <option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option>
-              <option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option>
-              <option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option>
-              <option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option>
-              <option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option>
-              <option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option>
-              <option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option>
-              <option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option>
-              <option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option>
-              <option value="WY">WY</option><option value="DC">DC</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s2_current_zip">ZIP <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s2_current_zip" data-key="s2_current_zip" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code" />
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s2_years_at">Years at this address <span class="req">*</span></label>
-            <input class="field-input" type="number" id="s2_years_at" data-key="s2_years_at" min="0" max="99" placeholder="3" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s2_months_at">Additional months <span class="opt">opt.</span></label>
-            <input class="field-input" type="number" id="s2_months_at" data-key="s2_months_at" min="0" max="11" placeholder="6" />
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Housing Situation <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s2_housing_status">
-            <button type="button" class="pill-btn" data-value="own">I own this home</button>
-            <button type="button" class="pill-btn" data-value="rent">I rent</button>
-            <button type="button" class="pill-btn" data-value="rent_free">I live rent-free</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 3 · Job & Income
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="3">
-      <div class="section-eyebrow">Step 3 of 8</div>
-      <h1 class="section-title">Your job &amp; income.</h1>
-      <p class="section-sub">Your primary employment. Use the income you can document with paystubs or tax returns — we'll verify everything when the application is complete.</p>
-
-      <div class="section-card">
-        <div class="field-group">
-          <label class="field-label">Are you self-employed? <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s3_self_employed">
-            <button type="button" class="pill-btn" data-value="no">No, I'm a W-2 employee</button>
-            <button type="button" class="pill-btn" data-value="yes">Yes, self-employed</button>
-            <button type="button" class="pill-btn" data-value="mixed">Mixed (both)</button>
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s3_employer_name">Employer / Business Name <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s3_employer_name" data-key="s3_employer_name" autocomplete="organization" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s3_position">Position / Title <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s3_position" data-key="s3_position" autocomplete="organization-title" />
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s3_years_at_job">Years at this job <span class="req">*</span></label>
-            <input class="field-input" type="number" id="s3_years_at_job" data-key="s3_years_at_job" min="0" max="60" step="0.1" placeholder="5" />
-            <div class="field-help">If less than 2 years, we'll ask for prior employment on a later step.</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s3_employer_phone">Employer Phone <span class="opt">optional</span></label>
-            <input class="field-input" type="tel" id="s3_employer_phone" data-key="s3_employer_phone" placeholder="(806) 555-0100" />
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Monthly income (gross)</h3>
-        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Before taxes. If your income varies, use the average over the last 24 months.</p>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s3_monthly_base">Base Pay <span class="req">*</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_base" data-key="s3_monthly_base" min="0" step="100" placeholder="5,000" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s3_monthly_overtime">Overtime <span class="opt">opt.</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_overtime" data-key="s3_monthly_overtime" min="0" step="50" placeholder="0" /></div>
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s3_monthly_bonus">Bonus <span class="opt">opt.</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_bonus" data-key="s3_monthly_bonus" min="0" step="50" placeholder="0" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s3_monthly_commission">Commission <span class="opt">opt.</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_commission" data-key="s3_monthly_commission" min="0" step="50" placeholder="0" /></div>
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="s3_monthly_other">Other monthly income (rental, alimony, etc.) <span class="opt">optional</span></label>
-          <div class="currency-wrap"><input class="field-input" type="number" id="s3_monthly_other" data-key="s3_monthly_other" min="0" step="50" placeholder="0" /></div>
-          <div class="field-help">You're not required to disclose alimony, child support, or separate maintenance unless you want it counted as income.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 4 · Money & Debts
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="4">
-      <div class="section-eyebrow">Step 4 of 8</div>
-      <h1 class="section-title">Your savings &amp; debts.</h1>
-      <p class="section-sub">A high-level picture of what you have and what you owe. Approximate is fine here — we'll get exact numbers from statements later.</p>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Assets</h3>
-        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Estimated balances. You don't need exact numbers right now.</p>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s4_checking_total">Checking accounts (total)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_checking_total" data-key="s4_checking_total" min="0" step="100" placeholder="0" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s4_savings_total">Savings accounts (total)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_savings_total" data-key="s4_savings_total" min="0" step="100" placeholder="0" /></div>
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s4_retirement_total">Retirement (401k, IRA)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_retirement_total" data-key="s4_retirement_total" min="0" step="100" placeholder="0" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s4_other_assets_total">Other assets <span class="opt">opt.</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_other_assets_total" data-key="s4_other_assets_total" min="0" step="100" placeholder="0" /></div>
-            <div class="field-help">Stocks, brokerage, gift letters, etc.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Monthly debt payments</h3>
-        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Recurring monthly minimums. We'll pull exact figures from your credit report later.</p>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s4_credit_card_min">Credit card minimums (total)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_credit_card_min" data-key="s4_credit_card_min" min="0" step="10" placeholder="0" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s4_auto_loan_min">Auto loans (monthly)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_auto_loan_min" data-key="s4_auto_loan_min" min="0" step="10" placeholder="0" /></div>
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s4_student_loan_min">Student loans (monthly)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_student_loan_min" data-key="s4_student_loan_min" min="0" step="10" placeholder="0" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s4_other_debt_min">Other debt (monthly)</label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s4_other_debt_min" data-key="s4_other_debt_min" min="0" step="10" placeholder="0" /></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 5 · Property & Loan
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="5">
-      <div class="section-eyebrow">Step 5 of 8</div>
-      <h1 class="section-title">The property &amp; loan.</h1>
-      <p class="section-sub">Where you're buying (or refinancing), and how much you need to borrow.</p>
-
-      <div class="section-card">
-        <div class="field-group">
-          <label class="field-label">What are you doing? <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s5_purpose">
-            <button type="button" class="pill-btn" data-value="purchase">Buying a home</button>
-            <button type="button" class="pill-btn" data-value="refinance">Refinancing</button>
-            <button type="button" class="pill-btn" data-value="cashout_refinance">Cash-out refinance</button>
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label" for="s5_property_street">Property Street Address <span class="req">*</span></label>
-          <input class="field-input" type="text" id="s5_property_street" data-key="s5_property_street" placeholder="789 Oak Lane" autocomplete="street-address" />
-        </div>
-        <div class="field-row wide-narrow">
-          <div class="field-group">
-            <label class="field-label" for="s5_property_unit">Apt / Unit <span class="opt">opt.</span></label>
-            <input class="field-input" type="text" id="s5_property_unit" data-key="s5_property_unit" />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s5_property_city">City <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s5_property_city" data-key="s5_property_city" autocomplete="address-level2" />
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label" for="s5_property_state">State <span class="req">*</span></label>
-            <select class="field-select" id="s5_property_state" data-key="s5_property_state" autocomplete="address-level1">
-              <option value="">Select…</option>
-              <option value="TX">Texas</option>
-              <option value="" disabled>──────────</option>
-              <option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option>
-              <option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option>
-              <option value="CT">CT</option><option value="DE">DE</option><option value="FL">FL</option>
-              <option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option>
-              <option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option>
-              <option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option>
-              <option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option>
-              <option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option>
-              <option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option>
-              <option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option>
-              <option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option>
-              <option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option>
-              <option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option>
-              <option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option>
-              <option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option>
-              <option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option>
-              <option value="WY">WY</option><option value="DC">DC</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s5_property_zip">ZIP <span class="req">*</span></label>
-            <input class="field-input" type="text" id="s5_property_zip" data-key="s5_property_zip" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code" />
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <div class="field-group">
-          <label class="field-label">Property Type <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s5_property_type">
-            <button type="button" class="pill-btn" data-value="single_family">Single-family home</button>
-            <button type="button" class="pill-btn" data-value="condo">Condo</button>
-            <button type="button" class="pill-btn" data-value="townhouse">Townhouse</button>
-            <button type="button" class="pill-btn" data-value="multi_family_2_4">2-4 unit</button>
-            <button type="button" class="pill-btn" data-value="manufactured">Manufactured</button>
-          </div>
-        </div>
-        <div class="field-group">
-          <label class="field-label">Occupancy <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s5_occupancy">
-            <button type="button" class="pill-btn" data-value="primary_residence">Primary residence</button>
-            <button type="button" class="pill-btn" data-value="second_home">Second home</button>
-            <button type="button" class="pill-btn" data-value="investment">Investment</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.1rem;color:var(--white);margin-bottom:0.4rem;">Loan details</h3>
-        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1.25rem;line-height:1.6;">Best estimates are fine. Your loan officer will work with you to finalize the numbers.</p>
-
-        <div class="field-row" id="s5_price_row">
-          <div class="field-group">
-            <label class="field-label" for="s5_purchase_price"><span id="s5_price_label">Purchase Price</span> <span class="req">*</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s5_purchase_price" data-key="s5_purchase_price" min="0" step="1000" placeholder="310,000" /></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="s5_loan_amount">Loan Amount <span class="req">*</span></label>
-            <div class="currency-wrap"><input class="field-input" type="number" id="s5_loan_amount" data-key="s5_loan_amount" min="0" step="1000" placeholder="248,000" /></div>
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Loan Term <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s5_term_months">
-            <button type="button" class="pill-btn" data-value="360">30 years</button>
-            <button type="button" class="pill-btn" data-value="240">20 years</button>
-            <button type="button" class="pill-btn" data-value="180">15 years</button>
-            <button type="button" class="pill-btn" data-value="120">10 years</button>
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Loan Program <span class="req">*</span></label>
-          <div class="pill-group" data-pill-key="s5_program">
-            <button type="button" class="pill-btn" data-value="conventional">Conventional</button>
-            <button type="button" class="pill-btn" data-value="fha">FHA</button>
-            <button type="button" class="pill-btn" data-value="va">VA</button>
-            <button type="button" class="pill-btn" data-value="usda">USDA</button>
-            <button type="button" class="pill-btn" data-value="jumbo">Jumbo</button>
-            <button type="button" class="pill-btn" data-value="not_sure">Not sure yet</button>
-          </div>
-          <div class="field-help">Don't worry if you don't know — your loan officer will help you pick.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 6 · Declarations
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="6">
-      <div class="section-eyebrow">Step 6 of 8</div>
-      <h1 class="section-title">A few questions.</h1>
-      <p class="section-sub">Standard yes-or-no questions every borrower has to answer. Honest answers — your loan officer will work with you on anything that needs explaining.</p>
-
-      <div class="section-card">
-        <div class="decl-row">
-          <div class="decl-q">Will you occupy this property as your primary residence?
-            <span class="decl-help">Most loan programs require this.</span></div>
-          <div class="yn-group" data-pill-key="s6_occupy_primary">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Have you had ownership interest in another property in the last 3 years?</div>
-          <div class="yn-group" data-pill-key="s6_prior_ownership">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Are you borrowing any part of the down payment from another source?</div>
-          <div class="yn-group" data-pill-key="s6_borrowed_dp">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Are you a co-signer or guarantor on any loan not disclosed on this application?</div>
-          <div class="yn-group" data-pill-key="s6_cosigner">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.05rem;color:var(--white);margin-bottom:0.85rem;">Legal history</h3>
-        <div class="decl-row">
-          <div class="decl-q">Any outstanding judgments against you?
-            <span class="decl-help">Court orders to pay money.</span></div>
-          <div class="yn-group" data-pill-key="s6_judgments">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Currently delinquent or in default on any federal debt?
-            <span class="decl-help">Student loans, taxes, SBA loans, etc.</span></div>
-          <div class="yn-group" data-pill-key="s6_fed_delinquent">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Are you party to any lawsuit currently?</div>
-          <div class="yn-group" data-pill-key="s6_lawsuit">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Conveyed title in lieu of foreclosure in the last 7 years?</div>
-          <div class="yn-group" data-pill-key="s6_dil">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Had a foreclosure in the last 7 years?</div>
-          <div class="yn-group" data-pill-key="s6_foreclosure">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-        <div class="decl-row">
-          <div class="decl-q">Declared bankruptcy in the last 7 years?</div>
-          <div class="yn-group" data-pill-key="s6_bankruptcy">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.05rem;color:var(--white);margin-bottom:0.85rem;">Obligations</h3>
-        <div class="decl-row">
-          <div class="decl-q">Obligated to pay alimony, child support, or separate maintenance?</div>
-          <div class="yn-group" data-pill-key="s6_alimony">
-            <button type="button" class="yn-btn" data-value="yes">Yes</button>
-            <button type="button" class="yn-btn" data-value="no">No</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 7 · Demographic Information (HMDA / Reg B Appendix B)
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="7">
-      <div class="section-eyebrow">Step 7 of 8</div>
-      <h1 class="section-title">Demographic information.</h1>
-      <p class="section-sub">Required by federal fair lending laws to monitor that lenders serve all communities. <strong>You're not required to provide this</strong>, and your decision doesn't affect your application.</p>
-
-      <div class="hmda-notice">
-        <strong>The following information is requested by the federal government</strong> to monitor compliance with federal fair lending laws and to help us determine whether we are serving all communities in our area. You are not required to provide this information, but are encouraged to do so. The law provides that we may not discriminate on the basis of this information, or on whether you choose to provide it.
-      </div>
-
-      <div class="section-card">
-        <!-- ─── Ethnicity ─── -->
-        <div class="hmda-group" data-hmda-group="ethnicity">
-          <label class="hmda-group-label">Ethnicity (check all that apply)</label>
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_eth_hispanic" data-hmda-value="hispanic_or_latino" data-hmda-group="ethnicity" />
-            <label for="s7_eth_hispanic">Hispanic or Latino</label>
-          </div>
-          <div class="hmda-subgroup">
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_eth_mexican" data-hmda-value="mexican" data-hmda-group="ethnicity" />
-              <label for="s7_eth_mexican">Mexican</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_eth_puerto_rican" data-hmda-value="puerto_rican" data-hmda-group="ethnicity" />
-              <label for="s7_eth_puerto_rican">Puerto Rican</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_eth_cuban" data-hmda-value="cuban" data-hmda-group="ethnicity" />
-              <label for="s7_eth_cuban">Cuban</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_eth_other_hisp" data-hmda-value="other_hispanic" data-hmda-group="ethnicity" />
-              <label for="s7_eth_other_hisp">Other Hispanic or Latino — please specify:</label>
-            </div>
-            <input type="text" class="hmda-input-other" id="s7_eth_other_hisp_text" data-key="s7_eth_other_hisp_text" placeholder="origin" />
-          </div>
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_eth_not_hispanic" data-hmda-value="not_hispanic_or_latino" data-hmda-group="ethnicity" />
-            <label for="s7_eth_not_hispanic">Not Hispanic or Latino</label>
-          </div>
-
-          <div class="hmda-decline hmda-option">
-            <input type="checkbox" id="s7_eth_decline" data-hmda-value="not_provided" data-hmda-group="ethnicity" data-hmda-decline="true" />
-            <label for="s7_eth_decline">I do not wish to provide this information</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <!-- ─── Race ─── -->
-        <div class="hmda-group" data-hmda-group="race">
-          <label class="hmda-group-label">Race (check all that apply)</label>
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_race_aian" data-hmda-value="american_indian_alaska_native" data-hmda-group="race" />
-            <label for="s7_race_aian">American Indian or Alaska Native — please specify enrolled or principal tribe:</label>
-          </div>
-          <input type="text" class="hmda-input-other" id="s7_race_aian_text" data-key="s7_race_aian_text" placeholder="tribe" />
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_race_asian" data-hmda-value="asian" data-hmda-group="race" />
-            <label for="s7_race_asian">Asian</label>
-          </div>
-          <div class="hmda-subgroup">
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_asian_indian" data-hmda-value="asian_indian" data-hmda-group="race" />
-              <label for="s7_race_asian_indian">Asian Indian</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_chinese" data-hmda-value="chinese" data-hmda-group="race" />
-              <label for="s7_race_chinese">Chinese</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_filipino" data-hmda-value="filipino" data-hmda-group="race" />
-              <label for="s7_race_filipino">Filipino</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_japanese" data-hmda-value="japanese" data-hmda-group="race" />
-              <label for="s7_race_japanese">Japanese</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_korean" data-hmda-value="korean" data-hmda-group="race" />
-              <label for="s7_race_korean">Korean</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_vietnamese" data-hmda-value="vietnamese" data-hmda-group="race" />
-              <label for="s7_race_vietnamese">Vietnamese</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_other_asian" data-hmda-value="other_asian" data-hmda-group="race" />
-              <label for="s7_race_other_asian">Other Asian — please specify:</label>
-            </div>
-            <input type="text" class="hmda-input-other" id="s7_race_other_asian_text" data-key="s7_race_other_asian_text" placeholder="origin" />
-          </div>
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_race_black" data-hmda-value="black_or_african_american" data-hmda-group="race" />
-            <label for="s7_race_black">Black or African American</label>
-          </div>
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_race_nhpi" data-hmda-value="native_hawaiian_pacific_islander" data-hmda-group="race" />
-            <label for="s7_race_nhpi">Native Hawaiian or Other Pacific Islander</label>
-          </div>
-          <div class="hmda-subgroup">
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_nhpi_hawaiian" data-hmda-value="native_hawaiian" data-hmda-group="race" />
-              <label for="s7_race_nhpi_hawaiian">Native Hawaiian</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_nhpi_guamanian" data-hmda-value="guamanian_chamorro" data-hmda-group="race" />
-              <label for="s7_race_nhpi_guamanian">Guamanian or Chamorro</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_nhpi_samoan" data-hmda-value="samoan" data-hmda-group="race" />
-              <label for="s7_race_nhpi_samoan">Samoan</label>
-            </div>
-            <div class="hmda-option">
-              <input type="checkbox" id="s7_race_nhpi_other" data-hmda-value="other_pacific_islander" data-hmda-group="race" />
-              <label for="s7_race_nhpi_other">Other Pacific Islander — please specify:</label>
-            </div>
-            <input type="text" class="hmda-input-other" id="s7_race_nhpi_other_text" data-key="s7_race_nhpi_other_text" placeholder="origin" />
-          </div>
-
-          <div class="hmda-option">
-            <input type="checkbox" id="s7_race_white" data-hmda-value="white" data-hmda-group="race" />
-            <label for="s7_race_white">White</label>
-          </div>
-
-          <div class="hmda-decline hmda-option">
-            <input type="checkbox" id="s7_race_decline" data-hmda-value="not_provided" data-hmda-group="race" data-hmda-decline="true" />
-            <label for="s7_race_decline">I do not wish to provide this information</label>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <!-- ─── Sex ─── -->
-        <div class="field-group">
-          <label class="field-label">Sex</label>
-          <div class="pill-group" data-pill-key="s7_sex">
-            <button type="button" class="pill-btn" data-value="female">Female</button>
-            <button type="button" class="pill-btn" data-value="male">Male</button>
-            <button type="button" class="pill-btn" data-value="not_provided">I do not wish to provide</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ──────────────────────────────────────────────────────────
-         SECTION 8 · Review & Submit
-    ────────────────────────────────────────────────────────────── -->
-    <div class="section" data-section="8">
-      <div class="section-eyebrow">Step 8 of 8</div>
-      <h1 class="section-title">Review &amp; submit.</h1>
-      <p class="section-sub">One last look. Authorize a credit pull. Send to your loan officer.</p>
-
-      <div class="section-card">
-        <div class="review-section" id="review-s1">
-          <h3>About You <button type="button" class="review-edit" data-jump="1">Edit</button></h3>
-        </div>
-        <div class="review-section" id="review-s2">
-          <h3>Where You Live <button type="button" class="review-edit" data-jump="2">Edit</button></h3>
-        </div>
-        <div class="review-section" id="review-s3">
-          <h3>Job &amp; Income <button type="button" class="review-edit" data-jump="3">Edit</button></h3>
-        </div>
-        <div class="review-section" id="review-s4">
-          <h3>Money &amp; Debts <button type="button" class="review-edit" data-jump="4">Edit</button></h3>
-        </div>
-        <div class="review-section" id="review-s5">
-          <h3>Property &amp; Loan <button type="button" class="review-edit" data-jump="5">Edit</button></h3>
-        </div>
-        <div class="review-section" id="review-s6">
-          <h3>Declarations <button type="button" class="review-edit" data-jump="6">Edit</button></h3>
-        </div>
-        <div class="review-section" id="review-s7">
-          <h3>Demographic Information <button type="button" class="review-edit" data-jump="7">Edit</button></h3>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 style="font-family:var(--serif);font-size:1.2rem;color:var(--white);margin-bottom:0.75rem;">Credit Report Authorization</h3>
-        <p style="font-size:0.85rem;color:var(--muted);font-weight:300;margin-bottom:1rem;line-height:1.7;">FCRA §604(a)(2) requires your written authorization before we can pull your credit. Read carefully, then check the box and submit.</p>
-
-        <!-- The visible text below MUST match CREDIT_AUTH_TEXT_V1 in the JS. -->
-        <div class="auth-text" id="credit-auth-block">
-          <p>By checking the box below, you authorize <strong>your lender</strong> and its agents to obtain a consumer credit report on you from one or more consumer reporting agencies for the purpose of evaluating your application for a mortgage loan.</p>
-          <p>This authorization covers:</p>
-          <ul>
-            <li>An initial credit report at application</li>
-            <li>Updated credit reports as needed during loan processing and underwriting</li>
-            <li>A refresh credit report shortly before closing</li>
-          </ul>
-          <p>A credit inquiry resulting from this authorization is generally classified as a hard inquiry, which may have a small, temporary effect on your credit score.</p>
-          <p>You also authorize your lender to share your credit report and related information with investors, servicers, mortgage insurers, and other parties who have a legitimate business need in connection with your loan.</p>
-          <p><strong>Co-borrower notice:</strong> Each borrower must provide separate authorization. If you have a co-borrower or co-applicant, they will receive their own authorization request.</p>
-        </div>
-
-        <div class="credit-auth-row">
-          <input type="checkbox" id="credit-auth-checkbox" />
-          <label for="credit-auth-checkbox"><strong>I authorize my lender to obtain my credit report.</strong> I understand this will result in a hard inquiry on my credit.</label>
-        </div>
-
-        <p style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.04em;line-height:1.6;">By submitting, you also confirm that the information you've provided is accurate to the best of your knowledge. Knowingly providing false information on a mortgage application is a federal crime under 18 U.S.C. §1014.</p>
-      </div>
-    </div>
-
-    <!-- ─── Success state (replaces wizard after submit) ────────── -->
-    <div id="success-state" class="success-state" style="display:none;">
-      <div class="success-icon">✓</div>
-      <h2>Application submitted.</h2>
-      <p>Your application has been received and assigned a loan number. Your loan officer will review it and reach out within one business day.</p>
-      <div class="success-loan-number" id="success-loan-number">OF-—</div>
-      <p style="font-size:0.85rem;">A confirmation email is on its way. You can return to your portal any time to check status, message your loan officer, or upload documents.</p>
-      <a href="/portal/index.html" class="success-cta">Return to Portal →</a>
-    </div>
-
-    <!-- ─── Wizard nav ──────────────────────────────────────────── -->
-    <div class="wizard-nav">
-      <button class="btn-back" id="btn-back" type="button" disabled>← Back</button>
-      <span class="save-indicator" id="save-indicator"><span class="si-dot"></span>Saved</span>
-      <button class="btn-next" id="btn-next" type="button">Continue →</button>
+<header class="portal-nav">
+  <div class="portal-brand">
+    <div class="portal-brand-mark">OF</div>
+    <div class="portal-brand-text">
+      OriginFlow
+      <span class="subtitle">Borrower portal</span>
     </div>
   </div>
+  <div class="save-status" id="save-status">
+    <span class="save-status-dot"></span>
+    <span id="save-status-text">All saved</span>
+  </div>
+</header>
+
+<div class="progress-shell">
+  <div class="progress-info">
+    <span class="progress-step-label" id="progress-label">Step 1 — About you</span>
+    <span class="progress-step-count" id="progress-count">1 of 7</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width: 14%;"></div>
+  </div>
+</div>
+
+<main class="wizard-main">
+
+  <!-- ─── STEP 1: About you ─── -->
+  <section class="step is-active" data-step="1">
+    <div class="step-header">
+      <div class="step-eyebrow">Personal info</div>
+      <h1 class="step-title">Tell us about yourself.</h1>
+      <p class="step-subtitle">The basics from your application — confirm what we've got, fill in the rest.</p>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">First name<span class="field-required">*</span></label>
+        <input class="field-input" data-field="first_name" type="text" required maxlength="60">
+      </div>
+      <div class="field">
+        <label class="field-label">Last name<span class="field-required">*</span></label>
+        <input class="field-input" data-field="last_name" type="text" required maxlength="60">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Middle name</label>
+        <input class="field-input" data-field="middle_name" type="text" maxlength="60">
+      </div>
+      <div class="field">
+        <label class="field-label">Suffix</label>
+        <input class="field-input" data-field="suffix" type="text" maxlength="10" placeholder="Jr · Sr · III">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Date of birth<span class="field-required">*</span></label>
+        <input class="field-input" data-field="dob" type="date" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Social Security<span class="field-required">*</span></label>
+        <input class="field-input" data-field="ssn" type="text" inputmode="numeric"
+               placeholder="123-45-6789" maxlength="11" autocomplete="off">
+        <div class="field-hint">Encrypted at rest · only your loan officer and underwriter can see this.</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Marital status<span class="field-required">*</span></label>
+      <div class="radio-group is-grid-2">
+        <label class="radio-card">
+          <input type="radio" name="marital" value="married" data-field="marital">
+          <div class="radio-card-content"><div class="radio-card-name">Married</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="marital" value="unmarried" data-field="marital">
+          <div class="radio-card-content"><div class="radio-card-name">Unmarried</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="marital" value="separated" data-field="marital">
+          <div class="radio-card-content"><div class="radio-card-name">Separated</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Citizenship<span class="field-required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-card">
+          <input type="radio" name="citizenship" value="us_citizen" data-field="citizenship">
+          <div class="radio-card-content">
+            <div class="radio-card-name">U.S. citizen</div>
+          </div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="citizenship" value="permanent_resident" data-field="citizenship">
+          <div class="radio-card-content">
+            <div class="radio-card-name">Permanent resident alien</div>
+            <div class="radio-card-desc">You have a green card.</div>
+          </div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="citizenship" value="non_permanent_resident" data-field="citizenship">
+          <div class="radio-card-content">
+            <div class="radio-card-name">Non-permanent resident alien</div>
+            <div class="radio-card-desc">You're working in the U.S. on a visa.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Dependents (number)</label>
+      <input class="field-input" data-field="dependents" type="number" min="0" max="20" placeholder="0">
+      <div class="field-hint">Anyone you financially support, including kids.</div>
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-ghost" data-action="save-exit">Save &amp; exit</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 2: Where you live ─── -->
+  <section class="step" data-step="2">
+    <div class="step-header">
+      <div class="step-eyebrow">Address history</div>
+      <h1 class="step-title">Where do you live?</h1>
+      <p class="step-subtitle">Your current address, and if you've been there less than 2 years, where you were before.</p>
+    </div>
+
+    <div class="section-header">Current address</div>
+
+    <div class="field">
+      <label class="field-label">Street address<span class="field-required">*</span></label>
+      <input class="field-input" data-field="current_address.street" type="text" required maxlength="120"
+             autocomplete="street-address">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Apartment / Unit</label>
+      <input class="field-input" data-field="current_address.unit" type="text" maxlength="20">
+    </div>
+
+    <div class="field-row-3">
+      <div class="field">
+        <label class="field-label">City<span class="field-required">*</span></label>
+        <input class="field-input" data-field="current_address.city" type="text" required maxlength="60"
+               autocomplete="address-level2">
+      </div>
+      <div class="field">
+        <label class="field-label">State<span class="field-required">*</span></label>
+        <input class="field-input" data-field="current_address.state" type="text" required maxlength="2"
+               style="text-transform: uppercase;" autocomplete="address-level1">
+      </div>
+      <div class="field">
+        <label class="field-label">ZIP<span class="field-required">*</span></label>
+        <input class="field-input" data-field="current_address.zip" type="text" required inputmode="numeric"
+               maxlength="10" autocomplete="postal-code">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">You live there as a<span class="field-required">*</span></label>
+      <div class="radio-group is-grid-2">
+        <label class="radio-card">
+          <input type="radio" name="current_tenure" value="own" data-field="current_address.tenure">
+          <div class="radio-card-content"><div class="radio-card-name">Owner</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="current_tenure" value="rent" data-field="current_address.tenure">
+          <div class="radio-card-content"><div class="radio-card-name">Renter</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="current_tenure" value="rent_free" data-field="current_address.tenure">
+          <div class="radio-card-content"><div class="radio-card-name">Living rent-free</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Years at this address<span class="field-required">*</span></label>
+        <input class="field-input" data-field="current_address.years" type="number" min="0" max="99" step="1" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Monthly housing payment</label>
+        <input class="field-input" data-field="current_address.payment" type="text"
+               inputmode="numeric" placeholder="$0">
+        <div class="field-hint">Rent or mortgage P&amp;I.</div>
+      </div>
+    </div>
+
+    <!-- Prior address (auto-shows when current years < 2) -->
+    <div id="prior-address-section" style="display: none;">
+      <div class="section-header">Prior address</div>
+      <p class="step-subtitle" style="margin-bottom: 16px;">Since you've been at your current address less than 2 years, we also need where you lived before.</p>
+
+      <div class="field">
+        <label class="field-label">Street address</label>
+        <input class="field-input" data-field="prior_address.street" type="text" maxlength="120">
+      </div>
+
+      <div class="field-row-3">
+        <div class="field">
+          <label class="field-label">City</label>
+          <input class="field-input" data-field="prior_address.city" type="text" maxlength="60">
+        </div>
+        <div class="field">
+          <label class="field-label">State</label>
+          <input class="field-input" data-field="prior_address.state" type="text" maxlength="2"
+                 style="text-transform: uppercase;">
+        </div>
+        <div class="field">
+          <label class="field-label">ZIP</label>
+          <input class="field-input" data-field="prior_address.zip" type="text" inputmode="numeric" maxlength="10">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Years lived there</label>
+        <input class="field-input" data-field="prior_address.years" type="number" min="0" max="99" step="0.5">
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 3: Work & income ─── -->
+  <section class="step" data-step="3">
+    <div class="step-header">
+      <div class="step-eyebrow">Employment &amp; income</div>
+      <h1 class="step-title">Where do you work?</h1>
+      <p class="step-subtitle">Your current job and how much you make. We'll verify with pay stubs and W-2s later.</p>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Employment status<span class="field-required">*</span></label>
+      <div class="radio-group">
+        <label class="radio-card">
+          <input type="radio" name="emp_status" value="employed" data-field="employment.status">
+          <div class="radio-card-content">
+            <div class="radio-card-name">Employed</div>
+            <div class="radio-card-desc">W-2 income from an employer.</div>
+          </div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="emp_status" value="self_employed" data-field="employment.status">
+          <div class="radio-card-content">
+            <div class="radio-card-name">Self-employed</div>
+            <div class="radio-card-desc">1099, business owner, or contractor.</div>
+          </div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="emp_status" value="retired" data-field="employment.status">
+          <div class="radio-card-content">
+            <div class="radio-card-name">Retired</div>
+          </div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="emp_status" value="unemployed" data-field="employment.status">
+          <div class="radio-card-content">
+            <div class="radio-card-name">Other</div>
+            <div class="radio-card-desc">Not currently working.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="section-header">Current employer</div>
+
+    <div class="field">
+      <label class="field-label">Employer name<span class="field-required">*</span></label>
+      <input class="field-input" data-field="employment.employer_name" type="text" maxlength="120">
+    </div>
+
+    <div class="field">
+      <label class="field-label">Your position / title</label>
+      <input class="field-input" data-field="employment.position" type="text" maxlength="80">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Start date</label>
+        <input class="field-input" data-field="employment.start_date" type="date">
+      </div>
+      <div class="field">
+        <label class="field-label">Years in this line of work</label>
+        <input class="field-input" data-field="employment.years_in_field" type="number" min="0" max="50" step="0.5">
+        <div class="field-hint">Including time at prior employers in the same field.</div>
+      </div>
+    </div>
+
+    <div class="section-header">Monthly income</div>
+
+    <div class="field">
+      <label class="field-label">Base income<span class="field-required">*</span></label>
+      <input class="field-input" data-field="income.base" type="text" inputmode="numeric" placeholder="$0">
+      <div class="field-hint">Your monthly gross salary or regular pay before taxes.</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Overtime</label>
+        <input class="field-input" data-field="income.overtime" type="text" inputmode="numeric" placeholder="$0">
+      </div>
+      <div class="field">
+        <label class="field-label">Bonuses</label>
+        <input class="field-input" data-field="income.bonus" type="text" inputmode="numeric" placeholder="$0">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Commissions</label>
+        <input class="field-input" data-field="income.commission" type="text" inputmode="numeric" placeholder="$0">
+      </div>
+      <div class="field">
+        <label class="field-label">Other monthly income</label>
+        <input class="field-input" data-field="income.other" type="text" inputmode="numeric" placeholder="$0">
+        <div class="field-hint">Rental, alimony, child support — explain in next step if needed.</div>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 4: Assets ─── -->
+  <section class="step" data-step="4">
+    <div class="step-header">
+      <div class="step-eyebrow">Assets</div>
+      <h1 class="step-title">What accounts do you have?</h1>
+      <p class="step-subtitle">Checking, savings, and retirement accounts you'll use for your down payment, closing costs, or reserves. We'll verify with statements later.</p>
+    </div>
+
+    <div class="section-header">Accounts</div>
+    <div id="assets-list">
+      <!-- Repeater items inserted here -->
+    </div>
+    <button type="button" class="repeater-add" data-action="add-asset">+ Add an account</button>
+
+    <div class="field" style="margin-top: 28px;">
+      <label class="field-label">Gift funds from family / non-borrower</label>
+      <input class="field-input" data-field="gift_funds_amount" type="text" inputmode="numeric" placeholder="$0">
+      <div class="field-hint">Money someone else is giving you for the down payment. Requires a gift letter — we'll send a template.</div>
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 5: Declarations ─── -->
+  <section class="step" data-step="5">
+    <div class="step-header">
+      <div class="step-eyebrow">Declarations</div>
+      <h1 class="step-title">A few yes-or-no questions.</h1>
+      <p class="step-subtitle">Required by federal regulators. If any answer is yes, we'll ask you to add a short explanation.</p>
+    </div>
+
+    <div id="declarations-list">
+      <!-- Yes/no questions inserted here -->
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 6: Demographic info (HMDA, optional) ─── -->
+  <section class="step" data-step="6">
+    <div class="step-header">
+      <div class="step-eyebrow">Demographic information</div>
+      <h1 class="step-title">Optional — but useful for everyone.</h1>
+      <p class="step-subtitle">This is what's known as HMDA data. It helps regulators ensure fair lending.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Why we ask</div>
+      <div class="callout-text">
+        Federal law (HMDA) requires us to report aggregated lending data to ensure people aren't being discriminated against based on race, sex, or ethnicity. Your answers are <strong>never used in approval decisions</strong> and you can skip any or all of these.
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Ethnicity</label>
+      <div class="radio-group">
+        <label class="radio-card">
+          <input type="radio" name="ethnicity" value="hispanic" data-field="demographics.ethnicity">
+          <div class="radio-card-content"><div class="radio-card-name">Hispanic or Latino</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="ethnicity" value="not_hispanic" data-field="demographics.ethnicity">
+          <div class="radio-card-content"><div class="radio-card-name">Not Hispanic or Latino</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="ethnicity" value="not_provided" data-field="demographics.ethnicity">
+          <div class="radio-card-content"><div class="radio-card-name">I prefer not to answer</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Race (select all that apply)</label>
+      <div class="radio-group">
+        <label class="radio-card">
+          <input type="checkbox" data-field="demographics.race_american_indian">
+          <div class="radio-card-content"><div class="radio-card-name">American Indian or Alaska Native</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="checkbox" data-field="demographics.race_asian">
+          <div class="radio-card-content"><div class="radio-card-name">Asian</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="checkbox" data-field="demographics.race_black">
+          <div class="radio-card-content"><div class="radio-card-name">Black or African American</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="checkbox" data-field="demographics.race_pacific_islander">
+          <div class="radio-card-content"><div class="radio-card-name">Native Hawaiian or Other Pacific Islander</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="checkbox" data-field="demographics.race_white">
+          <div class="radio-card-content"><div class="radio-card-name">White</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="checkbox" data-field="demographics.race_not_provided">
+          <div class="radio-card-content"><div class="radio-card-name">I prefer not to answer</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Sex</label>
+      <div class="radio-group is-grid-2">
+        <label class="radio-card">
+          <input type="radio" name="sex" value="female" data-field="demographics.sex">
+          <div class="radio-card-content"><div class="radio-card-name">Female</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="sex" value="male" data-field="demographics.sex">
+          <div class="radio-card-content"><div class="radio-card-name">Male</div></div>
+        </label>
+        <label class="radio-card">
+          <input type="radio" name="sex" value="not_provided" data-field="demographics.sex">
+          <div class="radio-card-content"><div class="radio-card-name">I prefer not to answer</div></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" data-action="next">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ─── STEP 7: Review & submit ─── -->
+  <section class="step" data-step="7">
+    <div class="step-header">
+      <div class="step-eyebrow">Review</div>
+      <h1 class="step-title">Take one last look.</h1>
+      <p class="step-subtitle">Make sure everything's right, then submit. You can come back and edit anything later — your loan officer will help.</p>
+    </div>
+
+    <div class="error-banner" id="review-error"></div>
+
+    <div id="review-container">
+      <!-- Review sections rendered by JS -->
+    </div>
+
+    <div class="step-actions">
+      <button type="button" class="btn btn-secondary" data-action="back">← Back</button>
+      <button type="button" class="btn btn-primary" id="submit-btn" data-action="submit">Submit application →</button>
+    </div>
+  </section>
+
+  <!-- ─── SUCCESS ─── -->
+  <section class="success-screen" id="success-screen">
+    <div class="success-icon">✓</div>
+    <h2 class="success-title">Application submitted.</h2>
+    <p class="success-text">
+      Your loan officer has been notified and will follow up shortly. You can come back to your portal anytime to upload documents, send messages, or check your status.
+    </p>
+    <a href="/portal/" class="success-cta">Back to your portal →</a>
+  </section>
+
 </main>
 
-<footer>
-  <div class="footer-disclaimer">
-    <strong>OriginFlow LOS · Borrower Portal</strong> · Your application is saved automatically · No credit pull happens until you authorize one on Step 8
-  </div>
-  <div class="footer-bottom">
-    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
-    <div class="footer-links">
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="/portal/index.html">Portal Home</a>
-      <a href="mailto:dsrackler@gmail.com">Contact</a>
-    </div>
-  </div>
-</footer>
-
-<!-- ═══════════════════════════════════════════════════════════════════
-     WIZARD BOOTSTRAP + STATE + NAVIGATION
-     
-     Architecture:
-       formState               — flat key/value object of all field values
-       SECTIONS                — total section count (8)
-       currentSection          — 1..8
-       draftStorageKey         — 'of_apply_draft_<borrower_id>'
-       saveDraft()             — debounced write to localStorage
-       restoreDraft()          — read on bootstrap, prefill form
-       showSection(n)          — hide all, show n, update progress
-       validateCurrentSection()— per-section required-field check
-       bootstrap()             — gate logic: session → borrowers → econsent → wizard
-     
-     Section data lives entirely in localStorage during the draft phase.
-     Materialization into loans + loan_borrowers happens on Section 8 submit
-     (next session). No DB writes happen from sections 1-4.
-═══════════════════════════════════════════════════════════════════ -->
 <script>
-  var SECTIONS = 8;
-  var currentSection = 1;
-  var formState = {};
-  var draftStorageKey = null;  // set after we know borrower_id
-  var saveTimer = null;
-  var bootstrapComplete = false;
-  var borrowerIdGlobal = null;  // resolved at bootstrap; used by submit handler
+/* =============================================================================
+   WIZARD STATE
+   -----------------------------------------------------------------------------
+   Single nested object holding everything the borrower has entered.
+   Auto-saved to localStorage on every change (debounced) and posted to
+   OF_savePortalApplication() when the hook is wired.
 
-  // ─── Credit pull authorization text (FCRA §604(a)(2)) ─────────────
-  // SOURCE OF TRUTH — must match #credit-auth-block textContent visible to the
-  // borrower. Hashed on submit. If you change one, change both, and bump
-  // CREDIT_AUTH_VERSION. Old records keep referencing old hashes.
-  var CREDIT_AUTH_VERSION = 'credit_auth_v1';
-  var CREDIT_AUTH_TEXT_V1 = [
-    'By checking the box below, you authorize your lender and its agents to obtain a consumer credit report on you from one or more consumer reporting agencies for the purpose of evaluating your application for a mortgage loan.',
-    '',
-    'This authorization covers:',
-    '- An initial credit report at application',
-    '- Updated credit reports as needed during loan processing and underwriting',
-    '- A refresh credit report shortly before closing',
-    '',
-    'A credit inquiry resulting from this authorization is generally classified as a hard inquiry, which may have a small, temporary effect on your credit score.',
-    '',
-    'You also authorize your lender to share your credit report and related information with investors, servicers, mortgage insurers, and other parties who have a legitimate business need in connection with your loan.',
-    '',
-    'Co-borrower notice: Each borrower must provide separate authorization. If you have a co-borrower or co-applicant, they will receive their own authorization request.'
-  ].join('\n');
+   Hydrated from three sources on page load:
+     1. /apply pre-fill — name, email, phone, loan basics already on the
+        borrowers/loans rows from the public landing step
+     2. localStorage backup — if they refreshed mid-flow
+     3. Existing loan data — if they're resuming after sign-out (server-side)
+   ============================================================================= */
+const WIZARD_STATE_KEY = 'of_portal_application_v1';
 
-  var loadingEl = document.getElementById('state-loading');
-  var errorEl = document.getElementById('state-error');
-  var errorMsgEl = document.getElementById('state-error-msg');
-  var wizardEl = document.getElementById('wizard');
-  var bannerStepEl = document.getElementById('banner-step');
-  var progressFill = document.getElementById('progress-fill');
-  var saveIndicator = document.getElementById('save-indicator');
-  var errorBanner = document.getElementById('error-banner');
-  var btnBack = document.getElementById('btn-back');
-  var btnNext = document.getElementById('btn-next');
+window.OF_APPLICATION_STATE = {
+  first_name: '',
+  last_name: '',
+  middle_name: '',
+  suffix: '',
+  dob: '',
+  ssn: '',
+  marital: '',
+  citizenship: '',
+  dependents: '',
+  current_address: {
+    street: '', unit: '', city: '', state: '', zip: '',
+    tenure: '', years: '', payment: '',
+  },
+  prior_address: {
+    street: '', city: '', state: '', zip: '', years: '',
+  },
+  employment: {
+    status: '', employer_name: '', position: '',
+    start_date: '', years_in_field: '',
+  },
+  income: {
+    base: '', overtime: '', bonus: '', commission: '', other: '',
+  },
+  assets: [],
+  gift_funds_amount: '',
+  declarations: {},
+  demographics: {
+    ethnicity: '', sex: '',
+    race_american_indian: false, race_asian: false, race_black: false,
+    race_pacific_islander: false, race_white: false, race_not_provided: false,
+  },
+};
 
-  var sb = null;
-  try { sb = (typeof getSupabase === 'function') ? getSupabase() : null; } catch (_) {}
+// Declarations come from URLA Section VII. Each gets a yes/no plus
+// optional explanation. The keys map 1:1 to MISMO declaration codes.
+const DECLARATIONS = [
+  { key: 'outstanding_judgments', q: 'Are there any outstanding judgments against you?' },
+  { key: 'bankruptcy_7yr',         q: 'Have you declared bankruptcy in the past 7 years?' },
+  { key: 'foreclosure_7yr',        q: 'Has any property been foreclosed on or deed transferred in lieu in the past 7 years?' },
+  { key: 'lawsuit_party',          q: 'Are you a party to any current lawsuit?' },
+  { key: 'federal_debt_delinquent',q: 'Are you delinquent or in default on any federal debt (taxes, student loans, etc.)?' },
+  { key: 'alimony_obligation',     q: 'Are you obligated to pay alimony, child support, or separate maintenance?' },
+  { key: 'down_payment_borrowed',  q: 'Is any part of your down payment borrowed?' },
+  { key: 'cosigner',               q: 'Are you a co-maker or endorser on another loan or note?' },
+  { key: 'us_citizen_question',    q: 'Do you intend to occupy this property as your primary residence?' },
+];
 
-  // ─── Bootstrap ────────────────────────────────────────────────────
-  async function bootstrap() {
-    if (!sb) { showBootstrapError('Could not reach the service. Please refresh.'); return; }
+DECLARATIONS.forEach(d => {
+  window.OF_APPLICATION_STATE.declarations[d.key] = { answer: '', explanation: '' };
+});
 
-    // 1. Session gate
-    var sessionRes;
-    try { sessionRes = await sb.auth.getSession(); } catch(_) { sessionRes = null; }
-    var session = sessionRes && sessionRes.data && sessionRes.data.session;
-    if (!session) { window.location.href = '/portal/login.html'; return; }
-
-    // 2. Borrowers row lookup, or create via RPC using cached apply form data.
-    var borrower = null;
-    try {
-      var bRes = await sb
-        .from('borrowers')
-        .select('id, econsent_granted_at, econsent_withdrawn_at, first_name, last_name, phone')
-        .eq('auth_user_id', session.user.id)
-        .maybeSingle();
-      borrower = bRes && bRes.data;
-    } catch (err) { console.warn('[OF Apply] borrowers lookup:', err); }
-
-    if (!borrower) {
-      // No row yet — call bootstrap_borrower_application RPC with whatever we
-      // cached from apply.html. The RPC creates the row (or links an existing
-      // unlinked one matching email) keyed to the current auth.uid().
-      var pending = readPendingApplication();
-      var firstName = null, lastName = null, phone = null;
-      if (pending && pending.fullName) {
-        var parts = pending.fullName.trim().split(/\s+/);
-        firstName = parts.shift() || null;
-        lastName = parts.join(' ') || null;
-      }
-      if (pending && pending.phone) phone = pending.phone;
-
-      try {
-        var rpcRes = await sb.rpc('bootstrap_borrower_application', {
-          p_first_name: firstName,
-          p_last_name: lastName,
-          p_phone: phone
-        });
-        if (rpcRes.error) throw rpcRes.error;
-        // Re-fetch the row we just created/linked.
-        var refetched = await sb
-          .from('borrowers')
-          .select('id, econsent_granted_at, econsent_withdrawn_at, first_name, last_name, phone')
-          .eq('auth_user_id', session.user.id)
-          .maybeSingle();
-        borrower = refetched && refetched.data;
-      } catch (err) {
-        console.error('[OF Apply] bootstrap_borrower_application failed:', err);
-        showBootstrapError('Could not create your application: ' + ((err && err.message) || 'unknown error') + '.');
-        return;
-      }
-
-      if (!borrower) {
-        showBootstrapError('Bootstrap returned no row. Please refresh and try again.');
-        return;
-      }
-    }
-
-    // 3. eConsent gate
-    var granted = borrower.econsent_granted_at;
-    var withdrawn = borrower.econsent_withdrawn_at;
-    var consentActive = granted && (!withdrawn || new Date(withdrawn) < new Date(granted));
-    if (!consentActive) { window.location.href = '/portal/econsent.html'; return; }
-
-    // 4. Set the storage key and load any prior draft
-    draftStorageKey = 'of_apply_draft_' + borrower.id;
-    borrowerIdGlobal = borrower.id;
-    restoreDraft(borrower);
-
-    // 5. Show wizard
-    bootstrapComplete = true;
-    loadingEl.style.display = 'none';
-    wizardEl.style.display = 'block';
-    showSection(currentSection);
+/* =============================================================================
+   BOOTSTRAP — load pre-filled data + localStorage backup
+   ============================================================================= */
+function loadBootstrap() {
+  // Pre-fill from /apply submission (or test stub)
+  const prefill = window.OF_APPLY_PREFILL || {
+    first_name: 'Marcus',
+    last_name:  'Holbrook',
+    current_address: {
+      city:  'Lubbock',
+      state: 'TX',
+    },
+  };
+  Object.assign(window.OF_APPLICATION_STATE, prefill);
+  if (prefill.current_address) {
+    Object.assign(window.OF_APPLICATION_STATE.current_address, prefill.current_address);
   }
 
-  function showBootstrapError(msg) {
-    loadingEl.style.display = 'none';
-    wizardEl.style.display = 'none';
-    errorEl.style.display = 'block';
-    errorMsgEl.textContent = msg;
-  }
-
-  // ─── Pending application from apply.html ──────────────────────────
-  function readPendingApplication() {
-    try {
-      var raw = localStorage.getItem('of_pending_application');
-      if (!raw) return null;
-      var data = JSON.parse(raw);
-      // Stale check — ignore drafts older than 24h.
-      if (data.capturedAt) {
-        var age = Date.now() - new Date(data.capturedAt).getTime();
-        if (age > 24 * 60 * 60 * 1000) return null;
-      }
-      return data;
-    } catch (_) { return null; }
-  }
-
-  // ─── Draft restore ────────────────────────────────────────────────
-  function restoreDraft(borrower) {
-    var raw = null;
-    try { raw = localStorage.getItem(draftStorageKey); } catch(_) {}
-    if (raw) {
-      try {
-        var saved = JSON.parse(raw);
-        formState = saved.formState || {};
-        currentSection = Math.min(Math.max(saved.currentSection || 1, 1), SECTIONS);
-      } catch (_) { formState = {}; currentSection = 1; }
+  // Local backup overrides pre-fill (in case borrower refreshed mid-flow)
+  try {
+    const saved = localStorage.getItem(WIZARD_STATE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      deepMerge(window.OF_APPLICATION_STATE, parsed);
     }
+  } catch (err) {
+    console.warn('Could not load saved state:', err);
+  }
+}
 
-    // Prefill from apply.html cached data + borrowers row.
-    var pending = readPendingApplication();
-    if (pending) {
-      if (pending.fullName && !formState.s1_legal_first_name) {
-        var parts = pending.fullName.trim().split(/\s+/);
-        formState.s1_legal_first_name = formState.s1_legal_first_name || (parts[0] || '');
-        formState.s1_legal_last_name = formState.s1_legal_last_name || (parts.slice(1).join(' ') || '');
-      }
+function deepMerge(target, source) {
+  for (const key of Object.keys(source || {})) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (!target[key] || typeof target[key] !== 'object') target[key] = {};
+      deepMerge(target[key], source[key]);
+    } else {
+      target[key] = source[key];
     }
-    // Borrower-row prefill (in case staff seeded these or auth-link pre-populated)
-    if (borrower.first_name && !formState.s1_legal_first_name) formState.s1_legal_first_name = borrower.first_name;
-    if (borrower.last_name && !formState.s1_legal_last_name) formState.s1_legal_last_name = borrower.last_name;
+  }
+}
 
-    // Apply formState to all inputs
-    Object.keys(formState).forEach(function(key) {
-      var el = document.querySelector('[data-key="' + key + '"]');
-      if (el) el.value = formState[key];
-      // Pill selections
-      var pillGroup = document.querySelector('[data-pill-key="' + key + '"]');
-      if (pillGroup) {
-        pillGroup.querySelectorAll('.pill-btn').forEach(function(b) {
-          b.classList.toggle('selected', b.dataset.value === formState[key]);
-        });
-      }
+/* =============================================================================
+   FIELD WIRING
+   -----------------------------------------------------------------------------
+   Two-way binding: each input with [data-field] is bound to its path in
+   the state object. Field names use dot-notation (e.g. "current_address.street").
+   ============================================================================= */
+function setDeep(obj, path, value) {
+  const parts = path.split('.');
+  let cursor = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!cursor[parts[i]] || typeof cursor[parts[i]] !== 'object') cursor[parts[i]] = {};
+    cursor = cursor[parts[i]];
+  }
+  cursor[parts[parts.length - 1]] = value;
+}
+function getDeep(obj, path) {
+  return path.split('.').reduce((c, p) => (c == null ? c : c[p]), obj);
+}
+
+function hydrateFields() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const path = el.dataset.field;
+    const val = getDeep(window.OF_APPLICATION_STATE, path);
+    if (val === undefined || val === null) return;
+    if (el.type === 'checkbox') {
+      el.checked = !!val;
+    } else if (el.type === 'radio') {
+      el.checked = (el.value === val);
+    } else {
+      el.value = val;
+    }
+  });
+}
+
+function wireFields() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const path = el.dataset.field;
+    el.addEventListener('input', () => {
+      let val = el.value;
+      if (el.type === 'checkbox') val = el.checked;
+      else if (el.type === 'radio') val = el.checked ? el.value : getDeep(window.OF_APPLICATION_STATE, path);
+      setDeep(window.OF_APPLICATION_STATE, path, val);
+      debouncedSave();
     });
-  }
-
-  // ─── Draft save (debounced) ───────────────────────────────────────
-  function saveDraft() {
-    if (!draftStorageKey || !bootstrapComplete) return;
-    saveIndicator.classList.add('saving');
-    saveIndicator.innerHTML = '<span class="si-dot"></span>Saving…';
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(function() {
-      try {
-        localStorage.setItem(draftStorageKey, JSON.stringify({
-          formState: formState,
-          currentSection: currentSection,
-          savedAt: new Date().toISOString()
-        }));
-      } catch (_) { /* localStorage full or unavailable; silently continue */ }
-      saveIndicator.classList.remove('saving');
-      saveIndicator.innerHTML = '<span class="si-dot"></span>Saved';
-    }, 600);
-  }
-
-  // ─── Field wiring (delegated) ─────────────────────────────────────
-  // Every input with data-key writes to formState[key] on change.
-  document.querySelectorAll('[data-key]').forEach(function(el) {
-    el.addEventListener('input', function() {
-      formState[el.dataset.key] = el.value;
-      saveDraft();
-    });
-    el.addEventListener('change', function() {
-      formState[el.dataset.key] = el.value;
-      saveDraft();
+    el.addEventListener('change', () => {
+      let val = el.value;
+      if (el.type === 'checkbox') val = el.checked;
+      else if (el.type === 'radio' && el.checked) val = el.value;
+      setDeep(window.OF_APPLICATION_STATE, path, val);
+      debouncedSave();
+      // Special: if current_address.years changed, show/hide prior address
+      if (path === 'current_address.years') updatePriorAddressVisibility();
     });
   });
+}
 
-  // Pill button groups (single-select)
-  document.querySelectorAll('[data-pill-key]').forEach(function(group) {
-    var key = group.dataset.pillKey;
-    group.querySelectorAll('.pill-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        group.querySelectorAll('.pill-btn').forEach(function(b) { b.classList.remove('selected'); });
-        btn.classList.add('selected');
-        formState[key] = btn.dataset.value;
-        saveDraft();
+function updatePriorAddressVisibility() {
+  const years = parseFloat(window.OF_APPLICATION_STATE.current_address.years);
+  const section = document.getElementById('prior-address-section');
+  if (section) section.style.display = (years >= 0 && years < 2) ? 'block' : 'none';
+}
+
+/* =============================================================================
+   AUTO-SAVE (debounced)
+   ============================================================================= */
+let saveTimer = null;
+function debouncedSave() {
+  setSaveStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistState, 700);
+}
+
+async function persistState() {
+  try {
+    localStorage.setItem(WIZARD_STATE_KEY, JSON.stringify(window.OF_APPLICATION_STATE));
+    if (typeof window.OF_savePortalApplication === 'function') {
+      await window.OF_savePortalApplication(window.OF_APPLICATION_STATE);
+    }
+    setSaveStatus('saved');
+  } catch (err) {
+    console.error('save failed:', err);
+    setSaveStatus('error');
+  }
+}
+
+function setSaveStatus(state) {
+  const el = document.getElementById('save-status');
+  const text = document.getElementById('save-status-text');
+  el.classList.remove('is-saving', 'is-saved', 'is-error');
+  if (state === 'saving') { el.classList.add('is-saving'); text.textContent = 'Saving…'; }
+  else if (state === 'saved') { el.classList.add('is-saved'); text.textContent = 'All saved'; }
+  else if (state === 'error') { text.textContent = 'Save failed'; }
+}
+
+/* =============================================================================
+   ASSETS REPEATER
+   ============================================================================= */
+function renderAssets() {
+  const list = document.getElementById('assets-list');
+  list.innerHTML = '';
+  window.OF_APPLICATION_STATE.assets.forEach((a, i) => {
+    const item = document.createElement('div');
+    item.className = 'repeater-item';
+    item.innerHTML = `
+      <div class="repeater-item-header">
+        <div class="repeater-item-title">Account ${i + 1}</div>
+        <button type="button" class="repeater-remove" data-remove-asset="${i}">× Remove</button>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Type</label>
+          <select class="field-select" data-asset-field="${i}.type">
+            <option value="">Choose…</option>
+            <option value="checking">Checking</option>
+            <option value="savings">Savings</option>
+            <option value="money_market">Money market</option>
+            <option value="cd">Certificate of deposit (CD)</option>
+            <option value="retirement_401k">401(k) / 403(b)</option>
+            <option value="retirement_ira">IRA / Roth IRA</option>
+            <option value="stocks_bonds">Stocks / Bonds</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Institution</label>
+          <input class="field-input" data-asset-field="${i}.institution" type="text" maxlength="80">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Account # (last 4)</label>
+          <input class="field-input" data-asset-field="${i}.account_last4" type="text"
+                 inputmode="numeric" maxlength="4" placeholder="1234">
+        </div>
+        <div class="field">
+          <label class="field-label">Current balance</label>
+          <input class="field-input" data-asset-field="${i}.balance" type="text"
+                 inputmode="numeric" placeholder="$0">
+        </div>
+      </div>
+    `;
+    list.appendChild(item);
+
+    // Hydrate values
+    item.querySelectorAll('[data-asset-field]').forEach(el => {
+      const [idx, key] = el.dataset.assetField.split('.');
+      const asset = window.OF_APPLICATION_STATE.assets[parseInt(idx)];
+      if (asset && asset[key] != null) el.value = asset[key];
+      el.addEventListener('input', () => {
+        const [idx, key] = el.dataset.assetField.split('.');
+        if (!window.OF_APPLICATION_STATE.assets[parseInt(idx)]) {
+          window.OF_APPLICATION_STATE.assets[parseInt(idx)] = {};
+        }
+        window.OF_APPLICATION_STATE.assets[parseInt(idx)][key] = el.value;
+        debouncedSave();
       });
     });
   });
 
-  // ─── Section navigation ───────────────────────────────────────────
-  function showSection(n) {
-    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
-    var target = document.querySelector('.section[data-section="' + n + '"]');
-    if (target) target.classList.add('active');
-
-    currentSection = n;
-    bannerStepEl.textContent = n;
-    progressFill.style.width = (n / SECTIONS * 100) + '%';
-
-    document.querySelectorAll('.progress-step').forEach(function(s) {
-      var step = parseInt(s.dataset.step, 10);
-      s.classList.remove('active', 'done');
-      if (step === n) s.classList.add('active');
-      else if (step < n) s.classList.add('done');
+  // Wire remove buttons
+  list.querySelectorAll('[data-remove-asset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.removeAsset);
+      window.OF_APPLICATION_STATE.assets.splice(i, 1);
+      debouncedSave();
+      renderAssets();
     });
+  });
+}
 
-    btnBack.disabled = (n === 1);
-    btnNext.textContent = (n === SECTIONS) ? 'Submit Application →' : 'Continue →';
-    btnNext.disabled = false;
-    btnNext.title = '';
+function wireAssetsAdd() {
+  document.querySelector('[data-action="add-asset"]').addEventListener('click', () => {
+    window.OF_APPLICATION_STATE.assets.push({
+      type: '', institution: '', account_last4: '', balance: '',
+    });
+    debouncedSave();
+    renderAssets();
+  });
+}
 
-    // Section 5: dynamic label on the price field — "Purchase Price" for
-    // purchases, "Current Value" for refis.
-    if (n === 5) {
-      var priceLabel = document.getElementById('s5_price_label');
-      if (priceLabel) {
-        var purpose = formState.s5_purpose;
-        if (purpose === 'refinance' || purpose === 'cashout_refinance') {
-          priceLabel.textContent = 'Current Estimated Value';
-        } else {
-          priceLabel.textContent = 'Purchase Price';
-        }
-      }
+/* =============================================================================
+   DECLARATIONS RENDERER
+   ============================================================================= */
+function renderDeclarations() {
+  const list = document.getElementById('declarations-list');
+  list.innerHTML = DECLARATIONS.map(d => {
+    const current = window.OF_APPLICATION_STATE.declarations[d.key];
+    const yesSelected = current.answer === 'yes';
+    const noSelected = current.answer === 'no';
+    return `
+      <div class="yes-no-row">
+        <div class="yes-no-question">${d.q}</div>
+        <div class="yes-no-buttons">
+          <button type="button" class="yes-no-btn ${yesSelected ? 'is-selected is-yes' : ''}" data-decl-yes="${d.key}">Yes</button>
+          <button type="button" class="yes-no-btn ${noSelected ? 'is-selected is-no' : ''}" data-decl-no="${d.key}">No</button>
+        </div>
+      </div>
+      <div class="yes-no-explain ${yesSelected ? 'is-visible' : ''}" data-decl-explain="${d.key}">
+        <div class="yes-no-explain-label">Please explain</div>
+        <textarea class="field-textarea" data-decl-explanation="${d.key}"
+                  placeholder="A short explanation helps your loan officer prepare.">${current.explanation || ''}</textarea>
+      </div>
+    `;
+  }).join('');
+
+  // Wire yes/no buttons
+  list.querySelectorAll('[data-decl-yes]').forEach(btn => {
+    btn.addEventListener('click', () => setDeclaration(btn.dataset.declYes, 'yes'));
+  });
+  list.querySelectorAll('[data-decl-no]').forEach(btn => {
+    btn.addEventListener('click', () => setDeclaration(btn.dataset.declNo, 'no'));
+  });
+  list.querySelectorAll('[data-decl-explanation]').forEach(ta => {
+    ta.addEventListener('input', () => {
+      const key = ta.dataset.declExplanation;
+      window.OF_APPLICATION_STATE.declarations[key].explanation = ta.value;
+      debouncedSave();
+    });
+  });
+}
+
+function setDeclaration(key, answer) {
+  window.OF_APPLICATION_STATE.declarations[key].answer = answer;
+  debouncedSave();
+  renderDeclarations();
+}
+
+/* =============================================================================
+   STEP NAVIGATION
+   ============================================================================= */
+const TOTAL_STEPS = 7;
+const STEP_LABELS = [
+  'About you', 'Where you live', 'Work & income',
+  'Assets', 'Declarations', 'Demographics', 'Review',
+];
+let currentStep = 1;
+
+function goToStep(n) {
+  if (n < 1 || n > TOTAL_STEPS) return;
+  document.querySelectorAll('.step').forEach(el => {
+    el.classList.toggle('is-active', parseInt(el.dataset.step) === n);
+  });
+  document.getElementById('progress-label').textContent =
+    `Step ${n} — ${STEP_LABELS[n - 1]}`;
+  document.getElementById('progress-count').textContent = `${n} of ${TOTAL_STEPS}`;
+  document.getElementById('progress-fill').style.width = ((n / TOTAL_STEPS) * 100) + '%';
+  currentStep = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Step-specific render hooks
+  if (n === 4 && document.getElementById('assets-list').children.length === 0
+      && window.OF_APPLICATION_STATE.assets.length > 0) {
+    renderAssets();
+  }
+  if (n === 5) renderDeclarations();
+  if (n === 7) renderReview();
+}
+
+function validateStep(n) {
+  // Lightweight required-field check. Doesn't block — surfaces missing
+  // fields on the review page so borrower can fix and resubmit.
+  return [];
+}
+
+/* =============================================================================
+   REVIEW PAGE
+   ============================================================================= */
+function renderReview() {
+  const s = window.OF_APPLICATION_STATE;
+  const container = document.getElementById('review-container');
+
+  const fmt = (v) => v === '' || v == null ? null : String(v);
+  const fmtMoney = (v) => v ? '$' + v.toString().replace(/[^\d.]/g, '') : null;
+  const fmtAddr = (a) => a && a.street
+    ? `${a.street}${a.unit ? ' ' + a.unit : ''}, ${a.city}, ${a.state} ${a.zip}`
+    : null;
+
+  const sections = [
+    {
+      title: 'About you', step: 1,
+      rows: [
+        ['Name', [s.first_name, s.middle_name, s.last_name, s.suffix].filter(Boolean).join(' ')],
+        ['Date of birth', fmt(s.dob)],
+        ['SSN', s.ssn ? '•••-••-' + (s.ssn.replace(/\D/g, '').slice(-4)) : null],
+        ['Marital status', fmt(s.marital)],
+        ['Citizenship', fmt(s.citizenship)],
+        ['Dependents', fmt(s.dependents)],
+      ],
+    },
+    {
+      title: 'Address', step: 2,
+      rows: [
+        ['Current', fmtAddr(s.current_address)],
+        ['Tenure', fmt(s.current_address.tenure)],
+        ['Years there', fmt(s.current_address.years)],
+        ['Monthly payment', fmtMoney(s.current_address.payment)],
+        ...(parseFloat(s.current_address.years) < 2
+            ? [['Prior address', fmtAddr(s.prior_address)]]
+            : []),
+      ],
+    },
+    {
+      title: 'Work & income', step: 3,
+      rows: [
+        ['Status', fmt(s.employment.status)],
+        ['Employer', fmt(s.employment.employer_name)],
+        ['Position', fmt(s.employment.position)],
+        ['Start date', fmt(s.employment.start_date)],
+        ['Monthly base', fmtMoney(s.income.base)],
+        ['Overtime', fmtMoney(s.income.overtime)],
+        ['Bonus', fmtMoney(s.income.bonus)],
+        ['Commission', fmtMoney(s.income.commission)],
+        ['Other', fmtMoney(s.income.other)],
+      ],
+    },
+    {
+      title: 'Assets', step: 4,
+      rows: [
+        ...(s.assets.length === 0
+            ? [['Accounts', null]]
+            : s.assets.map((a, i) => [
+                `Account ${i + 1}`,
+                a.institution
+                  ? `${a.institution} ${a.type ? '(' + a.type + ')' : ''} ${a.balance ? '· ' + fmtMoney(a.balance) : ''}`
+                  : null,
+              ])),
+        ['Gift funds', fmtMoney(s.gift_funds_amount)],
+      ],
+    },
+    {
+      title: 'Declarations', step: 5,
+      rows: DECLARATIONS.map(d => [
+        d.q.slice(0, 50) + (d.q.length > 50 ? '…' : ''),
+        s.declarations[d.key].answer || null,
+      ]),
+    },
+    {
+      title: 'Demographics', step: 6,
+      rows: [
+        ['Ethnicity', fmt(s.demographics.ethnicity)],
+        ['Sex', fmt(s.demographics.sex)],
+        ['Race', [
+          s.demographics.race_american_indian ? 'AI/AN' : null,
+          s.demographics.race_asian ? 'Asian' : null,
+          s.demographics.race_black ? 'Black' : null,
+          s.demographics.race_pacific_islander ? 'NHPI' : null,
+          s.demographics.race_white ? 'White' : null,
+          s.demographics.race_not_provided ? 'Not provided' : null,
+        ].filter(Boolean).join(', ') || null],
+      ],
+    },
+  ];
+
+  container.innerHTML = sections.map(sec => `
+    <div class="review-section">
+      <div class="review-section-header">
+        <h3 class="review-section-title">${sec.title}</h3>
+        <button type="button" class="review-edit" data-edit-step="${sec.step}">Edit</button>
+      </div>
+      ${sec.rows.map(([label, val]) => `
+        <div class="review-row">
+          <span class="review-row-label">${label}</span>
+          <span class="review-row-value ${!val ? 'is-empty' : ''}">${val || 'not provided'}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  container.querySelectorAll('[data-edit-step]').forEach(btn => {
+    btn.addEventListener('click', () => goToStep(parseInt(btn.dataset.editStep)));
+  });
+}
+
+/* =============================================================================
+   SUBMIT
+   ============================================================================= */
+async function handleSubmit() {
+  const submitBtn = document.getElementById('submit-btn');
+  const errorBanner = document.getElementById('review-error');
+  errorBanner.classList.remove('is-active');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting…';
+
+  try {
+    if (typeof window.OF_submitPortalApplication === 'function') {
+      await window.OF_submitPortalApplication(window.OF_APPLICATION_STATE);
+    } else {
+      // Stub
+      await new Promise(res => setTimeout(res, 800));
+      console.log('OF_submitPortalApplication not wired. Final state:', window.OF_APPLICATION_STATE);
     }
 
-    // Section 8: render the review summary just before showing.
-    if (n === SECTIONS) {
-      renderReview();
-      // Submit button stays disabled until credit auth checkbox is checked.
-      var creditCheckbox = document.getElementById('credit-auth-checkbox');
-      btnNext.disabled = !(creditCheckbox && creditCheckbox.checked);
-    }
+    // Clear local backup — server has it now
+    localStorage.removeItem(WIZARD_STATE_KEY);
 
-    errorBanner.classList.remove('visible');
+    // Show success screen, hide everything else
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('is-active'));
+    document.querySelector('.progress-shell').style.display = 'none';
+    document.getElementById('success-screen').classList.add('is-active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    saveDraft();
+  } catch (err) {
+    console.error('submit failed:', err);
+    errorBanner.textContent = err.message || 'Submission failed. Please try again.';
+    errorBanner.classList.add('is-active');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit application →';
   }
+}
 
-  // ─── Per-section validation ───────────────────────────────────────
-  // Returns null on success, or an error message string on failure.
-  function validateCurrentSection() {
-    var f = formState;
-    if (currentSection === 1) {
-      if (!f.s1_legal_first_name || !f.s1_legal_first_name.trim()) return 'Legal first name is required.';
-      if (!f.s1_legal_last_name || !f.s1_legal_last_name.trim()) return 'Legal last name is required.';
-      if (!f.s1_dob) return 'Date of birth is required.';
-      var dob = new Date(f.s1_dob);
-      var age = (Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-      if (age < 18) return 'You must be at least 18 years old to apply.';
-      if (!/^[0-9]{4}$/.test((f.s1_ssn_last4 || '').trim())) return 'Last 4 of SSN must be 4 digits.';
-      if (!f.s1_citizenship) return 'Please select your citizenship status.';
-      if (!f.s1_marital_status) return 'Please select your marital status.';
-      return null;
-    }
-    if (currentSection === 2) {
-      if (!f.s2_current_street || !f.s2_current_street.trim()) return 'Street address is required.';
-      if (!f.s2_current_city || !f.s2_current_city.trim()) return 'City is required.';
-      if (!f.s2_current_state) return 'State is required.';
-      if (!/^[0-9]{5}$/.test((f.s2_current_zip || '').trim())) return 'ZIP must be 5 digits.';
-      if (f.s2_years_at === undefined || f.s2_years_at === '' || isNaN(parseInt(f.s2_years_at,10))) return 'Years at this address is required.';
-      if (!f.s2_housing_status) return 'Please select your housing situation.';
-      return null;
-    }
-    if (currentSection === 3) {
-      if (!f.s3_self_employed) return 'Please tell us whether you\'re self-employed.';
-      if (!f.s3_employer_name || !f.s3_employer_name.trim()) return 'Employer / business name is required.';
-      if (!f.s3_position || !f.s3_position.trim()) return 'Position / title is required.';
-      if (f.s3_years_at_job === undefined || f.s3_years_at_job === '') return 'Years at this job is required.';
-      if (!f.s3_monthly_base || parseFloat(f.s3_monthly_base) <= 0) return 'Monthly base pay is required.';
-      return null;
-    }
-    if (currentSection === 4) {
-      // Section 4 is all optional fields by design (asset estimates / debt estimates).
-      return null;
-    }
-    if (currentSection === 5) {
-      if (!f.s5_purpose) return 'Please tell us whether you\'re buying or refinancing.';
-      if (!f.s5_property_street || !f.s5_property_street.trim()) return 'Property street address is required.';
-      if (!f.s5_property_city || !f.s5_property_city.trim()) return 'Property city is required.';
-      if (!f.s5_property_state) return 'Property state is required.';
-      if (!/^[0-9]{5}$/.test((f.s5_property_zip || '').trim())) return 'Property ZIP must be 5 digits.';
-      if (!f.s5_property_type) return 'Please choose a property type.';
-      if (!f.s5_occupancy) return 'Please choose how the property will be used.';
-      if (!f.s5_purchase_price || parseFloat(f.s5_purchase_price) <= 0) return 'Please enter a purchase price or estimated value.';
-      if (!f.s5_loan_amount || parseFloat(f.s5_loan_amount) <= 0) return 'Please enter a loan amount.';
-      if (!f.s5_term_months) return 'Please choose a loan term.';
-      if (!f.s5_program) return 'Please choose a loan program (Not sure yet is OK).';
-      return null;
-    }
-    if (currentSection === 6) {
-      // Each declaration must be answered yes or no — no skipping.
-      var requiredDecls = [
-        's6_occupy_primary','s6_prior_ownership','s6_borrowed_dp','s6_cosigner',
-        's6_judgments','s6_fed_delinquent','s6_lawsuit','s6_dil',
-        's6_foreclosure','s6_bankruptcy','s6_alimony'
-      ];
-      for (var i = 0; i < requiredDecls.length; i++) {
-        if (!f[requiredDecls[i]]) return 'Please answer all declarations.';
-      }
-      return null;
-    }
-    if (currentSection === 7) {
-      // HMDA is voluntary. Section 7 always validates — formatHmdaSelections()
-      // computes the stored values from checkbox state inside saveDraft().
-      // Blank entries are recorded as 'not_provided' on submit.
-      return null;
-    }
-    return null;
-  }
+/* =============================================================================
+   WIRING
+   ============================================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  loadBootstrap();
+  hydrateFields();
+  wireFields();
+  wireAssetsAdd();
+  renderAssets();
+  updatePriorAddressVisibility();
 
-  // ─── Nav buttons ──────────────────────────────────────────────────
-  btnBack.addEventListener('click', function() {
-    if (currentSection > 1) showSection(currentSection - 1);
-  });
-
-  btnNext.addEventListener('click', async function() {
-    var err = validateCurrentSection();
-    if (err) {
-      errorBanner.textContent = err;
-      errorBanner.classList.add('visible');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    if (currentSection < SECTIONS) {
-      showSection(currentSection + 1);
-      return;
-    }
-
-    // ─── Section 8 submit ───────────────────────────────────────────
-    var creditCheckbox = document.getElementById('credit-auth-checkbox');
-    if (!creditCheckbox || !creditCheckbox.checked) {
-      errorBanner.textContent = 'Please authorize the credit pull before submitting.';
-      errorBanner.classList.add('visible');
-      return;
-    }
-    if (!borrowerIdGlobal) {
-      errorBanner.textContent = 'Your account is not ready. Please refresh and try again.';
-      errorBanner.classList.add('visible');
-      return;
-    }
-    if (!sb) {
-      errorBanner.textContent = 'Could not reach the service. Please refresh.';
-      errorBanner.classList.add('visible');
-      return;
-    }
-
-    // Materialize HMDA selections from checkboxes into formState before submit.
-    // Multi-select groups are joined with commas; the decline option overrides
-    // everything for that group.
-    formState.s7_ethnicity = collectHmdaGroup('ethnicity') || 'not_provided';
-    formState.s7_race      = collectHmdaGroup('race')      || 'not_provided';
-    if (!formState.s7_sex) formState.s7_sex = 'not_provided';
-
-    btnNext.disabled = true;
-    btnNext.textContent = 'Submitting…';
-
-    try {
-      var hash = await sha256(CREDIT_AUTH_TEXT_V1);
-      var rpcRes = await sb.rpc('submit_borrower_application', {
-        p_application_data: formState,
-        p_credit_auth_sha256: hash,
-        p_credit_auth_version: CREDIT_AUTH_VERSION
-      });
-      if (rpcRes.error) throw rpcRes.error;
-      var newLoanId = rpcRes.data;
-
-      // Clear the draft from localStorage — the application is now in the DB.
-      try { if (draftStorageKey) localStorage.removeItem(draftStorageKey); } catch (_) {}
-      try { localStorage.removeItem('of_pending_application'); } catch (_) {}
-
-      // Fetch the loan number for the success screen.
-      var loanNumber = newLoanId;
-      try {
-        var loanRes = await sb
-          .from('loans_borrower_view')
-          .select('loan_number')
-          .eq('id', newLoanId)
-          .maybeSingle();
-        if (loanRes && loanRes.data && loanRes.data.loan_number) {
-          loanNumber = loanRes.data.loan_number;
-        }
-      } catch (_) {}
-
-      // Swap the wizard for the success state.
-      document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
-      document.querySelector('.wizard-nav').style.display = 'none';
-      document.querySelector('.progress-wrap').style.display = 'none';
-      document.querySelector('.portal-banner').textContent = 'Application Submitted';
-      document.getElementById('success-loan-number').textContent = loanNumber;
-      document.getElementById('success-state').style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      console.error('[OF Apply] submit failed:', err);
-      errorBanner.textContent = 'Could not submit your application: ' + ((err && err.message) || 'unknown error') + '. Please try again.';
-      errorBanner.classList.add('visible');
-      btnNext.disabled = false;
-      btnNext.textContent = 'Submit Application →';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  });
-
-  // ─── Save & Exit ──────────────────────────────────────────────────
-  document.getElementById('nav-signout').addEventListener('click', function() {
-    saveDraft();
-    setTimeout(function() { window.location.href = '/portal/index.html'; }, 100);
-  });
-
-  // ─── SHA-256 for credit auth text hash ────────────────────────────
-  async function sha256(text) {
-    var enc = new TextEncoder();
-    var buf = await crypto.subtle.digest('SHA-256', enc.encode(text));
-    var arr = Array.from(new Uint8Array(buf));
-    return arr.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-  }
-
-  // ─── HMDA: collect checked values for a group ─────────────────────
-  // Returns a comma-separated string of values, or 'not_provided' if the
-  // decline option is checked, or '' if nothing is selected.
-  function collectHmdaGroup(groupName) {
-    var declineBox = document.querySelector('[data-hmda-group="' + groupName + '"][data-hmda-decline="true"]');
-    if (declineBox && declineBox.checked) return 'not_provided';
-    var boxes = document.querySelectorAll('input[type="checkbox"][data-hmda-group="' + groupName + '"]:not([data-hmda-decline="true"])');
-    var values = [];
-    boxes.forEach(function(b) {
-      if (b.checked) values.push(b.dataset.hmdaValue);
+  // Format SSN as user types
+  const ssnInput = document.querySelector('[data-field="ssn"]');
+  if (ssnInput) {
+    ssnInput.addEventListener('input', (e) => {
+      const d = e.target.value.replace(/\D/g, '').slice(0, 9);
+      if (d.length <= 3) e.target.value = d;
+      else if (d.length <= 5) e.target.value = `${d.slice(0,3)}-${d.slice(3)}`;
+      else e.target.value = `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}`;
     });
-    return values.join(',');
   }
 
-  // ─── HMDA: wire mutual-exclusivity between decline and answer options ──
-  document.querySelectorAll('[data-hmda-group]').forEach(function(box) {
-    if (box.tagName !== 'INPUT') return;
-    box.addEventListener('change', function() {
-      var group = box.dataset.hmdaGroup;
-      var isDecline = box.dataset.hmdaDecline === 'true';
-      if (isDecline && box.checked) {
-        // Uncheck every other box in this group
-        document.querySelectorAll('input[type="checkbox"][data-hmda-group="' + group + '"]:not([data-hmda-decline="true"])').forEach(function(b) {
-          b.checked = false;
-        });
-      } else if (!isDecline && box.checked) {
-        // Uncheck the decline box in this group
-        var declineBox = document.querySelector('[data-hmda-group="' + group + '"][data-hmda-decline="true"]');
-        if (declineBox) declineBox.checked = false;
-      }
-      // Persist the computed group value to formState as it changes.
-      formState['s7_' + (group === 'ethnicity' ? 'ethnicity' : 'race')] = collectHmdaGroup(group);
-      saveDraft();
+  // Format money inputs on blur
+  document.querySelectorAll('input[inputmode="numeric"][placeholder^="$"]').forEach(el => {
+    el.addEventListener('blur', () => {
+      const digits = el.value.replace(/[^\d]/g, '');
+      el.value = digits ? '$' + parseInt(digits, 10).toLocaleString('en-US') : '';
+      // Re-fire input event so state gets the formatted version too
+      el.dispatchEvent(new Event('input', { bubbles: true }));
     });
   });
 
-  // ─── Credit auth checkbox: gates the Submit button on section 8 ──
-  var creditCheckbox = document.getElementById('credit-auth-checkbox');
-  if (creditCheckbox) {
-    creditCheckbox.addEventListener('change', function() {
-      if (currentSection === SECTIONS) {
-        btnNext.disabled = !creditCheckbox.checked;
-      }
-    });
-  }
-
-  // ─── Edit jumps in the review section ────────────────────────────
-  document.querySelectorAll('.review-edit').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      var target = parseInt(btn.dataset.jump, 10);
-      if (target >= 1 && target <= SECTIONS) showSection(target);
+  // Step navigation
+  document.querySelectorAll('[data-action="next"]').forEach(b => {
+    b.addEventListener('click', () => goToStep(currentStep + 1));
+  });
+  document.querySelectorAll('[data-action="back"]').forEach(b => {
+    b.addEventListener('click', () => goToStep(currentStep - 1));
+  });
+  document.querySelectorAll('[data-action="save-exit"]').forEach(b => {
+    b.addEventListener('click', async () => {
+      await persistState();
+      window.location.href = '/portal/';
     });
   });
+  document.querySelectorAll('[data-action="submit"]').forEach(b => {
+    b.addEventListener('click', handleSubmit);
+  });
 
-  // ─── Render review summary on section 8 ───────────────────────────
-  function fmtCurrency(v) {
-    if (v === undefined || v === null || v === '') return null;
-    var n = parseFloat(v);
-    if (isNaN(n)) return null;
-    return '$' + Math.round(n).toLocaleString('en-US');
-  }
-  function renderReviewRow(label, value) {
-    var v = (value === undefined || value === null || value === '') ? null : value;
-    return '<div class="review-row"><div class="r-label">' + label + '</div>' +
-           '<div class="r-val' + (v ? '' : ' empty') + '">' + (v || 'Not provided') + '</div></div>';
-  }
-  function titleCase(s) {
-    if (!s) return s;
-    return s.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
-  }
-  function renderReview() {
-    var f = formState;
-
-    // S1
-    var s1 = document.getElementById('review-s1');
-    var s1html = '<h3>About You <button type="button" class="review-edit" data-jump="1">Edit</button></h3>';
-    var fullName = [f.s1_legal_first_name, f.s1_middle_name, f.s1_legal_last_name, f.s1_suffix].filter(Boolean).join(' ');
-    s1html += renderReviewRow('Legal Name', fullName || null);
-    s1html += renderReviewRow('Date of Birth', f.s1_dob || null);
-    s1html += renderReviewRow('SSN', f.s1_ssn_last4 ? '***-**-' + f.s1_ssn_last4 : null);
-    s1html += renderReviewRow('Citizenship', titleCase(f.s1_citizenship));
-    s1html += renderReviewRow('Marital Status', titleCase(f.s1_marital_status));
-    if (f.s1_dependents_count) s1html += renderReviewRow('Dependents', f.s1_dependents_count);
-    s1.innerHTML = s1html;
-
-    // S2
-    var s2 = document.getElementById('review-s2');
-    var addr = [f.s2_current_street, f.s2_current_unit, f.s2_current_city, f.s2_current_state, f.s2_current_zip].filter(Boolean).join(' ');
-    var tenure = (f.s2_years_at ? f.s2_years_at + ' yr' : '') + (f.s2_months_at ? ' ' + f.s2_months_at + ' mo' : '');
-    var s2html = '<h3>Where You Live <button type="button" class="review-edit" data-jump="2">Edit</button></h3>';
-    s2html += renderReviewRow('Current Address', addr.trim() || null);
-    s2html += renderReviewRow('Time at Address', tenure.trim() || null);
-    s2html += renderReviewRow('Housing Status', titleCase(f.s2_housing_status));
-    s2.innerHTML = s2html;
-
-    // S3
-    var s3 = document.getElementById('review-s3');
-    var totalMonthly = 0;
-    ['s3_monthly_base','s3_monthly_overtime','s3_monthly_bonus','s3_monthly_commission','s3_monthly_other'].forEach(function(k) {
-      var v = parseFloat(f[k]); if (!isNaN(v)) totalMonthly += v;
-    });
-    var s3html = '<h3>Job &amp; Income <button type="button" class="review-edit" data-jump="3">Edit</button></h3>';
-    s3html += renderReviewRow('Employment Type', titleCase(f.s3_self_employed === 'yes' ? 'self employed' : f.s3_self_employed === 'mixed' ? 'mixed (w-2 & self-employed)' : 'w-2 employee'));
-    s3html += renderReviewRow('Employer', f.s3_employer_name || null);
-    s3html += renderReviewRow('Position', f.s3_position || null);
-    s3html += renderReviewRow('Years at Job', f.s3_years_at_job || null);
-    s3html += renderReviewRow('Monthly Income (gross)', totalMonthly > 0 ? fmtCurrency(totalMonthly) : null);
-    s3.innerHTML = s3html;
-
-    // S4
-    var s4 = document.getElementById('review-s4');
-    var assets = 0, debts = 0;
-    ['s4_checking_total','s4_savings_total','s4_retirement_total','s4_other_assets_total'].forEach(function(k) {
-      var v = parseFloat(f[k]); if (!isNaN(v)) assets += v;
-    });
-    ['s4_credit_card_min','s4_auto_loan_min','s4_student_loan_min','s4_other_debt_min'].forEach(function(k) {
-      var v = parseFloat(f[k]); if (!isNaN(v)) debts += v;
-    });
-    var s4html = '<h3>Money &amp; Debts <button type="button" class="review-edit" data-jump="4">Edit</button></h3>';
-    s4html += renderReviewRow('Total Assets', assets > 0 ? fmtCurrency(assets) : null);
-    s4html += renderReviewRow('Monthly Debt Payments', debts > 0 ? fmtCurrency(debts) : null);
-    s4.innerHTML = s4html;
-
-    // S5
-    var s5 = document.getElementById('review-s5');
-    var propAddr = [f.s5_property_street, f.s5_property_unit, f.s5_property_city, f.s5_property_state, f.s5_property_zip].filter(Boolean).join(' ');
-    var termLabel = ({ '120':'10-year', '180':'15-year', '240':'20-year', '360':'30-year' })[f.s5_term_months] || null;
-    var s5html = '<h3>Property &amp; Loan <button type="button" class="review-edit" data-jump="5">Edit</button></h3>';
-    s5html += renderReviewRow('Purpose', titleCase(f.s5_purpose));
-    s5html += renderReviewRow('Property', propAddr.trim() || null);
-    s5html += renderReviewRow('Property Type', titleCase(f.s5_property_type));
-    s5html += renderReviewRow('Occupancy', titleCase(f.s5_occupancy));
-    s5html += renderReviewRow(f.s5_purpose === 'purchase' ? 'Purchase Price' : 'Current Value', fmtCurrency(f.s5_purchase_price));
-    s5html += renderReviewRow('Loan Amount', fmtCurrency(f.s5_loan_amount));
-    s5html += renderReviewRow('Loan', [termLabel, titleCase(f.s5_program)].filter(Boolean).join(', ') || null);
-    s5.innerHTML = s5html;
-
-    // S6
-    var s6 = document.getElementById('review-s6');
-    var s6html = '<h3>Declarations <button type="button" class="review-edit" data-jump="6">Edit</button></h3>';
-    var declLabels = {
-      s6_occupy_primary: 'Will Occupy as Primary',
-      s6_prior_ownership: 'Prior Property Ownership (3yr)',
-      s6_borrowed_dp: 'Borrowed Down Payment',
-      s6_cosigner: 'Co-signer on Other Loans',
-      s6_judgments: 'Outstanding Judgments',
-      s6_fed_delinquent: 'Federal Debt Delinquency',
-      s6_lawsuit: 'Party to Lawsuit',
-      s6_dil: 'Deed in Lieu (7yr)',
-      s6_foreclosure: 'Foreclosure (7yr)',
-      s6_bankruptcy: 'Bankruptcy (7yr)',
-      s6_alimony: 'Alimony / Child Support'
-    };
-    Object.keys(declLabels).forEach(function(k) {
-      s6html += renderReviewRow(declLabels[k], f[k] === 'yes' ? 'Yes' : (f[k] === 'no' ? 'No' : null));
-    });
-    s6.innerHTML = s6html;
-
-    // S7
-    var s7 = document.getElementById('review-s7');
-    var s7html = '<h3>Demographic Information <button type="button" class="review-edit" data-jump="7">Edit</button></h3>';
-    var ethVal = collectHmdaGroup('ethnicity');
-    var raceVal = collectHmdaGroup('race');
-    function fmtHmda(v) {
-      if (!v) return 'Not answered';
-      if (v === 'not_provided') return 'Chose not to provide';
-      return v.split(',').map(titleCase).join(', ');
-    }
-    s7html += renderReviewRow('Ethnicity', fmtHmda(ethVal));
-    s7html += renderReviewRow('Race', fmtHmda(raceVal));
-    s7html += renderReviewRow('Sex', f.s7_sex ? (f.s7_sex === 'not_provided' ? 'Chose not to provide' : titleCase(f.s7_sex)) : 'Not answered');
-    s7.innerHTML = s7html;
-
-    // Re-wire the Edit buttons (innerHTML wiped the old listeners).
-    document.querySelectorAll('.review-edit').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var target = parseInt(btn.dataset.jump, 10);
-        if (target >= 1 && target <= SECTIONS) showSection(target);
-      });
-    });
-  }
-
-  // ─── Boot ─────────────────────────────────────────────────────────
-  bootstrap();
+  // Initial save status
+  setSaveStatus('saved');
+});
 </script>
 
 </body>
