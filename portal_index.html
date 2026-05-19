@@ -502,10 +502,11 @@
      * MOBILE FIRST: all media queries use min-width to upgrade the layout.
 
      * NAVIGATION: this is the home tile. Links go to:
-         /portal_apply.html    → 11.5.5 1003 wizard
-         /portal_status.html   → 11.5.7 detailed timeline
-         /portal_docs.html     → 11.5.11 document upload UI
-         /portal_messages.html → 11.5.8 LO chat (UI shipped, backend pending)
+         /portal_apply.html      → 11.5.5 1003 wizard
+         /portal_status.html     → 11.5.7 detailed timeline
+         /portal_docs.html       → 11.5.11 document status checklist (read view)
+         /portal_documents.html  → 11.5.11 document upload tool (write view)
+         /portal_messages.html   → 11.5.8 LO chat (UI shipped, backend pending)
 
      * NO DATA MUTATIONS HAPPEN ON THIS PAGE. It's pure read.
      ============================================================================= -->
@@ -549,14 +550,29 @@
 
   <!-- ─── ACTION CARDS ─── -->
   <section class="action-grid">
+    <!-- Document status (checklist view) — IDs preserved so the dynamic
+         count/tag/desc population below still hits this card. -->
     <a class="action-card" href="/portal_docs.html">
       <div class="action-card-header">
         <span class="action-card-tag warn" id="docs-tag">Action needed</span>
         <span class="action-card-count" id="docs-count">—</span>
       </div>
-      <div class="action-card-title">Documents</div>
-      <div class="action-card-desc" id="docs-desc">Upload your remaining documents to keep your loan moving.</div>
-      <div class="action-card-cta">Open documents →</div>
+      <div class="action-card-title">Document status</div>
+      <div class="action-card-desc" id="docs-desc">See what's still needed and the status of files you've already sent.</div>
+      <div class="action-card-cta">Open checklist →</div>
+    </a>
+    <!-- Upload tool — the action surface (real Supabase storage upload UI
+         lives in portal_documents.html). Separate card from "Document
+         status" because the borrower's two needs (review what's needed
+         vs. send a file right now) are genuinely distinct workflows. -->
+    <a class="action-card" href="/portal_documents.html">
+      <div class="action-card-header">
+        <span class="action-card-tag" id="upload-tag">Quick action</span>
+        <span class="action-card-count">↑</span>
+      </div>
+      <div class="action-card-title">Upload files</div>
+      <div class="action-card-desc">Send pay stubs, bank statements, ID, gift letters — anything else your team needs. Camera or file picker.</div>
+      <div class="action-card-cta">Open uploader →</div>
     </a>
     <a class="action-card" href="/portal_messages.html">
       <div class="action-card-header">
