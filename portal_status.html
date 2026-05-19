@@ -7,9 +7,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       ------------------------------------------------------------
+       SUPABASE_ANON_KEY uses the new sb_publishable_* format. Safe
+       to embed client-side; branch-scoped RLS enforces access.
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* =========================================================================
-       Borrower status page — Phase 11.5.7
+       Borrower status page — Phase 11.5.7 (WIRED in 11.5.2)
        -----------------------------------------------------------------------
        Drill-down from portal home. Three sections:
          1. Vertical stage timeline (each stage gets a date + summary)
@@ -313,6 +329,20 @@
     }
     .activity-actor.is-ai { color: var(--cyan); }
 
+    /* ─── EMPTY STATES ─── */
+    .empty-state {
+      background: var(--bg-elev-1);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
     .portal-footer {
       padding: 24px 20px 40px;
       text-align: center;
@@ -322,10 +352,33 @@
       text-transform: uppercase;
       color: var(--text-faint);
     }
-    .portal-footer a { color: var(--text-faint); margin: 0 6px; }
+    .portal-footer a { color: var(--text-faint); margin: 0 6px; cursor: pointer; }
+    .portal-footer a:hover { color: var(--cyan); }
+
+    /* ─── BOOTSTRAP LOADING VEIL ─── */
+    .bootstrap-veil {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: opacity 0.18s ease;
+    }
+    .bootstrap-veil.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading timeline…</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
@@ -370,108 +423,555 @@
   <a href="/portal/">Home</a> ·
   <a href="#">Privacy</a> ·
   <a href="#">Terms</a> ·
-  <a href="#">Sign out</a>
+  <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
+       the Supabase session and redirects to /portal/sign-in.html. -->
+  <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
 </footer>
 
 <script>
 /* =============================================================================
-   BOOTSTRAP DATA — see portal_index.html for shape notes.
-   When 11.5.2 lands, replace with Supabase queries:
-     - loans (current stage + branch_id)
-     - stage_changes filtered by loan_id (for stage history dates)
-     - loan_documents filtered by loan_id (for documents section)
-     - conditions filtered by loan_id (for outstanding doc requests)
-     - audit_events filtered by loan_id (for activity feed)
+   PORTAL STATUS — boot + render
+   -----------------------------------------------------------------------------
+   Flow:
+     1. init() runs on DOMContentLoaded
+     2. OF_bootstrap() resolves { session, borrower, loan }
+     3. Four supplementary queries run in parallel against the loan:
+          - stage_changes      → dates for each lifecycle stage
+          - conditions         → drives the Documents section
+          - loan_audit_events  → drives the Activity feed
+        (We don't need a fourth — kept count above as a reminder that
+        if the audit table schema requires a join, that becomes the 4th.)
+     4. ctx is assembled into the shape render() expects
+     5. render() paints the page
+     6. veil drops
    ============================================================================= */
-window.OF_STATUS_BOOTSTRAP = {
-  loan: {
-    loan_no: 'OF-1043',
-    current_stage: 'documents',
-  },
-  // each stage: key, label, status ('done'|'current'|'future'), date (or null), desc
-  stages: [
-    { key:'applied',     label:'Applied',         status:'done',    date:'May 12, 2026', desc:'Application received and assigned to your loan officer.' },
-    { key:'documents',   label:'Documents',       status:'current', date:'In progress',  desc:'Collecting verification documents. 3 still needed.' },
-    { key:'underwriting',label:'Underwriting',    status:'future',  date:null,           desc:'A licensed underwriter reviews your file and AUS results.' },
-    { key:'ctc',         label:'Clear to close',  status:'future',  date:null,           desc:'All conditions cleared — closing can be scheduled.' },
-    { key:'scheduled',   label:'Closing scheduled',status:'future', date:null,           desc:'Your closing appointment is on the calendar.' },
-    { key:'funded',      label:'Funded',          status:'future',  date:null,           desc:'Your loan has funded. Welcome home.' },
-  ],
-  documents: [
-    { name:'Pay stub · most recent',         meta:'Uploaded May 19',     status:'cleared', icon:'$' },
-    { name:'W-2 · 2024',                     meta:'Uploaded May 14',     status:'cleared', icon:'W' },
-    { name:'Bank statement · 60 days',       meta:'Requested May 13',    status:'pending', icon:'B' },
-    { name:'Homeowners insurance binder',    meta:'Requested May 13',    status:'needed',  icon:'H' },
-    { name:'Drivers license',                meta:'Uploaded May 12',     status:'cleared', icon:'ID'},
-  ],
-  activity: [
-    { time:'Today · 8:13a',  text:'Your pay stub was auto-cleared by AI.',           actor:'OriginFlow AI · 5/5 rules matched', is_ai:true },
-    { time:'Yesterday',      text:'Avery requested a 60-day bank statement.',        actor:'Avery Sutton · Loan Officer' },
-    { time:'May 17',         text:'Sarah began processing your file.',               actor:'Sarah Hayes · Processor' },
-    { time:'May 14',         text:'You uploaded your 2024 W-2.',                     actor:'Marcus Holbrook' },
-    { time:'May 12',         text:'Your application was received.',                  actor:'OriginFlow' },
-  ],
-};
 
-function render() {
-  const b = window.OF_STATUS_BOOTSTRAP;
+/* ─── Stage metadata ───────────────────────────────────────────────────── */
+const STAGES = [
+  { key:'applied',     label:'Applied',          desc:'Application received and assigned to your loan officer.' },
+  { key:'documents',   label:'Documents',        desc:'Collecting verification documents.' },
+  { key:'underwriting',label:'Underwriting',     desc:'A licensed underwriter reviews your file and AUS results.' },
+  { key:'ctc',         label:'Clear to close',   desc:'All conditions cleared — closing can be scheduled.' },
+  { key:'scheduled',   label:'Closing scheduled',desc:'Your closing appointment is on the calendar.' },
+  { key:'funded',      label:'Funded',           desc:'Your loan has funded. Welcome home.' },
+];
 
+/* ─── Shared helpers (kept in sync with portal_index.html) ─────────────── */
+
+function titleCase(s) {
+  if (!s) return '';
+  return String(s).toLowerCase()
+    .split(/(\s+|-|')/)
+    .map(part => part.length && /^[a-zà-ÿ]/i.test(part)
+      ? part.charAt(0).toUpperCase() + part.slice(1)
+      : part)
+    .join('');
+}
+
+function mapStatusToStage(status) {
+  if (!status) return 'applied';
+  const s = String(status).toLowerCase();
+  const map = {
+    'draft':'applied', 'application_started':'applied', 'application_submitted':'applied',
+    'submitted':'applied', 'applied':'applied',
+    'in_review':'documents', 'documents':'documents', 'documents_pending':'documents',
+    'docs_pending':'documents', 'collecting_docs':'documents',
+    'in_underwriting':'underwriting', 'underwriting':'underwriting',
+    'conditional_approval':'underwriting', 'suspended':'underwriting',
+    'clear_to_close':'ctc', 'ctc':'ctc', 'approved':'ctc',
+    'closing_scheduled':'scheduled', 'scheduled':'scheduled',
+    'funded':'funded', 'closed':'funded',
+  };
+  return map[s] || 'documents';
+}
+
+/* ─── Date formatting (page-specific — three different shapes used) ────── */
+
+/** Long date: "May 12, 2026" — used in stage timeline */
+function formatLongDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d)) return null;
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+/** Short date: "May 14" — used in doc-row meta */
+function formatShortDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+/** Relative time: "Today · 8:13a", "Yesterday", "May 17" — activity feed */
+function formatActivityTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+
+  if (sameDay) {
+    // "8:13a" — compact lowercase am/pm
+    const h12 = ((d.getHours() + 11) % 12) + 1;
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const ampm = d.getHours() < 12 ? 'a' : 'p';
+    return 'Today · ' + h12 + ':' + mins + ampm;
+  }
+  if (isYesterday) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
+
+/* ─── Supplementary queries ────────────────────────────────────────────── */
+
+/**
+ * stage_changes — historical record of every stage transition on the loan.
+ * We use the *earliest* changed_at for each stage as the "entered on" date.
+ * If the table or columns don't match the expected shape, return {} and
+ * the timeline still renders without dates.
+ *
+ * Expected schema:
+ *   loan_id uuid, from_stage text, to_stage text, changed_at timestamptz,
+ *   changed_by uuid
+ */
+async function fetchStageHistory(supabase, loanId) {
+  try {
+    const { data, error } = await supabase
+      .from('stage_changes')
+      .select('to_stage, changed_at')
+      .eq('loan_id', loanId)
+      .order('changed_at', { ascending: true });
+    if (error) {
+      console.warn('[portal/status] stage_changes failed:', error.message);
+      return {};
+    }
+    const map = {};
+    for (const row of data || []) {
+      const stageKey = mapStatusToStage(row.to_stage);
+      if (!map[stageKey]) map[stageKey] = row.changed_at;
+    }
+    return map;
+  } catch (e) {
+    console.warn('[portal/status] stage_changes exception:', e.message);
+    return {};
+  }
+}
+
+/**
+ * conditions — drives the Documents section. Every row is either a
+ * pending request (state=open), in-review (submitted), cleared, or
+ * waived. We surface open + submitted + cleared; waived conditions
+ * don't need to show up on the borrower's view.
+ *
+ * Expected schema (per existing LO-side surfaces):
+ *   id, loan_id, title, description, category, state,
+ *   created_at, cleared_at, cleared_by_document_id
+ */
+async function fetchConditions(supabase, loanId) {
+  try {
+    const { data, error } = await supabase
+      .from('conditions')
+      .select('id, title, description, category, state, created_at, cleared_at')
+      .eq('loan_id', loanId)
+      .in('state', ['open', 'submitted', 'cleared'])
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.warn('[portal/status] conditions failed:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.warn('[portal/status] conditions exception:', e.message);
+    return [];
+  }
+}
+
+/**
+ * loan_audit_events — drives the Activity feed. We pull the most recent
+ * 25 events and format each via formatAuditEvent().
+ *
+ * Expected schema:
+ *   id, loan_id, event_type, event_data jsonb,
+ *   actor_name text, actor_role text, created_at timestamptz
+ *
+ * If your migration uses slightly different column names (actor_id only,
+ * `event` instead of `event_type`, etc.), the formatter handles missing
+ * fields gracefully but you may want to adjust the .select() below.
+ */
+async function fetchAuditEvents(supabase, loanId) {
+  try {
+    const { data, error } = await supabase
+      .from('loan_audit_events')
+      .select('id, event_type, event_data, actor_name, actor_role, created_at')
+      .eq('loan_id', loanId)
+      .order('created_at', { ascending: false })
+      .limit(25);
+    if (error) {
+      console.warn('[portal/status] audit_events failed:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.warn('[portal/status] audit_events exception:', e.message);
+    return [];
+  }
+}
+
+/* ─── Mappers: raw rows → page shape ───────────────────────────────────── */
+
+/**
+ * Build the six-row stage list. Each row gets a status (done/current/
+ * future) based on its position relative to the loan's current stage,
+ * and a date pulled from the stage_changes history map (or "In progress"
+ * for the current stage if no history row exists yet).
+ */
+function buildStages(currentStageKey, history) {
+  const currentIdx = STAGES.findIndex(s => s.key === currentStageKey);
+  return STAGES.map((s, i) => {
+    let status, date;
+    if (i < currentIdx) {
+      status = 'done';
+      date = formatLongDate(history[s.key]);
+    } else if (i === currentIdx) {
+      status = 'current';
+      date = formatLongDate(history[s.key]) || 'In progress';
+    } else {
+      status = 'future';
+      date = null;
+    }
+    return {
+      key:    s.key,
+      label:  s.label,
+      status: status,
+      date:   date,
+      // Tailor the description slightly for the current stage so it
+      // feels active rather than generic.
+      desc:   status === 'current' && s.key === 'documents'
+                ? "We're collecting documents to verify your income, assets, and identity."
+                : s.desc,
+    };
+  });
+}
+
+/**
+ * Single-character icon for a condition row. Driven by category first
+ * (if the LO-side surface populates it) and falls back to fuzzy matching
+ * the title. Returns '·' for anything we don't recognize.
+ */
+function iconForCondition(c) {
+  const text = ((c.category || '') + ' ' + (c.title || '') + ' ' + (c.description || '')).toLowerCase();
+  if (/pay\s*stub|paystub/.test(text))                        return '$';
+  if (/\bw-?2\b/.test(text))                                  return 'W';
+  if (/\b1099\b/.test(text))                                  return '9';
+  if (/1040|tax\s*return/.test(text))                         return 'T';
+  if (/bank|statement/.test(text))                            return 'B';
+  if (/insurance|binder|hoi/.test(text))                      return 'H';
+  if (/license|passport|\bid\b|identification/.test(text))    return 'ID';
+  if (/gift/.test(text))                                      return 'G';
+  if (/lox|letter\s*of\s*explanation/.test(text))             return 'L';
+  if (/appraisal/.test(text))                                 return 'A';
+  if (/title/.test(text))                                     return 'TI';
+  return '·';
+}
+
+function buildDocuments(conditions) {
+  return conditions.map(c => {
+    let status, meta;
+    if (c.state === 'cleared') {
+      status = 'cleared';
+      meta = c.cleared_at ? 'Cleared ' + formatShortDate(c.cleared_at) : 'Cleared';
+    } else if (c.state === 'submitted') {
+      status = 'pending';
+      meta = 'In review';
+    } else {
+      // 'open' or anything else we passed through
+      status = 'needed';
+      meta = c.created_at ? 'Requested ' + formatShortDate(c.created_at) : 'Requested';
+    }
+    return {
+      name:   c.title || c.description || 'Document',
+      meta:   meta,
+      status: status,
+      icon:   iconForCondition(c),
+    };
+  });
+}
+
+/**
+ * Map an internal actor role to a borrower-readable label. Internal
+ * abbreviations ("uw", "lo") get expanded; unknown roles pass through
+ * as-is so we don't lose information.
+ */
+function roleLabel(role) {
+  if (!role) return '';
+  const map = {
+    lo: 'Loan Officer',
+    loan_officer: 'Loan Officer',
+    processor: 'Processor',
+    underwriter: 'Underwriter',
+    uw: 'Underwriter',
+    admin: 'Admin',
+    owner: 'Branch Owner',
+    borrower: '',
+    ai: 'AI',
+    system_ai: 'AI',
+    system: 'System',
+  };
+  if (map[role] !== undefined) return map[role];
+  return titleCase(role.replace(/_/g, ' '));
+}
+
+/**
+ * Translate a loan_audit_events row into the { time, text, actor, is_ai }
+ * shape that the activity feed renders. Unknown event types fall back to
+ * a humanized version of the event_type string so we never show a blank
+ * row.
+ *
+ * The first-person pronoun "you" is used when the actor was the
+ * borrower themselves (matched by actor_role='borrower' OR by the
+ * actor matching the borrower's own id).
+ */
+function formatAuditEvent(e, borrowerCtx) {
+  const data = e.event_data || {};
+  const role = (e.actor_role || '').toLowerCase();
+  const isAI = role === 'ai' || role === 'system_ai' || /\bai\b/i.test(e.actor_name || '');
+  const isBorrower = role === 'borrower';
+
+  const actorFirst = (e.actor_name || '').split(' ')[0];
+
+  let text;
+  switch ((e.event_type || '').toLowerCase()) {
+    case 'application_received':
+    case 'application_submitted':
+      text = 'Your application was received.';
+      break;
+    case 'stage_changed':
+      text = data.to_stage_label
+        ? `Stage advanced to ${data.to_stage_label}.`
+        : `Stage advanced to ${(data.to_stage || 'the next stage').replace(/_/g,' ')}.`;
+      break;
+    case 'condition_requested':
+    case 'condition_added':
+      text = isAI
+        ? `${data.condition_name || 'A document'} was added to your needs list.`
+        : `${actorFirst || 'Your team'} requested ${data.condition_name || 'a document'}.`;
+      break;
+    case 'condition_cleared':
+      text = isAI
+        ? `Your ${data.condition_name || 'document'} was auto-cleared by AI.`
+        : `${data.condition_name || 'A condition'} was cleared.`;
+      break;
+    case 'condition_waived':
+      text = `${data.condition_name || 'A condition'} was waived.`;
+      break;
+    case 'document_uploaded':
+      text = isBorrower
+        ? `You uploaded ${data.document_name || 'a document'}.`
+        : `${actorFirst || 'Someone'} uploaded ${data.document_name || 'a document'}.`;
+      break;
+    case 'processor_assigned':
+      text = `${actorFirst || 'A processor'} began processing your file.`;
+      break;
+    case 'lo_assigned':
+      text = `${actorFirst || 'A loan officer'} was assigned to your loan.`;
+      break;
+    case 'message_sent':
+      text = isBorrower
+        ? `You sent a message.`
+        : `${actorFirst || 'Your loan officer'} sent you a message.`;
+      break;
+    case 'aus_findings_received':
+      text = `Automated underwriting findings received.`;
+      break;
+    case 'disclosure_sent':
+      text = `${data.disclosure_name || 'A disclosure'} was sent for your review.`;
+      break;
+    case 'disclosure_signed':
+      text = `You signed ${data.disclosure_name || 'a disclosure'}.`;
+      break;
+    default:
+      // Generic fallback: humanize the event_type
+      text = ((e.event_type || 'Update').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())) + '.';
+  }
+
+  // Actor line
+  let actor;
+  if (isAI) {
+    const rules = data.rules_matched != null && data.rules_total != null
+      ? ` · ${data.rules_matched}/${data.rules_total} rules matched`
+      : '';
+    actor = (e.actor_name || 'OriginFlow AI') + rules;
+  } else if (isBorrower) {
+    // Use the borrower's own display name we already resolved in ctx
+    actor = e.actor_name
+      || [borrowerCtx.first_name, borrowerCtx.last_name].filter(Boolean).join(' ')
+      || 'You';
+  } else if (e.actor_name) {
+    const label = roleLabel(role);
+    actor = label ? `${e.actor_name} · ${label}` : e.actor_name;
+  } else {
+    actor = roleLabel(role) || 'OriginFlow';
+  }
+
+  return {
+    time:  formatActivityTime(e.created_at),
+    text:  text,
+    actor: actor,
+    is_ai: isAI,
+  };
+}
+
+/* ─── Init: orchestrate bootstrap + queries + render ───────────────────── */
+
+async function init() {
+  let ctx;
+  try {
+    ctx = await window.OF_bootstrap();
+  } catch (e) {
+    console.error('[portal/status] OF_bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
+      ? 'not_a_borrower'
+      : 'link_failed';
+    window.location.replace('/portal/sign-in.html?error=' + code);
+    return;
+  }
+
+  if (!ctx || !ctx.session) {
+    window.location.replace('/portal/sign-in.html');
+    return;
+  }
+  if (!ctx.borrower) {
+    window.location.replace('/portal/sign-in.html?error=not_a_borrower');
+    return;
+  }
+  if (!ctx.loan) {
+    window.location.replace('/portal/apply/');
+    return;
+  }
+
+  const supabase = window.OF_supabase();
+  const [histRes, condRes, auditRes] = await Promise.allSettled([
+    fetchStageHistory(supabase, ctx.loan.id),
+    fetchConditions(supabase, ctx.loan.id),
+    fetchAuditEvents(supabase, ctx.loan.id),
+  ]);
+
+  const stageHistory = histRes.status  === 'fulfilled' ? histRes.value  : {};
+  const conditions   = condRes.status  === 'fulfilled' ? condRes.value  : [];
+  const auditEvents  = auditRes.status === 'fulfilled' ? auditRes.value : [];
+
+  const borrowerCtx = {
+    first_name: titleCase(ctx.borrower.first_name),
+    last_name:  titleCase(ctx.borrower.last_name),
+  };
+
+  const pageCtx = {
+    loan: {
+      id:      ctx.loan.id,
+      loan_no: ctx.loan.loan_no || '—',
+      current_stage: mapStatusToStage(ctx.loan.status || ctx.loan.current_stage),
+    },
+    stages:    buildStages(mapStatusToStage(ctx.loan.status || ctx.loan.current_stage), stageHistory),
+    documents: buildDocuments(conditions),
+    activity:  auditEvents.map(e => formatAuditEvent(e, borrowerCtx)),
+  };
+
+  window.OF_STATUS_CTX = pageCtx;  // debug hook
+  render(pageCtx);
+
+  const veil = document.getElementById('bootstrap-veil');
+  if (veil) {
+    veil.classList.add('is-hidden');
+    setTimeout(() => veil.remove(), 220);
+  }
+
+  if (typeof window.OF_touchLastSeen === 'function') {
+    window.OF_touchLastSeen().catch(() => {});
+  }
+}
+
+/* ─── Render ───────────────────────────────────────────────────────────── */
+
+function render(b) {
   document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
 
-  // Stages
-  const stages = document.getElementById('stages-container');
-  stages.innerHTML = '';
+  // ── Stages
+  const stagesEl = document.getElementById('stages-container');
+  stagesEl.innerHTML = '';
   b.stages.forEach(s => {
     const row = document.createElement('div');
     row.className = 'stage-row is-' + s.status;
     row.innerHTML = `
       <div class="stage-marker"><div class="stage-dot"></div></div>
       <div class="stage-body">
-        <div class="stage-name">${s.label}</div>
-        ${s.date ? `<div class="stage-date">${s.date}</div>` : ''}
-        <div class="stage-desc">${s.desc}</div>
+        <div class="stage-name">${escapeHtml(s.label)}</div>
+        ${s.date ? `<div class="stage-date">${escapeHtml(s.date)}</div>` : ''}
+        <div class="stage-desc">${escapeHtml(s.desc)}</div>
       </div>
     `;
-    stages.appendChild(row);
+    stagesEl.appendChild(row);
   });
 
-  // Documents
-  const docs = document.getElementById('docs-container');
-  docs.innerHTML = '';
-  b.documents.forEach(d => {
-    const row = document.createElement('div');
-    row.className = 'doc-row';
-    const statusLabel =
-      d.status === 'cleared' ? 'Cleared' :
-      d.status === 'pending' ? 'In review' :
-      'Needed';
-    row.innerHTML = `
-      <div class="doc-icon">${d.icon}</div>
-      <div class="doc-info">
-        <div class="doc-name">${d.name}</div>
-        <div class="doc-meta">${d.meta}</div>
-      </div>
-      <div class="doc-status is-${d.status}">${statusLabel}</div>
-    `;
-    docs.appendChild(row);
-  });
+  // ── Documents
+  const docsEl = document.getElementById('docs-container');
+  docsEl.innerHTML = '';
+  if (b.documents.length === 0) {
+    docsEl.outerHTML = '<div class="docs-list" id="docs-container"><div class="empty-state">No document requests yet. Your loan officer will request docs as needed.</div></div>';
+  } else {
+    b.documents.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'doc-row';
+      const statusLabel =
+        d.status === 'cleared' ? 'Cleared' :
+        d.status === 'pending' ? 'In review' :
+        'Needed';
+      row.innerHTML = `
+        <div class="doc-icon">${escapeHtml(d.icon)}</div>
+        <div class="doc-info">
+          <div class="doc-name">${escapeHtml(d.name)}</div>
+          <div class="doc-meta">${escapeHtml(d.meta)}</div>
+        </div>
+        <div class="doc-status is-${d.status}">${statusLabel}</div>
+      `;
+      docsEl.appendChild(row);
+    });
+  }
 
-  // Activity
-  const act = document.getElementById('activity-container');
-  act.innerHTML = '';
-  b.activity.forEach(a => {
-    const row = document.createElement('div');
-    row.className = 'activity-row' + (a.is_ai ? ' is-ai' : '');
-    row.innerHTML = `
-      <div class="activity-time">${a.time}</div>
-      <div class="activity-text">${a.text}</div>
-      <div class="activity-actor${a.is_ai ? ' is-ai' : ''}">${a.actor}</div>
-    `;
-    act.appendChild(row);
-  });
+  // ── Activity
+  const actEl = document.getElementById('activity-container');
+  actEl.innerHTML = '';
+  if (b.activity.length === 0) {
+    // Replace the bordered .activity wrapper with a plain empty state so
+    // the left-border timeline visual doesn't appear with nothing on it.
+    actEl.outerHTML = '<div class="empty-state">No activity yet.</div>';
+  } else {
+    b.activity.forEach(a => {
+      const row = document.createElement('div');
+      row.className = 'activity-row' + (a.is_ai ? ' is-ai' : '');
+      row.innerHTML = `
+        <div class="activity-time">${escapeHtml(a.time)}</div>
+        <div class="activity-text">${escapeHtml(a.text)}</div>
+        <div class="activity-actor${a.is_ai ? ' is-ai' : ''}">${escapeHtml(a.actor)}</div>
+      `;
+      actEl.appendChild(row);
+    });
+  }
 }
 
-document.addEventListener('DOMContentLoaded', render);
+/* ─── HTML escape (safety: every text value going into innerHTML) ──────── */
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
