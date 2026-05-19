@@ -1,357 +1,748 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Loans — OriginFlow Borrower Portal</title>
-<meta name="description" content="Your mortgage loan portal.">
-<meta name="robots" content="noindex">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/js/config.js"></script>
-<style>
-  :root {
-    --navy:#040d1a;--deep:#07152b;--surface:#0b1f3a;--panel:#0f2647;
-    --border:#1a3a5c;--accent:#00d4ff;--accent2:#00ff9d;--amber:#f5a623;
-    --red:#ff4444;--text:#c8dff0;--muted:#5a7a99;--white:#eaf4ff;
-    --mono:'Space Mono',monospace;--serif:'DM Serif Display',serif;--sans:'DM Sans',sans-serif;
-  }
-  *,*::before,*::after { box-sizing:border-box;margin:0;padding:0; }
-  html { scroll-behavior:smooth; }
-  body { background:var(--navy); color:var(--text); font-family:var(--sans); font-size:16px; line-height:1.6; min-height:100vh; display:flex; flex-direction:column; }
-  body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
-  nav,.portal-banner,main,footer { position:relative; z-index:1; }
-  a { color:inherit; }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OriginFlow Portal — Your Loan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       OriginFlow Borrower Portal — design system
+       -----------------------------------------------------------------------
+       Same palette + typography as the LO-side surfaces (Space Mono / DM Sans
+       / DM Serif Display, navy/cyan/accent-green), but mobile-first because
+       most borrowers apply on phone. Layout collapses to single-column under
+       640px. Sticky header is shorter than the LO-side nav to give more
+       vertical real estate on small screens.
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
 
-  nav { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 3rem; border-bottom:1px solid var(--border); background:rgba(4,13,26,0.85); backdrop-filter:blur(12px); }
-  .nav-logo { display:flex; align-items:center; gap:0.75rem; text-decoration:none; }
-  .sonar-icon { width:32px; height:32px; }
-  .sonar-icon svg { width:100%; height:100%; }
-  .nav-wordmark { font-family:var(--mono); font-size:0.85rem; font-weight:700; color:var(--white); letter-spacing:0.12em; text-transform:uppercase; }
-  .nav-wordmark span { color:var(--accent); }
-  .nav-right { display:flex; align-items:center; gap:1rem; font-family:var(--mono); font-size:0.7rem; letter-spacing:0.08em; color:var(--muted); }
-  .nav-user-email { color:var(--text); }
-  .nav-signout { font-family:var(--mono); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text); background:transparent; border:1px solid var(--border); padding:0.45rem 0.9rem; cursor:pointer; transition:all 0.15s; }
-  .nav-signout:hover { border-color:var(--accent); color:var(--accent); }
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
 
-  .portal-banner { background:rgba(0,212,255,0.06); border-bottom:1px solid rgba(0,212,255,0.25); padding:0.55rem 3rem; display:flex; align-items:center; justify-content:center; gap:0.6rem; font-family:var(--mono); font-size:0.65rem; letter-spacing:0.14em; color:var(--accent); text-transform:uppercase; }
-  .portal-banner .pb-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent2); animation:pulse 1.6s ease-in-out infinite; }
-  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%),
+        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(134, 239, 172, 0.03), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
 
-  main { flex:1; padding:3.5rem 3rem 4rem; max-width:1100px; margin:0 auto; width:100%; }
+    /* ─── PORTAL BANNER (replaces the demo banner from internal surfaces) ─── */
+    .portal-banner {
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-align: center;
+    }
 
-  .dashboard-header { margin-bottom:2.5rem; }
-  .dashboard-eyebrow { font-family:var(--mono); font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.75rem; }
-  .dashboard-eyebrow::before { content:''; display:block; width:1.5rem; height:1px; background:var(--accent); }
-  .dashboard-title { font-family:var(--serif); font-size:2.4rem; color:var(--white); margin-bottom:0.4rem; line-height:1.15; }
-  .dashboard-sub { font-size:0.95rem; color:var(--muted); font-weight:300; }
+    /* ─── STICKY NAV ─── */
+    .portal-nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .portal-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .portal-brand-mark {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--cyan), #0891b2);
+      display: grid; place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+    .portal-brand-text {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .portal-brand-text .subtitle {
+      display: block;
+      font-weight: 400;
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+    .portal-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .portal-user-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border-strong);
+      display: grid; place-items: center;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--cyan);
+    }
 
-  .state-block { text-align:center; padding:4rem 2rem; }
-  .state-block h2 { font-family:var(--serif); font-size:1.6rem; color:var(--white); margin-bottom:0.75rem; }
-  .state-block p { color:var(--muted); font-weight:300; max-width:480px; margin:0 auto 1.5rem; line-height:1.7; font-size:0.95rem; }
-  .state-block .state-cta { font-family:var(--mono); font-size:0.78rem; letter-spacing:0.12em; text-transform:uppercase; background:var(--accent); color:var(--navy); border:none; padding:0.85rem 1.75rem; cursor:pointer; font-weight:700; text-decoration:none; display:inline-block; transition:opacity 0.2s; clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px)); }
-  .state-block .state-cta:hover { opacity:0.85; }
-  .state-block.loading-state .spinner { display:inline-block; width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.9s linear infinite; margin-bottom:1.25rem; }
-  @keyframes spin { to { transform:rotate(360deg); } }
+    /* ─── MAIN LAYOUT ─── */
+    .portal-main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    @media (min-width: 640px) {
+      .portal-main { padding: 32px 24px 80px; }
+    }
 
-  .loans-list { display:grid; grid-template-columns:1fr; gap:1.25rem; }
-  .loan-card { background:var(--surface); border:1px solid var(--border); padding:1.75rem; text-decoration:none; color:inherit; display:block; transition:border-color 0.2s, transform 0.15s; position:relative; overflow:hidden; }
-  .loan-card::before { content:''; position:absolute; top:0; left:0; bottom:0; width:3px; background:var(--accent); opacity:0.6; transition:opacity 0.2s, background 0.2s; }
-  .loan-card:hover { border-color:var(--accent); transform:translateY(-2px); }
-  .loan-card:hover::before { opacity:1; }
-  .loan-card.status-funded::before { background:var(--accent2); }
-  .loan-card.status-clear_to_close::before { background:var(--accent2); }
-  .loan-card.status-underwriting::before { background:var(--amber); }
-  .loan-card.status-denied::before { background:var(--red); }
-  .loan-card.status-withdrawn::before { background:var(--muted); }
+    /* ─── PAGE HEADER ─── */
+    .page-header { margin-bottom: 28px; }
+    .page-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 6px;
+    }
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 30px;
+      line-height: 1.1;
+      color: var(--text);
+      margin: 0 0 4px 0;
+    }
+    @media (min-width: 640px) { .page-title { font-size: 38px; } }
+    .page-subtitle {
+      font-family: var(--font-sans);
+      color: var(--text-dim);
+      font-size: 15px;
+    }
 
-  .loan-card-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.75rem; flex-wrap:wrap; }
-  .loan-number { font-family:var(--mono); font-size:0.7rem; letter-spacing:0.12em; color:var(--accent); text-transform:uppercase; }
-  .loan-status { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.1em; padding:0.25rem 0.6rem; border:1px solid; text-transform:uppercase; white-space:nowrap; }
-  .loan-status.s-default { color:var(--accent); border-color:rgba(0,212,255,0.4); background:rgba(0,212,255,0.06); }
-  .loan-status.s-good    { color:var(--accent2); border-color:rgba(0,255,157,0.4); background:rgba(0,255,157,0.08); }
-  .loan-status.s-attn    { color:var(--amber); border-color:rgba(245,166,35,0.4); background:rgba(245,166,35,0.08); }
-  .loan-status.s-stop    { color:var(--red); border-color:rgba(255,68,68,0.4); background:rgba(255,68,68,0.08); }
+    /* ─── STATUS PILL TIMELINE ─── */
+    .status-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-1);
+    }
+    .status-card-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 12px;
+    }
+    .status-current {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .status-detail {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
 
-  .loan-property { font-family:var(--serif); font-size:1.35rem; color:var(--white); margin-bottom:0.4rem; line-height:1.3; }
-  .loan-meta { display:flex; gap:1.5rem; flex-wrap:wrap; font-family:var(--mono); font-size:0.7rem; color:var(--muted); letter-spacing:0.04em; margin-top:0.75rem; padding-top:0.75rem; border-top:1px solid rgba(26,58,92,0.5); }
-  .loan-meta strong { color:var(--text); font-weight:400; }
+    .status-timeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .status-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px 6px 8px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      color: var(--text-faint);
+    }
+    .status-step .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
+    }
+    .status-step.is-done {
+      color: var(--accent-green);
+      background: rgba(134, 239, 172, 0.06);
+      border-color: rgba(134, 239, 172, 0.2);
+    }
+    .status-step.is-done .dot { background: var(--accent-green); }
+    .status-step.is-current {
+      color: var(--cyan);
+      background: var(--cyan-glow);
+      border-color: rgba(34, 211, 238, 0.3);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+    }
+    .status-step.is-current .dot {
+      background: var(--cyan);
+      box-shadow: 0 0 6px var(--cyan);
+    }
 
-  footer { border-top:1px solid var(--border); font-family:var(--mono); font-size:0.62rem; letter-spacing:0.08em; color:var(--muted); background:var(--deep); margin-top:auto; }
-  .footer-disclaimer { padding:0.7rem 3rem; border-bottom:1px solid var(--border); text-align:center; font-size:0.58rem; line-height:1.5; color:var(--muted); }
-  .footer-disclaimer strong { color:var(--text); font-weight:700; }
-  .footer-bottom { padding:1.25rem 3rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
-  footer a { color:var(--muted); text-decoration:none; }
-  footer a:hover { color:var(--accent); }
-  .footer-links { display:flex; gap:1.5rem; flex-wrap:wrap; }
+    /* ─── ACTION CARDS GRID ─── */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (min-width: 640px) {
+      .action-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+    }
+    .action-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      cursor: pointer;
+    }
+    .action-card:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-elev-2);
+    }
+    .action-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .action-card-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .action-card-tag.warn  { color: var(--warn); }
+    .action-card-tag.ok    { color: var(--accent-green); }
+    .action-card-count {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg-elev-2);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .action-card-title {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      color: var(--text);
+      margin: 4px 0 2px;
+    }
+    .action-card-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.45;
+    }
+    .action-card-cta {
+      margin-top: auto;
+      padding-top: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      display: flex; align-items: center; gap: 6px;
+    }
 
-  @media (max-width:640px) {
-    nav { padding:1rem 1.25rem; flex-wrap:wrap; gap:0.75rem; }
-    .nav-right { font-size:0.62rem; gap:0.6rem; }
-    .nav-user-email { display:none; }
-    .portal-banner { padding:0.55rem 1rem; font-size:0.58rem; }
-    main { padding:2.5rem 1.25rem 3rem; }
-    .dashboard-title { font-size:1.85rem; }
-    .loan-card { padding:1.25rem; }
-    .loan-property { font-size:1.1rem; }
-    .footer-disclaimer { padding:0.6rem 1rem; }
-    .footer-bottom { padding:1rem 1.25rem; flex-direction:column; gap:0.75rem; text-align:center; }
-  }
-</style>
+    /* ─── LOAN SUMMARY ─── */
+    .summary-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .summary-card h3 {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin: 0 0 14px 0;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 24px;
+    }
+    @media (min-width: 640px) {
+      .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+    .summary-item dt {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 4px;
+    }
+    .summary-item dd {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .summary-item.is-mono dd {
+      font-family: var(--font-mono);
+      font-size: 14px;
+    }
+
+    /* ─── LO CARD (your loan officer) ─── */
+    .lo-card {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .lo-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), #0891b2);
+      display: grid; place-items: center;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+    .lo-info { flex: 1; min-width: 0; }
+    .lo-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .lo-name {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      color: var(--text);
+      margin: 2px 0 1px;
+    }
+    .lo-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .lo-actions {
+      display: flex; gap: 8px;
+      flex-shrink: 0;
+    }
+    .icon-btn {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      cursor: pointer;
+      color: var(--cyan);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .icon-btn:hover {
+      background: var(--bg-elev-3);
+      border-color: var(--border-strong);
+    }
+
+    /* ─── FOOTER ─── */
+    .portal-footer {
+      padding: 24px 20px 40px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .portal-footer a {
+      color: var(--text-faint);
+      margin: 0 6px;
+    }
+  </style>
 </head>
 <body>
 
-<nav>
-  <a href="/portal/index.html" class="nav-logo">
-    <div class="sonar-icon">
-      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OriginFlow sonar icon">
-        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
-        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="5"  stroke="#1a3a5c" stroke-width="0.75"/>
-        <circle cx="16" cy="16" r="2"  fill="#00d4ff"/>
-        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="24" cy="4" r="1.5" fill="#00ff9d">
-          <animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/>
-        </circle>
-        <path d="M16 16 A10 10 0 0 1 26 16" stroke="#00d4ff" stroke-width="0.75" opacity="0.3">
-          <animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="3s" repeatCount="indefinite"/>
-        </path>
-      </svg>
+<!-- =============================================================================
+     PORTAL SHELL — Phase 11.5.4
+     -----------------------------------------------------------------------------
+     Architecture notes:
+
+     * AUTH STUB: the entire page currently reads from a `borrower` object
+       hard-coded in the inline script (window.OF_BORROWER_BOOTSTRAP). When
+       11.5.2 ships, replace the bootstrap with a call to Supabase Auth
+       getSession() + a select on borrowers + a select on the joined loan.
+       The shape this page expects is documented in OF_BORROWER_BOOTSTRAP.
+
+     * MOBILE FIRST: all media queries use min-width to upgrade the layout.
+       The base CSS is the mobile experience.
+
+     * NAVIGATION: this is the home tile. Links go to:
+         /portal/apply/    → 11.5.5 1003 wizard (in-progress applications)
+         /portal/status/   → 11.5.7 detailed timeline + history
+         /portal/docs/     → 11.5.11 document upload UI
+         /portal/messages/ → 11.5.8 LO chat
+       Stubbed for now; each will be its own file.
+
+     * NO DATA MUTATIONS HAPPEN ON THIS PAGE. It's pure read. Mutations
+       happen in /apply (writes to loans), /docs (writes to loan_documents),
+       /messages (writes to a borrower_messages table — 11.5.8).
+     ============================================================================= -->
+
+<div class="portal-banner">Your loan — secured borrower portal</div>
+
+<header class="portal-nav">
+  <div class="portal-brand">
+    <div class="portal-brand-mark">OF</div>
+    <div class="portal-brand-text">
+      OriginFlow
+      <span class="subtitle">Borrower portal</span>
     </div>
-    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
-  </a>
-  <div class="nav-right">
-    <span class="nav-user-email" id="nav-user-email">—</span>
-    <button class="nav-signout" id="nav-signout" type="button">Sign Out</button>
   </div>
-</nav>
-
-<div class="portal-banner"><span class="pb-dot"></span>Borrower Portal · <span id="portal-banner-name" style="margin-left:0.4rem;">—</span></div>
-
-<main>
-  <!-- Loading state: shown while we resolve session → account → eConsent → loans -->
-  <div id="state-loading" class="state-block loading-state">
-    <div class="spinner"></div>
-    <p style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase;">Loading your portal…</p>
+  <div class="portal-user">
+    <span class="portal-user-name" id="portal-user-name">—</span>
+    <div class="portal-user-avatar" id="portal-user-avatar">—</div>
   </div>
+</header>
 
-  <!-- Setup state: auth.users exists, no matching borrowers row -->
-  <div id="state-setup" class="state-block" style="display:none;">
-    <h2>Your account is not yet set up.</h2>
-    <p>It looks like you signed in with an email that isn't linked to a loan in our system yet. If you've started a mortgage application, ask your loan officer to send you a portal invite. Otherwise, you can start a new application.</p>
-    <a href="/apply.html" class="state-cta">Start an Application →</a>
-  </div>
+<main class="portal-main">
 
-  <!-- Empty state: borrowers row exists but no loans yet -->
-  <div id="state-empty" class="state-block" style="display:none;">
-    <h2>No loans yet.</h2>
-    <p>If you've just applied or just accepted a co-borrower invitation, your loan should appear here within a few minutes. If it doesn't, contact your loan officer.</p>
-    <a href="/apply.html" class="state-cta">Start an Application →</a>
-  </div>
+  <section class="page-header">
+    <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
+    <h1 class="page-title" id="page-title">Welcome back</h1>
+    <p class="page-subtitle" id="page-subtitle">Here's where your loan stands today.</p>
+  </section>
 
-  <!-- Dashboard: the normal state with one or more loans -->
-  <div id="state-dashboard" style="display:none;">
-    <div class="dashboard-header">
-      <div class="dashboard-eyebrow">Your Loans</div>
-      <h1 class="dashboard-title">Welcome back, <span id="dashboard-name">—</span>.</h1>
-      <p class="dashboard-sub">Click a loan to view status, messages, and document requests.</p>
+  <!-- ─── CURRENT STATUS + TIMELINE ─── -->
+  <section class="status-card">
+    <div class="status-card-label">Current status</div>
+    <div class="status-current" id="status-current">—</div>
+    <div class="status-detail" id="status-detail">—</div>
+
+    <div class="status-timeline" id="status-timeline">
+      <!-- populated by render() -->
     </div>
-    <div class="loans-list" id="loans-list"></div>
-  </div>
+  </section>
+
+  <!-- ─── ACTION CARDS ─── -->
+  <section class="action-grid">
+    <a class="action-card" href="/portal/docs/">
+      <div class="action-card-header">
+        <span class="action-card-tag warn" id="docs-tag">Action needed</span>
+        <span class="action-card-count" id="docs-count">—</span>
+      </div>
+      <div class="action-card-title">Documents</div>
+      <div class="action-card-desc" id="docs-desc">Upload your remaining documents to keep your loan moving.</div>
+      <div class="action-card-cta">Open documents →</div>
+    </a>
+    <a class="action-card" href="/portal/messages/">
+      <div class="action-card-header">
+        <span class="action-card-tag" id="messages-tag">No new messages</span>
+        <span class="action-card-count" id="messages-count">0</span>
+      </div>
+      <div class="action-card-title">Messages</div>
+      <div class="action-card-desc">Chat with your loan officer or send a question to the team.</div>
+      <div class="action-card-cta">Open messages →</div>
+    </a>
+    <a class="action-card" href="/portal/apply/">
+      <div class="action-card-header">
+        <span class="action-card-tag" id="apply-tag">Saved progress</span>
+        <span class="action-card-count" id="apply-count">—</span>
+      </div>
+      <div class="action-card-title">Application</div>
+      <div class="action-card-desc">Review or update the information on your URLA 1003.</div>
+      <div class="action-card-cta">Open application →</div>
+    </a>
+    <a class="action-card" href="/portal/status/">
+      <div class="action-card-header">
+        <span class="action-card-tag" id="status-tag">All on track</span>
+        <span class="action-card-count">—</span>
+      </div>
+      <div class="action-card-title">Full timeline</div>
+      <div class="action-card-desc">See every milestone, document, and notification in detail.</div>
+      <div class="action-card-cta">Open timeline →</div>
+    </a>
+  </section>
+
+  <!-- ─── LOAN SUMMARY ─── -->
+  <section class="summary-card">
+    <h3>Loan summary</h3>
+    <dl class="summary-grid">
+      <div class="summary-item">
+        <dt>Type</dt>
+        <dd id="sum-type">—</dd>
+      </div>
+      <div class="summary-item is-mono">
+        <dt>Amount</dt>
+        <dd id="sum-amount">—</dd>
+      </div>
+      <div class="summary-item is-mono">
+        <dt>Rate</dt>
+        <dd id="sum-rate">—</dd>
+      </div>
+      <div class="summary-item">
+        <dt>Property</dt>
+        <dd id="sum-property">—</dd>
+      </div>
+      <div class="summary-item is-mono">
+        <dt>Loan #</dt>
+        <dd id="sum-loan-no">—</dd>
+      </div>
+      <div class="summary-item">
+        <dt>Term</dt>
+        <dd id="sum-term">—</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- ─── YOUR LOAN OFFICER ─── -->
+  <section class="lo-card">
+    <div class="lo-avatar" id="lo-avatar">—</div>
+    <div class="lo-info">
+      <div class="lo-label">Your loan officer</div>
+      <div class="lo-name" id="lo-name">—</div>
+      <div class="lo-meta" id="lo-meta">—</div>
+    </div>
+    <div class="lo-actions">
+      <a class="icon-btn" id="lo-call" href="tel:" title="Call">📞</a>
+      <a class="icon-btn" id="lo-email" href="mailto:" title="Email">✉</a>
+    </div>
+  </section>
+
 </main>
 
-<footer>
-  <div class="footer-disclaimer">
-    <strong>OriginFlow LOS · Borrower Portal</strong> · Secure communications between you and your lender · Subject to your lender's privacy, ESIGN consent, and information security policies
-  </div>
-  <div class="footer-bottom">
-    <a href="/" style="font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</a>
-    <div class="footer-links">
-      <a href="/privacy.html">Privacy</a>
-      <a href="/terms.html">Terms</a>
-      <a href="mailto:dsrackler@gmail.com">Contact</a>
-    </div>
-  </div>
+<footer class="portal-footer">
+  <a href="#">Privacy</a> ·
+  <a href="#">Terms</a> ·
+  <a href="#">Help</a> ·
+  <a href="#">Sign out</a>
 </footer>
 
-<!-- ─── Dashboard bootstrap ──────────────────────────────────────────────
-     Gate ordering matters:
-       1. No session            → /portal/login.html
-       2. No borrower_account   → setup state (auth user exists but unlinked)
-       3. eConsent not granted  → /portal/econsent.html
-       4. Loans loaded          → render dashboard (empty state if no rows)
-
-     Each gate is its own branch — we never partially-render a state and
-     then redirect, because that flashes content the borrower shouldn't see.
-─────────────────────────────────────────────────────────────────────── -->
 <script>
-  var sb = null;
-  try { sb = (typeof getSupabase === 'function') ? getSupabase() : null; } catch(_) {}
+/* =============================================================================
+   BOOTSTRAP DATA
+   -----------------------------------------------------------------------------
+   AUTH STUB — replace this whole block in 11.5.2 with a real Supabase fetch:
 
-  var loadingEl   = document.getElementById('state-loading');
-  var setupEl     = document.getElementById('state-setup');
-  var emptyEl     = document.getElementById('state-empty');
-  var dashEl      = document.getElementById('state-dashboard');
-  var loansListEl = document.getElementById('loans-list');
-  var navEmailEl  = document.getElementById('nav-user-email');
-  var navNameEl   = document.getElementById('portal-banner-name');
-  var dashNameEl  = document.getElementById('dashboard-name');
+     const sb = supabaseClient();
+     const { data: { user } } = await sb.auth.getUser();
+     const { data: borrowerRow } = await sb.from('borrowers').select(...);
+     const { data: loanRow }     = await sb.from('loans').select(...);
+     const { data: openConds }   = await sb.from('conditions').select(...);
 
-  function showState(which) {
-    loadingEl.style.display = (which === 'loading') ? 'block' : 'none';
-    setupEl.style.display   = (which === 'setup')   ? 'block' : 'none';
-    emptyEl.style.display   = (which === 'empty')   ? 'block' : 'none';
-    dashEl.style.display    = (which === 'dashboard') ? 'block' : 'none';
-  }
+   The shape below is what the rest of the page expects. The keys map 1:1 to
+   columns on the existing schema, so wiring it up is a paste job.
+   ============================================================================= */
+window.OF_BORROWER_BOOTSTRAP = {
+  borrower: {
+    id: '20000000-0000-0000-0000-000000000001',
+    first_name: 'Marcus',
+    last_name:  'Holbrook',
+    email:      'marcus.holbrook@example.com',
+  },
+  loan: {
+    id:        '10000000-0000-0000-0000-000000000003',
+    loan_no:   'OF-1043',
+    type:      'Purchase',
+    amount:    310000,
+    rate_bps:  712,
+    term_months: 360,
+    property_address: '4218 Quaker Ave, Lubbock, TX 79410',
+    current_stage:    'documents',
+  },
+  lo: {
+    name:  'Corbin Matisse',
+    title: 'Loan Officer · NMLS #1924401',
+    phone: '+18065550118',
+    email: 'corbin@submarinecatalyst.com',
+  },
+  counts: {
+    docs_outstanding:  3,
+    messages_unread:   0,
+    application_pct:   100,
+  },
+};
 
-  // Money columns on loans_borrower_view are in CENTS (matches the loans table
-  // convention: loan_amount_cents bigint). Divide by 100 for display.
-  function fmtMoneyCents(cents) {
-    if (cents == null) return '—';
-    return '$' + Math.round(Number(cents) / 100).toLocaleString('en-US');
-  }
+const STAGES = [
+  { key: 'applied',     label: 'Applied'      },
+  { key: 'documents',   label: 'Documents'    },
+  { key: 'underwriting',label: 'Underwriting' },
+  { key: 'ctc',         label: 'Clear to close' },
+  { key: 'scheduled',   label: 'Scheduled'    },
+  { key: 'funded',      label: 'Funded'       },
+];
 
-  // property_address on loans is jsonb. The exact key names vary by how the LO
-  // wizard captures it — handle multiple common shapes defensively.
-  function fmtAddr(loan) {
-    var addr = loan.property_address;
-    if (!addr || typeof addr !== 'object') return 'Property address pending';
-    var street = addr.street || addr.line_1 || addr.address_line_1 || addr.street_address || addr.address || '';
-    var unit   = addr.unit || addr.line_2 || addr.address_line_2 || '';
-    var city   = addr.city || addr.locality || '';
-    var state  = addr.state || addr.region || addr.state_code || '';
-    var zip    = addr.zip || addr.postal_code || addr.zip_code || '';
-    var streetFull = unit ? (street + ' ' + unit) : street;
-    var stateZip = [state, zip].filter(Boolean).join(' ');
-    var parts = [streetFull, city, stateZip].filter(Boolean);
-    return parts.join(', ') || 'Property address pending';
-  }
+const STAGE_DESCRIPTIONS = {
+  applied:      'Your application is in. Your loan officer is reviewing it now.',
+  documents:    "We're collecting documents to verify your income, assets, and identity.",
+  underwriting: 'Underwriting is reviewing your file. No action needed from you right now.',
+  ctc:          'Cleared to close! Your loan officer will schedule your closing soon.',
+  scheduled:    "Your closing is scheduled. We'll send reminders as the date approaches.",
+  funded:       'Your loan has funded. Welcome home.',
+};
 
-  function fmtDate(iso) {
-    if (!iso) return null;
-    try {
-      var d = new Date(iso);
-      return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-    } catch (_) { return null; }
-  }
+function dollars(n) {
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+function ratePct(bps) {
+  return (bps / 100).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '%';
+}
+function termYears(months) {
+  if (months % 12 === 0) return (months / 12) + '-year';
+  return months + ' mo';
+}
+function initials(first, last) {
+  return ((first || '').charAt(0) + (last || '').charAt(0)).toUpperCase();
+}
 
-  // Map status_raw to a pill style class. Keep this aligned with the
-  // borrower_facing_status() server function — the raw value is what we
-  // switch on, the display string is what we render.
-  function statusPillClass(raw) {
-    if (raw === 'funded' || raw === 'clear_to_close' || raw === 'closing_scheduled') return 's-good';
-    if (raw === 'underwriting' || raw === 'conditional_approval') return 's-attn';
-    if (raw === 'denied') return 's-stop';
-    if (raw === 'withdrawn') return 's-stop';
-    return 's-default';
-  }
+function render() {
+  const b = window.OF_BORROWER_BOOTSTRAP;
 
-  function renderLoan(loan) {
-    var statusClass = statusPillClass(loan.status_raw);
-    var purpose = loan.purpose ? loan.purpose.charAt(0).toUpperCase() + loan.purpose.slice(1).replace(/_/g, ' ') : '—';
-    var closing = null;  // estimated_closing_date not on loans table in this schema; left null for now
+  // User chip
+  document.getElementById('portal-user-name').textContent =
+    b.borrower.first_name + ' ' + b.borrower.last_name;
+  document.getElementById('portal-user-avatar').textContent =
+    initials(b.borrower.first_name, b.borrower.last_name);
 
-    var card = document.createElement('a');
-    card.className = 'loan-card status-' + (loan.status_raw || 'default');
-    card.href = '/portal/loan.html?id=' + encodeURIComponent(loan.id);
-    card.innerHTML =
-      '<div class="loan-card-header">' +
-        '<span class="loan-number">' + (loan.loan_number || '—') + '</span>' +
-        '<span class="loan-status ' + statusClass + '">' + (loan.status_display || 'In progress') + '</span>' +
-      '</div>' +
-      '<div class="loan-property">' + fmtAddr(loan) + '</div>' +
-      '<div class="loan-meta">' +
-        '<span>' + purpose + ' · <strong>' + fmtMoneyCents(loan.loan_amount_cents) + '</strong></span>' +
-        (closing ? '<span>Est. closing: <strong>' + closing + '</strong></span>' : '') +
-      '</div>';
-    return card;
-  }
+  // Page header
+  document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
+  document.getElementById('page-title').textContent = 'Hi, ' + b.borrower.first_name + '.';
 
-  async function loadDashboard() {
-    if (!sb) {
-      console.error('[OF Portal] Supabase client unavailable');
-      window.location.href = '/portal/login.html';
-      return;
-    }
+  // Current status
+  document.getElementById('status-current').textContent =
+    STAGES.find(s => s.key === b.loan.current_stage)?.label || b.loan.current_stage;
+  document.getElementById('status-detail').textContent =
+    STAGE_DESCRIPTIONS[b.loan.current_stage] || '';
 
-    // 1. Session gate
-    var sessionRes;
-    try { sessionRes = await sb.auth.getSession(); } catch (e) { sessionRes = null; }
-    var session = sessionRes && sessionRes.data && sessionRes.data.session;
-    if (!session) {
-      window.location.href = '/portal/login.html';
-      return;
-    }
-
-    var userId = session.user.id;
-    var userEmail = session.user.email || '';
-    navEmailEl.textContent = userEmail;
-
-    // 2. Borrowers row gate — look up by auth_user_id. The auth-link trigger
-    // from migration 001 sets this on the borrowers row when auth.users is
-    // created (first magic-link verify). If no row matches, the borrower
-    // hasn't applied yet — surface the setup state.
-    var borrower = null;
-    try {
-      var bRes = await sb
-        .from('borrowers')
-        .select('id, email, first_name, last_name, econsent_granted_at, econsent_withdrawn_at')
-        .eq('auth_user_id', userId)
-        .maybeSingle();
-      borrower = bRes && bRes.data;
-    } catch (err) {
-      console.warn('[OF Portal] borrowers lookup failed:', err);
-    }
-
-    if (!borrower) {
-      showState('setup');
-      return;
-    }
-
-    var displayName = (borrower.first_name || '') + (borrower.last_name ? (' ' + borrower.last_name) : '');
-    displayName = displayName.trim() || borrower.email || 'there';
-    navNameEl.textContent = displayName;
-    dashNameEl.textContent = (borrower.first_name || displayName.split(' ')[0] || 'there');
-
-    // 3. eConsent gate — must be granted, and not subsequently withdrawn.
-    var granted = borrower.econsent_granted_at;
-    var withdrawn = borrower.econsent_withdrawn_at;
-    var consentActive = granted && (!withdrawn || new Date(withdrawn) < new Date(granted));
-    if (!consentActive) {
-      window.location.href = '/portal/econsent.html';
-      return;
-    }
-
-    // 4. Loans — pull from loans_borrower_view. RLS scopes to loans the
-    // borrower is attached to via loan_borrowers.
-    var loans = [];
-    try {
-      var loansRes = await sb
-        .from('loans_borrower_view')
-        .select('id, loan_number, status_display, status_raw, loan_amount_cents, purchase_price_cents, purpose, program, occupancy, property_address, property_type, term_months, intake_source, created_at')
-        .order('created_at', { ascending: false });
-      loans = (loansRes && loansRes.data) || [];
-    } catch (err) {
-      console.warn('[OF Portal] loans load failed:', err);
-    }
-
-    if (loans.length === 0) {
-      showState('empty');
-      return;
-    }
-
-    loansListEl.innerHTML = '';
-    loans.forEach(function(loan) { loansListEl.appendChild(renderLoan(loan)); });
-    showState('dashboard');
-  }
-
-  document.getElementById('nav-signout').addEventListener('click', async function() {
-    try { if (sb) await sb.auth.signOut(); } catch (_) {}
-    window.location.href = '/portal/login.html';
+  // Timeline pills
+  const currentIdx = STAGES.findIndex(s => s.key === b.loan.current_stage);
+  const timeline = document.getElementById('status-timeline');
+  timeline.innerHTML = '';
+  STAGES.forEach((s, i) => {
+    const el = document.createElement('span');
+    el.className = 'status-step' +
+      (i < currentIdx ? ' is-done' : '') +
+      (i === currentIdx ? ' is-current' : '');
+    el.innerHTML = '<span class="dot"></span>' + s.label;
+    timeline.appendChild(el);
   });
 
-  loadDashboard();
+  // Action card counts
+  const docsOut = b.counts.docs_outstanding;
+  document.getElementById('docs-count').textContent = docsOut;
+  if (docsOut === 0) {
+    document.getElementById('docs-tag').textContent = 'All caught up';
+    document.getElementById('docs-tag').className = 'action-card-tag ok';
+    document.getElementById('docs-desc').textContent = "Every document we've asked for has been received.";
+  } else {
+    document.getElementById('docs-desc').textContent =
+      docsOut + ' document' + (docsOut === 1 ? '' : 's') + ' still needed to keep things moving.';
+  }
+
+  document.getElementById('messages-count').textContent = b.counts.messages_unread;
+  if (b.counts.messages_unread > 0) {
+    document.getElementById('messages-tag').textContent =
+      b.counts.messages_unread + ' new message' + (b.counts.messages_unread === 1 ? '' : 's');
+    document.getElementById('messages-tag').className = 'action-card-tag warn';
+  }
+
+  document.getElementById('apply-count').textContent = b.counts.application_pct + '%';
+  document.getElementById('apply-tag').textContent =
+    b.counts.application_pct >= 100 ? 'Complete' : 'In progress';
+  if (b.counts.application_pct >= 100) {
+    document.getElementById('apply-tag').className = 'action-card-tag ok';
+  }
+
+  // Summary card
+  document.getElementById('sum-type').textContent = b.loan.type;
+  document.getElementById('sum-amount').textContent = dollars(b.loan.amount);
+  document.getElementById('sum-rate').textContent = ratePct(b.loan.rate_bps);
+  document.getElementById('sum-property').textContent = b.loan.property_address;
+  document.getElementById('sum-loan-no').textContent = b.loan.loan_no;
+  document.getElementById('sum-term').textContent =
+    termYears(b.loan.term_months) + ' fixed';
+
+  // LO card
+  const loFirst = b.lo.name.split(' ')[0];
+  const loLast  = b.lo.name.split(' ').slice(-1)[0];
+  document.getElementById('lo-avatar').textContent = initials(loFirst, loLast);
+  document.getElementById('lo-name').textContent = b.lo.name;
+  document.getElementById('lo-meta').textContent = b.lo.title;
+  document.getElementById('lo-call').href  = 'tel:'    + b.lo.phone;
+  document.getElementById('lo-email').href = 'mailto:' + b.lo.email;
+}
+
+document.addEventListener('DOMContentLoaded', render);
 </script>
 
 </body>

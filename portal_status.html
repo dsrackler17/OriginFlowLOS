@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OriginFlow Portal — Loan timeline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       Borrower status page — Phase 11.5.7
+       -----------------------------------------------------------------------
+       Drill-down from portal home. Three sections:
+         1. Vertical stage timeline (each stage gets a date + summary)
+         2. Document history (chronological, status badges)
+         3. Recent activity feed (everything that's happened on the loan)
+       Same design system as portal_index.html — variables duplicated only
+       because we're shipping as standalone files; consolidate later.
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-glow: rgba(34, 211, 238, 0.15);
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
+
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .portal-banner {
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-align: center;
+    }
+    .portal-nav {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .portal-brand { display: flex; align-items: center; gap: 10px; }
+    .portal-brand-mark {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: linear-gradient(135deg, var(--cyan), #0891b2);
+      display: grid; place-items: center;
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+    .portal-brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
+    .portal-brand-text .subtitle {
+      display: block; font-weight: 400; font-size: 10px;
+      color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
+    }
+    .back-link {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-dim); display: flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { color: var(--cyan); text-decoration: none; }
+
+    .portal-main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    @media (min-width: 640px) { .portal-main { padding: 32px 24px 80px; } }
+
+    .page-eyebrow {
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--cyan); margin-bottom: 6px;
+    }
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 30px; line-height: 1.1; margin: 0 0 4px 0;
+    }
+    @media (min-width: 640px) { .page-title { font-size: 38px; } }
+    .page-subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 32px; }
+
+    /* ─── SECTION HEADERS ─── */
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin: 32px 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-title:first-of-type { margin-top: 0; }
+
+    /* ─── VERTICAL STAGE TIMELINE ─── */
+    .stages {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 8px 4px;
+    }
+    .stage-row {
+      display: flex;
+      gap: 14px;
+      padding: 14px 14px 16px;
+      position: relative;
+    }
+    .stage-row + .stage-row { border-top: 1px solid var(--border); }
+    .stage-marker {
+      flex-shrink: 0;
+      width: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+    .stage-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg-elev-3);
+      border: 2px solid var(--border-strong);
+      margin-top: 4px;
+      transition: all 0.2s;
+    }
+    .stage-row.is-done .stage-dot {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      box-shadow: 0 0 8px rgba(134, 239, 172, 0.3);
+    }
+    .stage-row.is-current .stage-dot {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 12px var(--cyan); }
+      50%      { box-shadow: 0 0 18px var(--cyan), 0 0 30px rgba(34, 211, 238, 0.3); }
+    }
+    .stage-body {
+      flex: 1; min-width: 0;
+    }
+    .stage-name {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      color: var(--text);
+      margin: 2px 0 2px;
+    }
+    .stage-date {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 6px;
+    }
+    .stage-row.is-current .stage-date { color: var(--cyan); }
+    .stage-row.is-done .stage-date    { color: var(--accent-green); }
+    .stage-row.is-future .stage-name  { color: var(--text-dim); }
+    .stage-row.is-future .stage-date  { color: var(--text-faint); }
+    .stage-desc {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* ─── DOCUMENT LIST ─── */
+    .docs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .doc-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .doc-icon {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-family: var(--font-mono); font-size: 16px;
+      color: var(--cyan);
+    }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-name {
+      font-size: 14px; color: var(--text);
+      margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .doc-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-faint);
+      letter-spacing: 0.04em;
+    }
+    .doc-status {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid;
+      flex-shrink: 0;
+    }
+    .doc-status.is-cleared {
+      color: var(--accent-green);
+      background: rgba(134, 239, 172, 0.06);
+      border-color: rgba(134, 239, 172, 0.25);
+    }
+    .doc-status.is-pending {
+      color: var(--warn);
+      background: rgba(251, 191, 36, 0.06);
+      border-color: rgba(251, 191, 36, 0.25);
+    }
+    .doc-status.is-needed {
+      color: var(--danger);
+      background: rgba(248, 113, 113, 0.06);
+      border-color: rgba(248, 113, 113, 0.25);
+    }
+
+    /* ─── ACTIVITY FEED ─── */
+    .activity {
+      display: flex; flex-direction: column;
+      border-left: 1px solid var(--border);
+      padding-left: 18px;
+      margin-left: 8px;
+    }
+    .activity-row {
+      position: relative;
+      padding: 10px 0 14px;
+    }
+    .activity-row + .activity-row {
+      border-top: 1px dashed var(--border);
+    }
+    .activity-row::before {
+      content: '';
+      position: absolute;
+      left: -22px;
+      top: 16px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--bg-elev-3);
+      border: 1px solid var(--border-strong);
+    }
+    .activity-row.is-ai::before {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 6px var(--cyan);
+    }
+    .activity-time {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .activity-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .activity-actor {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .activity-actor.is-ai { color: var(--cyan); }
+
+    .portal-footer {
+      padding: 24px 20px 40px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .portal-footer a { color: var(--text-faint); margin: 0 6px; }
+  </style>
+</head>
+<body>
+
+<div class="portal-banner">Your loan — secured borrower portal</div>
+
+<header class="portal-nav">
+  <div class="portal-brand">
+    <div class="portal-brand-mark">OF</div>
+    <div class="portal-brand-text">
+      OriginFlow
+      <span class="subtitle">Borrower portal</span>
+    </div>
+  </div>
+  <a class="back-link" href="/portal/">← Back</a>
+</header>
+
+<main class="portal-main">
+
+  <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
+  <h1 class="page-title">Full timeline</h1>
+  <p class="page-subtitle">Every milestone, document, and update on your loan.</p>
+
+  <!-- ─── STAGES ─── -->
+  <h2 class="section-title">Stages</h2>
+  <div class="stages" id="stages-container">
+    <!-- populated by render() -->
+  </div>
+
+  <!-- ─── DOCUMENTS ─── -->
+  <h2 class="section-title">Documents</h2>
+  <div class="docs-list" id="docs-container">
+    <!-- populated by render() -->
+  </div>
+
+  <!-- ─── ACTIVITY ─── -->
+  <h2 class="section-title">Activity</h2>
+  <div class="activity" id="activity-container">
+    <!-- populated by render() -->
+  </div>
+
+</main>
+
+<footer class="portal-footer">
+  <a href="/portal/">Home</a> ·
+  <a href="#">Privacy</a> ·
+  <a href="#">Terms</a> ·
+  <a href="#">Sign out</a>
+</footer>
+
+<script>
+/* =============================================================================
+   BOOTSTRAP DATA — see portal_index.html for shape notes.
+   When 11.5.2 lands, replace with Supabase queries:
+     - loans (current stage + branch_id)
+     - stage_changes filtered by loan_id (for stage history dates)
+     - loan_documents filtered by loan_id (for documents section)
+     - conditions filtered by loan_id (for outstanding doc requests)
+     - audit_events filtered by loan_id (for activity feed)
+   ============================================================================= */
+window.OF_STATUS_BOOTSTRAP = {
+  loan: {
+    loan_no: 'OF-1043',
+    current_stage: 'documents',
+  },
+  // each stage: key, label, status ('done'|'current'|'future'), date (or null), desc
+  stages: [
+    { key:'applied',     label:'Applied',         status:'done',    date:'May 12, 2026', desc:'Application received and assigned to your loan officer.' },
+    { key:'documents',   label:'Documents',       status:'current', date:'In progress',  desc:'Collecting verification documents. 3 still needed.' },
+    { key:'underwriting',label:'Underwriting',    status:'future',  date:null,           desc:'A licensed underwriter reviews your file and AUS results.' },
+    { key:'ctc',         label:'Clear to close',  status:'future',  date:null,           desc:'All conditions cleared — closing can be scheduled.' },
+    { key:'scheduled',   label:'Closing scheduled',status:'future', date:null,           desc:'Your closing appointment is on the calendar.' },
+    { key:'funded',      label:'Funded',          status:'future',  date:null,           desc:'Your loan has funded. Welcome home.' },
+  ],
+  documents: [
+    { name:'Pay stub · most recent',         meta:'Uploaded May 19',     status:'cleared', icon:'$' },
+    { name:'W-2 · 2024',                     meta:'Uploaded May 14',     status:'cleared', icon:'W' },
+    { name:'Bank statement · 60 days',       meta:'Requested May 13',    status:'pending', icon:'B' },
+    { name:'Homeowners insurance binder',    meta:'Requested May 13',    status:'needed',  icon:'H' },
+    { name:'Drivers license',                meta:'Uploaded May 12',     status:'cleared', icon:'ID'},
+  ],
+  activity: [
+    { time:'Today · 8:13a',  text:'Your pay stub was auto-cleared by AI.',           actor:'OriginFlow AI · 5/5 rules matched', is_ai:true },
+    { time:'Yesterday',      text:'Corbin requested a 60-day bank statement.',       actor:'Corbin Matisse · Loan Officer' },
+    { time:'May 17',         text:'Sarah began processing your file.',               actor:'Sarah Hayes · Processor' },
+    { time:'May 14',         text:'You uploaded your 2024 W-2.',                     actor:'Marcus Holbrook' },
+    { time:'May 12',         text:'Your application was received.',                  actor:'OriginFlow' },
+  ],
+};
+
+function render() {
+  const b = window.OF_STATUS_BOOTSTRAP;
+
+  document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
+
+  // Stages
+  const stages = document.getElementById('stages-container');
+  stages.innerHTML = '';
+  b.stages.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'stage-row is-' + s.status;
+    row.innerHTML = `
+      <div class="stage-marker"><div class="stage-dot"></div></div>
+      <div class="stage-body">
+        <div class="stage-name">${s.label}</div>
+        ${s.date ? `<div class="stage-date">${s.date}</div>` : ''}
+        <div class="stage-desc">${s.desc}</div>
+      </div>
+    `;
+    stages.appendChild(row);
+  });
+
+  // Documents
+  const docs = document.getElementById('docs-container');
+  docs.innerHTML = '';
+  b.documents.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'doc-row';
+    const statusLabel =
+      d.status === 'cleared' ? 'Cleared' :
+      d.status === 'pending' ? 'In review' :
+      'Needed';
+    row.innerHTML = `
+      <div class="doc-icon">${d.icon}</div>
+      <div class="doc-info">
+        <div class="doc-name">${d.name}</div>
+        <div class="doc-meta">${d.meta}</div>
+      </div>
+      <div class="doc-status is-${d.status}">${statusLabel}</div>
+    `;
+    docs.appendChild(row);
+  });
+
+  // Activity
+  const act = document.getElementById('activity-container');
+  act.innerHTML = '';
+  b.activity.forEach(a => {
+    const row = document.createElement('div');
+    row.className = 'activity-row' + (a.is_ai ? ' is-ai' : '');
+    row.innerHTML = `
+      <div class="activity-time">${a.time}</div>
+      <div class="activity-text">${a.text}</div>
+      <div class="activity-actor${a.is_ai ? ' is-ai' : ''}">${a.actor}</div>
+    `;
+    act.appendChild(row);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', render);
+</script>
+
+</body>
+</html>
