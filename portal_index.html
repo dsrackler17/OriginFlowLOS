@@ -7,6 +7,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- ============================================================
+       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       ------------------------------------------------------------
+       SUPABASE_ANON_KEY uses the new sb_publishable_* format. Safe
+       to embed client-side; branch-scoped RLS enforces access.
+
+       supabase-js MUST load before portal-auth.js — portal-auth.js
+       calls supabase.createClient() on first invocation. Both must
+       be in <head> so OF_bootstrap() is available before the body-
+       end inline script runs.
+       ============================================================ -->
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://dipagzqrvivposqjkdkx.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/portal-auth.js"></script>
+
   <style>
     /* =========================================================================
        OriginFlow Borrower Portal — design system
@@ -414,6 +435,7 @@
       background: var(--bg-elev-3);
       border-color: var(--border-strong);
     }
+    .icon-btn.is-hidden { display: none; }
 
     /* ─── FOOTER ─── */
     .portal-footer {
@@ -428,36 +450,67 @@
     .portal-footer a {
       color: var(--text-faint);
       margin: 0 6px;
+      cursor: pointer;
+    }
+    .portal-footer a:hover { color: var(--cyan); }
+
+    /* ─── BOOTSTRAP LOADING VEIL ─────────────────────────────────
+       Covers the page until OF_bootstrap() resolves. Prevents the
+       flash-of-stub-data (skeleton "—" placeholders) that would
+       otherwise be visible for ~200–500ms while the session and
+       borrower row are fetched. Also doubles as the redirect cover
+       when we detect a missing session and bounce to /sign-in. */
+    .bootstrap-veil {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: opacity 0.18s ease;
+    }
+    .bootstrap-veil.is-hidden {
+      opacity: 0;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
 
 <!-- =============================================================================
-     PORTAL SHELL — Phase 11.5.4
+     PORTAL SHELL — Phase 11.5.4 (WIRED in 11.5.2)
      -----------------------------------------------------------------------------
      Architecture notes:
 
-     * AUTH STUB: the entire page currently reads from a `borrower` object
-       hard-coded in the inline script (window.OF_BORROWER_BOOTSTRAP). When
-       11.5.2 ships, replace the bootstrap with a call to Supabase Auth
-       getSession() + a select on borrowers + a select on the joined loan.
-       The shape this page expects is documented in OF_BORROWER_BOOTSTRAP.
+     * AUTH IS LIVE. The page calls window.OF_bootstrap() from portal-auth.js,
+       which resolves session → borrower → loan and handles first-sign-in
+       linking via the link_auth_user_to_borrower RPC. If any step fails the
+       page redirects to /portal/sign-in.html with a contextual ?error= code.
+
+     * SUPPLEMENTARY QUERIES run in parallel after bootstrap resolves:
+         - assigned LO  (read from a borrower-readable LO view)
+         - open conditions count    (drives "Documents" action card)
+         - unread message count     (stubbed 0 until 11.5.8 backend lands)
+       Each is wrapped in try/catch; failures degrade gracefully rather than
+       breaking the page render.
 
      * MOBILE FIRST: all media queries use min-width to upgrade the layout.
-       The base CSS is the mobile experience.
 
      * NAVIGATION: this is the home tile. Links go to:
-         /portal/apply/    → 11.5.5 1003 wizard (in-progress applications)
-         /portal/status/   → 11.5.7 detailed timeline + history
+         /portal/apply/    → 11.5.5 1003 wizard
+         /portal/status/   → 11.5.7 detailed timeline
          /portal/docs/     → 11.5.11 document upload UI
-         /portal/messages/ → 11.5.8 LO chat
-       Stubbed for now; each will be its own file.
+         /portal/messages/ → 11.5.8 LO chat (UI shipped, backend pending)
 
-     * NO DATA MUTATIONS HAPPEN ON THIS PAGE. It's pure read. Mutations
-       happen in /apply (writes to loans), /docs (writes to loan_documents),
-       /messages (writes to a borrower_messages table — 11.5.8).
+     * NO DATA MUTATIONS HAPPEN ON THIS PAGE. It's pure read.
      ============================================================================= -->
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading your loan…</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
@@ -585,61 +638,215 @@
   <a href="#">Privacy</a> ·
   <a href="#">Terms</a> ·
   <a href="#">Help</a> ·
-  <a href="#">Sign out</a>
+  <!-- Sign-out delegates entirely to portal-auth.js → OF_signOut, which
+       clears the Supabase session and redirects to /portal/sign-in.html.
+       preventDefault keeps the hash from getting appended on the way out. -->
+  <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
 </footer>
 
 <script>
 /* =============================================================================
-   BOOTSTRAP DATA
+   PORTAL HOME — boot + render
    -----------------------------------------------------------------------------
-   AUTH STUB — replace this whole block in 11.5.2 with a real Supabase fetch:
+   This script no longer ships any hardcoded borrower data. The flow is:
 
-     const sb = supabaseClient();
-     const { data: { user } } = await sb.auth.getUser();
-     const { data: borrowerRow } = await sb.from('borrowers').select(...);
-     const { data: loanRow }     = await sb.from('loans').select(...);
-     const { data: openConds }   = await sb.from('conditions').select(...);
-
-   The shape below is what the rest of the page expects. The keys map 1:1 to
-   columns on the existing schema, so wiring it up is a paste job.
+     1. init() runs on DOMContentLoaded
+     2. OF_bootstrap() resolves { session, borrower, loan }
+        - missing session            → redirect to /portal/sign-in.html
+        - email-mismatch on linking  → redirect with ?error=not_a_borrower
+        - borrower but no loan yet   → redirect to /portal/apply/
+     3. Three supplementary queries run in parallel:
+          a. assigned LO (loan_officers_public view, RLS-scoped)
+          b. open conditions count (drives docs card)
+          c. unread message count (stub 0 until 11.5.8 backend)
+     4. ctx is assembled into the shape render() expects and stashed on
+        window.OF_PORTAL_CTX for debugging / cmdk / future hooks
+     5. render() paints the page
+     6. veil drops, fire-and-forget OF_touchLastSeen() updates last_seen_at
    ============================================================================= */
-window.OF_BORROWER_BOOTSTRAP = {
-  borrower: {
-    id: '20000000-0000-0000-0000-000000000001',
-    first_name: 'Marcus',
-    last_name:  'Holbrook',
-    email:      'marcus.holbrook@example.com',
-  },
-  loan: {
-    id:        '10000000-0000-0000-0000-000000000003',
-    loan_no:   'OF-1043',
-    type:      'Purchase',
-    amount:    310000,
-    rate_bps:  712,
-    term_months: 360,
-    property_address: '4218 Quaker Ave, Lubbock, TX 79410',
-    current_stage:    'documents',
-  },
-  lo: {
-    name:  'Avery Sutton',
-    title: 'Loan Officer · NMLS #1924401',
-    phone: '+18065550118',
-    email: 'avery@submarinecatalyst.com',
-  },
-  counts: {
-    docs_outstanding:  3,
-    messages_unread:   0,
-    application_pct:   100,
-  },
-};
 
+/* ─── Display helpers (existing) ───────────────────────────────────────── */
+function dollars(n) {
+  if (n == null || isNaN(n)) return '—';
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+function ratePct(bps) {
+  if (bps == null) return '—';
+  return (bps / 100).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '%';
+}
+function termYears(months) {
+  if (!months) return '—';
+  if (months % 12 === 0) return (months / 12) + '-year';
+  return months + ' mo';
+}
+function initials(first, last) {
+  return ((first || '').charAt(0) + (last || '').charAt(0)).toUpperCase() || '·';
+}
+
+/* ─── Bootstrap-shape helpers (per WIRING_INSTRUCTIONS) ────────────────── */
+
+/**
+ * titleCase — borrower-side data may arrive as "RODRIGUEZ" or "rodriguez"
+ * from the apply form (browser autofill, copy/paste, etc.). Render it as
+ * "Rodriguez" without mangling hyphenated or apostrophe names too badly.
+ */
+function titleCase(s) {
+  if (!s) return '';
+  return String(s).toLowerCase()
+    .split(/(\s+|-|')/)
+    .map(part => part.length && /^[a-zà-ÿ]/i.test(part)
+      ? part.charAt(0).toUpperCase() + part.slice(1)
+      : part)
+    .join('');
+}
+
+/**
+ * formatAddress — the loans schema may store the property address as a
+ * single denormalized string OR as component columns (street, city,
+ * state, zip). Handle both so the page works against either shape
+ * without a schema change blocking the wire-up.
+ */
+function formatAddress(loan) {
+  if (!loan) return '';
+  if (loan.property_address && typeof loan.property_address === 'string') {
+    return loan.property_address;
+  }
+  const street = loan.property_street || loan.property_address_line1 || '';
+  const city   = loan.property_city   || '';
+  const state  = loan.property_state  || '';
+  const zip    = loan.property_zip    || loan.property_postal_code || '';
+  const cityState = [city, state].filter(Boolean).join(', ');
+  return [street, cityState, zip].filter(Boolean).join(' ').replace(/\s+,/g, ',').trim();
+}
+
+/**
+ * mapStatusToStage — the loans table uses a richer status enum on the LO
+ * side (`draft`, `in_review`, `conditional_approval`, etc). The borrower
+ * portal collapses this to six lifecycle stages so the borrower sees a
+ * simple progress bar instead of internal workflow states.
+ *
+ * If a new status appears that we haven't mapped, default to 'documents'
+ * (mid-pipeline, no action needed) so the borrower doesn't see a blank
+ * timeline.
+ */
+function mapStatusToStage(status) {
+  if (!status) return 'applied';
+  const s = String(status).toLowerCase();
+  const map = {
+    'draft':                  'applied',
+    'application_started':    'applied',
+    'application_submitted':  'applied',
+    'submitted':              'applied',
+    'applied':                'applied',
+
+    'in_review':              'documents',
+    'documents':              'documents',
+    'documents_pending':      'documents',
+    'docs_pending':           'documents',
+    'collecting_docs':        'documents',
+
+    'in_underwriting':        'underwriting',
+    'underwriting':           'underwriting',
+    'conditional_approval':   'underwriting',
+    'suspended':              'underwriting',
+
+    'clear_to_close':         'ctc',
+    'ctc':                    'ctc',
+    'approved':               'ctc',
+
+    'closing_scheduled':      'scheduled',
+    'scheduled':              'scheduled',
+
+    'funded':                 'funded',
+    'closed':                 'funded',
+  };
+  return map[s] || 'documents';
+}
+
+/* ─── Supplementary queries (run after OF_bootstrap) ───────────────────── */
+
+/**
+ * Resolve the assigned loan officer's display info. Borrowers don't have
+ * read access to the internal `users` table, so this query targets a
+ * borrower-readable view that exposes only the fields the portal needs.
+ *
+ * If the view doesn't exist yet (early production state), this returns
+ * null and the LO card renders in a generic "Will be assigned soon"
+ * state rather than blocking the whole page.
+ *
+ * TODO (11.5.x): once the loan_officers_public view ships in migration,
+ * confirm the exact column names match and remove the try/catch.
+ */
+async function fetchAssignedLO(supabase, loan) {
+  const loId = loan && (loan.assigned_lo_id || loan.lo_id || loan.loan_officer_id);
+  if (!loId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('loan_officers_public')
+      .select('first_name, last_name, title, phone, email, nmls_id')
+      .eq('id', loId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const first = titleCase(data.first_name);
+    const last  = titleCase(data.last_name);
+    return {
+      name:  [first, last].filter(Boolean).join(' '),
+      title: data.title
+        || (data.nmls_id ? 'Loan Officer · NMLS #' + data.nmls_id : 'Loan Officer'),
+      phone: data.phone || '',
+      email: data.email || '',
+    };
+  } catch (e) {
+    console.warn('[portal/home] LO fetch skipped:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Count of conditions that still need borrower action. Drives the
+ * "Documents" action card. We count `open` and `submitted` together —
+ * `submitted` means borrower uploaded something but UW hasn't cleared
+ * it yet, which from the borrower's POV is still "outstanding."
+ */
+async function fetchOpenConditionsCount(supabase, loanId) {
+  try {
+    const { count, error } = await supabase
+      .from('conditions')
+      .select('id', { count: 'exact', head: true })
+      .eq('loan_id', loanId)
+      .in('state', ['open', 'submitted']);
+    if (error) {
+      console.warn('[portal/home] conditions count failed:', error.message);
+      return 0;
+    }
+    return count || 0;
+  } catch (e) {
+    console.warn('[portal/home] conditions count exception:', e.message);
+    return 0;
+  }
+}
+
+/**
+ * Unread message count for the borrower↔LO channel on this loan.
+ *
+ * STUB: returns 0 until 11.5.8 chat backend lands. The schema uses
+ * chat_channels + chat_messages with kind='loan_borrower', but the
+ * read-state tracking (last_read_at per participant) isn't wired yet,
+ * so we can't compute "unread" meaningfully. When 11.5.8 ships,
+ * replace this body with the real query.
+ */
+async function fetchUnreadMessageCount(/* supabase, loanId, borrowerId */) {
+  return 0;
+}
+
+/* ─── Stage metadata (existing, kept identical) ────────────────────────── */
 const STAGES = [
-  { key: 'applied',     label: 'Applied'      },
-  { key: 'documents',   label: 'Documents'    },
-  { key: 'underwriting',label: 'Underwriting' },
+  { key: 'applied',     label: 'Applied'        },
+  { key: 'documents',   label: 'Documents'      },
+  { key: 'underwriting',label: 'Underwriting'   },
   { key: 'ctc',         label: 'Clear to close' },
-  { key: 'scheduled',   label: 'Scheduled'    },
-  { key: 'funded',      label: 'Funded'       },
+  { key: 'scheduled',   label: 'Scheduled'      },
+  { key: 'funded',      label: 'Funded'         },
 ];
 
 const STAGE_DESCRIPTIONS = {
@@ -651,32 +858,112 @@ const STAGE_DESCRIPTIONS = {
   funded:       'Your loan has funded. Welcome home.',
 };
 
-function dollars(n) {
-  return '$' + Math.round(n).toLocaleString('en-US');
-}
-function ratePct(bps) {
-  return (bps / 100).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '%';
-}
-function termYears(months) {
-  if (months % 12 === 0) return (months / 12) + '-year';
-  return months + ' mo';
-}
-function initials(first, last) {
-  return ((first || '').charAt(0) + (last || '').charAt(0)).toUpperCase();
+/* ─── Init: orchestrate bootstrap + supplementary fetches + render ─────── */
+
+async function init() {
+  let ctx;
+  try {
+    ctx = await window.OF_bootstrap();
+  } catch (e) {
+    // Bootstrap exceptions are auth-layer failures: missing config,
+    // failed link RPC, expired token, etc. Bounce to sign-in with an
+    // error code rather than leaving the user staring at the veil.
+    console.error('[portal/home] OF_bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
+      ? 'not_a_borrower'
+      : 'link_failed';
+    window.location.replace('/portal/sign-in.html?error=' + code);
+    return;
+  }
+
+  if (!ctx || !ctx.session) {
+    window.location.replace('/portal/sign-in.html');
+    return;
+  }
+  if (!ctx.borrower) {
+    window.location.replace('/portal/sign-in.html?error=not_a_borrower');
+    return;
+  }
+  if (!ctx.loan) {
+    // Authenticated borrower with no loan yet — they completed the magic
+    // link flow before finishing the application wizard. Punt to apply.
+    window.location.replace('/portal/apply/');
+    return;
+  }
+
+  // Run supplementary queries in parallel. Promise.allSettled so a single
+  // failure doesn't take down the whole render.
+  const supabase = window.OF_supabase();
+  const [loRes, condRes, msgRes] = await Promise.allSettled([
+    fetchAssignedLO(supabase, ctx.loan),
+    fetchOpenConditionsCount(supabase, ctx.loan.id),
+    fetchUnreadMessageCount(supabase, ctx.loan.id, ctx.borrower.id),
+  ]);
+  const lo      = loRes.status   === 'fulfilled' ? loRes.value   : null;
+  const docsOut = condRes.status === 'fulfilled' ? condRes.value : 0;
+  const unread  = msgRes.status  === 'fulfilled' ? msgRes.value  : 0;
+
+  // Map the raw bootstrap shape into what render() expects. This keeps
+  // render() pure and unaware of the schema underneath. If the DB shape
+  // changes, only the mapper below needs to update.
+  const pageCtx = {
+    borrower: {
+      id:         ctx.borrower.id,
+      first_name: titleCase(ctx.borrower.first_name),
+      last_name:  titleCase(ctx.borrower.last_name),
+      email:      ctx.borrower.email,
+    },
+    loan: {
+      id:               ctx.loan.id,
+      loan_no:          ctx.loan.loan_no || '—',
+      type:             titleCase(ctx.loan.loan_purpose || ctx.loan.type || 'Purchase'),
+      amount:           ctx.loan.loan_amount ?? ctx.loan.amount,
+      rate_bps:         ctx.loan.rate_bps ?? ctx.loan.interest_rate_bps,
+      term_months:      ctx.loan.term_months ?? ctx.loan.loan_term_months ?? 360,
+      property_address: formatAddress(ctx.loan),
+      current_stage:    mapStatusToStage(ctx.loan.status || ctx.loan.current_stage),
+    },
+    lo: lo,  // may be null — render() handles fallback state
+    counts: {
+      docs_outstanding: docsOut,
+      messages_unread:  unread,
+      // application_pct: backend doesn't compute this yet. For now treat
+      // any loan past the draft stage as 100% — the borrower finished the
+      // wizard or they wouldn't have a loan row to read. Once 11.5.5 ships
+      // partial save resumption, swap this for ctx.loan.application_pct.
+      application_pct:  ctx.loan.application_pct
+        ?? (mapStatusToStage(ctx.loan.status) === 'applied' ? 100 : 100),
+    },
+  };
+
+  window.OF_PORTAL_CTX = pageCtx;  // for debugging + future cmdk hooks
+  render(pageCtx);
+
+  // Drop the veil
+  const veil = document.getElementById('bootstrap-veil');
+  if (veil) {
+    veil.classList.add('is-hidden');
+    setTimeout(() => veil.remove(), 220);
+  }
+
+  // Fire-and-forget last-seen update. Don't await — page is already usable.
+  if (typeof window.OF_touchLastSeen === 'function') {
+    window.OF_touchLastSeen().catch(() => {});
+  }
 }
 
-function render() {
-  const b = window.OF_BORROWER_BOOTSTRAP;
-
+/* ─── Render (mostly unchanged — takes ctx as parameter now) ───────────── */
+function render(b) {
   // User chip
   document.getElementById('portal-user-name').textContent =
-    b.borrower.first_name + ' ' + b.borrower.last_name;
+    [b.borrower.first_name, b.borrower.last_name].filter(Boolean).join(' ');
   document.getElementById('portal-user-avatar').textContent =
     initials(b.borrower.first_name, b.borrower.last_name);
 
   // Page header
   document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
-  document.getElementById('page-title').textContent = 'Hi, ' + b.borrower.first_name + '.';
+  document.getElementById('page-title').textContent =
+    'Hi, ' + (b.borrower.first_name || 'there') + '.';
 
   // Current status
   document.getElementById('status-current').textContent =
@@ -724,25 +1011,48 @@ function render() {
   }
 
   // Summary card
-  document.getElementById('sum-type').textContent = b.loan.type;
+  document.getElementById('sum-type').textContent = b.loan.type || '—';
   document.getElementById('sum-amount').textContent = dollars(b.loan.amount);
   document.getElementById('sum-rate').textContent = ratePct(b.loan.rate_bps);
-  document.getElementById('sum-property').textContent = b.loan.property_address;
+  document.getElementById('sum-property').textContent = b.loan.property_address || '—';
   document.getElementById('sum-loan-no').textContent = b.loan.loan_no;
   document.getElementById('sum-term').textContent =
-    termYears(b.loan.term_months) + ' fixed';
+    termYears(b.loan.term_months) + (b.loan.term_months ? ' fixed' : '');
 
-  // LO card
-  const loFirst = b.lo.name.split(' ')[0];
-  const loLast  = b.lo.name.split(' ').slice(-1)[0];
-  document.getElementById('lo-avatar').textContent = initials(loFirst, loLast);
-  document.getElementById('lo-name').textContent = b.lo.name;
-  document.getElementById('lo-meta').textContent = b.lo.title;
-  document.getElementById('lo-call').href  = 'tel:'    + b.lo.phone;
-  document.getElementById('lo-email').href = 'mailto:' + b.lo.email;
+  // LO card — graceful fallback when no LO is assigned yet or the view
+  // isn't accessible (e.g. loan_officers_public view not yet deployed).
+  if (b.lo && b.lo.name) {
+    const parts = b.lo.name.split(' ').filter(Boolean);
+    const loFirst = parts[0] || '';
+    const loLast  = parts.slice(-1)[0] || '';
+    document.getElementById('lo-avatar').textContent = initials(loFirst, loLast);
+    document.getElementById('lo-name').textContent = b.lo.name;
+    document.getElementById('lo-meta').textContent = b.lo.title || 'Loan Officer';
+
+    const callBtn  = document.getElementById('lo-call');
+    const emailBtn = document.getElementById('lo-email');
+    if (b.lo.phone) {
+      callBtn.href = 'tel:' + b.lo.phone;
+      callBtn.classList.remove('is-hidden');
+    } else {
+      callBtn.classList.add('is-hidden');
+    }
+    if (b.lo.email) {
+      emailBtn.href = 'mailto:' + b.lo.email;
+      emailBtn.classList.remove('is-hidden');
+    } else {
+      emailBtn.classList.add('is-hidden');
+    }
+  } else {
+    document.getElementById('lo-avatar').textContent = '·';
+    document.getElementById('lo-name').textContent = 'Being assigned';
+    document.getElementById('lo-meta').textContent = 'Your loan officer will reach out shortly.';
+    document.getElementById('lo-call').classList.add('is-hidden');
+    document.getElementById('lo-email').classList.add('is-hidden');
+  }
 }
 
-document.addEventListener('DOMContentLoaded', render);
+document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
