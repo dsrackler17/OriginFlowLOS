@@ -77,19 +77,7 @@ nav {
 }
 .nav-center > li > a:hover, .nav-center > li > a.active { color: var(--accent); }
 
-/* ─── NAV DROPDOWNS ────────────────────────────────────────────────────
-   Hover-driven dropdowns for grouped nav items. Pure CSS — opens on
-   :hover AND :focus-within so keyboard tab navigation works too. The
-   invisible bridge (::before pseudo on the menu) prevents the
-   hover-flicker when the cursor traverses the small gap between the
-   trigger and the menu.
-
-   Strategic note: the Borrower group exists because the LO/borrower
-   experience is meant to be inside ONE app (the Blend+Encompass thesis
-   inverted). Putting "Open Borrower Portal" one click from the LO's
-   home is the operational expression of that — the LO can preview
-   their borrower's view without leaving their workspace.
-   ─────────────────────────────────────────────────────────────────── */
+/* ─── NAV DROPDOWNS ──────────────────────────────────────────────────── */
 .nav-center .dropdown { position: relative; }
 .nav-center .dropdown-trigger {
   display: inline-flex; align-items: center; gap: 0.3rem;
@@ -796,17 +784,6 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
 
-  <!-- =================================================================
-       NAV CENTER — six top-level items, three dropdown groups.
-       -----------------------------------------------------------------
-       Solo links:    Home, Pipeline, Team
-       Dropdowns:     Workspace, Borrower, Tools
-
-       The Borrower group is the strategic seat. Both the LO surface
-       and the borrower portal live in OriginFlow — this dropdown is
-       how the LO previews the borrower experience without leaving
-       their workspace.
-       ================================================================= -->
   <ul class="nav-center">
     <li><a href="/home.html" class="active">Home</a></li>
     <li><a href="/dashboard.html">Pipeline</a></li>
@@ -830,7 +807,9 @@ footer a:hover { color: var(--accent); }
     </li>
 
     <!-- Borrower-facing surfaces, all opened in a new tab so the LO
-         can preview them without losing their place. -->
+         can preview them without losing their place. EDIT 11.5.8/.11/.7:
+         added Loan Timeline, Document Upload, and Borrower Messages
+         previews so every surface we built is one click from home. -->
     <li class="dropdown">
       <button class="dropdown-trigger" type="button" aria-haspopup="true">Borrower</button>
       <div class="dropdown-menu" role="menu">
@@ -845,6 +824,18 @@ footer a:hover { color: var(--accent); }
         <a class="dropdown-item is-external" href="/portal_signin.html" target="_blank" rel="noopener" role="menuitem">
           <span class="dropdown-item-title">Borrower Sign-in</span>
           <span class="dropdown-item-sub">Magic-link entry for returning borrowers</span>
+        </a>
+        <a class="dropdown-item is-external" href="/portal_status.html" target="_blank" rel="noopener" role="menuitem">
+          <span class="dropdown-item-title">Loan Timeline (preview)</span>
+          <span class="dropdown-item-sub">Borrower milestone view · requires borrower auth</span>
+        </a>
+        <a class="dropdown-item is-external" href="/portal_documents.html" target="_blank" rel="noopener" role="menuitem">
+          <span class="dropdown-item-title">Document Upload (preview)</span>
+          <span class="dropdown-item-sub">Borrower checklist + uploader · requires borrower auth</span>
+        </a>
+        <a class="dropdown-item is-external" href="/portal_messages.html" target="_blank" rel="noopener" role="menuitem">
+          <span class="dropdown-item-title">Borrower Messages (preview)</span>
+          <span class="dropdown-item-sub">Borrower side of team chat · requires borrower auth</span>
         </a>
       </div>
     </li>
@@ -1061,29 +1052,11 @@ footer a:hover { color: var(--accent); }
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // home.html — wiring
-//
-// Routes used by this file:
-//   /home.html              — this page
-//   /dashboard.html         — full pipeline view (stage columns, every loan)
-//   /documents.html         — branch document library
-//   /reports.html           — branch reports
-//   /integrations.html      — CRM / Encompass / Arive sync surface (10.7)
-//   /team.html              — admin: users, roles, assignments (admin only)
-//   /loans-new.html         — new loan intake form
-//   /login.html             — sign in
-//   /portal_index.html                — borrower portal (separate auth domain)
-//   /portal_signin.html    — borrower magic-link entry
-//   /apply.html                 — public-facing application landing
-//
-// All loan/condition deep-links route to /dashboard.html#<loan_id>.
-// CRM failure rows surface in the Action Needed queue and link to
-// /integrations.html for triage.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const $ = (sel) => document.querySelector(sel);
 const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 
-// ─── Money / formatting helpers ──────────────────────────────────────────
 function money(cents) {
   if (cents == null) return '—';
   const n = Number(cents) / 100;
@@ -1605,13 +1578,6 @@ async function loadMyFiles(cfg) {
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// loadQueue — role-scoped Action Needed panel
-//
-// PATCH C: CRM sync failures from /integrations.html surface here so an
-// LO/processor never has to remember to check that page.
-// ═══════════════════════════════════════════════════════════════════════════
-
 async function loadQueue(cfg) {
   const list = $('#queue-list');
   $('#queue-panel-tag').textContent = '';
@@ -2118,6 +2084,9 @@ function renderCmdkNavShortcuts() {
     { icon:'⇌', title:'Integrations',   sub:'CRM · Encompass · Arive', href:'/integrations.html', tag:'GO' },
     { icon:'◐', title:'Borrower Portal', sub:'open in new tab',    href:'/portal_index.html', tag:'OPEN' },
     { icon:'◑', title:'Apply Now Page',  sub:'public application',  href:'/apply.html',  tag:'OPEN' },
+    { icon:'◔', title:'Loan Timeline (borrower preview)',   sub:'portal_status.html',     href:'/portal_status.html',    tag:'PREVIEW' },
+    { icon:'◕', title:'Documents (borrower preview)',       sub:'portal_documents.html',  href:'/portal_documents.html', tag:'PREVIEW' },
+    { icon:'⊙', title:'Borrower Messages (preview)',        sub:'portal_messages.html',   href:'/portal_messages.html',  tag:'PREVIEW' },
   ];
   if (me.role !== 'viewer') {
     shortcuts.unshift({ icon:'+', title:'Start a New Loan', sub:'/loans-new.html', href:'/loans-new.html', tag:'NEW' });
