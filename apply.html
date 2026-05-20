@@ -43,13 +43,10 @@
          - Same design tokens as the rest of the system but warmer in tone:
            we lean on the cyan accent and the serif for emotional weight
 
-       The user lands here from a branch-specific URL like:
-         https://apply.submarinecatalyst.com/
-         https://submarinecatalyst.originflow.app/apply
-
-       Branch identification happens via `?branch=<slug>` query param OR via
-       subdomain detection. The page reads branch info from a public read-only
-       endpoint (stubbed below) so the LO's photo, name, and NMLS show up.
+       The user lands here from a branch-specific URL. Branch identification
+       happens via `?branch=<slug>` query param OR via subdomain detection.
+       The page reads branch info from a public read-only endpoint (stubbed
+       below) so the LO's photo, name, and NMLS show up.
 
        Submission flow:
          1. Validate client-side (required fields, email format, phone format)
@@ -60,10 +57,11 @@
                  status='lead'
               c. links loan_borrowers with role='primary'
               d. assigns lo_id by branch round-robin or default LO
-              e. creates a borrower_invites row with a fresh token
-              f. records the eConsent (text hash + IP + UA + timestamp)
+              e. records the eConsent (text hash + IP + UA + timestamp)
+              f. creates a loan_borrower chat channel
               g. sends magic-link email to the borrower
-              h. returns { success: true, masked_email: 'm***@example.com' }
+              h. returns { success: true, masked_email: 'm***@example.com',
+                           loan_number, is_new_borrower }
          3. UI swaps to a "Check your email" success state
        =========================================================================
        Colors and fonts mirror portal_index.html exactly — same person who
@@ -916,20 +914,27 @@
 // =============================================================================
 // BRANCH BOOTSTRAP
 // -----------------------------------------------------------------------------
-// In production, this reads either:
-//   (a) the subdomain (e.g. submarinecatalyst.originflow.app → branch slug)
+// In production, this will read either:
+//   (a) the subdomain (e.g. lubbock.originflow.app → branch slug)
 //   (b) a ?branch=slug query param
-// then calls a public, read-only edge function to get back the branch + LO
-// metadata.
+// and call a public, read-only edge function to get back the branch + LO
+// metadata. For now, hardcoded to the Lubbock Branch — Beta UUID
+// (confirmed via `select id from public.branches`).
 //
-// TODO: replace the placeholder branch_id with the real Submarine Catalyst
-//       branch UUID once the seeded row id is confirmed in production.
+// The intake_lo block here is COSMETIC ONLY — it's just what shows in
+// the LO card up top of the page. The actual loan officer assignment
+// happens server-side in submit_borrower_application(), which picks
+// the first active LO in the branch's profiles table. If you want this
+// display to match the real assigned LO, query:
+//   select full_name, nmls_id from public.profiles
+//   where branch_id = '<id>' and role='lo' and active limit 1;
+// and update the strings below.
 // =============================================================================
 window.OF_BRANCH_BOOTSTRAP = {
   branch: {
-    id:   '00000000-0000-0000-0000-000000000001',
-    name: 'Submarine Catalyst',
-    slug: 'submarinecatalyst',
+    id:   'c3f21dc2-028c-44cc-854e-e9e2f254085e',
+    name: 'Lubbock Branch — Beta',
+    slug: 'lubbock',
   },
   intake_lo: {
     name:    'Avery Sutton',
