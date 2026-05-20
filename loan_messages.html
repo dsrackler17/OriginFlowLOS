@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>OriginFlow — Loan Conversation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <script>
+    window.OF_CONFIG = {
+      SUPABASE_URL:      'https://zgmwtslzsmtmqcivngdq.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* =========================================================================
+       loan_messages.html — Phase 11.5.8 (LO side)
+       -----------------------------------------------------------------------
+       Standalone LO-facing chat page for a single loan. Designed to be
+       linked to from the LO's loan-detail page via /loan_messages.html?loan=<uuid>.
+
+       AUTH MODEL (different from portal_*.html — internal staff, not borrowers):
+         - Uses raw supabase.auth.getUser() instead of OF_bootstrap.
+         - On load: resolve auth → look up LO's profile from public.users
+           (id, branch_id, first_name, last_name, role). The users table
+           SELECT RLS lets a user read their own row.
+         - If unauthenticated, redirect to /signin.html. Update this path
+           if the internal sign-in lives elsewhere.
+
+       CHANNEL MODEL:
+         - Looks up the loan_borrower channel for the given loan_id via
+           chat_channels.select(...).eq('kind', 'loan_borrower').eq('loan_id', ...).
+         - If none exists, calls ensure_loan_borrower_channel(loan_id) to
+           create it lazily (the RPC is idempotent so safe to call always).
+
+       SEND PATH:
+         - No dedicated LO send RPC exists. Uses direct INSERT into
+           chat_messages with the LO's branch_id + channel_id + auth.uid()
+           as author + body. The messages_insert_branch_member RLS policy
+           gates this — same-branch members may insert if not a role-scoped
+           channel, which loan_borrower isn't.
+
+       LAYOUT NOTE: same design system as portal_messages.html, but bubble
+       alignment is mirrored — LO ("self") on the right, borrower ("team")
+       on the left. Same .is-self / .is-team classes, just the perspective
+       flips with the user.
+
+       INTEGRATION (suggested):
+         From your loan detail view, link with:
+            <a href="/loan_messages.html?loan=${loan.id}">Open conversation</a>
+         Or iframe this page directly into a side panel.
+       ========================================================================= */
+    :root {
+      --bg: #0b1220;
+      --bg-elev-1: #0f1729;
+      --bg-elev-2: #15203a;
+      --bg-elev-3: #1c2b4d;
+      --border: #1f2d4a;
+      --border-strong: #2a3d63;
+      --text: #e2e8f0;
+      --text-dim: #8b9bb8;
+      --text-faint: #5a6a87;
+      --navy: #0b1220;
+      --cyan: #22d3ee;
+      --cyan-bubble: #0e7490;
+      --cyan-bubble-text: #ecfeff;
+      --accent-green: #86efac;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
+      --font-mono: 'Space Mono', ui-monospace, monospace;
+      --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: 15px; line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      background-image: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app-banner {
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.06));
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-align: center;
+    }
+    .app-nav {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(11, 18, 32, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
+    }
+    .app-brand {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text);
+    }
+    .app-brand:hover { text-decoration: none; }
+    .app-brand-mark {
+      width: 28px; height: 28px; border-radius: 6px;
+      background: linear-gradient(135deg, var(--cyan), #0891b2);
+      display: grid; place-items: center;
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px;
+      color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+    .app-brand-text {
+      font-family: var(--font-mono); font-weight: 700; font-size: 13px;
+      letter-spacing: 0.04em;
+    }
+    .app-brand-text .subtitle {
+      display: block; font-weight: 400; font-size: 10px;
+      color: var(--text-faint);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-top: 1px;
+    }
+    .app-user {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--text-dim);
+    }
+    .app-user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border-strong);
+      display: grid; place-items: center;
+      font-family: var(--font-sans); font-weight: 600; font-size: 13px;
+      color: var(--cyan);
+    }
+
+    .app-main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px 16px 24px;
+    }
+    @media (min-width: 640px) {
+      .app-main { padding: 24px 24px 32px; }
+    }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    .back-link:hover { color: var(--cyan); text-decoration: none; }
+
+    /* ─── HEADER CARD ─── */
+    .conv-header {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: var(--shadow-1);
+    }
+    .conv-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22d3ee, #0891b2);
+      display: grid; place-items: center;
+      font-family: var(--font-sans); font-weight: 700; font-size: 17px;
+      color: var(--navy);
+      flex-shrink: 0;
+    }
+    .conv-header-info { flex: 1; min-width: 0; }
+    .conv-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .conv-name {
+      font-family: var(--font-serif);
+      font-size: 21px;
+      color: var(--text);
+      margin: 2px 0 1px;
+      line-height: 1.15;
+    }
+    .conv-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+    .conv-meta .sep { color: var(--border-strong); margin: 0 8px; }
+    .conv-actions { flex-shrink: 0; }
+    .conv-actions .btn {
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      color: var(--cyan);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .conv-actions .btn:hover {
+      background: var(--bg-elev-3);
+      border-color: var(--cyan);
+    }
+
+    /* ─── THREAD + BUBBLES (same as borrower side, with mirrored alignment) ─── */
+    .thread {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      min-height: 280px;
+      display: flex; flex-direction: column;
+      gap: 12px;
+    }
+    .thread-empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+    .thread-empty-icon {
+      font-size: 28px;
+      color: var(--text-faint);
+      margin-bottom: 8px;
+    }
+    .day-divider {
+      display: flex; align-items: center; gap: 12px;
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-faint);
+      margin: 4px 0;
+    }
+    .day-divider::before,
+    .day-divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+    .msg-system {
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 12px;
+      padding: 4px 14px;
+      margin: 0 auto;
+      max-width: 80%;
+      font-style: italic;
+    }
+    .msg-row {
+      display: flex; flex-direction: column;
+      gap: 2px;
+      max-width: 100%;
+    }
+    /* LO side: self = right (LO), team = left (borrower) */
+    .msg-row.is-self { align-items: flex-end; }
+    .msg-row.is-team { align-items: flex-start; }
+    .msg-meta {
+      display: flex; align-items: baseline; gap: 8px;
+      font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      padding: 0 4px;
+    }
+    .msg-meta .author {
+      color: var(--text-dim);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+    .msg-bubble {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 16px;
+      max-width: min(80%, 540px);
+      line-height: 1.45;
+      font-size: 14.5px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .msg-row.is-self .msg-bubble {
+      background: var(--cyan-bubble);
+      color: var(--cyan-bubble-text);
+      border-bottom-right-radius: 4px;
+    }
+    .msg-row.is-team .msg-bubble {
+      background: var(--bg-elev-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-bubble.is-pending { opacity: 0.7; }
+    .msg-edited {
+      font-size: 10px;
+      color: var(--text-faint);
+      margin-left: 6px;
+      font-style: italic;
+    }
+    .msg-row.is-grouped > .msg-meta { display: none; }
+
+    /* ─── COMPOSE ─── */
+    .compose {
+      background: var(--bg-elev-1);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 8px 8px 12px;
+      display: flex; align-items: flex-end;
+      gap: 8px;
+      box-shadow: var(--shadow-1);
+    }
+    .compose-input {
+      flex: 1;
+      min-height: 38px;
+      max-height: 180px;
+      padding: 10px 4px;
+      background: transparent;
+      border: none; outline: none;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px; line-height: 1.4;
+      resize: none;
+    }
+    .compose-input::placeholder { color: var(--text-faint); }
+    .compose-send {
+      width: 40px; height: 40px;
+      border-radius: 8px;
+      background: var(--cyan); color: var(--navy);
+      border: none; cursor: pointer;
+      display: grid; place-items: center;
+      font-size: 16px; font-weight: 700;
+      transition: background 0.15s ease;
+      flex-shrink: 0;
+    }
+    .compose-send:hover:not(:disabled) { background: #67e8f9; }
+    .compose-send:disabled {
+      background: var(--bg-elev-3);
+      color: var(--text-faint);
+      cursor: not-allowed;
+    }
+    .compose-hint {
+      font-family: var(--font-mono); font-size: 10px;
+      color: var(--text-faint);
+      text-align: right;
+      padding: 6px 4px 0;
+      letter-spacing: 0.06em;
+    }
+
+    /* ─── ERROR STATE ─── */
+    .error-card {
+      background: var(--bg-elev-1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 12px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .error-card h2 {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      margin: 0 0 8px 0;
+      color: var(--text);
+    }
+    .error-card p {
+      color: var(--text-dim);
+      margin: 0 0 14px 0;
+    }
+    .error-card code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--bg-elev-2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* ─── TOASTS ─── */
+    .toast-host {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: flex; flex-direction: column;
+      gap: 8px;
+      width: calc(100% - 32px);
+      max-width: 420px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      animation: toastIn 0.22s ease;
+    }
+    .toast.is-error { border-color: rgba(248, 113, 113, 0.4); }
+    @keyframes toastIn {
+      from { transform: translateY(8px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    .bootstrap-veil {
+      position: fixed; inset: 0;
+      background: var(--bg); z-index: 100;
+      display: grid; place-items: center;
+      color: var(--text-faint);
+      font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      transition: opacity 0.18s ease;
+    }
+    .bootstrap-veil.is-hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading conversation…</div>
+
+<div class="app-banner">Loan conversation — internal staff view</div>
+
+<header class="app-nav">
+  <a class="app-brand" href="/">
+    <div class="app-brand-mark">OF</div>
+    <div class="app-brand-text">
+      OriginFlow
+      <span class="subtitle">Loan Origination</span>
+    </div>
+  </a>
+  <div class="app-user">
+    <span id="app-user-name">—</span>
+    <div class="app-user-avatar" id="app-user-avatar">—</div>
+  </div>
+</header>
+
+<main class="app-main" id="app-main">
+
+  <a class="back-link" id="back-link" href="/">← Back to loan</a>
+
+  <section class="conv-header">
+    <div class="conv-avatar" id="conv-avatar">—</div>
+    <div class="conv-header-info">
+      <div class="conv-label">Conversation with</div>
+      <div class="conv-name" id="conv-name">—</div>
+      <div class="conv-meta" id="conv-meta">—</div>
+    </div>
+    <div class="conv-actions">
+      <a class="btn" id="loan-detail-link" href="#">Loan detail →</a>
+    </div>
+  </section>
+
+  <section class="thread" id="thread">
+    <div class="thread-empty" id="thread-empty">
+      <div class="thread-empty-icon">✉</div>
+      <div>No messages yet.</div>
+      <div style="font-size:12px;margin-top:6px;color:var(--text-faint);">
+        Start the conversation — the borrower will get a notification.
+      </div>
+    </div>
+  </section>
+
+  <div class="compose">
+    <textarea class="compose-input" id="compose-input"
+              placeholder="Message the borrower…"
+              rows="1" maxlength="4000"></textarea>
+    <button class="compose-send" id="compose-send" type="button" title="Send" aria-label="Send message">↑</button>
+  </div>
+  <div class="compose-hint">Enter to send · Shift+Enter for a new line</div>
+
+</main>
+
+<div class="toast-host" id="toast-host"></div>
+
+<script>
+/* =============================================================================
+   loan_messages.html — LO-side init + render + send + poll
+   ============================================================================= */
+
+const POLL_INTERVAL_MS = 5000;
+const GROUP_WINDOW_MS  = 120000;
+
+const state = {
+  supabase:   null,
+  authUser:   null,    // supabase auth user
+  profile:    null,    // public.users row for the current user
+  loanId:     null,    // from ?loan=<uuid>
+  loan:       null,    // public.loans row
+  borrowers:  [],      // borrowers attached to the loan
+  channel:    null,    // chat_channels row
+  messages:   [],
+  pendingId:  0,
+  sending:    false,
+  polling:    true,
+  initialRender: false,
+};
+window.OF_LO_MSG_STATE = state;
+
+/* ─── Helpers (shared with borrower-side page) ────────────────────────── */
+
+function titleCase(s) {
+  if (!s) return "";
+  return String(s).toLowerCase()
+    .split(/(\s+|-|')/)
+    .map(p => p.length && /^[a-zà-ÿ]/i.test(p)
+      ? p.charAt(0).toUpperCase() + p.slice(1)
+      : p)
+    .join("");
+}
+function initials(first, last) {
+  return ((first || "").charAt(0) + (last || "").charAt(0)).toUpperCase() || "·";
+}
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+function formatTime(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+function formatDay(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const that  = new Date(d); that.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today - that) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7)   return d.toLocaleDateString("en-US", { weekday: "long" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function prettyRole(role) {
+  const map = {
+    lo: "Loan Officer", loa: "Loan Officer Asst",
+    processor: "Processor", underwriter: "Underwriter",
+    admin: "Admin", closer: "Closer",
+  };
+  return map[(role || "").toLowerCase()] || titleCase(role);
+}
+function parseUuidParam() {
+  const p = new URLSearchParams(window.location.search);
+  const v = (p.get("loan") || "").trim().toLowerCase();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)) {
+    return null;
+  }
+  return v;
+}
+
+/* ─── Toasts ──────────────────────────────────────────────────────────── */
+
+function toast(message, kind) {
+  const host = document.getElementById("toast-host");
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " is-" + kind : "");
+  el.textContent = message;
+  host.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity 0.18s ease, transform 0.18s ease";
+    el.style.opacity = "0";
+    el.style.transform = "translateY(8px)";
+    setTimeout(() => el.remove(), 220);
+  }, 3500);
+}
+
+/* ─── Error pane (replaces main content) ──────────────────────────────── */
+
+function showError(title, message, detail) {
+  const main = document.getElementById("app-main");
+  main.innerHTML = `
+    <div class="error-card">
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(message)}</p>
+      ${detail ? `<p><code>${escapeHtml(detail)}</code></p>` : ""}
+    </div>
+  `;
+  const veil = document.getElementById("bootstrap-veil");
+  if (veil) {
+    veil.classList.add("is-hidden");
+    setTimeout(() => veil.remove(), 220);
+  }
+}
+
+/* ─── Data fetching ───────────────────────────────────────────────────── */
+
+async function loadProfile() {
+  // Try to fetch the calling user's row from public.users. The own-row
+  // RLS policy should allow this.
+  const { data, error } = await state.supabase
+    .from("users")
+    .select("id, branch_id, first_name, last_name, role, email")
+    .eq("id", state.authUser.id)
+    .maybeSingle();
+  if (error) throw new Error("could not load your profile: " + error.message);
+  if (!data) throw new Error("no profile row exists for your account");
+  return data;
+}
+
+async function loadLoan() {
+  const { data, error } = await state.supabase
+    .from("loans")
+    .select("id, loan_number, branch_id, lo_id, loa_id, processor_id, underwriter_id, status, purpose")
+    .eq("id", state.loanId)
+    .maybeSingle();
+  if (error) throw new Error("loan fetch failed: " + error.message);
+  if (!data)  throw new Error("loan not found or you don't have access");
+  return data;
+}
+
+async function loadBorrowers(loanId) {
+  // Borrowers attached to the loan, via the join table. We only need
+  // display names so the projection is minimal.
+  const { data, error } = await state.supabase
+    .from("loan_borrowers")
+    .select("borrower_id, role, is_primary, borrowers(id, first_name, last_name, email)")
+    .eq("loan_id", loanId);
+  if (error) {
+    console.warn("[lo-messages] borrowers fetch failed:", error.message);
+    return [];
+  }
+  return (data || [])
+    .map(row => row.borrowers)
+    .filter(Boolean);
+}
+
+async function resolveChannel(loanId) {
+  // Try to look up an existing channel first. If none, call the RPC
+  // (idempotent — returns existing if present).
+  const { data: existing, error: lookupErr } = await state.supabase
+    .from("chat_channels")
+    .select("*")
+    .eq("kind", "loan_borrower")
+    .eq("loan_id", loanId)
+    .maybeSingle();
+  if (!lookupErr && existing) return existing;
+
+  const { data, error } = await state.supabase.rpc("ensure_loan_borrower_channel", {
+    p_loan_id: loanId,
+  });
+  if (error)  throw new Error("could not open channel: " + error.message);
+  if (!data || !data[0]) throw new Error("ensure_loan_borrower_channel returned no row");
+
+  const channelId = data[0].channel_id;
+  const { data: chan, error: chanErr } = await state.supabase
+    .from("chat_channels").select("*").eq("id", channelId).maybeSingle();
+  if (chanErr) throw new Error("channel fetch failed: " + chanErr.message);
+  return chan;
+}
+
+async function fetchMessages(channelId, sinceIso) {
+  // LO has SELECT on chat_messages within their branch via
+  // messages_select_same_branch. Same enriched-view-first approach as the
+  // borrower side.
+  try {
+    let q = state.supabase
+      .from("chat_messages_enriched")
+      .select("*")
+      .eq("channel_id", channelId)
+      .order("created_at", { ascending: true })
+      .limit(300);
+    if (sinceIso) q = q.gt("created_at", sinceIso);
+    const { data, error } = await q;
+    if (!error && data) return data;
+  } catch {}
+
+  let q = state.supabase
+    .from("chat_messages")
+    .select("id, channel_id, author_id, body, mentions, is_system, created_at, edited_at")
+    .eq("channel_id", channelId)
+    .order("created_at", { ascending: true })
+    .limit(300);
+  if (sinceIso) q = q.gt("created_at", sinceIso);
+  const { data, error } = await q;
+  if (error) throw new Error("messages fetch failed: " + error.message);
+  return data || [];
+}
+
+/* ─── Send (LO does direct INSERT — no dedicated RPC) ─────────────────── */
+
+async function sendMessage(text) {
+  if (!text || !text.trim()) return;
+  if (state.sending) return;
+  state.sending = true;
+  updateSendButton();
+
+  const tempId = "pending-" + (++state.pendingId);
+  const optimistic = {
+    id:          tempId,
+    channel_id:  state.channel.id,
+    author_id:   state.authUser.id,
+    body:        text.trim(),
+    mentions:    [],
+    is_system:   false,
+    created_at:  new Date().toISOString(),
+    edited_at:   null,
+    __pending:   true,
+  };
+  state.messages.push(optimistic);
+  renderThread();
+
+  try {
+    // RLS check: branch_id matches current_profile().branch_id, author_id
+    // = auth.uid(), and channel is not role-scoped (loan_borrower isn't).
+    const { error } = await state.supabase
+      .from("chat_messages")
+      .insert({
+        branch_id:  state.profile.branch_id,
+        channel_id: state.channel.id,
+        author_id:  state.authUser.id,
+        body:       text.trim(),
+        mentions:   [],
+        is_system:  false,
+      });
+    if (error) throw new Error(error.message);
+    state.messages = state.messages.filter(m => m.id !== tempId);
+    await refreshMessages();
+  } catch (e) {
+    state.messages = state.messages.filter(m => m.id !== tempId);
+    renderThread();
+    document.getElementById("compose-input").value = text;
+    toast("Couldn't send: " + e.message, "error");
+  } finally {
+    state.sending = false;
+    updateSendButton();
+  }
+}
+
+/* ─── Refresh + polling ───────────────────────────────────────────────── */
+
+async function refreshMessages() {
+  const serverMessages = state.messages.filter(m => !m.__pending);
+  const lastCreatedAt = serverMessages.length
+    ? serverMessages[serverMessages.length - 1].created_at
+    : null;
+  const rows = await fetchMessages(state.channel.id, lastCreatedAt);
+  if (rows.length > 0) {
+    state.messages = state.messages
+      .concat(rows)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    renderThread();
+    scrollThreadToBottom();
+  }
+}
+
+function startPolling() {
+  setTimeout(async function tick() {
+    if (state.polling && !document.hidden) {
+      try { await refreshMessages(); }
+      catch (e) { console.warn("[lo-messages] poll failed:", e.message); }
+    }
+    setTimeout(tick, POLL_INTERVAL_MS);
+  }, POLL_INTERVAL_MS);
+}
+
+/* ─── Render ──────────────────────────────────────────────────────────── */
+
+function authorDisplay(msg) {
+  if (msg.author_id === state.authUser.id) {
+    return { isSelf: true, name: "You", role: "" };
+  }
+  // Did this message come from one of the borrowers on this loan? If yes,
+  // resolve their name from the loaded borrowers list. Otherwise fall back
+  // to whatever the enriched view returned, or a generic team label.
+  const borr = state.borrowers.find(b => b.id === msg.borrower_id) ||
+               // chat_messages_enriched may not surface borrower_id; if it
+               // does this works. If not, we'll fall through to enriched
+               // first_name/last_name.
+               null;
+  if (borr) {
+    return {
+      isSelf: false,
+      name:   [titleCase(borr.first_name), titleCase(borr.last_name)].filter(Boolean).join(" ") || "Borrower",
+      role:   "Borrower",
+    };
+  }
+  const first =
+    msg.author_first_name || msg.first_name ||
+    (msg.author && msg.author.first_name) || "";
+  const last =
+    msg.author_last_name || msg.last_name ||
+    (msg.author && msg.author.last_name) || "";
+  const role =
+    msg.author_role || msg.role ||
+    (msg.author && msg.author.role) || "";
+  const fullName = [titleCase(first), titleCase(last)].filter(Boolean).join(" ");
+  // Heuristic: if no role came back from enriched but author_id isn't on
+  // the loan team (lo_id/loa_id/processor_id/underwriter_id), assume
+  // borrower. This handles the case where enriched view doesn't surface
+  // borrower display info.
+  const isLoanStaff = state.loan && (
+    state.loan.lo_id === msg.author_id ||
+    state.loan.loa_id === msg.author_id ||
+    state.loan.processor_id === msg.author_id ||
+    state.loan.underwriter_id === msg.author_id
+  );
+  return {
+    isSelf: false,
+    name:   fullName || (isLoanStaff ? "Team" : "Borrower"),
+    role:   role ? prettyRole(role) : (isLoanStaff ? "" : "Borrower"),
+  };
+}
+
+function renderHeader() {
+  const profileName = [state.profile.first_name, state.profile.last_name].filter(Boolean).join(" ");
+  document.getElementById("app-user-name").textContent = profileName || state.authUser.email || "";
+  document.getElementById("app-user-avatar").textContent =
+    initials(state.profile.first_name, state.profile.last_name) ||
+    initials(state.authUser.email, "");
+
+  const primary =
+    state.borrowers.find(b => b.is_primary) ||
+    state.borrowers[0] || null;
+
+  const borrName = primary
+    ? [titleCase(primary.first_name), titleCase(primary.last_name)].filter(Boolean).join(" ")
+    : "Borrower";
+
+  document.getElementById("conv-avatar").textContent =
+    primary ? initials(primary.first_name, primary.last_name) : "·";
+  document.getElementById("conv-name").textContent = borrName;
+
+  const metaBits = [];
+  metaBits.push("Loan " + (state.loan.loan_number || state.loanId.slice(0, 8).toUpperCase()));
+  if (state.loan.purpose) metaBits.push(titleCase(state.loan.purpose));
+  if (state.loan.status)  metaBits.push(titleCase(state.loan.status).replace(/_/g, " "));
+  document.getElementById("conv-meta").innerHTML =
+    metaBits.map(escapeHtml).join('<span class="sep">·</span>');
+
+  // Wire loan-detail link. Adjust path here if the LO loan detail view
+  // lives at a different URL.
+  document.getElementById("loan-detail-link").href = "/loans-new.html?id=" + state.loan.id;
+  document.getElementById("back-link").href        = "/loans-new.html?id=" + state.loan.id;
+}
+
+function renderThread() {
+  const thread = document.getElementById("thread");
+  const empty  = document.getElementById("thread-empty");
+
+  if (state.messages.length === 0) {
+    thread.innerHTML = "";
+    thread.appendChild(empty);
+    return;
+  }
+  empty.remove();
+  thread.innerHTML = "";
+
+  let lastDayKey   = null;
+  let lastAuthorId = null;
+  let lastTime     = 0;
+
+  for (const msg of state.messages) {
+    const t = new Date(msg.created_at).getTime();
+    const dayKey = (() => {
+      const d = new Date(msg.created_at);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    })();
+
+    if (dayKey !== lastDayKey) {
+      const div = document.createElement("div");
+      div.className = "day-divider";
+      div.innerHTML = `<span>${escapeHtml(formatDay(msg.created_at))}</span>`;
+      thread.appendChild(div);
+      lastDayKey   = dayKey;
+      lastAuthorId = null;
+    }
+
+    if (msg.is_system) {
+      const sys = document.createElement("div");
+      sys.className = "msg-system";
+      sys.textContent = msg.body;
+      thread.appendChild(sys);
+      lastAuthorId = null;
+      lastTime = t;
+      continue;
+    }
+
+    const grouped = (
+      msg.author_id === lastAuthorId &&
+      (t - lastTime) < GROUP_WINDOW_MS
+    );
+    const author = authorDisplay(msg);
+
+    const row = document.createElement("div");
+    row.className = "msg-row"
+      + (author.isSelf ? " is-self" : " is-team")
+      + (grouped ? " is-grouped" : "");
+
+    const editedSuffix = msg.edited_at
+      ? ` <span class="msg-edited">(edited)</span>` : "";
+
+    row.innerHTML = `
+      <div class="msg-meta">
+        <span class="author">${escapeHtml(author.name)}</span>
+        ${author.role ? `<span>${escapeHtml(author.role)}</span>` : ""}
+        <span>${escapeHtml(formatTime(msg.created_at))}</span>
+      </div>
+      <div class="msg-bubble${msg.__pending ? " is-pending" : ""}">${escapeHtml(msg.body)}${editedSuffix}</div>
+    `;
+    thread.appendChild(row);
+    lastAuthorId = msg.author_id;
+    lastTime     = t;
+  }
+}
+
+function scrollThreadToBottom() {
+  const compose = document.querySelector(".compose");
+  if (compose) compose.scrollIntoView({
+    behavior: state.initialRender ? "smooth" : "auto", block: "end"
+  });
+  state.initialRender = true;
+}
+
+function updateSendButton() {
+  const send = document.getElementById("compose-send");
+  const input = document.getElementById("compose-input");
+  send.disabled = state.sending || !input.value.trim();
+}
+
+/* ─── Init ────────────────────────────────────────────────────────────── */
+
+async function init() {
+  // Set up supabase client
+  state.supabase = window.supabase.createClient(
+    window.OF_CONFIG.SUPABASE_URL,
+    window.OF_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  // Validate the ?loan= URL param
+  state.loanId = parseUuidParam();
+  if (!state.loanId) {
+    showError(
+      "Missing loan id",
+      "Open this page from a loan detail view, or supply a loan id in the URL.",
+      "/loan_messages.html?loan=<uuid>"
+    );
+    return;
+  }
+
+  // Auth check
+  const { data: { user }, error: authErr } = await state.supabase.auth.getUser();
+  if (authErr || !user) {
+    // No internal session. Send to the staff sign-in page if it exists.
+    // Update this path if your LO sign-in lives elsewhere.
+    window.location.replace("/signin.html?next=" + encodeURIComponent(window.location.pathname + window.location.search));
+    return;
+  }
+  state.authUser = user;
+
+  // Profile, loan, borrowers, channel — in parallel where possible.
+  try {
+    state.profile  = await loadProfile();
+    const [loan, borrowers] = await Promise.all([
+      loadLoan(),
+      loadBorrowers(state.loanId),
+    ]);
+    state.loan       = loan;
+    state.borrowers  = borrowers;
+    state.channel    = await resolveChannel(state.loanId);
+
+    renderHeader();
+
+    // Initial message load
+    const rows = await fetchMessages(state.channel.id);
+    state.messages = rows;
+    renderThread();
+    requestAnimationFrame(scrollThreadToBottom);
+  } catch (e) {
+    console.error("[lo-messages] init failed:", e);
+    showError(
+      "Couldn't open conversation",
+      e.message || "An unexpected error occurred.",
+    );
+    return;
+  }
+
+  wireCompose();
+
+  const veil = document.getElementById("bootstrap-veil");
+  if (veil) {
+    veil.classList.add("is-hidden");
+    setTimeout(() => veil.remove(), 220);
+  }
+
+  startPolling();
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshMessages().catch(() => {});
+  });
+}
+
+function wireCompose() {
+  const input = document.getElementById("compose-input");
+  const send  = document.getElementById("compose-send");
+
+  const autoResize = () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 180) + "px";
+    updateSendButton();
+  };
+
+  input.addEventListener("input", autoResize);
+  input.addEventListener("keydown", (e) => {
+    // For internal staff, default Enter to send everywhere (LOs are on
+    // desktop most of the time).
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendClick();
+    }
+  });
+  send.addEventListener("click", handleSendClick);
+
+  function handleSendClick() {
+    const text = input.value;
+    if (!text.trim()) return;
+    input.value = "";
+    autoResize();
+    sendMessage(text);
+  }
+
+  updateSendButton();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+
+</body>
+</html>
