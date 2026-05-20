@@ -3,16 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>OriginFlow Portal — Loan timeline</title>
+  <title>OriginFlow Portal — Loan Timeline</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- ============================================================
-       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
-       ------------------------------------------------------------
-       SUPABASE_ANON_KEY uses the new sb_publishable_* format. Safe
-       to embed client-side; branch-scoped RLS enforces access.
+       OF_CONFIG — Supabase bootstrap (same shape as portal_index.html)
        ============================================================ -->
   <script>
     window.OF_CONFIG = {
@@ -25,14 +22,28 @@
 
   <style>
     /* =========================================================================
-       Borrower status page — Phase 11.5.7 (WIRED in 11.5.2)
+       portal_status.html — Phase 11.5.7
        -----------------------------------------------------------------------
-       Drill-down from portal home. Three sections:
-         1. Vertical stage timeline (each stage gets a date + summary)
-         2. Document history (chronological, status badges)
-         3. Recent activity feed (everything that's happened on the loan)
-       Same design system as portal_index.html — variables duplicated only
-       because we're shipping as standalone files; consolidate later.
+       Borrower-facing detailed loan timeline. Sibling page to portal_index.html
+       (which is the home/dashboard). Both share the same auth bootstrap and
+       design system; this page is purely about answering "where am I in
+       the process and how did I get here?"
+
+       The page is read-only. All mutations (uploads, intent to proceed,
+       etc.) happen on dedicated pages this one links to.
+
+       LAYOUT:
+         1. Sticky portal nav (clickable brand returns to home)
+         2. Page header with back link to home
+         3. Stage hero — current stage in large type + 6-pill progress strip
+         4. Vertical milestone timeline (reconstructed from loans.*_at columns)
+         5. Document summary — 3-up stat block (needed / submitted / cleared)
+         6. What's next — context-aware action recommendation
+         7. Footer (privacy / terms / help / sign out)
+
+       MOBILE-FIRST: layout collapses to single column under 640px. The
+       vertical timeline component renders identically on mobile and desktop
+       (it's already a vertical list — no horizontal flow to break).
        ========================================================================= */
     :root {
       --bg: #0b1220;
@@ -48,6 +59,7 @@
       --cyan: #22d3ee;
       --cyan-glow: rgba(34, 211, 238, 0.15);
       --accent-green: #86efac;
+      --accent-green-glow: rgba(134, 239, 172, 0.15);
       --warn: #fbbf24;
       --danger: #f87171;
       --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
@@ -56,6 +68,7 @@
       --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
       --font-serif: 'DM Serif Display', Georgia, serif;
     }
+
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
@@ -65,13 +78,16 @@
       color: var(--text);
       background: var(--bg);
       background-image:
-        radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+        radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%),
+        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(134, 239, 172, 0.03), transparent 60%);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
+    /* ─── PORTAL CHROME (banner + nav, identical to portal_index.html) ─── */
     .portal-banner {
       background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
       border-bottom: 1px solid var(--border);
@@ -87,37 +103,69 @@
       position: sticky; top: 0; z-index: 10;
       background: rgba(11, 18, 32, 0.92);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       padding: 14px 20px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
     }
-    .portal-brand { display: flex; align-items: center; gap: 10px; }
+    .portal-brand {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text);
+    }
+    .portal-brand:hover { text-decoration: none; }
     .portal-brand-mark {
       width: 28px; height: 28px; border-radius: 6px;
       background: linear-gradient(135deg, var(--cyan), #0891b2);
       display: grid; place-items: center;
-      font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--navy);
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px;
+      color: var(--navy);
       box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
     }
-    .portal-brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
+    .portal-brand-text {
+      font-family: var(--font-mono); font-weight: 700; font-size: 13px;
+      letter-spacing: 0.04em;
+    }
     .portal-brand-text .subtitle {
       display: block; font-weight: 400; font-size: 10px;
-      color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
+      color: var(--text-faint);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-top: 1px;
     }
+    .portal-user {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--text-dim);
+    }
+    .portal-user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border-strong);
+      display: grid; place-items: center;
+      font-family: var(--font-sans); font-weight: 600; font-size: 13px;
+      color: var(--cyan);
+    }
+
+    /* ─── MAIN LAYOUT ─── */
+    .portal-main {
+      max-width: 880px; margin: 0 auto;
+      padding: 24px 16px 80px;
+    }
+    @media (min-width: 640px) {
+      .portal-main { padding: 32px 24px 80px; }
+    }
+
+    /* ─── PAGE HEADER ─── */
     .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
       font-family: var(--font-mono); font-size: 11px;
       letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--text-dim); display: flex; align-items: center; gap: 6px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
     }
     .back-link:hover { color: var(--cyan); text-decoration: none; }
 
-    .portal-main {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 24px 16px 80px;
-    }
-    @media (min-width: 640px) { .portal-main { padding: 32px 24px 80px; } }
-
+    .page-header { margin-bottom: 28px; }
     .page-eyebrow {
       font-family: var(--font-mono); font-size: 11px;
       letter-spacing: 0.12em; text-transform: uppercase;
@@ -125,224 +173,309 @@
     }
     .page-title {
       font-family: var(--font-serif);
-      font-size: 30px; line-height: 1.1; margin: 0 0 4px 0;
+      font-size: 30px; line-height: 1.1;
+      color: var(--text); margin: 0 0 4px 0;
     }
     @media (min-width: 640px) { .page-title { font-size: 38px; } }
-    .page-subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 32px; }
-
-    /* ─── SECTION HEADERS ─── */
-    .section-title {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin: 32px 0 12px 0;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
+    .page-subtitle {
+      font-family: var(--font-sans);
+      color: var(--text-dim); font-size: 15px;
     }
-    .section-title:first-of-type { margin-top: 0; }
 
-    /* ─── VERTICAL STAGE TIMELINE ─── */
-    .stages {
+    /* ─── STAGE HERO (the prominent "you are here" block) ─── */
+    .stage-hero {
       background: var(--bg-elev-1);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px 8px 4px;
-    }
-    .stage-row {
-      display: flex;
-      gap: 14px;
-      padding: 14px 14px 16px;
+      border-radius: 14px;
+      padding: 24px 20px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-1);
       position: relative;
+      overflow: hidden;
     }
-    .stage-row + .stage-row { border-top: 1px solid var(--border); }
-    .stage-marker {
-      flex-shrink: 0;
-      width: 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      position: relative;
+    /* subtle cyan glow on the active card to draw the eye */
+    .stage-hero::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      opacity: 0.4;
     }
-    .stage-dot {
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--bg-elev-3);
-      border: 2px solid var(--border-strong);
+    .stage-hero-label {
+      font-family: var(--font-mono);
+      font-size: 10px; letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 10px;
+    }
+    .stage-hero-current {
+      font-family: var(--font-serif);
+      font-size: 32px; line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    @media (min-width: 640px) {
+      .stage-hero-current { font-size: 40px; }
+    }
+    .stage-hero-desc {
+      color: var(--text-dim);
+      font-size: 15px;
+      margin: 0 0 18px 0;
+      max-width: 60ch;
+    }
+    .stage-hero-meta {
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 0.06em;
+      color: var(--text-faint);
       margin-top: 4px;
-      transition: all 0.2s;
     }
-    .stage-row.is-done .stage-dot {
+
+    /* ─── STATUS PILL TIMELINE ─── */
+    .status-timeline {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-top: 16px;
+    }
+    .status-step {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px 7px 10px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 10px; letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: var(--bg-elev-2);
+      border: 1px solid var(--border);
+      color: var(--text-faint);
+    }
+    .status-step .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-faint);
+    }
+    .status-step.is-done {
+      color: var(--accent-green);
+      background: var(--accent-green-glow);
+      border-color: rgba(134, 239, 172, 0.3);
+    }
+    .status-step.is-done .dot { background: var(--accent-green); }
+    .status-step.is-current {
+      color: var(--cyan);
+      background: var(--cyan-glow);
+      border-color: rgba(34, 211, 238, 0.4);
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+    }
+    .status-step.is-current .dot {
+      background: var(--cyan);
+      box-shadow: 0 0 6px var(--cyan);
+    }
+
+    /* ─── SECTION TITLES ─── */
+    .section-title {
+      font-family: var(--font-mono);
+      font-size: 11px; letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin: 0 0 14px 0;
+    }
+
+    /* ─── VERTICAL MILESTONE TIMELINE ─────────────────────────────
+       Classic dot-and-line vertical timeline. Each entry has:
+         - a dot (filled = completed, ring = current, faint = upcoming)
+         - a connecting line to the next entry
+         - title + date + description block
+
+       Built as <ol> for semantics: this IS an ordered list of events.
+       Numbering is hidden visually (the dots do the work) but kept in
+       the DOM for screen readers.
+       ───────────────────────────────────────────────────────────── */
+    .timeline-section { margin-bottom: 32px; }
+    .vertical-timeline {
+      list-style: none;
+      margin: 0; padding: 0;
+      position: relative;
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 36px;
+      padding-bottom: 24px;
+    }
+    .timeline-item:last-child { padding-bottom: 0; }
+    /* the vertical line (drawn on the item, hidden on the last) */
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 22px;
+      bottom: -2px;
+      width: 2px;
+      background: var(--border);
+    }
+    .timeline-item:last-child::before { display: none; }
+    /* the dot */
+    .timeline-item::after {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 6px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--bg-elev-1);
+      border: 2px solid var(--border-strong);
+    }
+    .timeline-item.is-done::after {
       background: var(--accent-green);
       border-color: var(--accent-green);
-      box-shadow: 0 0 8px rgba(134, 239, 172, 0.3);
+      box-shadow: 0 0 0 3px rgba(134, 239, 172, 0.15);
     }
-    .stage-row.is-current .stage-dot {
+    .timeline-item.is-current::after {
       background: var(--cyan);
       border-color: var(--cyan);
-      box-shadow: 0 0 12px var(--cyan);
-      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2), 0 0 12px rgba(34, 211, 238, 0.4);
+      animation: pulse 2.4s ease-in-out infinite;
     }
     @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 12px var(--cyan); }
-      50%      { box-shadow: 0 0 18px var(--cyan), 0 0 30px rgba(34, 211, 238, 0.3); }
+      0%, 100% { box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2), 0 0 12px rgba(34, 211, 238, 0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(34, 211, 238, 0.1), 0 0 18px rgba(34, 211, 238, 0.55); }
     }
-    .stage-body {
-      flex: 1; min-width: 0;
+    .timeline-item.is-error::after {
+      background: var(--danger);
+      border-color: var(--danger);
     }
-    .stage-name {
+
+    .timeline-title {
       font-family: var(--font-serif);
-      font-size: 17px;
+      font-size: 18px;
       color: var(--text);
-      margin: 2px 0 2px;
+      margin: 0 0 2px 0;
+      line-height: 1.25;
     }
-    .stage-date {
+    .timeline-item.is-upcoming .timeline-title { color: var(--text-dim); }
+    .timeline-date {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10px;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-faint);
       margin-bottom: 6px;
     }
-    .stage-row.is-current .stage-date { color: var(--cyan); }
-    .stage-row.is-done .stage-date    { color: var(--accent-green); }
-    .stage-row.is-future .stage-name  { color: var(--text-dim); }
-    .stage-row.is-future .stage-date  { color: var(--text-faint); }
-    .stage-desc {
-      font-size: 13px;
+    .timeline-date.is-current-label { color: var(--cyan); }
+    .timeline-date.is-error-label { color: var(--danger); }
+    .timeline-desc {
+      font-size: 14px;
       color: var(--text-dim);
       line-height: 1.5;
+      margin: 0;
+      max-width: 56ch;
     }
+    .timeline-item.is-upcoming .timeline-desc { color: var(--text-faint); }
 
-    /* ─── DOCUMENT LIST ─── */
-    .docs-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .doc-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    /* ─── DOCUMENT SUMMARY CARD ─── */
+    .doc-summary {
       background: var(--bg-elev-1);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-1);
     }
-    .doc-icon {
-      width: 36px; height: 36px;
-      flex-shrink: 0;
-      border-radius: 8px;
+    .doc-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .doc-stat {
       background: var(--bg-elev-2);
       border: 1px solid var(--border);
-      display: grid; place-items: center;
-      font-family: var(--font-mono); font-size: 16px;
+      border-radius: 10px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .doc-stat-num {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .doc-stat.is-needed .doc-stat-num  { color: var(--warn); }
+    .doc-stat.is-cleared .doc-stat-num { color: var(--accent-green); }
+    .doc-stat-label {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+    .doc-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       color: var(--cyan);
     }
-    .doc-info { flex: 1; min-width: 0; }
-    .doc-name {
-      font-size: 14px; color: var(--text);
-      margin-bottom: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+    /* ─── WHAT'S NEXT CARD ─── */
+    .next-card {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.06), rgba(34, 211, 238, 0.02));
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      border-radius: 12px;
+      padding: 22px 20px;
+      margin-bottom: 24px;
     }
-    .doc-meta {
+    .next-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 8px;
+    }
+    .next-title {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      color: var(--text);
+      margin: 0 0 6px 0;
+      line-height: 1.2;
+    }
+    .next-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin: 0 0 14px 0;
+      max-width: 60ch;
+    }
+    .next-actions {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 16px;
+      border-radius: 8px;
       font-family: var(--font-mono);
       font-size: 11px;
-      color: var(--text-faint);
-      letter-spacing: 0.04em;
-    }
-    .doc-status {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid;
-      flex-shrink: 0;
-    }
-    .doc-status.is-cleared {
-      color: var(--accent-green);
-      background: rgba(134, 239, 172, 0.06);
-      border-color: rgba(134, 239, 172, 0.25);
-    }
-    .doc-status.is-pending {
-      color: var(--warn);
-      background: rgba(251, 191, 36, 0.06);
-      border-color: rgba(251, 191, 36, 0.25);
-    }
-    .doc-status.is-needed {
-      color: var(--danger);
-      background: rgba(248, 113, 113, 0.06);
-      border-color: rgba(248, 113, 113, 0.25);
-    }
-
-    /* ─── ACTIVITY FEED ─── */
-    .activity {
-      display: flex; flex-direction: column;
-      border-left: 1px solid var(--border);
-      padding-left: 18px;
-      margin-left: 8px;
-    }
-    .activity-row {
-      position: relative;
-      padding: 10px 0 14px;
-    }
-    .activity-row + .activity-row {
-      border-top: 1px dashed var(--border);
-    }
-    .activity-row::before {
-      content: '';
-      position: absolute;
-      left: -22px;
-      top: 16px;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--bg-elev-3);
-      border: 1px solid var(--border-strong);
-    }
-    .activity-row.is-ai::before {
-      background: var(--cyan);
-      border-color: var(--cyan);
-      box-shadow: 0 0 6px var(--cyan);
-    }
-    .activity-time {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-faint);
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      margin-bottom: 2px;
-    }
-    .activity-text {
-      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-elev-2);
       color: var(--text);
-      line-height: 1.5;
+      transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .activity-actor {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-top: 2px;
+    .btn:hover {
+      background: var(--bg-elev-3);
+      border-color: var(--cyan);
+      text-decoration: none;
     }
-    .activity-actor.is-ai { color: var(--cyan); }
-
-    /* ─── EMPTY STATES ─── */
-    .empty-state {
-      background: var(--bg-elev-1);
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      padding: 24px 16px;
-      text-align: center;
-      color: var(--text-faint);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+    .btn.is-primary {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      color: var(--navy);
+      font-weight: 700;
+    }
+    .btn.is-primary:hover {
+      background: #67e8f9;
+      border-color: #67e8f9;
     }
 
+    /* ─── FOOTER ─── */
     .portal-footer {
       padding: 24px 20px 40px;
       text-align: center;
@@ -352,111 +485,167 @@
       text-transform: uppercase;
       color: var(--text-faint);
     }
-    .portal-footer a { color: var(--text-faint); margin: 0 6px; cursor: pointer; }
+    .portal-footer a {
+      color: var(--text-faint);
+      margin: 0 6px;
+      cursor: pointer;
+    }
     .portal-footer a:hover { color: var(--cyan); }
 
-    /* ─── BOOTSTRAP LOADING VEIL ─── */
+    /* ─── BOOTSTRAP VEIL ─── */
     .bootstrap-veil {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: var(--bg);
       z-index: 100;
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
       color: var(--text-faint);
       font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.14em;
+      font-size: 11px; letter-spacing: 0.14em;
       text-transform: uppercase;
       transition: opacity 0.18s ease;
     }
     .bootstrap-veil.is-hidden {
-      opacity: 0;
-      pointer-events: none;
+      opacity: 0; pointer-events: none;
     }
   </style>
 </head>
 <body>
 
-<div class="bootstrap-veil" id="bootstrap-veil">Loading timeline…</div>
+<!-- =============================================================================
+     STATUS PAGE SHELL — Phase 11.5.7
+     -----------------------------------------------------------------------------
+     Auth flow is identical to portal_index.html. We share portal-auth.js so
+     OF_bootstrap() resolves session+borrower+loan in one round trip.
+
+     This page intentionally fetches ONE supplementary thing beyond bootstrap:
+     conditions counts (open/submitted/cleared). Everything else comes from
+     the loan row's denormalized timestamp columns (le_sent_at,
+     intent_to_proceed_at, cd_sent_at, funded_at, etc.).
+
+     We do NOT fetch the LO here — that's on the home page. Keeping this
+     page lean.
+     ============================================================================= -->
+
+<div class="bootstrap-veil" id="bootstrap-veil">Loading your timeline…</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
 <header class="portal-nav">
-  <div class="portal-brand">
+  <a class="portal-brand" href="/portal_index.html">
     <div class="portal-brand-mark">OF</div>
     <div class="portal-brand-text">
       OriginFlow
       <span class="subtitle">Borrower portal</span>
     </div>
+  </a>
+  <div class="portal-user">
+    <span class="portal-user-name" id="portal-user-name">—</span>
+    <div class="portal-user-avatar" id="portal-user-avatar">—</div>
   </div>
-  <a class="back-link" href="/portal_index.html">← Back</a>
 </header>
 
 <main class="portal-main">
 
-  <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
-  <h1 class="page-title">Full timeline</h1>
-  <p class="page-subtitle">Every milestone, document, and update on your loan.</p>
+  <a class="back-link" href="/portal_index.html">← Back to overview</a>
 
-  <!-- ─── STAGES ─── -->
-  <h2 class="section-title">Stages</h2>
-  <div class="stages" id="stages-container">
-    <!-- populated by render() -->
-  </div>
+  <section class="page-header">
+    <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
+    <h1 class="page-title">Loan timeline</h1>
+    <p class="page-subtitle">Track your loan from application to funding.</p>
+  </section>
 
-  <!-- ─── DOCUMENTS ─── -->
-  <h2 class="section-title">Documents</h2>
-  <div class="docs-list" id="docs-container">
-    <!-- populated by render() -->
-  </div>
+  <!-- ─── STAGE HERO ─── -->
+  <section class="stage-hero">
+    <div class="stage-hero-label">You are here</div>
+    <div class="stage-hero-current" id="stage-hero-current">—</div>
+    <p class="stage-hero-desc" id="stage-hero-desc">—</p>
+    <div class="status-timeline" id="status-timeline">
+      <!-- 6 stage pills, populated by render() -->
+    </div>
+    <div class="stage-hero-meta" id="stage-hero-meta"></div>
+  </section>
 
-  <!-- ─── ACTIVITY ─── -->
-  <h2 class="section-title">Activity</h2>
-  <div class="activity" id="activity-container">
-    <!-- populated by render() -->
-  </div>
+  <!-- ─── VERTICAL TIMELINE ─── -->
+  <section class="timeline-section">
+    <h2 class="section-title">Milestones</h2>
+    <ol class="vertical-timeline" id="vertical-timeline">
+      <!-- populated by render() -->
+    </ol>
+  </section>
+
+  <!-- ─── DOCUMENT SUMMARY ─── -->
+  <section class="doc-summary">
+    <h2 class="section-title">Documents</h2>
+    <div class="doc-stats">
+      <div class="doc-stat is-needed">
+        <div class="doc-stat-num" id="docs-needed">—</div>
+        <div class="doc-stat-label">Still needed</div>
+      </div>
+      <div class="doc-stat">
+        <div class="doc-stat-num" id="docs-submitted">—</div>
+        <div class="doc-stat-label">In review</div>
+      </div>
+      <div class="doc-stat is-cleared">
+        <div class="doc-stat-num" id="docs-cleared">—</div>
+        <div class="doc-stat-label">Cleared</div>
+      </div>
+    </div>
+    <a class="doc-cta" href="/portal_docs.html">Open document checklist →</a>
+  </section>
+
+  <!-- ─── WHAT'S NEXT ─── -->
+  <section class="next-card">
+    <div class="next-eyebrow">What happens next</div>
+    <h2 class="next-title" id="next-title">—</h2>
+    <p class="next-desc" id="next-desc">—</p>
+    <div class="next-actions" id="next-actions">
+      <!-- buttons populated by render() based on stage -->
+    </div>
+  </section>
 
 </main>
 
 <footer class="portal-footer">
-  <a href="/portal_index.html">Home</a> ·
   <a href="#">Privacy</a> ·
   <a href="#">Terms</a> ·
-  <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
-       the Supabase session and redirects to /portal_signin.html. -->
+  <a href="#">Help</a> ·
   <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
 </footer>
 
 <script>
 /* =============================================================================
-   PORTAL STATUS — boot + render
+   portal_status.html — boot + render
    -----------------------------------------------------------------------------
-   Flow:
-     1. init() runs on DOMContentLoaded
-     2. OF_bootstrap() resolves { session, borrower, loan }
-     3. Four supplementary queries run in parallel against the loan:
-          - stage_changes      → dates for each lifecycle stage
-          - conditions         → drives the Documents section
-          - loan_audit_events  → drives the Activity feed
-        (We don't need a fourth — kept count above as a reminder that
-        if the audit table schema requires a join, that becomes the 4th.)
-     4. ctx is assembled into the shape render() expects
-     5. render() paints the page
-     6. veil drops
+   The page is purely descriptive. No mutations happen here. Everything is
+   derived from:
+     a) the loan row (denormalized timestamp columns mark milestone events)
+     b) the conditions table (drives the docs summary block)
+     c) the borrower's auth session (already resolved by OF_bootstrap)
+
+   If any new milestone columns get added to loans (e.g. funded_at variations,
+   suspense events), they get appended to the MILESTONES table below — the
+   only change needed to surface them on this page.
    ============================================================================= */
 
-/* ─── Stage metadata ───────────────────────────────────────────────────── */
-const STAGES = [
-  { key:'applied',     label:'Applied',          desc:'Application received and assigned to your loan officer.' },
-  { key:'documents',   label:'Documents',        desc:'Collecting verification documents.' },
-  { key:'underwriting',label:'Underwriting',     desc:'A licensed underwriter reviews your file and AUS results.' },
-  { key:'ctc',         label:'Clear to close',   desc:'All conditions cleared — closing can be scheduled.' },
-  { key:'scheduled',   label:'Closing scheduled',desc:'Your closing appointment is on the calendar.' },
-  { key:'funded',      label:'Funded',           desc:'Your loan has funded. Welcome home.' },
-];
+/* ─── Display helpers ──────────────────────────────────────────────────── */
 
-/* ─── Shared helpers (kept in sync with portal_index.html) ─────────────── */
+function dollars(centsOrDollars) {
+  // The schema uses *_cents columns for monetary values. If we got an _cents
+  // value, divide by 100. We auto-detect by checking the value's magnitude
+  // ONLY when called with explicitly-named values that could be either; the
+  // caller below resolves to the cents column first.
+  if (centsOrDollars == null || isNaN(centsOrDollars)) return '—';
+  return '$' + Math.round(centsOrDollars).toLocaleString('en-US');
+}
+
+function ratePct(bps) {
+  if (bps == null) return '—';
+  return (bps / 100).toFixed(3).replace(/0+$/,'').replace(/\.$/,'') + '%';
+}
+
+function initials(first, last) {
+  return ((first || '').charAt(0) + (last || '').charAt(0)).toUpperCase() || '·';
+}
 
 function titleCase(s) {
   if (!s) return '';
@@ -468,362 +657,323 @@ function titleCase(s) {
     .join('');
 }
 
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric'
+  });
+}
+
+function relativeTime(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  const ms = Date.now() - d.getTime();
+  const days = Math.floor(ms / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7)  return days + ' days ago';
+  if (days < 30) return Math.floor(days / 7) + 'w ago';
+  return formatDate(isoStr);
+}
+
+/**
+ * Parse loan.property_address, which is stored as jsonb. Possible shapes:
+ *   - string (legacy / freeform):    "123 Main St, Lubbock, TX 79401"
+ *   - object with street/city/zip:   { street, city, state, zip }
+ *   - object with line1/line2:       { line1, line2, city, state, postal_code }
+ *   - object with address_line1:     { address_line1, city, state, zip_code }
+ *
+ * Coerces any of these into a single display string. Returns '' if we
+ * can't pull anything useful — the caller renders '—' in that case.
+ */
+function formatAddress(loan) {
+  if (!loan) return '';
+  const pa = loan.property_address;
+  if (!pa) return '';
+  if (typeof pa === 'string') return pa;
+  if (typeof pa !== 'object') return '';
+  const street = pa.street || pa.line1 || pa.address_line1 || pa.street_address || '';
+  const city   = pa.city   || '';
+  const state  = pa.state  || pa.region || '';
+  const zip    = pa.zip    || pa.postal_code || pa.zip_code || '';
+  const cityState = [city, state].filter(Boolean).join(', ');
+  return [street, cityState, zip].filter(Boolean).join(' ').replace(/\s+,/g, ',').trim();
+}
+
+/* ─── Status → Stage mapping ───────────────────────────────────────────── */
+
+const STAGES = [
+  { key: 'applied',      label: 'Applied'         },
+  { key: 'documents',    label: 'Documents'       },
+  { key: 'underwriting', label: 'Underwriting'    },
+  { key: 'ctc',          label: 'Clear to close'  },
+  { key: 'scheduled',    label: 'Scheduled'       },
+  { key: 'funded',       label: 'Funded'          },
+];
+
+const STAGE_DESCRIPTIONS = {
+  applied:      'Your application is in. Your loan officer is reviewing it now.',
+  documents:    "We're collecting documents to verify your income, assets, and identity.",
+  underwriting: 'Underwriting is reviewing your file. No action needed from you right now.',
+  ctc:          'Cleared to close! Your loan officer will schedule your closing soon.',
+  scheduled:    "Your closing is scheduled. We'll send reminders as the date approaches.",
+  funded:       'Your loan has funded. Welcome home.',
+};
+
+/**
+ * Maps the real loans.status enum (loan_status type, default 'lead') to one
+ * of the six borrower-facing stages. Borrowers don't see internal sub-states
+ * like 'in_review' vs 'suspended' — the LO side handles those. We collapse.
+ *
+ * Unknown values fall through to 'documents' (mid-pipeline) so the timeline
+ * still renders meaningfully if a new status value is introduced before
+ * this mapping gets updated.
+ */
 function mapStatusToStage(status) {
   if (!status) return 'applied';
   const s = String(status).toLowerCase();
   const map = {
-    'draft':'applied', 'application_started':'applied', 'application_submitted':'applied',
-    'submitted':'applied', 'applied':'applied',
-    'in_review':'documents', 'documents':'documents', 'documents_pending':'documents',
-    'docs_pending':'documents', 'collecting_docs':'documents',
-    'in_underwriting':'underwriting', 'underwriting':'underwriting',
-    'conditional_approval':'underwriting', 'suspended':'underwriting',
-    'clear_to_close':'ctc', 'ctc':'ctc', 'approved':'ctc',
-    'closing_scheduled':'scheduled', 'scheduled':'scheduled',
-    'funded':'funded', 'closed':'funded',
+    // Pre-application / lead
+    'lead':                   'applied',
+    'draft':                  'applied',
+    'application_started':    'applied',
+    'application_submitted':  'applied',
+    'submitted':              'applied',
+    'applied':                'applied',
+    // Document collection
+    'in_review':              'documents',
+    'documents':              'documents',
+    'documents_pending':      'documents',
+    'docs_pending':           'documents',
+    'collecting_docs':        'documents',
+    // Underwriting
+    'in_underwriting':        'underwriting',
+    'underwriting':           'underwriting',
+    'conditional_approval':   'underwriting',
+    'suspended':              'underwriting',
+    // CTC
+    'clear_to_close':         'ctc',
+    'ctc':                    'ctc',
+    'approved':               'ctc',
+    // Scheduled / funded
+    'closing_scheduled':      'scheduled',
+    'scheduled':              'scheduled',
+    'funded':                 'funded',
+    'closed':                 'funded',
   };
   return map[s] || 'documents';
 }
 
-/* ─── Date formatting (page-specific — three different shapes used) ────── */
+/* ─── MILESTONE TABLE ──────────────────────────────────────────────────────
+   Each entry describes one borrower-facing milestone, where its timestamp
+   comes from (on the loans row), and which stage it belongs to.
 
-/** Long date: "May 12, 2026" — used in stage timeline */
-function formatLongDate(iso) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d)) return null;
-  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-}
+   The order here is the order they render on the page (top to bottom).
 
-/** Short date: "May 14" — used in doc-row meta */
-function formatShortDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-}
+   The state classifier in buildTimeline() figures out per-milestone whether
+   each one is done / current / upcoming based on:
+     a) presence of timestamp value → done
+     b) absence of timestamp, but stage > current stage → upcoming
+     c) absence of timestamp, but stage <= current stage → done-undated
+        (e.g. "Underwriting started" — no column for it, but we know it
+         happened because the loan is past underwriting)
+     d) the milestone's stage IS the current stage AND no timestamp → current
+   ─────────────────────────────────────────────────────────────────────────── */
+const MILESTONES = [
+  {
+    key:        'application_started',
+    title:      'Application started',
+    desc:       'You began your loan application.',
+    dateField:  'created_at',
+    stage:      'applied',
+  },
+  {
+    key:        'application_submitted',
+    title:      'Application submitted',
+    desc:       'Your URLA 1003 was submitted. Your loan officer was notified.',
+    dateField:  'application_date',
+    stage:      'applied',
+  },
+  {
+    key:        'loan_estimate_sent',
+    title:      'Loan Estimate sent',
+    desc:       'You received your Loan Estimate. A 3-business-day window to confirm intent opened.',
+    dateField:  'le_sent_at',
+    stage:      'documents',
+  },
+  {
+    key:        'intent_to_proceed',
+    title:      'Intent to proceed received',
+    desc:       'You confirmed you want to proceed with the loan. Document collection began.',
+    dateField:  'intent_to_proceed_at',
+    stage:      'documents',
+  },
+  {
+    key:        'underwriting',
+    title:      'Underwriting review',
+    desc:       'An underwriter is reviewing your file end-to-end.',
+    dateField:  null,  // no dedicated column; state inferred from current stage
+    stage:      'underwriting',
+  },
+  {
+    key:        'closing_disclosure_sent',
+    title:      'Closing Disclosure sent',
+    desc:       'You received your Closing Disclosure. A 3-business-day window opened before closing can occur.',
+    dateField:  'cd_sent_at',
+    stage:      'ctc',
+  },
+  {
+    key:        'closing_scheduled',
+    title:      'Closing scheduled',
+    desc:       'Your closing appointment is set. You\'ll get reminders as the date approaches.',
+    dateField:  null,  // closings table not in scope for v1; inferred from stage
+    stage:      'scheduled',
+  },
+  {
+    key:        'funded',
+    title:      'Funded',
+    desc:       'Your loan has funded. Welcome home.',
+    dateField:  'funded_at',
+    stage:      'funded',
+  },
+];
 
-/** Relative time: "Today · 8:13a", "Yesterday", "May 17" — activity feed */
-function formatActivityTime(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-  const isYesterday = d.toDateString() === yesterday.toDateString();
+/**
+ * Build the rendered timeline structure given a loan row + current stage.
+ *
+ * Special case — denial: if loan.denied_at is set, the timeline truncates
+ * at the denial milestone and shows the denial reasons (from
+ * loan.denial_reasons[]) in place of "what's next."
+ */
+function buildTimeline(loan, currentStage) {
+  const currentIdx = STAGES.findIndex(s => s.key === currentStage);
 
-  if (sameDay) {
-    // "8:13a" — compact lowercase am/pm
-    const h12 = ((d.getHours() + 11) % 12) + 1;
-    const mins = String(d.getMinutes()).padStart(2, '0');
-    const ampm = d.getHours() < 12 ? 'a' : 'p';
-    return 'Today · ' + h12 + ':' + mins + ampm;
+  // Denial branch: replace late milestones with a denial entry
+  if (loan.denied_at) {
+    const denied = MILESTONES.slice(0, 4).map(m => ({
+      ...m,
+      date: loan[m.dateField] || null,
+      state: loan[m.dateField] ? 'done' : 'done-undated',
+    }));
+    denied.push({
+      key:   'denied',
+      title: 'Application not approved',
+      desc:  Array.isArray(loan.denial_reasons) && loan.denial_reasons.length
+        ? 'Reason(s): ' + loan.denial_reasons.join('; ')
+        : 'Your loan officer will reach out to discuss next steps and any other options available to you.',
+      date:  loan.denied_at,
+      state: 'error',
+    });
+    return denied;
   }
-  if (isYesterday) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+
+  return MILESTONES.map(m => {
+    const date = m.dateField ? loan[m.dateField] : null;
+    const milestoneStageIdx = STAGES.findIndex(s => s.key === m.stage);
+
+    let state;
+    if (date) {
+      state = 'done';
+    } else if (milestoneStageIdx < currentIdx) {
+      state = 'done-undated';
+    } else if (milestoneStageIdx === currentIdx) {
+      state = 'current';
+    } else {
+      state = 'upcoming';
+    }
+
+    return { ...m, date, state };
+  });
 }
+
+/* ─── Next-step copy by stage ───────────────────────────────────────────── */
+
+/**
+ * What action the borrower should take next, keyed by current stage. The
+ * intent is to be specific and actionable — not "wait" — wherever possible.
+ */
+const NEXT_STEPS = {
+  applied: {
+    title: 'Watch your inbox for a Loan Estimate',
+    desc:  "Your loan officer is preparing your Loan Estimate now. Once you receive it, you'll have 3 business days to confirm intent to proceed.",
+    actions: [
+      { label: 'Message your LO', href: '/portal_messages.html', primary: true },
+    ],
+  },
+  documents: {
+    title: 'Upload the documents we need',
+    desc:  'Your team has requested a few documents to move things forward — pay stubs, bank statements, ID, anything else specific to your loan.',
+    actions: [
+      { label: 'Open document checklist', href: '/portal_docs.html', primary: true },
+      { label: 'Upload now',               href: '/portal_documents.html' },
+    ],
+  },
+  underwriting: {
+    title: 'Nothing required from you right now',
+    desc:  "Underwriting is reviewing your file end-to-end. If they need anything else, you'll see it on your document checklist and get a message.",
+    actions: [
+      { label: 'Message your LO', href: '/portal_messages.html' },
+    ],
+  },
+  ctc: {
+    title: 'Your closing will be scheduled soon',
+    desc:  "You're cleared to close. Your loan officer or settlement agent will reach out to schedule your closing appointment.",
+    actions: [
+      { label: 'Message your LO', href: '/portal_messages.html', primary: true },
+    ],
+  },
+  scheduled: {
+    title: 'Prepare for closing day',
+    desc:  "Your closing is on the calendar. Bring a government-issued photo ID and any wire confirmation your settlement agent has sent. We'll send reminders.",
+    actions: [
+      { label: 'Message your LO', href: '/portal_messages.html', primary: true },
+    ],
+  },
+  funded: {
+    title: 'Your loan has funded',
+    desc:  "Welcome home. Your loan officer will be in touch with your servicing details and where to send your first payment.",
+    actions: [
+      { label: 'Message your LO', href: '/portal_messages.html' },
+    ],
+  },
+};
 
 /* ─── Supplementary queries ────────────────────────────────────────────── */
 
 /**
- * stage_changes — historical record of every stage transition on the loan.
- * We use the *earliest* changed_at for each stage as the "entered on" date.
- * If the table or columns don't match the expected shape, return {} and
- * the timeline still renders without dates.
+ * Conditions counts for the documents block.
+ * State buckets we surface to the borrower:
+ *   - needed    = condition state 'open' (borrower hasn't done anything yet)
+ *   - submitted = condition state 'submitted' (borrower uploaded; awaiting UW)
+ *   - cleared   = condition state 'cleared' OR 'waived'
  *
- * Expected schema:
- *   loan_id uuid, from_stage text, to_stage text, changed_at timestamptz,
- *   changed_by uuid
+ * Returns zeros on any error so the page still renders.
  */
-async function fetchStageHistory(supabase, loanId) {
-  try {
-    const { data, error } = await supabase
-      .from('stage_changes')
-      .select('to_stage, changed_at')
-      .eq('loan_id', loanId)
-      .order('changed_at', { ascending: true });
-    if (error) {
-      console.warn('[portal/status] stage_changes failed:', error.message);
-      return {};
-    }
-    const map = {};
-    for (const row of data || []) {
-      const stageKey = mapStatusToStage(row.to_stage);
-      if (!map[stageKey]) map[stageKey] = row.changed_at;
-    }
-    return map;
-  } catch (e) {
-    console.warn('[portal/status] stage_changes exception:', e.message);
-    return {};
-  }
-}
-
-/**
- * conditions — drives the Documents section. Every row is either a
- * pending request (state=open), in-review (submitted), cleared, or
- * waived. We surface open + submitted + cleared; waived conditions
- * don't need to show up on the borrower's view.
- *
- * Expected schema (per existing LO-side surfaces):
- *   id, loan_id, title, description, category, state,
- *   created_at, cleared_at, cleared_by_document_id
- */
-async function fetchConditions(supabase, loanId) {
+async function fetchConditionsBuckets(supabase, loanId) {
   try {
     const { data, error } = await supabase
       .from('conditions')
-      .select('id, title, description, category, state, created_at, cleared_at')
-      .eq('loan_id', loanId)
-      .in('state', ['open', 'submitted', 'cleared'])
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.warn('[portal/status] conditions failed:', error.message);
-      return [];
+      .select('state')
+      .eq('loan_id', loanId);
+    if (error || !data) return { needed: 0, submitted: 0, cleared: 0 };
+    const buckets = { needed: 0, submitted: 0, cleared: 0 };
+    for (const row of data) {
+      const s = String(row.state || '').toLowerCase();
+      if (s === 'open')                       buckets.needed++;
+      else if (s === 'submitted')             buckets.submitted++;
+      else if (s === 'cleared' || s === 'waived') buckets.cleared++;
     }
-    return data || [];
+    return buckets;
   } catch (e) {
-    console.warn('[portal/status] conditions exception:', e.message);
-    return [];
+    console.warn('[portal/status] conditions fetch skipped:', e.message);
+    return { needed: 0, submitted: 0, cleared: 0 };
   }
 }
 
-/**
- * loan_audit_events — drives the Activity feed. We pull the most recent
- * 25 events and format each via formatAuditEvent().
- *
- * Expected schema:
- *   id, loan_id, event_type, event_data jsonb,
- *   actor_name text, actor_role text, created_at timestamptz
- *
- * If your migration uses slightly different column names (actor_id only,
- * `event` instead of `event_type`, etc.), the formatter handles missing
- * fields gracefully but you may want to adjust the .select() below.
- */
-async function fetchAuditEvents(supabase, loanId) {
-  try {
-    const { data, error } = await supabase
-      .from('loan_audit_events')
-      .select('id, event_type, event_data, actor_name, actor_role, created_at')
-      .eq('loan_id', loanId)
-      .order('created_at', { ascending: false })
-      .limit(25);
-    if (error) {
-      console.warn('[portal/status] audit_events failed:', error.message);
-      return [];
-    }
-    return data || [];
-  } catch (e) {
-    console.warn('[portal/status] audit_events exception:', e.message);
-    return [];
-  }
-}
-
-/* ─── Mappers: raw rows → page shape ───────────────────────────────────── */
-
-/**
- * Build the six-row stage list. Each row gets a status (done/current/
- * future) based on its position relative to the loan's current stage,
- * and a date pulled from the stage_changes history map (or "In progress"
- * for the current stage if no history row exists yet).
- */
-function buildStages(currentStageKey, history) {
-  const currentIdx = STAGES.findIndex(s => s.key === currentStageKey);
-  return STAGES.map((s, i) => {
-    let status, date;
-    if (i < currentIdx) {
-      status = 'done';
-      date = formatLongDate(history[s.key]);
-    } else if (i === currentIdx) {
-      status = 'current';
-      date = formatLongDate(history[s.key]) || 'In progress';
-    } else {
-      status = 'future';
-      date = null;
-    }
-    return {
-      key:    s.key,
-      label:  s.label,
-      status: status,
-      date:   date,
-      // Tailor the description slightly for the current stage so it
-      // feels active rather than generic.
-      desc:   status === 'current' && s.key === 'documents'
-                ? "We're collecting documents to verify your income, assets, and identity."
-                : s.desc,
-    };
-  });
-}
-
-/**
- * Single-character icon for a condition row. Driven by category first
- * (if the LO-side surface populates it) and falls back to fuzzy matching
- * the title. Returns '·' for anything we don't recognize.
- */
-function iconForCondition(c) {
-  const text = ((c.category || '') + ' ' + (c.title || '') + ' ' + (c.description || '')).toLowerCase();
-  if (/pay\s*stub|paystub/.test(text))                        return '$';
-  if (/\bw-?2\b/.test(text))                                  return 'W';
-  if (/\b1099\b/.test(text))                                  return '9';
-  if (/1040|tax\s*return/.test(text))                         return 'T';
-  if (/bank|statement/.test(text))                            return 'B';
-  if (/insurance|binder|hoi/.test(text))                      return 'H';
-  if (/license|passport|\bid\b|identification/.test(text))    return 'ID';
-  if (/gift/.test(text))                                      return 'G';
-  if (/lox|letter\s*of\s*explanation/.test(text))             return 'L';
-  if (/appraisal/.test(text))                                 return 'A';
-  if (/title/.test(text))                                     return 'TI';
-  return '·';
-}
-
-function buildDocuments(conditions) {
-  return conditions.map(c => {
-    let status, meta;
-    if (c.state === 'cleared') {
-      status = 'cleared';
-      meta = c.cleared_at ? 'Cleared ' + formatShortDate(c.cleared_at) : 'Cleared';
-    } else if (c.state === 'submitted') {
-      status = 'pending';
-      meta = 'In review';
-    } else {
-      // 'open' or anything else we passed through
-      status = 'needed';
-      meta = c.created_at ? 'Requested ' + formatShortDate(c.created_at) : 'Requested';
-    }
-    return {
-      name:   c.title || c.description || 'Document',
-      meta:   meta,
-      status: status,
-      icon:   iconForCondition(c),
-    };
-  });
-}
-
-/**
- * Map an internal actor role to a borrower-readable label. Internal
- * abbreviations ("uw", "lo") get expanded; unknown roles pass through
- * as-is so we don't lose information.
- */
-function roleLabel(role) {
-  if (!role) return '';
-  const map = {
-    lo: 'Loan Officer',
-    loan_officer: 'Loan Officer',
-    processor: 'Processor',
-    underwriter: 'Underwriter',
-    uw: 'Underwriter',
-    admin: 'Admin',
-    owner: 'Branch Owner',
-    borrower: '',
-    ai: 'AI',
-    system_ai: 'AI',
-    system: 'System',
-  };
-  if (map[role] !== undefined) return map[role];
-  return titleCase(role.replace(/_/g, ' '));
-}
-
-/**
- * Translate a loan_audit_events row into the { time, text, actor, is_ai }
- * shape that the activity feed renders. Unknown event types fall back to
- * a humanized version of the event_type string so we never show a blank
- * row.
- *
- * The first-person pronoun "you" is used when the actor was the
- * borrower themselves (matched by actor_role='borrower' OR by the
- * actor matching the borrower's own id).
- */
-function formatAuditEvent(e, borrowerCtx) {
-  const data = e.event_data || {};
-  const role = (e.actor_role || '').toLowerCase();
-  const isAI = role === 'ai' || role === 'system_ai' || /\bai\b/i.test(e.actor_name || '');
-  const isBorrower = role === 'borrower';
-
-  const actorFirst = (e.actor_name || '').split(' ')[0];
-
-  let text;
-  switch ((e.event_type || '').toLowerCase()) {
-    case 'application_received':
-    case 'application_submitted':
-      text = 'Your application was received.';
-      break;
-    case 'stage_changed':
-      text = data.to_stage_label
-        ? `Stage advanced to ${data.to_stage_label}.`
-        : `Stage advanced to ${(data.to_stage || 'the next stage').replace(/_/g,' ')}.`;
-      break;
-    case 'condition_requested':
-    case 'condition_added':
-      text = isAI
-        ? `${data.condition_name || 'A document'} was added to your needs list.`
-        : `${actorFirst || 'Your team'} requested ${data.condition_name || 'a document'}.`;
-      break;
-    case 'condition_cleared':
-      text = isAI
-        ? `Your ${data.condition_name || 'document'} was auto-cleared by AI.`
-        : `${data.condition_name || 'A condition'} was cleared.`;
-      break;
-    case 'condition_waived':
-      text = `${data.condition_name || 'A condition'} was waived.`;
-      break;
-    case 'document_uploaded':
-      text = isBorrower
-        ? `You uploaded ${data.document_name || 'a document'}.`
-        : `${actorFirst || 'Someone'} uploaded ${data.document_name || 'a document'}.`;
-      break;
-    case 'processor_assigned':
-      text = `${actorFirst || 'A processor'} began processing your file.`;
-      break;
-    case 'lo_assigned':
-      text = `${actorFirst || 'A loan officer'} was assigned to your loan.`;
-      break;
-    case 'message_sent':
-      text = isBorrower
-        ? `You sent a message.`
-        : `${actorFirst || 'Your loan officer'} sent you a message.`;
-      break;
-    case 'aus_findings_received':
-      text = `Automated underwriting findings received.`;
-      break;
-    case 'disclosure_sent':
-      text = `${data.disclosure_name || 'A disclosure'} was sent for your review.`;
-      break;
-    case 'disclosure_signed':
-      text = `You signed ${data.disclosure_name || 'a disclosure'}.`;
-      break;
-    default:
-      // Generic fallback: humanize the event_type
-      text = ((e.event_type || 'Update').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())) + '.';
-  }
-
-  // Actor line
-  let actor;
-  if (isAI) {
-    const rules = data.rules_matched != null && data.rules_total != null
-      ? ` · ${data.rules_matched}/${data.rules_total} rules matched`
-      : '';
-    actor = (e.actor_name || 'OriginFlow AI') + rules;
-  } else if (isBorrower) {
-    // Use the borrower's own display name we already resolved in ctx
-    actor = e.actor_name
-      || [borrowerCtx.first_name, borrowerCtx.last_name].filter(Boolean).join(' ')
-      || 'You';
-  } else if (e.actor_name) {
-    const label = roleLabel(role);
-    actor = label ? `${e.actor_name} · ${label}` : e.actor_name;
-  } else {
-    actor = roleLabel(role) || 'OriginFlow';
-  }
-
-  return {
-    time:  formatActivityTime(e.created_at),
-    text:  text,
-    actor: actor,
-    is_ai: isAI,
-  };
-}
-
-/* ─── Init: orchestrate bootstrap + queries + render ───────────────────── */
+/* ─── Init ─────────────────────────────────────────────────────────────── */
 
 async function init() {
   let ctx;
@@ -852,41 +1002,46 @@ async function init() {
   }
 
   const supabase = window.OF_supabase();
-  const [histRes, condRes, auditRes] = await Promise.allSettled([
-    fetchStageHistory(supabase, ctx.loan.id),
-    fetchConditions(supabase, ctx.loan.id),
-    fetchAuditEvents(supabase, ctx.loan.id),
-  ]);
+  const buckets = await fetchConditionsBuckets(supabase, ctx.loan.id);
 
-  const stageHistory = histRes.status  === 'fulfilled' ? histRes.value  : {};
-  const conditions   = condRes.status  === 'fulfilled' ? condRes.value  : [];
-  const auditEvents  = auditRes.status === 'fulfilled' ? auditRes.value : [];
+  // Normalize loan shape. Defensive over both real schema column names
+  // (loan_number, loan_amount_cents, purpose) and the alternative names
+  // portal-auth.js may already alias to (loan_no, loan_amount, etc.).
+  // Whichever shape arrives, we resolve to a single canonical shape that
+  // render() consumes.
+  const loan = ctx.loan;
+  const loanNo =
+    loan.loan_number ||
+    loan.loan_no ||
+    (loan.id ? String(loan.id).slice(0, 8).toUpperCase() : '—');
 
-  const borrowerCtx = {
-    first_name: titleCase(ctx.borrower.first_name),
-    last_name:  titleCase(ctx.borrower.last_name),
-  };
+  const stage = mapStatusToStage(loan.status || loan.current_stage);
 
   const pageCtx = {
-    loan: {
-      id:      ctx.loan.id,
-      loan_no: ctx.loan.loan_no || '—',
-      current_stage: mapStatusToStage(ctx.loan.status || ctx.loan.current_stage),
+    borrower: {
+      first_name: titleCase(ctx.borrower.first_name),
+      last_name:  titleCase(ctx.borrower.last_name),
     },
-    stages:    buildStages(mapStatusToStage(ctx.loan.status || ctx.loan.current_stage), stageHistory),
-    documents: buildDocuments(conditions),
-    activity:  auditEvents.map(e => formatAuditEvent(e, borrowerCtx)),
+    loan: {
+      ...loan,
+      loan_no:       loanNo,
+      property_text: formatAddress(loan),
+      current_stage: stage,
+    },
+    buckets,
   };
 
-  window.OF_STATUS_CTX = pageCtx;  // debug hook
+  window.OF_PORTAL_STATUS_CTX = pageCtx;  // expose for debugging
   render(pageCtx);
 
+  // Drop the veil
   const veil = document.getElementById('bootstrap-veil');
   if (veil) {
     veil.classList.add('is-hidden');
     setTimeout(() => veil.remove(), 220);
   }
 
+  // Fire-and-forget last-seen update
   if (typeof window.OF_touchLastSeen === 'function') {
     window.OF_touchLastSeen().catch(() => {});
   }
@@ -894,81 +1049,121 @@ async function init() {
 
 /* ─── Render ───────────────────────────────────────────────────────────── */
 
-function render(b) {
-  document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
+function render(ctx) {
+  const { borrower, loan, buckets } = ctx;
+  const stage = loan.current_stage;
+  const currentIdx = STAGES.findIndex(s => s.key === stage);
 
-  // ── Stages
-  const stagesEl = document.getElementById('stages-container');
-  stagesEl.innerHTML = '';
-  b.stages.forEach(s => {
-    const row = document.createElement('div');
-    row.className = 'stage-row is-' + s.status;
-    row.innerHTML = `
-      <div class="stage-marker"><div class="stage-dot"></div></div>
-      <div class="stage-body">
-        <div class="stage-name">${escapeHtml(s.label)}</div>
-        ${s.date ? `<div class="stage-date">${escapeHtml(s.date)}</div>` : ''}
-        <div class="stage-desc">${escapeHtml(s.desc)}</div>
-      </div>
-    `;
-    stagesEl.appendChild(row);
+  // User chip
+  document.getElementById('portal-user-name').textContent =
+    [borrower.first_name, borrower.last_name].filter(Boolean).join(' ');
+  document.getElementById('portal-user-avatar').textContent =
+    initials(borrower.first_name, borrower.last_name);
+
+  // Page header
+  document.getElementById('page-eyebrow').textContent = 'Loan ' + loan.loan_no;
+
+  // Stage hero
+  const stageLabel = (STAGES[currentIdx] && STAGES[currentIdx].label) || stage;
+  document.getElementById('stage-hero-current').textContent =
+    loan.denied_at ? 'Application not approved' : stageLabel;
+  document.getElementById('stage-hero-desc').textContent =
+    loan.denied_at
+      ? "We weren't able to move forward with this application. Your loan officer will reach out about next steps."
+      : (STAGE_DESCRIPTIONS[stage] || '');
+
+  // "in progress since" meta
+  const stageStartedAt = loan.stage_entered_at || loan.updated_at;
+  const heroMeta = document.getElementById('stage-hero-meta');
+  if (stageStartedAt && !loan.denied_at) {
+    heroMeta.textContent = 'In ' + stageLabel.toLowerCase() + ' since ' + formatDate(stageStartedAt);
+  } else {
+    heroMeta.textContent = '';
+  }
+
+  // Stage pill strip
+  const timelineEl = document.getElementById('status-timeline');
+  timelineEl.innerHTML = '';
+  STAGES.forEach((s, i) => {
+    const el = document.createElement('span');
+    el.className = 'status-step'
+      + (i <  currentIdx ? ' is-done' : '')
+      + (i === currentIdx ? ' is-current' : '');
+    el.innerHTML = '<span class="dot"></span>' + s.label;
+    timelineEl.appendChild(el);
   });
 
-  // ── Documents
-  const docsEl = document.getElementById('docs-container');
-  docsEl.innerHTML = '';
-  if (b.documents.length === 0) {
-    docsEl.outerHTML = '<div class="docs-list" id="docs-container"><div class="empty-state">No document requests yet. Your loan officer will request docs as needed.</div></div>';
+  // Vertical milestone timeline
+  const verticalEl = document.getElementById('vertical-timeline');
+  verticalEl.innerHTML = '';
+  const built = buildTimeline(loan, stage);
+  built.forEach(m => {
+    const li = document.createElement('li');
+    li.className = 'timeline-item is-' + m.state;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'timeline-title';
+    titleEl.textContent = m.title;
+    li.appendChild(titleEl);
+
+    const dateEl = document.createElement('div');
+    if (m.state === 'done' && m.date) {
+      dateEl.className = 'timeline-date';
+      dateEl.textContent = formatDate(m.date) + ' · ' + relativeTime(m.date);
+    } else if (m.state === 'current') {
+      dateEl.className = 'timeline-date is-current-label';
+      dateEl.textContent = 'In progress';
+    } else if (m.state === 'done-undated') {
+      dateEl.className = 'timeline-date';
+      dateEl.textContent = 'Completed';
+    } else if (m.state === 'error') {
+      dateEl.className = 'timeline-date is-error-label';
+      dateEl.textContent = m.date ? formatDate(m.date) : 'Decision recorded';
+    } else {
+      dateEl.className = 'timeline-date';
+      dateEl.textContent = 'Upcoming';
+    }
+    li.appendChild(dateEl);
+
+    const descEl = document.createElement('p');
+    descEl.className = 'timeline-desc';
+    descEl.textContent = m.desc;
+    li.appendChild(descEl);
+
+    verticalEl.appendChild(li);
+  });
+
+  // Document counts
+  document.getElementById('docs-needed').textContent    = buckets.needed;
+  document.getElementById('docs-submitted').textContent = buckets.submitted;
+  document.getElementById('docs-cleared').textContent   = buckets.cleared;
+
+  // What's next block — overridden on denial branch
+  const nextTitleEl   = document.getElementById('next-title');
+  const nextDescEl    = document.getElementById('next-desc');
+  const nextActionsEl = document.getElementById('next-actions');
+  nextActionsEl.innerHTML = '';
+
+  if (loan.denied_at) {
+    nextTitleEl.textContent = 'Talk to your loan officer';
+    nextDescEl.textContent  = "There may be other options. Reach out to your LO and they'll walk through what's possible.";
+    const btn = document.createElement('a');
+    btn.className = 'btn is-primary';
+    btn.href = '/portal_messages.html';
+    btn.textContent = 'Message your LO';
+    nextActionsEl.appendChild(btn);
   } else {
-    b.documents.forEach(d => {
-      const row = document.createElement('div');
-      row.className = 'doc-row';
-      const statusLabel =
-        d.status === 'cleared' ? 'Cleared' :
-        d.status === 'pending' ? 'In review' :
-        'Needed';
-      row.innerHTML = `
-        <div class="doc-icon">${escapeHtml(d.icon)}</div>
-        <div class="doc-info">
-          <div class="doc-name">${escapeHtml(d.name)}</div>
-          <div class="doc-meta">${escapeHtml(d.meta)}</div>
-        </div>
-        <div class="doc-status is-${d.status}">${statusLabel}</div>
-      `;
-      docsEl.appendChild(row);
+    const next = NEXT_STEPS[stage] || NEXT_STEPS.documents;
+    nextTitleEl.textContent = next.title;
+    nextDescEl.textContent  = next.desc;
+    next.actions.forEach(a => {
+      const btn = document.createElement('a');
+      btn.className = 'btn' + (a.primary ? ' is-primary' : '');
+      btn.href = a.href;
+      btn.textContent = a.label;
+      nextActionsEl.appendChild(btn);
     });
   }
-
-  // ── Activity
-  const actEl = document.getElementById('activity-container');
-  actEl.innerHTML = '';
-  if (b.activity.length === 0) {
-    // Replace the bordered .activity wrapper with a plain empty state so
-    // the left-border timeline visual doesn't appear with nothing on it.
-    actEl.outerHTML = '<div class="empty-state">No activity yet.</div>';
-  } else {
-    b.activity.forEach(a => {
-      const row = document.createElement('div');
-      row.className = 'activity-row' + (a.is_ai ? ' is-ai' : '');
-      row.innerHTML = `
-        <div class="activity-time">${escapeHtml(a.time)}</div>
-        <div class="activity-text">${escapeHtml(a.text)}</div>
-        <div class="activity-actor${a.is_ai ? ' is-ai' : ''}">${escapeHtml(a.actor)}</div>
-      `;
-      actEl.appendChild(row);
-    });
-  }
-}
-
-/* ─── HTML escape (safety: every text value going into innerHTML) ──────── */
-function escapeHtml(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 document.addEventListener('DOMContentLoaded', init);
