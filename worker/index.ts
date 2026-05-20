@@ -18,19 +18,13 @@
  *     either retry (leave doc at pre-progress state) or give up after
  *     MAX_RETRIES_* (advance with degraded result, e.g. doc_type =
  *     'unknown').
- *   - Never re-throw. Handler crashes are caught here and logged. The
- *     doc stays where the handler left it; the recovery cron handles
- *     stuck docs after the time threshold.
- *
- * 12.0.1b ships stubs for the handlers. Real implementations land in:
- *   12.0.1c — handleAvScan
- *   12.0.1d — handleClassification
- *   12.0.2+ — handleExtraction (per-doc-type dispatch inside)
- *   12.0.8  — handleExtractionComplete (matcher)
- *   later   — handleScanFailed (alerting)
+ *   - Never re-throw to the wider event loop. Handler crashes are
+ *     caught here in dispatch() and logged. The doc stays where the
+ *     handler left it; the recovery cron handles stuck docs after
+ *     the time threshold.
  */
 
-import { log } from "../log.ts";
+import { log } from "./log.ts";
 
 import { handleAvScan }             from "./av_scan.ts";
 import { handleClassification }     from "./classification.ts";
@@ -41,7 +35,7 @@ import { handleScanFailed }         from "./scan_failed.ts";
 /**
  * Payload shape published by `_emit_doc_event` in migration 019.
  * If migration 019 ever bumps the schema, this interface and the
- * version check in dispatch() must move together.
+ * version check below must move together.
  */
 export interface DocEvent {
   v:           number;
@@ -67,7 +61,6 @@ const HANDLERS: Record<string, Handler> = {
 const SUPPORTED_PAYLOAD_VERSIONS = new Set([1]);
 
 export async function dispatch(e: DocEvent): Promise<void> {
-  // ─── Payload version gate ────────────────────────────────────────
   if (!SUPPORTED_PAYLOAD_VERSIONS.has(e.v)) {
     log.warn("dropping event: unsupported payload version", {
       v: e.v,
@@ -77,7 +70,6 @@ export async function dispatch(e: DocEvent): Promise<void> {
     return;
   }
 
-  // ─── Handler lookup ──────────────────────────────────────────────
   const handler = HANDLERS[e.event];
   if (!handler) {
     log.warn("dropping event: unknown event type", {
@@ -87,7 +79,6 @@ export async function dispatch(e: DocEvent): Promise<void> {
     return;
   }
 
-  // ─── Invoke with timing + error containment ──────────────────────
   const started = Date.now();
   log.info("handler:start", {
     event:       e.event,

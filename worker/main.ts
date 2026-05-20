@@ -25,7 +25,7 @@
  *                                                   withSlot (concurrency semaphore)
  *                                                         │
  *                                                         ▼
- *                                                   dispatch(event) → handlers/...
+ *                                                   dispatch(event) → handler function
  *
  *
  * FAILURE MODES (and how each is handled)
@@ -71,7 +71,7 @@
 import { sql } from "./db.ts";
 import { config, safeConfig } from "./config.ts";
 import { log } from "./log.ts";
-import { dispatch, DocEvent } from "./handlers/index.ts";
+import { dispatch, DocEvent } from "./index.ts";
 
 // ─────────────────────────────────────────────────────────────────────
 // Concurrency control
@@ -79,10 +79,6 @@ import { dispatch, DocEvent } from "./handlers/index.ts";
 // A counting semaphore. Handlers acquire on entry, release on exit. If
 // at limit, new events queue in `pending`. The LISTEN connection keeps
 // draining regardless — events aren't dropped, just delayed.
-//
-// Why not p-limit / Promise.all? We need to keep the LISTEN callback
-// non-blocking. The semaphore acquires asynchronously so the callback
-// returns immediately; the actual handler runs whenever a slot opens.
 
 let inFlight = 0;
 let shuttingDown = false;
@@ -105,12 +101,9 @@ async function withSlot<T>(fn: () => Promise<T>): Promise<T> {
 // ─────────────────────────────────────────────────────────────────────
 // Healthcheck server
 // ─────────────────────────────────────────────────────────────────────
-// Fly.io probes GET /health on HEALTHCHECK_PORT. We return:
-//   200 if the LISTEN connection is alive AND we're not shutting down
-//   503 otherwise (Fly.io will replace the VM after repeated failures)
-//
-// The health surface also reports in_flight + pending depth so the
-// status is observable without parsing logs.
+// Fly.io probes GET /health on HEALTHCHECK_PORT. 200 if the LISTEN
+// connection is alive AND we're not shutting down; 503 otherwise (Fly
+// will replace the VM after repeated failures).
 
 let listenAlive = false;
 
@@ -120,11 +113,11 @@ function startHealthServer(): void {
     if (url.pathname === "/health") {
       const healthy = listenAlive && !shuttingDown;
       const body = JSON.stringify({
-        status:         healthy ? "ok" : "degraded",
-        listen_alive:   listenAlive,
-        shutting_down:  shuttingDown,
-        in_flight:      inFlight,
-        pending:        pending.length,
+        status:          healthy ? "ok" : "degraded",
+        listen_alive:    listenAlive,
+        shutting_down:   shuttingDown,
+        in_flight:       inFlight,
+        pending:         pending.length,
         max_concurrency: config.MAX_CONCURRENCY,
       });
       return new Response(body, {
@@ -144,13 +137,6 @@ function startHealthServer(): void {
 async function runListen(): Promise<void> {
   log.info("worker starting", { config: safeConfig() });
 
-  // porsager/postgres.listen() returns a promise that resolves with a
-  // listener object containing .unlisten(). The library handles
-  // reconnect internally; on reconnect it re-issues the LISTEN. We
-  // rely on the onnotify callback being invoked every time a NOTIFY
-  // arrives, and on the onlisten callback being invoked once when
-  // the LISTEN is established (and again after each reconnect).
-
   await sql.listen(
     "document_processing",
     (payload: string) => {
@@ -167,13 +153,7 @@ async function runListen(): Promise<void> {
         return;
       }
 
-      // Fire-and-forget. The semaphore inside withSlot keeps concurrency
-      // bounded; dispatch handles its own errors. We do NOT await here —
-      // we need to keep returning control to the LISTEN callback so
-      // notifications keep flowing.
       void withSlot(() => dispatch(event)).catch((err) => {
-        // dispatch() catches handler errors internally, so this should
-        // never fire. If it does, something is structurally broken.
         log.error("dispatch crashed unexpectedly", {
           error: err instanceof Error ? err.message : String(err),
         });
@@ -189,14 +169,6 @@ async function runListen(): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────
 // Graceful shutdown
 // ─────────────────────────────────────────────────────────────────────
-// On SIGTERM (Fly.io rolling deploy) or SIGINT (Ctrl-C in dev):
-//   1. Flip shuttingDown so new events are ignored.
-//   2. Mark health probe degraded so Fly.io stops routing to us.
-//   3. Wait up to 25 seconds for in-flight handlers to finish.
-//   4. Close the SQL connection cleanly.
-//   5. Exit 0.
-//
-// fly.toml grants 30 seconds before SIGKILL; we leave 5s headroom.
 
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
