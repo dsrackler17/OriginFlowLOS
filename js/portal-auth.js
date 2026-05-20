@@ -48,7 +48,7 @@
     // defaults here match the Submarine Catalyst production project so the
     // module is usable standalone (e.g. on a page that forgot to set
     // OF_CONFIG).
-    SUPABASE_URL:        'https://dipagzqrvivposqjkdkx.supabase.co',
+    SUPABASE_URL:        'https://zgmwtslzsmtmqcivngdq.supabase.co',
     SUPABASE_ANON_KEY:   'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
     // Endpoint paths. Override to point at a different project.
     SUBMIT_APPLICATION_URL: null,  // computed from SUPABASE_URL if null
