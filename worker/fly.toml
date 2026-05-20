@@ -1,0 +1,109 @@
+# =============================================================================
+# OriginFlow document processing worker — Fly.io configuration
+# =============================================================================
+#
+# Deployment commands (one-time):
+#
+#   cd worker/
+#   fly launch --no-deploy --copy-config --name originflow-worker --region dfw
+#   fly secrets set \
+#     DATABASE_URL='postgresql://postgres.<ref>:<password>@<host>:5432/postgres' \
+#     SUPABASE_URL='https://<ref>.supabase.co' \
+#     SUPABASE_SERVICE_ROLE_KEY='eyJ...' \
+#     ANTHROPIC_API_KEY='sk-ant-...'
+#   fly deploy
+#
+# DATABASE_URL MUST use port 5432 (session pooler), NOT 6543
+# (transaction pooler). Transaction pooler does not support LISTEN.
+# Get the right URL from Supabase: Dashboard → Project Settings →
+# Database → Connection string → "Session" tab (not "Transaction").
+#
+# After first deploy:
+#   fly logs                  — tail logs
+#   fly status                — VM health
+#   fly ssh console           — shell into the VM
+#   fly secrets list          — env var names without values
+#   fly machine restart       — force a restart
+# =============================================================================
+
+app            = "originflow-worker"
+primary_region = "dfw"  # Dallas — closest Fly region to Lubbock and to
+                        # Supabase US-East infrastructure
+
+[build]
+  # Dockerfile in the same directory; no overrides needed.
+
+# -----------------------------------------------------------------------------
+# Non-secret environment
+# -----------------------------------------------------------------------------
+# Secrets (DATABASE_URL, SUPABASE_*, ANTHROPIC_API_KEY) live in
+# `fly secrets`, NOT here. Everything in this section is non-sensitive
+# tunable configuration that's safe to commit to the repo.
+# -----------------------------------------------------------------------------
+[env]
+  NODE_ENV             = "production"
+  CLAMD_HOST           = "127.0.0.1"
+  CLAMD_PORT           = "3310"
+  HEALTHCHECK_PORT     = "8080"
+  MAX_CONCURRENCY      = "8"
+  MAX_RETRIES_AV       = "3"
+  MAX_RETRIES_CLASSIFY = "3"
+  CLASSIFIER_MODEL     = "claude-sonnet-4-6"
+
+# -----------------------------------------------------------------------------
+# HTTP service — internal only, used by Fly.io health probes
+# -----------------------------------------------------------------------------
+# The worker exposes /health on port 8080. We do NOT expose this
+# publicly — there's no external surface, the worker only talks
+# outbound to Postgres, Anthropic, and Supabase.
+#
+# auto_stop_machines = "off" because we need to be ALWAYS-ON for
+# LISTEN. The default Fly behavior of stopping idle machines would
+# silently break NOTIFY delivery.
+# -----------------------------------------------------------------------------
+[http_service]
+  internal_port        = 8080
+  force_https          = true
+  auto_stop_machines   = "off"
+  auto_start_machines  = true
+  min_machines_running = 1
+  processes            = ["app"]
+
+[[http_service.checks]]
+  grace_period = "60s"          # ClamAV signature load time
+  interval     = "30s"
+  method       = "GET"
+  timeout      = "5s"
+  path         = "/health"
+
+# -----------------------------------------------------------------------------
+# VM size
+# -----------------------------------------------------------------------------
+# 1 GB RAM minimum because ClamAV's signature DB is ~700 MB resident.
+# Going smaller WILL cause clamd OOM-kills under any concurrent load.
+#
+# shared-cpu-1x at 1GB is the cheapest size that fits. If queue depth
+# grows past what one VM can handle, bump to performance-1x first
+# (dedicated CPU) before scaling to multiple instances — multi-instance
+# requires the FOR UPDATE SKIP LOCKED claim refactor noted in main.ts.
+# -----------------------------------------------------------------------------
+[[vm]]
+  cpu_kind = "shared"
+  cpus     = 1
+  memory   = "1gb"
+
+# -----------------------------------------------------------------------------
+# Deploy
+# -----------------------------------------------------------------------------
+# Rolling strategy keeps one machine up while replacing the other.
+# Since we run min_machines_running = 1 there's a brief gap during
+# single-machine rolling; recovery cron covers any events dropped
+# during the gap.
+#
+# kill_timeout = 30s matches the worker's graceful-shutdown deadline
+# in main.ts (25s drain + 5s connection close).
+# -----------------------------------------------------------------------------
+[deploy]
+  strategy     = "rolling"
+  kill_timeout = "30s"
+  kill_signal  = "SIGTERM"
