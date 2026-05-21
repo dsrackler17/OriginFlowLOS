@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Conditions · OriginFlow LOS — Live Demo</title>
+<title>Conditions · OriginFlow LOS</title>
 <meta name="description" content="Conditions tracker for OriginFlow LOS. PTD, PTC, ATC across the full branch pipeline.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,19 +42,7 @@ body::before {
   background-size: 40px 40px;
   pointer-events: none; z-index: 0;
 }
-nav, .demo-banner, .cond-layout, footer, .metric-strip, .page-head, .filter-bar { position: relative; z-index: 1; }
-
-/* ─── DEMO BANNER ──────────────────────────────────────────────────── */
-.demo-banner {
-  background: rgba(245,166,35,0.08);
-  border-bottom: 1px solid rgba(245,166,35,0.25);
-  padding: 0.55rem 2rem;
-  display: flex; align-items: center; justify-content: center; gap: 1.5rem;
-  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
-  color: var(--amber); flex-wrap: wrap;
-}
-.demo-banner strong { color: var(--white); font-weight: 700; }
-.demo-banner a { color: var(--amber); text-decoration: underline; text-underline-offset: 3px; }
+nav, .cond-layout, footer, .metric-strip, .page-head, .filter-bar, .bulk-bar, .state-screen { position: relative; z-index: 1; }
 
 /* ─── NAV ──────────────────────────────────────────────────────────── */
 nav {
@@ -202,7 +190,10 @@ nav {
   margin-bottom: 1.5rem;
   border: 1px solid var(--border);
   background: var(--deep);
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
+.loan-block:hover { border-color: rgba(0,212,255,0.4); }
 .loan-block-head {
   background: var(--surface);
   padding: 0.85rem 1.25rem;
@@ -231,6 +222,8 @@ nav {
 .loan-block-stage.proc { color: var(--accent); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.06); }
 .loan-block-stage.ctc { color: var(--accent2); border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.06); }
 .loan-block-stage.cond { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
+.loan-block-stage.closed { color: var(--accent2); border-color: rgba(0,255,157,0.3); background: rgba(0,255,157,0.06); }
+.loan-block-stage.app { color: var(--muted); }
 
 .loan-block-progress {
   font-family: var(--mono); font-size: 0.7rem; color: var(--text);
@@ -264,6 +257,7 @@ nav {
   border-color: rgba(0,255,157,0.2);
 }
 .cond-row.cleared .cond-title { text-decoration: line-through; color: var(--muted); }
+.cond-row.stale-row { border-color: rgba(245,166,35,0.4); }
 
 .cond-checkbox {
   width: 1.05rem; height: 1.05rem;
@@ -310,6 +304,7 @@ nav {
 .cond-owner .av.proc { background: var(--accent2); }
 .cond-owner .av.uw   { background: var(--amber); }
 .cond-owner .av.ai   { background: var(--accent); color: var(--navy); }
+.cond-owner .av.empty { background: var(--border); color: var(--muted); }
 
 .cond-action {
   font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
@@ -328,10 +323,16 @@ nav {
   font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.08em;
   color: var(--text);
   display: flex; align-items: center; justify-content: space-between;
-  position: relative; z-index: 1;
+  flex-wrap: wrap; gap: 0.5rem;
 }
 .bulk-bar b { color: var(--accent); }
 .bulk-bar .bulk-actions { display: flex; gap: 0.5rem; }
+.bulk-bar .live-dot {
+  display: inline-block; width: 6px; height: 6px;
+  background: var(--accent2); border-radius: 50%;
+  margin-right: 0.4rem; animation: pulse 1.8s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 /* ─── SIDEBAR ──────────────────────────────────────────────────────── */
 .cond-sidebar {
@@ -371,6 +372,13 @@ nav {
 .cat-row .progress.a::after { background: var(--amber); }
 .cat-row .progress.c::after { background: var(--accent); }
 .cat-row .count { color: var(--white); font-weight: 700; }
+.owner-label {
+  font-family: var(--mono); font-size: 0.62rem; color: var(--text);
+}
+.owner-label .dot {
+  display: inline-block; width: 0.7rem; height: 0.7rem;
+  margin-right: 0.4rem;
+}
 
 .staleness-row {
   display: grid; grid-template-columns: 1fr auto;
@@ -401,6 +409,48 @@ nav {
   letter-spacing: 0.04em; margin-top: 0.2rem;
 }
 
+/* ─── STATE SCREENS ────────────────────────────────────────────────── */
+.state-screen {
+  padding: 6rem 2rem;
+  text-align: center;
+  display: none;
+}
+.state-screen.active { display: block; }
+.state-screen .spinner {
+  width: 36px; height: 36px;
+  margin: 0 auto 1.5rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.state-screen h2 {
+  font-family: var(--serif); font-size: 1.6rem; color: var(--white);
+  font-weight: 400; margin-bottom: 0.5rem;
+}
+.state-screen p {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--muted);
+  letter-spacing: 0.05em; max-width: 540px; margin: 0 auto;
+  line-height: 1.7;
+}
+.state-screen .state-actions {
+  margin-top: 1.5rem;
+  display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;
+}
+
+/* ─── EMPTY STATE ──────────────────────────────────────────────────── */
+.empty-state {
+  padding: 4rem 2rem; text-align: center; color: var(--muted);
+}
+.empty-state .empty-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text);
+}
+.empty-state .empty-sub {
+  margin-top: 0.5rem; font-size: 0.8rem;
+}
+
 /* ─── FOOTER ───────────────────────────────────────────────────────── */
 footer {
   border-top: 1px solid var(--border); padding: 1.25rem 2rem;
@@ -427,13 +477,8 @@ footer a:hover { color: var(--accent); }
 </head>
 <body>
 
-<div class="demo-banner">
-  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
-  <a href="index.html">← Back to landing page</a>
-</div>
-
 <nav>
-  <a href="index.html" class="nav-logo">
+  <a href="home.html" class="nav-logo">
     <div class="sonar-icon">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
@@ -449,561 +494,966 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
-    <li><a href="dashboard.html">Pipeline</a></li>
+    <li><a href="home.html">Pipeline</a></li>
     <li><a href="documents.html">Documents</a></li>
     <li><a href="conditions.html" class="active">Conditions</a></li>
     <li><a href="reports.html">Reports</a></li>
     <li><a href="audit.html">Audit Log</a></li>
   </ul>
   <div class="nav-right">
-    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; Submarine Catalyst</span>
+    <span class="nav-branch"><strong>● ACTIVE</strong>&nbsp; <span id="nav-branch-name">—</span></span>
     <span>
-      <span class="nav-user-name">Davis Rackler</span>
-      <span class="nav-user-role">OWNER</span>
+      <span class="nav-user-name" id="nav-user-name">—</span>
+      <span class="nav-user-role" id="nav-user-role">—</span>
     </span>
-    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+    <button class="nav-signout" id="nav-signout">Sign Out</button>
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- METRIC STRIP                                                         -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="metric-strip">
-  <div class="metric-cell">
-    <div class="metric-label">Total Conditions</div>
-    <div class="metric-value white">142</div>
-    <div class="metric-sub">across 14 active files</div>
-    <div class="metric-trend">avg 10.1 per file</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Cleared</div>
-    <div class="metric-value green">115</div>
-    <div class="metric-sub">81.0% of all conditions</div>
-    <div class="metric-trend">▲ 8 today</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Open · PTD</div>
-    <div class="metric-value red">9</div>
-    <div class="metric-sub">prior to docs</div>
-    <div class="metric-trend down">▲ 1 since Mon</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Open · PTC</div>
-    <div class="metric-value amber">12</div>
-    <div class="metric-sub">prior to closing</div>
-    <div class="metric-trend">▼ 3 today</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Open · ATC</div>
-    <div class="metric-value cyan">6</div>
-    <div class="metric-sub">at close</div>
-    <div class="metric-trend">stable</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">AI-Cleared %</div>
-    <div class="metric-value green">68%</div>
-    <div class="metric-sub">78 of 115 cleared</div>
-    <div class="metric-trend">▲ 4 pts vs March</div>
-  </div>
-</section>
+<!-- ─── STATE SCREENS ──────────────────────────────────────────────── -->
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- PAGE HEAD                                                            -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="page-head">
-  <div class="page-head-left">
-    <div class="crumb">DASHBOARD <span>›</span> CONDITIONS</div>
-    <h1>Conditions</h1>
-    <p>Every PTD, PTC, and ATC condition across the branch in one place. AI auto-clears anything it can prove from documents — humans handle the rest.</p>
-  </div>
-  <div class="page-actions">
-    <a class="btn" href="#">⤓ Export PDF</a>
-    <a class="btn" href="#">📋 Templates</a>
-    <a class="btn primary" href="#">+ Add Condition</a>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- FILTER BAR                                                           -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="filter-bar">
-  <input type="text" placeholder="Search condition title, loan, borrower...">
-  <select>
-    <option>All loans (14)</option>
-    <option>OF-1043 · Rodriguez</option>
-    <option>OF-1042 · Chen</option>
-    <option>OF-1045 · Thompson</option>
-  </select>
-  <select>
-    <option>All assignees</option>
-    <option>Corbin Matisse · LO</option>
-    <option>Sarah Hayes · Processor</option>
-    <option>Diana Mendez · UW</option>
-    <option>AI · Claude Vision</option>
-  </select>
-  <span class="tab active">All <b>27</b></span>
-  <span class="tab" style="color:var(--red);">PTD <b>9</b></span>
-  <span class="tab" style="color:var(--amber);">PTC <b>12</b></span>
-  <span class="tab" style="color:var(--accent);">ATC <b>6</b></span>
-  <span class="tab" style="color:var(--accent2);">Cleared <b>115</b></span>
-  <span class="tab">Stale &gt; 5d</span>
+<div class="state-screen active" id="state-loading">
+  <div class="spinner"></div>
+  <h2>Loading conditions</h2>
+  <p>Pulling open and cleared conditions across all active loans in your branch.</p>
 </div>
 
-<div class="bulk-bar">
-  <span><b>27 open conditions</b> across 14 loans · <b style="color:var(--accent2);">8 cleared today</b> (6 by AI, 2 by humans)</span>
-  <div class="bulk-actions">
-    <button class="btn">Notify Borrowers</button>
-    <button class="btn">Reassign Selected</button>
+<div class="state-screen" id="state-signed-out">
+  <h2>You need to sign in</h2>
+  <p>The conditions surface is only available to authenticated branch staff.</p>
+  <div class="state-actions">
+    <a class="btn primary" href="signin.html">Sign in</a>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MAIN: CONDITIONS BY LOAN                                             -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="cond-layout">
+<div class="state-screen" id="state-error">
+  <h2>Something went wrong</h2>
+  <p id="error-message">Unknown error.</p>
+  <div class="state-actions">
+    <button class="btn" onclick="window.location.reload()">Retry</button>
+    <a class="btn" href="home.html">Back to pipeline</a>
+  </div>
+</div>
 
-  <main class="cond-main">
+<!-- ─── LOADED ─────────────────────────────────────────────────────── -->
 
-    <!-- OF-1043 RODRIGUEZ -->
-    <div class="loan-block">
-      <div class="loan-block-head">
-        <span class="loan-block-num">OF-1043</span>
-        <div class="loan-block-name">Rodriguez, James <small>$310K · LUBBOCK · CONV 30YR</small></div>
-        <span class="loan-block-stage uw">UNDERWRITING</span>
-        <span class="loan-block-progress">
-          9 / 15 cleared
-          <span class="pbar" style="--p:60%"></span>
-          60%
-        </span>
-      </div>
-      <div class="loan-cond-list">
+<div id="state-loaded" style="display: none;">
 
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">30-day paystub (most recent)</div>
-            <div class="cond-desc"><span class="ai">Auto-cleared by AI · paystub_2026_Q1.pdf · 98% conf</span> · 12s ago</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">View</button>
-        </div>
+  <section class="metric-strip" id="metric-strip">
+    <!-- populated by renderMetrics() -->
+  </section>
 
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">Bank statement · 60 days</div>
-            <div class="cond-desc"><span class="ai">Auto-cleared by AI · chase_statement_feb2026.pdf</span> · 23m ago</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">View</button>
-        </div>
-
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">Most recent W-2</div>
-            <div class="cond-desc"><span class="ai">Auto-cleared by AI · w2_2025_rodriguez.pdf</span> · yesterday</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">View</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">LOX · $3,200 deposit on 02/14/26</div>
-            <div class="cond-desc">Auto-created by AI deposit flag · awaiting borrower response</div>
-          </div>
-          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
-          <button class="cond-action">Notify</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">Homeowner's insurance binder</div>
-            <div class="cond-desc">Required prior to docs · LO follow-up needed</div>
-          </div>
-          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
-          <button class="cond-action">Notify</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">Final survey</div>
-            <div class="cond-desc">Title company ordered 2 days ago · expected by Friday</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Chase</button>
-        </div>
-
-      </div>
+  <section class="page-head">
+    <div class="page-head-left">
+      <div class="crumb">PIPELINE <span>›</span> CONDITIONS</div>
+      <h1>Conditions</h1>
+      <p>Every PTD, PTC, and ATC condition across your branch in one place. AI auto-clears anything it can prove from documents — humans handle the rest.</p>
     </div>
-
-    <!-- OF-1045 THOMPSON -->
-    <div class="loan-block">
-      <div class="loan-block-head">
-        <span class="loan-block-num">OF-1045</span>
-        <div class="loan-block-name">Thompson, K. <small>$465K · LUBBOCK · CONV 30YR · DTI 44.8%</small></div>
-        <span class="loan-block-stage proc">PROCESSING</span>
-        <span class="loan-block-progress">
-          7 / 12 cleared
-          <span class="pbar" style="--p:58%"></span>
-          58%
-        </span>
-      </div>
-      <div class="loan-cond-list">
-
-        <div class="cond-row" style="border-color: rgba(255,68,68,0.4);">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">DTI exception · 44.8% qualifying back-end</div>
-            <div class="cond-desc"><span class="stale">⚠ blocking · UW review · 2 days open</span></div>
-          </div>
-          <span class="cond-owner"><span class="av uw">DM</span>Diana</span>
-          <button class="cond-action">Memo</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">VOR · 12 months rental history</div>
-            <div class="cond-desc">AI confidence 67% on handwritten landlord form · processor verifying</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Verify</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">Updated appraisal value review</div>
-            <div class="cond-desc">Appraisal came in at $516K, contract at $550K · LTV recomputed to 90%</div>
-          </div>
-          <span class="cond-owner"><span class="av uw">DM</span>Diana</span>
-          <button class="cond-action">Open</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">PMI quote · MGIC or Radian</div>
-            <div class="cond-desc">90% LTV · awaiting MI vendor selection</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Order</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">HOI binder · earthquake rider</div>
-            <div class="cond-desc">Property in mapped zone · standard binder insufficient</div>
-          </div>
-          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
-          <button class="cond-action">Notify</button>
-        </div>
-
-      </div>
+    <div class="page-actions">
+      <button class="btn" onclick="alert('PDF export coming with checklist 13.5.8 (TRID dashboard) / CC.7 (PDF infra)')">⤓ Export PDF</button>
+      <button class="btn" onclick="alert('Condition templates UI is part of UW workspace · checklist 12.5.8')">📋 Templates</button>
+      <button class="btn primary" onclick="alert('Add Condition modal coming with 12.5.8 — UW workspace · for now, conditions are seeded by the condition_templates engine')">+ Add Condition</button>
     </div>
+  </section>
 
-    <!-- OF-1042 CHEN -->
-    <div class="loan-block">
-      <div class="loan-block-head">
-        <span class="loan-block-num">OF-1042</span>
-        <div class="loan-block-name">Chen, S+M <small>$425K · LUBBOCK · CONV 30YR · LOCK EXPIRES 4d</small></div>
-        <span class="loan-block-stage ctc">CLEAR-TO-CLOSE</span>
-        <span class="loan-block-progress">
-          14 / 16 cleared
-          <span class="pbar" style="--p:88%"></span>
-          88%
-        </span>
-      </div>
-      <div class="loan-cond-list">
+  <div class="filter-bar">
+    <input type="text" placeholder="Search condition title, loan, borrower..." id="filter-search">
+    <select id="filter-loan">
+      <option value="">All loans</option>
+    </select>
+    <select id="filter-assignee">
+      <option value="">All assignees</option>
+    </select>
+    <span class="tab active" data-filter-tab="all">All <b id="tab-count-all">0</b></span>
+    <span class="tab" data-filter-tab="ptd" style="color:var(--red);">PTD <b id="tab-count-ptd">0</b></span>
+    <span class="tab" data-filter-tab="ptc" style="color:var(--amber);">PTC <b id="tab-count-ptc">0</b></span>
+    <span class="tab" data-filter-tab="atc" style="color:var(--accent);">ATC <b id="tab-count-atc">0</b></span>
+    <span class="tab" data-filter-tab="cleared" style="color:var(--accent2);">Cleared <b id="tab-count-cleared">0</b></span>
+    <span class="tab" data-filter-tab="stale">Stale &gt; 5d <b id="tab-count-stale">0</b></span>
+  </div>
 
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">Title commitment</div>
-            <div class="cond-desc"><span class="ai">Auto-cleared by AI · title_commitment_chen.pdf · Stewart Title</span> · 5m ago</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">View</button>
-        </div>
+  <div class="bulk-bar" id="bulk-bar">
+    <!-- populated by renderBulkBar() -->
+  </div>
 
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat ATC">ATC</span>
-          <div class="cond-body">
-            <div class="cond-title">Updated paystub at signing</div>
-            <div class="cond-desc">Within 30 days of CD · auto-trigger 5 days pre-close</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">Schedule</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat ATC">ATC</span>
-          <div class="cond-body">
-            <div class="cond-title">Wire instructions verification</div>
-            <div class="cond-desc">Title to call back at known number · Stewart Title direct line on file</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Verify</button>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- OF-1041 ANDERSON -->
-    <div class="loan-block">
-      <div class="loan-block-head">
-        <span class="loan-block-num">OF-1041</span>
-        <div class="loan-block-name">Anderson, P. <small>$280K · LUBBOCK · CONV 30YR</small></div>
-        <span class="loan-block-stage uw">UNDERWRITING</span>
-        <span class="loan-block-progress">
-          8 / 12 cleared
-          <span class="pbar" style="--p:67%"></span>
-          67%
-        </span>
-      </div>
-      <div class="loan-cond-list">
-
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">Most recent W-2</div>
-            <div class="cond-desc"><span class="ai">Auto-cleared by AI · w2_2025_anderson.pdf · AGI $87,400</span> · 1h ago</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">View</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTD">PTD</span>
-          <div class="cond-body">
-            <div class="cond-title">Tax return 2024 · all schedules</div>
-            <div class="cond-desc"><span class="stale">Borrower uploaded blurry scan · rescan requested 4h ago</span></div>
-          </div>
-          <span class="cond-owner"><span class="av">CM</span>Corbin</span>
-          <button class="cond-action">Notify</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">Termite inspection</div>
-            <div class="cond-desc">Texas requirement · pest letter pending</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Order</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">Final flood determination</div>
-            <div class="cond-desc">CoreLogic ordered · Zone X expected</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Track</button>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- OF-1038 FOSTER -->
-    <div class="loan-block">
-      <div class="loan-block-head">
-        <span class="loan-block-num">OF-1038</span>
-        <div class="loan-block-name">Foster, D. <small>$415K · LUBBOCK · CONV 30YR</small></div>
-        <span class="loan-block-stage cond">CONDITIONAL</span>
-        <span class="loan-block-progress">
-          11 / 14 cleared
-          <span class="pbar" style="--p:79%"></span>
-          79%
-        </span>
-      </div>
-      <div class="loan-cond-list">
-
-        <div class="cond-row cleared">
-          <span class="cond-checkbox">✓</span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">Homeowner's binder</div>
-            <div class="cond-desc"><span class="ai">Auto-cleared by AI · State Farm · $2,142/yr</span> · 6h ago</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">View</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">CPL from title company</div>
-            <div class="cond-desc">Closing protection letter pending</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Chase</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat PTC">PTC</span>
-          <div class="cond-body">
-            <div class="cond-title">HOA estoppel cert · Tanglewood HOA</div>
-            <div class="cond-desc">Condo association · est dues $312/mo to verify</div>
-          </div>
-          <span class="cond-owner"><span class="av proc">SH</span>Sarah</span>
-          <button class="cond-action">Order</button>
-        </div>
-
-        <div class="cond-row">
-          <span class="cond-checkbox"></span>
-          <span class="cond-cat ATC">ATC</span>
-          <div class="cond-body">
-            <div class="cond-title">3-day TRID waiting period</div>
-            <div class="cond-desc">CD signed 04/26 · earliest close 04/29</div>
-          </div>
-          <span class="cond-owner"><span class="av ai">AI</span>Claude</span>
-          <button class="cond-action">Track</button>
-        </div>
-
-      </div>
-    </div>
-
-  </main>
-
-  <!-- ─── SIDEBAR ──────────────────────────────────────────────── -->
-  <aside class="cond-sidebar">
-
-    <div class="sb-block">
-      <div class="sb-title">By Category</div>
-      <div class="cat-row">
-        <span class="cat-pill PTD">PTD</span>
-        <div class="progress r" style="--p:65%"></div>
-        <span class="count">9 / 26</span>
-      </div>
-      <div class="cat-row">
-        <span class="cat-pill PTC">PTC</span>
-        <div class="progress a" style="--p:75%"></div>
-        <span class="count">12 / 48</span>
-      </div>
-      <div class="cat-row">
-        <span class="cat-pill ATC">ATC</span>
-        <div class="progress c" style="--p:90%"></div>
-        <span class="count">6 / 68</span>
-      </div>
-    </div>
-
-    <div class="sb-block">
-      <div class="sb-title">By Owner</div>
-      <div class="cat-row">
-        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--accent);margin-right:0.4rem;"></span>AI · Claude</span>
-        <div class="progress c" style="--p:78%"></div>
-        <span class="count">21</span>
-      </div>
-      <div class="cat-row">
-        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--accent);margin-right:0.4rem;"></span>Corbin · LO</span>
-        <div class="progress c" style="--p:32%"></div>
-        <span class="count">9</span>
-      </div>
-      <div class="cat-row">
-        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--accent2);margin-right:0.4rem;"></span>Sarah · Proc</span>
-        <div class="progress c" style="--p:48%"></div>
-        <span class="count">14</span>
-      </div>
-      <div class="cat-row">
-        <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text);"><span style="display:inline-block;width:0.7rem;height:0.7rem;background:var(--amber);margin-right:0.4rem;"></span>Diana · UW</span>
-        <div class="progress a" style="--p:18%"></div>
-        <span class="count">5</span>
-      </div>
-    </div>
-
-    <div class="sb-block">
-      <div class="sb-title">Aging</div>
-      <div class="staleness-row">
-        <span class="label">&lt; 24h</span>
-        <span class="value">14</span>
-      </div>
-      <div class="staleness-row">
-        <span class="label">1–3 days</span>
-        <span class="value">8</span>
-      </div>
-      <div class="staleness-row">
-        <span class="label">3–5 days</span>
-        <span class="value warn">3</span>
-      </div>
-      <div class="staleness-row">
-        <span class="label">5+ days · stale</span>
-        <span class="value crit">2</span>
-      </div>
-    </div>
-
-    <div class="sb-block">
-      <div class="sb-title">AI Impact · April</div>
-      <div class="ai-savings">
-        <div class="label">Conditions auto-cleared</div>
-        <div class="num">478</div>
-        <div class="sub">~31 hours of processor time saved</div>
-      </div>
-      <div class="ai-savings" style="margin-top:0.5rem;">
-        <div class="label">Documents auto-extracted</div>
-        <div class="num">782</div>
-        <div class="sub">$0.04/doc · ~92% of all uploads</div>
-      </div>
-    </div>
-
-  </aside>
+  <div class="cond-layout">
+    <main class="cond-main" id="cond-main">
+      <!-- populated by renderLoanBlocks() -->
+    </main>
+    <aside class="cond-sidebar" id="cond-sidebar">
+      <!-- populated by renderSidebar() -->
+    </aside>
+  </div>
 
 </div>
 
 <footer>
   <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>Demo build · mock data · v0.1 · all activity simulated</span>
+  <span>v0.1 · Submarine Catalyst branch · live data from Supabase</span>
   <div style="display:flex;gap:1.25rem;">
-    <a href="index.html">← Landing page</a>
+    <a href="home.html">← Pipeline</a>
     <a href="#">Privacy</a>
     <a href="#">Terms</a>
     <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
   </div>
 </footer>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-  // Click checkboxes to toggle (demo only)
-  document.querySelectorAll('.cond-checkbox').forEach(cb => {
-    cb.addEventListener('click', e => {
-      const row = cb.closest('.cond-row');
-      row.classList.toggle('cleared');
-      cb.textContent = row.classList.contains('cleared') ? '✓' : '';
-    });
+// ═══════════════════════════════════════════════════════════════════════════
+// CONDITIONS — branch-wide cross-loan surface
+//
+// What it does:
+//   1. Auths via Supabase, scopes to user's branch
+//   2. Pulls all conditions in the branch + the loans they belong to +
+//      borrowers + assignee profiles
+//   3. Renders loan blocks with conditions grouped underneath
+//   4. Wires filters (search · loan · assignee · category tabs · stale tab)
+//   5. Wires checkbox → optimistic update + DB write
+//   6. Subscribes to `conditions` table realtime — when the AI worker (or any
+//      other LO) clears a condition, the screen updates without refresh
+//   7. Recomputes metric strip + sidebar stats on every state change
+//
+// Schema assumptions (flag if any of these fail at runtime — fallbacks exist):
+//   conditions table:
+//     id, loan_id, branch_id, title, description,
+//     category ('PTD'|'PTC'|'ATC'), status ('open'|'cleared'|'waived'),
+//     template_key, kind,
+//     assigned_to_role, assigned_to_user_id (optional, may be null),
+//     cleared_at, cleared_by_user_id, cleared_method ('manual'|'ai'|'waived'),
+//     ai_confidence (0-1 or 0-100), evidence_document_id,
+//     created_at, updated_at
+//
+//   loans table:
+//     id, loan_number, status, borrower_id, loan_amount, sales_price,
+//     subject_city, subject_state, loan_program, term, purpose, occupancy,
+//     dti, ltv, lock_expires_at, lo_id, processor_id, underwriter_id
+//
+//   borrowers, profiles per the rest of the app
+//
+// If `conditions.assigned_to_user_id` doesn't exist in your schema, the
+// query falls back to `select(*)` and we use `assigned_to_role` only.
+// If `cleared_method` doesn't exist, AI-cleared inference falls back to
+// "cleared but no cleared_by_user_id".
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SUPABASE_URL = 'https://zgmwtslzsmtmqcivngdq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng';
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ─── GLOBAL STATE ──────────────────────────────────────────────────────
+const state = {
+  user: null,
+  profile: null,
+  branch: null,
+  conditions: [],
+  loans: {},          // loan_id → loan record
+  borrowers: {},      // loan_id → primary borrower record
+  profilesById: {},   // user_id → profile record
+  filters: {
+    search: '',
+    loanId: '',
+    assigneeId: '',
+    category: null,   // 'PTD' | 'PTC' | 'ATC' | null
+    status: null,     // 'open' | 'cleared' | 'stale' | null
+  },
+  realtimeChannel: null,
+};
+
+const STALE_DAYS = 5;
+
+// ─── BOOT ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', bootstrap);
+
+async function bootstrap() {
+  showState('loading');
+  try {
+    // 1. Auth check
+    const { data: { user } } = await supa.auth.getUser();
+    if (!user) { showState('signed-out'); return; }
+    state.user = user;
+
+    // 2. Load profile + branch
+    const { data: profile, error: profErr } = await supa
+      .from('profiles')
+      .select('id, full_name, role, branch_id')
+      .eq('id', user.id)
+      .single();
+    if (profErr || !profile) throw new Error('Could not load your profile: ' + (profErr?.message || 'no row'));
+    state.profile = profile;
+
+    if (!profile.branch_id) throw new Error('Your profile is missing branch_id. Ask the branch owner to assign you.');
+
+    const { data: branch } = await supa
+      .from('branches')
+      .select('id, name')
+      .eq('id', profile.branch_id)
+      .single();
+    state.branch = branch || { id: profile.branch_id, name: 'Branch' };
+
+    // 3. Load all data in parallel
+    await loadConditions();
+    await Promise.all([loadLoans(), loadProfiles()]);
+    await loadBorrowers();
+
+    // 4. Update nav, wire UI, render
+    updateNav();
+    wireSignOut();
+    wireFilters();
+    rerender();
+
+    // 5. Subscribe to realtime
+    subscribeToConditions();
+
+    // 6. Show
+    showState('loaded');
+  } catch (err) {
+    console.error('[Conditions] boot failed:', err);
+    document.getElementById('error-message').textContent = err.message || String(err);
+    showState('error');
+  }
+}
+
+function showState(id) {
+  ['loading', 'signed-out', 'error'].forEach(s => {
+    document.getElementById('state-' + s).classList.toggle('active', s === id);
   });
-  // Tab filters (demo only — visual)
-  document.querySelectorAll('.tab').forEach(t => {
+  document.getElementById('state-loaded').style.display = id === 'loaded' ? 'block' : 'none';
+}
+
+// ─── DATA LOADERS ──────────────────────────────────────────────────────
+async function loadConditions() {
+  // Try the comprehensive query first; on failure (e.g., column missing),
+  // fall back to select(*). Both filter by branch_id.
+  const cols = `id, loan_id, branch_id, title, description, category, status,
+                template_key, kind, assigned_to_role, assigned_to_user_id,
+                cleared_at, cleared_by_user_id, cleared_method,
+                ai_confidence, evidence_document_id,
+                created_at, updated_at`;
+  try {
+    const { data, error } = await supa
+      .from('conditions')
+      .select(cols)
+      .eq('branch_id', state.branch.id);
+    if (error) throw error;
+    state.conditions = data || [];
+  } catch (err) {
+    console.warn('[Conditions] comprehensive query failed, trying *:', err.message);
+    const { data, error } = await supa
+      .from('conditions')
+      .select('*')
+      .eq('branch_id', state.branch.id);
+    if (error) throw new Error('conditions table not accessible: ' + error.message);
+    state.conditions = data || [];
+  }
+}
+
+async function loadLoans() {
+  const loanIds = [...new Set(state.conditions.map(c => c.loan_id).filter(Boolean))];
+  if (!loanIds.length) { state.loans = {}; return; }
+  try {
+    const { data, error } = await supa
+      .from('loans')
+      .select(`id, loan_number, status, borrower_id, loan_amount, sales_price,
+               subject_city, subject_state, loan_program, term, purpose,
+               occupancy, dti, ltv, lock_expires_at,
+               lo_id, processor_id, underwriter_id`)
+      .in('id', loanIds);
+    if (error) throw error;
+    state.loans = Object.fromEntries((data || []).map(l => [l.id, l]));
+  } catch (err) {
+    console.warn('[Conditions] loans full query failed, trying *:', err.message);
+    const { data } = await supa.from('loans').select('*').in('id', loanIds);
+    state.loans = Object.fromEntries((data || []).map(l => [l.id, l]));
+  }
+}
+
+async function loadBorrowers() {
+  const loanIds = Object.keys(state.loans);
+  if (!loanIds.length) { state.borrowers = {}; return; }
+  try {
+    const { data } = await supa
+      .from('borrowers')
+      .select('id, loan_id, first_name, last_name, is_primary')
+      .in('loan_id', loanIds);
+    const map = {};
+    for (const b of data || []) {
+      if (!map[b.loan_id] || b.is_primary) map[b.loan_id] = b;
+    }
+    state.borrowers = map;
+  } catch (err) {
+    console.warn('[Conditions] borrowers query failed:', err.message);
+    state.borrowers = {};
+  }
+}
+
+async function loadProfiles() {
+  // Gather every user_id we might display
+  const ids = new Set();
+  for (const c of state.conditions) {
+    if (c.assigned_to_user_id) ids.add(c.assigned_to_user_id);
+    if (c.cleared_by_user_id)  ids.add(c.cleared_by_user_id);
+  }
+  for (const l of Object.values(state.loans)) {
+    [l.lo_id, l.processor_id, l.underwriter_id].forEach(x => x && ids.add(x));
+  }
+  if (!ids.size) { state.profilesById = {}; return; }
+  try {
+    const { data } = await supa
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', [...ids]);
+    state.profilesById = Object.fromEntries((data || []).map(p => [p.id, p]));
+  } catch (err) {
+    console.warn('[Conditions] profiles query failed:', err.message);
+    state.profilesById = {};
+  }
+}
+
+// ─── NAV / SIGN OUT ────────────────────────────────────────────────────
+function updateNav() {
+  document.getElementById('nav-branch-name').textContent = state.branch.name || 'Branch';
+  document.getElementById('nav-user-name').textContent   = state.profile.full_name || 'User';
+  document.getElementById('nav-user-role').textContent   = String(state.profile.role || '—').toUpperCase();
+}
+
+function wireSignOut() {
+  document.getElementById('nav-signout').addEventListener('click', async () => {
+    if (state.realtimeChannel) try { await supa.removeChannel(state.realtimeChannel); } catch (_) {}
+    await supa.auth.signOut();
+    window.location.href = 'signin.html';
+  });
+}
+
+// ─── FILTERS ───────────────────────────────────────────────────────────
+function wireFilters() {
+  document.getElementById('filter-search').addEventListener('input', (e) => {
+    state.filters.search = e.target.value.toLowerCase();
+    rerender();
+  });
+  document.getElementById('filter-loan').addEventListener('change', (e) => {
+    state.filters.loanId = e.target.value || '';
+    rerender();
+  });
+  document.getElementById('filter-assignee').addEventListener('change', (e) => {
+    state.filters.assigneeId = e.target.value || '';
+    rerender();
+  });
+  document.querySelectorAll('[data-filter-tab]').forEach(t => {
     t.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('[data-filter-tab]').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
+      const v = t.dataset.filterTab;
+      state.filters.category = null;
+      state.filters.status   = null;
+      if (['ptd','ptc','atc'].includes(v)) {
+        state.filters.category = v.toUpperCase();
+        state.filters.status   = 'open';
+      } else if (v === 'cleared') {
+        state.filters.status = 'cleared';
+      } else if (v === 'stale') {
+        state.filters.status = 'stale';
+      }
+      rerender();
     });
   });
+}
+
+function applyFilters(conds) {
+  const f = state.filters;
+  return conds.filter(c => {
+    if (f.loanId     && c.loan_id !== f.loanId) return false;
+    if (f.assigneeId && c.assigned_to_user_id !== f.assigneeId) return false;
+    if (f.category   && c.category !== f.category) return false;
+    if (f.status === 'open'    && c.status !== 'open') return false;
+    if (f.status === 'cleared' && c.status !== 'cleared') return false;
+    if (f.status === 'stale'   && !(c.status === 'open' && isStale(c))) return false;
+    if (f.search) {
+      const hay = [
+        c.title, c.description, c.template_key,
+        state.loans[c.loan_id]?.loan_number,
+        state.borrowers[c.loan_id]?.first_name,
+        state.borrowers[c.loan_id]?.last_name,
+      ].join(' ').toLowerCase();
+      if (!hay.includes(f.search)) return false;
+    }
+    return true;
+  });
+}
+
+// ─── RENDERING ─────────────────────────────────────────────────────────
+function rerender() {
+  renderMetricStrip();
+  renderFilterDropdowns();
+  renderTabCounts();
+  renderBulkBar();
+  renderLoanBlocks();
+  renderSidebar();
+}
+
+function renderMetricStrip() {
+  const all = state.conditions;
+  const total      = all.length;
+  const cleared    = all.filter(c => c.status === 'cleared').length;
+  const openPtd    = all.filter(c => c.status === 'open' && c.category === 'PTD').length;
+  const openPtc    = all.filter(c => c.status === 'open' && c.category === 'PTC').length;
+  const openAtc    = all.filter(c => c.status === 'open' && c.category === 'ATC').length;
+  const aiCleared  = all.filter(c => c.status === 'cleared' && isAiCleared(c)).length;
+  const aiPct      = cleared > 0 ? Math.round((aiCleared / cleared) * 100) : 0;
+  const files      = new Set(all.map(c => c.loan_id)).size;
+  const avgPerFile = files > 0 ? (total / files).toFixed(1) : '0';
+  const clearedPct = total > 0 ? ((cleared / total) * 100).toFixed(1) : '0';
+  const clearedToday = all.filter(c =>
+    c.status === 'cleared' && c.cleared_at && daysSince(c.cleared_at) < 1
+  ).length;
+
+  document.getElementById('metric-strip').innerHTML = `
+    <div class="metric-cell">
+      <div class="metric-label">Total Conditions</div>
+      <div class="metric-value white">${total}</div>
+      <div class="metric-sub">across ${files} active file${files === 1 ? '' : 's'}</div>
+      <div class="metric-trend">avg ${avgPerFile} per file</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Cleared</div>
+      <div class="metric-value green">${cleared}</div>
+      <div class="metric-sub">${clearedPct}% of all conditions</div>
+      <div class="metric-trend">${clearedToday > 0 ? '▲ ' + clearedToday + ' today' : '—'}</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Open · PTD</div>
+      <div class="metric-value red">${openPtd}</div>
+      <div class="metric-sub">prior to docs</div>
+      <div class="metric-trend">live</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Open · PTC</div>
+      <div class="metric-value amber">${openPtc}</div>
+      <div class="metric-sub">prior to closing</div>
+      <div class="metric-trend">live</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">Open · ATC</div>
+      <div class="metric-value cyan">${openAtc}</div>
+      <div class="metric-sub">at close</div>
+      <div class="metric-trend">live</div>
+    </div>
+    <div class="metric-cell">
+      <div class="metric-label">AI-Cleared %</div>
+      <div class="metric-value green">${aiPct}%</div>
+      <div class="metric-sub">${aiCleared} of ${cleared} cleared</div>
+      <div class="metric-trend">${aiPct > 0 ? '🤖 live' : 'awaiting 12.0.x'}</div>
+    </div>
+  `;
+}
+
+function renderFilterDropdowns() {
+  // Loans — distinct, sorted by loan_number desc
+  const loanIds = [...new Set(state.conditions.map(c => c.loan_id).filter(Boolean))];
+  loanIds.sort((a, b) => (state.loans[b]?.loan_number || '').localeCompare(state.loans[a]?.loan_number || ''));
+  const loanSelect = document.getElementById('filter-loan');
+  const currentLoan = loanSelect.value;
+  loanSelect.innerHTML = `<option value="">All loans (${loanIds.length})</option>` +
+    loanIds.map(id => {
+      const l = state.loans[id] || {};
+      const b = state.borrowers[id] || {};
+      const name = b.last_name ? `${b.last_name}` : '?';
+      return `<option value="${escapeHtml(id)}"${id === currentLoan ? ' selected' : ''}>${escapeHtml(l.loan_number || '—')} · ${escapeHtml(name)}</option>`;
+    }).join('');
+
+  // Assignees — distinct profiles appearing on any condition
+  const assigneeIds = [...new Set(state.conditions.map(c => c.assigned_to_user_id).filter(Boolean))];
+  const assigneeSelect = document.getElementById('filter-assignee');
+  const currentAssignee = assigneeSelect.value;
+  assigneeSelect.innerHTML = `<option value="">All assignees</option>` +
+    assigneeIds.map(id => {
+      const p = state.profilesById[id];
+      if (!p) return '';
+      const role = p.role ? ' · ' + p.role.toUpperCase() : '';
+      return `<option value="${escapeHtml(id)}"${id === currentAssignee ? ' selected' : ''}>${escapeHtml(p.full_name || '?')}${escapeHtml(role)}</option>`;
+    }).join('');
+}
+
+function renderTabCounts() {
+  const all = state.conditions;
+  document.getElementById('tab-count-all').textContent     = all.length;
+  document.getElementById('tab-count-ptd').textContent     = all.filter(c => c.status === 'open' && c.category === 'PTD').length;
+  document.getElementById('tab-count-ptc').textContent     = all.filter(c => c.status === 'open' && c.category === 'PTC').length;
+  document.getElementById('tab-count-atc').textContent     = all.filter(c => c.status === 'open' && c.category === 'ATC').length;
+  document.getElementById('tab-count-cleared').textContent = all.filter(c => c.status === 'cleared').length;
+  document.getElementById('tab-count-stale').textContent   = all.filter(c => c.status === 'open' && isStale(c)).length;
+}
+
+function renderBulkBar() {
+  const open  = state.conditions.filter(c => c.status === 'open').length;
+  const files = new Set(state.conditions.filter(c => c.status === 'open').map(c => c.loan_id)).size;
+  const clearedToday = state.conditions.filter(c =>
+    c.status === 'cleared' && c.cleared_at && daysSince(c.cleared_at) < 1
+  );
+  const aiToday    = clearedToday.filter(c => isAiCleared(c)).length;
+  const humanToday = clearedToday.length - aiToday;
+
+  document.getElementById('bulk-bar').innerHTML = `
+    <span>
+      <span class="live-dot"></span>
+      <b>${open}</b> open condition${open === 1 ? '' : 's'} across <b>${files}</b> loan${files === 1 ? '' : 's'}
+      ${clearedToday.length > 0
+        ? ` · <b style="color:var(--accent2);">${clearedToday.length} cleared today</b> (${aiToday} by AI, ${humanToday} by humans)`
+        : ''}
+    </span>
+    <div class="bulk-actions">
+      <button class="btn" onclick="alert('Bulk borrower notification coming with 11.5.9 (notification system)')">Notify Borrowers</button>
+      <button class="btn" onclick="alert('Bulk reassignment coming with 12.5.8 (UW workspace)')">Reassign Selected</button>
+    </div>
+  `;
+}
+
+function renderLoanBlocks() {
+  const filtered = applyFilters(state.conditions);
+
+  if (!filtered.length) {
+    const reason = state.conditions.length === 0
+      ? 'No conditions exist in this branch yet — they appear here as the UW seeds them or the condition_templates engine auto-creates them on loan submission.'
+      : 'Try clearing filters or switching tabs.';
+    document.getElementById('cond-main').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-title">No conditions match</div>
+        <div class="empty-sub">${escapeHtml(reason)}</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Group by loan_id; sort loans by loan_number desc
+  const byLoan = {};
+  for (const c of filtered) {
+    if (!byLoan[c.loan_id]) byLoan[c.loan_id] = [];
+    byLoan[c.loan_id].push(c);
+  }
+  const loanIds = Object.keys(byLoan).sort((a, b) =>
+    (state.loans[b]?.loan_number || '').localeCompare(state.loans[a]?.loan_number || '')
+  );
+
+  document.getElementById('cond-main').innerHTML =
+    loanIds.map(id => renderLoanBlock(id, byLoan[id])).join('');
+
+  // Wire interactions on the freshly-rendered DOM
+  document.querySelectorAll('[data-cond-checkbox]').forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleConditionClear(cb.dataset.condCheckbox);
+    });
+  });
+  document.querySelectorAll('[data-loan-block]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('button, .cond-checkbox, .cond-action')) return;
+      window.location.href = `loan.html?id=${el.dataset.loanBlock}#tab=conditions`;
+    });
+  });
+}
+
+function renderLoanBlock(loanId, conds) {
+  const loan = state.loans[loanId] || {};
+  const borrower = state.borrowers[loanId] || {};
+
+  // Count cleared / total across ALL conditions for this loan (not just filtered)
+  const all = state.conditions.filter(c => c.loan_id === loanId);
+  const cleared = all.filter(c => c.status === 'cleared').length;
+  const total = all.length;
+  const pct = total > 0 ? Math.round((cleared / total) * 100) : 0;
+
+  const stageCls = stageColor(loan.status);
+  const stageLab = stageLabel(loan.status);
+
+  // Sort: open first (by created_at asc), then cleared (by cleared_at desc)
+  const sorted = [...conds].sort((a, b) => {
+    if (a.status === 'open' && b.status !== 'open') return -1;
+    if (b.status === 'open' && a.status !== 'open') return 1;
+    if (a.status === 'cleared' && b.status === 'cleared') {
+      return new Date(b.cleared_at || 0) - new Date(a.cleared_at || 0);
+    }
+    return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+  });
+
+  const amt = loan.loan_amount ? `$${Math.round(loan.loan_amount / 1000)}K` : '';
+  const city = loan.subject_city ? loan.subject_city.toUpperCase() : '';
+  const prog = loanProgramLabel(loan.loan_program, loan.term);
+  const small = [amt, city, prog].filter(Boolean).join(' · ');
+
+  return `
+    <div class="loan-block" data-loan-block="${escapeHtml(loanId)}">
+      <div class="loan-block-head">
+        <span class="loan-block-num">${escapeHtml(loan.loan_number || '—')}</span>
+        <div class="loan-block-name">
+          ${escapeHtml(borrower.last_name || '?')}, ${escapeHtml(borrower.first_name || '?')}
+          ${small ? `<small>${escapeHtml(small)}</small>` : ''}
+        </div>
+        <span class="loan-block-stage ${stageCls}">${escapeHtml(stageLab)}</span>
+        <span class="loan-block-progress">
+          ${cleared} / ${total} cleared
+          <span class="pbar" style="--p:${pct}%"></span>
+          ${pct}%
+        </span>
+      </div>
+      <div class="loan-cond-list">
+        ${sorted.map(renderConditionRow).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderConditionRow(c) {
+  const isCleared = c.status === 'cleared';
+  const isWaived  = c.status === 'waived';
+  const isStaleR  = c.status === 'open' && isStale(c);
+  const ai        = isAiCleared(c);
+
+  // ─── Description text ─────────────────────────────────────────────
+  let desc = '';
+  if (isCleared && ai) {
+    const conf = formatConfidence(c.ai_confidence);
+    desc = `<span class="ai">Auto-cleared by AI${conf ? ' · ' + conf : ''}</span> · ${timeAgo(c.cleared_at)}`;
+  } else if (isCleared) {
+    const clearerName = state.profilesById[c.cleared_by_user_id]?.full_name || 'Staff';
+    desc = `Cleared by ${escapeHtml(clearerName)} · ${timeAgo(c.cleared_at)}`;
+  } else if (isWaived) {
+    desc = `Waived · ${timeAgo(c.cleared_at)}`;
+  } else {
+    desc = c.description ? escapeHtml(c.description) : `Created ${timeAgo(c.created_at)}`;
+  }
+  if (isStaleR) {
+    const days = daysSince(c.created_at);
+    desc = `<span class="stale">⚠ ${days}d open</span> · ${desc}`;
+  }
+
+  // ─── Owner avatar + label ─────────────────────────────────────────
+  let ownerAv, ownerLabel;
+  if (isCleared && ai) {
+    ownerAv    = '<span class="av ai">AI</span>';
+    ownerLabel = 'Claude';
+  } else {
+    const assignee = c.assigned_to_user_id ? state.profilesById[c.assigned_to_user_id] : null;
+    const role     = (c.assigned_to_role || assignee?.role || '').toLowerCase();
+    let avCls = '';
+    if (role.includes('process')) avCls = 'proc';
+    else if (role.includes('underwrit')) avCls = 'uw';
+
+    if (assignee) {
+      const initials = (assignee.full_name || '?')
+        .split(/\s+/).map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+      ownerAv    = `<span class="av ${avCls}">${escapeHtml(initials)}</span>`;
+      ownerLabel = escapeHtml((assignee.full_name || '').split(' ')[0] || '—');
+    } else if (role) {
+      ownerAv    = `<span class="av ${avCls}">${escapeHtml(role.slice(0, 2).toUpperCase())}</span>`;
+      ownerLabel = escapeHtml(titleCase(role));
+    } else {
+      ownerAv    = '<span class="av empty">—</span>';
+      ownerLabel = '<span style="color:var(--muted);">Unassigned</span>';
+    }
+  }
+
+  const action = isCleared ? 'View' : (isStaleR ? 'Chase' : 'Notify');
+
+  return `
+    <div class="cond-row ${isCleared ? 'cleared' : ''} ${isStaleR ? 'stale-row' : ''}">
+      <span class="cond-checkbox" data-cond-checkbox="${escapeHtml(c.id)}" title="${isCleared ? 'Reopen this condition' : 'Mark cleared'}">${isCleared ? '✓' : ''}</span>
+      <span class="cond-cat ${escapeHtml(c.category || 'PTD')}">${escapeHtml(c.category || '?')}</span>
+      <div class="cond-body">
+        <div class="cond-title">${escapeHtml(c.title || 'Untitled condition')}</div>
+        <div class="cond-desc">${desc}</div>
+      </div>
+      <span class="cond-owner">${ownerAv}${ownerLabel}</span>
+      <button class="cond-action" onclick="alert('Condition detail panel coming next — for now, click the loan row to open the loan detail page (Conditions tab).')">${action}</button>
+    </div>
+  `;
+}
+
+function renderSidebar() {
+  const all = state.conditions;
+
+  // By category — share cleared / total
+  const cats = ['PTD', 'PTC', 'ATC'];
+  const catRows = cats.map(cat => {
+    const inCat = all.filter(c => c.category === cat);
+    const cleared = inCat.filter(c => c.status === 'cleared').length;
+    const total = inCat.length;
+    const pct = total > 0 ? Math.round((cleared / total) * 100) : 0;
+    const cls = cat === 'PTD' ? 'r' : cat === 'PTC' ? 'a' : 'c';
+    return `
+      <div class="cat-row">
+        <span class="cat-pill ${cat}">${cat}</span>
+        <div class="progress ${cls}" style="--p:${pct}%"></div>
+        <span class="count">${cleared} / ${total}</span>
+      </div>
+    `;
+  }).join('');
+
+  // By owner — grouped by user (excluding AI which is implicit)
+  // Count by role across all conditions
+  const byRole = {};
+  for (const c of all) {
+    let label, color;
+    if (c.status === 'cleared' && isAiCleared(c)) {
+      label = 'AI · Claude'; color = 'var(--accent)';
+    } else if (c.assigned_to_user_id && state.profilesById[c.assigned_to_user_id]) {
+      const p = state.profilesById[c.assigned_to_user_id];
+      const r = (p.role || c.assigned_to_role || '').toLowerCase();
+      const firstName = (p.full_name || '?').split(' ')[0];
+      const roleShort = r.includes('process') ? 'Proc' : r.includes('underwrit') ? 'UW' : r ? titleCase(r) : '—';
+      label = `${firstName} · ${roleShort}`;
+      color = r.includes('process') ? 'var(--accent2)' : r.includes('underwrit') ? 'var(--amber)' : 'var(--accent)';
+    } else if (c.assigned_to_role) {
+      const r = c.assigned_to_role.toLowerCase();
+      label = titleCase(r) + ' · unassigned';
+      color = 'var(--muted)';
+    } else {
+      label = 'Unassigned';
+      color = 'var(--border)';
+    }
+    if (!byRole[label]) byRole[label] = { count: 0, color };
+    byRole[label].count++;
+  }
+  const ownerRows = Object.entries(byRole)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 6)
+    .map(([label, info]) => {
+      const pct = all.length > 0 ? Math.round((info.count / all.length) * 100) : 0;
+      return `
+        <div class="cat-row">
+          <span class="owner-label"><span class="dot" style="background:${info.color};"></span>${escapeHtml(label)}</span>
+          <div class="progress c" style="--p:${pct}%"></div>
+          <span class="count">${info.count}</span>
+        </div>
+      `;
+    }).join('');
+
+  // Aging buckets — only count open conditions
+  const open = all.filter(c => c.status === 'open');
+  const bucket24h = open.filter(c => daysSince(c.created_at) < 1).length;
+  const bucket1_3 = open.filter(c => { const d = daysSince(c.created_at); return d >= 1 && d < 3; }).length;
+  const bucket3_5 = open.filter(c => { const d = daysSince(c.created_at); return d >= 3 && d < 5; }).length;
+  const bucket5p  = open.filter(c => daysSince(c.created_at) >= 5).length;
+
+  // AI impact — cleared by AI total + last 30 days
+  const aiAll  = all.filter(c => c.status === 'cleared' && isAiCleared(c)).length;
+  const aiMo   = all.filter(c => c.status === 'cleared' && isAiCleared(c) && daysSince(c.cleared_at) <= 30).length;
+  // Rough estimate: 4 min saved per auto-clear (look up the doc, match the criteria, click clear)
+  const hoursSaved = (aiMo * 4 / 60).toFixed(1);
+
+  document.getElementById('cond-sidebar').innerHTML = `
+    <div class="sb-block">
+      <div class="sb-title">By Category</div>
+      ${catRows}
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">By Owner</div>
+      ${ownerRows || '<div style="font-family:var(--mono); font-size:0.62rem; color:var(--muted);">No assigned conditions yet.</div>'}
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">Aging (Open)</div>
+      <div class="staleness-row"><span class="label">&lt; 24h</span><span class="value">${bucket24h}</span></div>
+      <div class="staleness-row"><span class="label">1–3 days</span><span class="value">${bucket1_3}</span></div>
+      <div class="staleness-row"><span class="label">3–5 days</span><span class="value ${bucket3_5 > 0 ? 'warn' : ''}">${bucket3_5}</span></div>
+      <div class="staleness-row"><span class="label">5+ days · stale</span><span class="value ${bucket5p > 0 ? 'crit' : ''}">${bucket5p}</span></div>
+    </div>
+
+    <div class="sb-block">
+      <div class="sb-title">AI Impact · Last 30d</div>
+      <div class="ai-savings">
+        <div class="label">Conditions auto-cleared</div>
+        <div class="num">${aiMo}</div>
+        <div class="sub">~${hoursSaved} hours of processor time saved</div>
+      </div>
+      <div class="ai-savings" style="margin-top: 0.5rem;">
+        <div class="label">All time</div>
+        <div class="num">${aiAll}</div>
+        <div class="sub">since AI extraction went live</div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── MUTATION: clear / reopen a condition ──────────────────────────────
+async function toggleConditionClear(condId) {
+  const c = state.conditions.find(x => x.id === condId);
+  if (!c) return;
+
+  // Capture the previous shape so we can roll back if the DB call fails
+  const prev = {
+    status: c.status,
+    cleared_at: c.cleared_at,
+    cleared_by_user_id: c.cleared_by_user_id,
+    cleared_method: c.cleared_method,
+  };
+
+  // Optimistic local update
+  const isNowClearing = c.status !== 'cleared';
+  if (isNowClearing) {
+    c.status = 'cleared';
+    c.cleared_at = new Date().toISOString();
+    c.cleared_by_user_id = state.user.id;
+    c.cleared_method = 'manual';
+  } else {
+    c.status = 'open';
+    c.cleared_at = null;
+    c.cleared_by_user_id = null;
+    c.cleared_method = null;
+  }
+  rerender();
+
+  // Commit to DB
+  const patch = isNowClearing
+    ? { status: 'cleared', cleared_at: c.cleared_at, cleared_by_user_id: state.user.id, cleared_method: 'manual' }
+    : { status: 'open',    cleared_at: null,         cleared_by_user_id: null,           cleared_method: null    };
+  try {
+    const { error } = await supa.from('conditions').update(patch).eq('id', condId);
+    if (error) throw error;
+  } catch (err) {
+    // Rollback
+    Object.assign(c, prev);
+    rerender();
+    alert('Failed to update condition: ' + err.message
+      + '\n\nIf this is a column-missing error, check your conditions schema for: status, cleared_at, cleared_by_user_id, cleared_method.');
+  }
+}
+
+// ─── REALTIME: subscribe so AI-cleared conditions light up live ────────
+function subscribeToConditions() {
+  state.realtimeChannel = supa
+    .channel('conditions-' + state.branch.id)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'conditions',
+      filter: `branch_id=eq.${state.branch.id}`,
+    }, (payload) => {
+      try { handleRealtimeChange(payload); } catch (err) { console.error('Realtime handler error:', err); }
+    })
+    .subscribe();
+}
+
+function handleRealtimeChange(payload) {
+  if (payload.eventType === 'INSERT') {
+    // New condition — append, then re-fetch loan + assignee if unknown
+    if (!state.conditions.find(c => c.id === payload.new.id)) {
+      state.conditions.push(payload.new);
+      // If we don't know this loan/assignee yet, lazy-load
+      if (payload.new.loan_id && !state.loans[payload.new.loan_id]) {
+        loadLoans().then(loadBorrowers).then(loadProfiles).then(rerender);
+        return;
+      }
+      if (payload.new.assigned_to_user_id && !state.profilesById[payload.new.assigned_to_user_id]) {
+        loadProfiles().then(rerender);
+        return;
+      }
+    }
+  } else if (payload.eventType === 'UPDATE') {
+    const idx = state.conditions.findIndex(c => c.id === payload.new.id);
+    if (idx >= 0) state.conditions[idx] = payload.new;
+    else state.conditions.push(payload.new);
+  } else if (payload.eventType === 'DELETE') {
+    state.conditions = state.conditions.filter(c => c.id !== payload.old.id);
+  }
+  rerender();
+}
+
+// ─── HELPERS ───────────────────────────────────────────────────────────
+function isAiCleared(c) {
+  if (c.status !== 'cleared') return false;
+  if (c.cleared_method === 'ai') return true;
+  // Fallback: if cleared_method column doesn't exist, "no user cleared it" = AI
+  if (!c.cleared_by_user_id) return true;
+  return false;
+}
+
+function isStale(c) {
+  return daysSince(c.created_at) >= STALE_DAYS;
+}
+
+function daysSince(d) {
+  if (!d) return 0;
+  return Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function timeAgo(d) {
+  if (!d) return 'just now';
+  const sec = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (sec < 60)      return sec + 's ago';
+  if (sec < 3600)    return Math.floor(sec / 60) + 'm ago';
+  if (sec < 86400)   return Math.floor(sec / 3600) + 'h ago';
+  if (sec < 86400 * 7)  return Math.floor(sec / 86400) + 'd ago';
+  if (sec < 86400 * 30) return Math.floor(sec / 86400 / 7) + 'w ago';
+  return formatDate(d);
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatConfidence(v) {
+  if (v == null) return '';
+  const n = Number(v);
+  if (Number.isNaN(n)) return '';
+  return Math.round(n <= 1 ? n * 100 : n) + '% conf';
+}
+
+function stageColor(status) {
+  if (!status) return 'app';
+  const s = String(status).toLowerCase();
+  if (s.includes('underwrit')) return 'uw';
+  if (s.includes('clear') || s === 'ctc' || s.includes('clear_to_close')) return 'ctc';
+  if (s.includes('condition')) return 'cond';
+  if (s.includes('process')) return 'proc';
+  if (s.includes('fund') || s === 'closed' || s.includes('closed')) return 'closed';
+  return 'app';
+}
+
+function stageLabel(status) {
+  if (!status) return 'APPLICATION';
+  const s = String(status).toLowerCase();
+  if (s.includes('underwrit'))                      return 'UNDERWRITING';
+  if (s === 'ctc' || s.includes('clear_to_close'))  return 'CLEAR-TO-CLOSE';
+  if (s.includes('condition'))                      return 'CONDITIONAL';
+  if (s.includes('process'))                        return 'PROCESSING';
+  if (s.includes('docs_out') || s.includes('docs-out')) return 'DOCS OUT';
+  if (s.includes('fund'))                           return 'FUNDING';
+  if (s === 'closed' || s.includes('closed'))       return 'CLOSED';
+  if (s.includes('withdraw'))                       return 'WITHDRAWN';
+  if (s.includes('declin'))                         return 'DECLINED';
+  return String(status).toUpperCase().replace(/_/g, ' ');
+}
+
+function loanProgramLabel(program, term) {
+  if (!program) return '';
+  const p = String(program).toUpperCase();
+  const t = term ? ` ${term}YR` : '';
+  if (p.includes('CONV'))    return 'CONV' + t;
+  if (p.includes('FHA'))     return 'FHA' + t;
+  if (p.includes('VA'))      return 'VA' + t;
+  if (p.includes('USDA'))    return 'USDA' + t;
+  if (p.includes('JUMBO'))   return 'JUMBO' + t;
+  return p + t;
+}
+
+function titleCase(s) {
+  if (!s) return '';
+  return String(s).split(/[\s_-]+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 </script>
 
 </body>
