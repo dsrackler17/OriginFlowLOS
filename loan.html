@@ -1427,6 +1427,221 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   TIMELINE TAB — per-loan event log, merged from multiple source tables
+   
+   Pulls from: loan_documents, conditions, disclosures, intent_to_proceed,
+   change_of_circumstance, aus_findings, credit_reports. Each table fails
+   open — missing tables just contribute zero events.
+   ═══════════════════════════════════════════════════════════════════════ */
+.tl-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.tl-loading {
+  padding: 3rem 1rem; text-align: center; color: var(--muted);
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em;
+}
+
+.tl-filter-row {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+}
+.tl-chip {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted); padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; transition: all 0.15s;
+}
+.tl-chip:hover { color: var(--white); border-color: rgba(0,212,255,0.4); }
+.tl-chip.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.1); }
+.tl-chip b { color: inherit; margin-left: 0.4rem; font-size: 0.62rem; }
+
+.tl-group { position: relative; }
+.tl-group-head {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--accent);
+  padding: 0.4rem 0; margin-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tl-events {
+  position: relative;
+  padding-left: 1.5rem;
+}
+.tl-events::before {
+  content: ''; position: absolute;
+  left: 0.4rem; top: 0.4rem; bottom: 0.4rem;
+  width: 1px; background: var(--border);
+}
+
+.tl-event {
+  position: relative;
+  padding: 0.55rem 0 0.55rem 0.85rem;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 0.85rem; align-items: baseline;
+}
+.tl-event::before {
+  content: '';
+  position: absolute; left: -1.5rem; top: 0.85rem;
+  width: 0.85rem; height: 0.85rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--muted);
+}
+.tl-event.cyan::before  { border-color: var(--accent); }
+.tl-event.green::before { border-color: var(--accent2); }
+.tl-event.amber::before { border-color: var(--amber); }
+.tl-event.red::before   { border-color: var(--red); }
+
+.tl-event-body { min-width: 0; }
+.tl-event-title {
+  font-family: var(--sans); font-size: 0.88rem; color: var(--text);
+  line-height: 1.35;
+}
+.tl-event-title strong { color: var(--white); font-weight: 500; }
+.tl-event-sub {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+.tl-event-sub .actor { color: var(--text); }
+.tl-event-sub .actor.ai { color: var(--accent2); }
+.tl-event-time {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0;
+}
+
+.tl-empty {
+  padding: 3rem 2rem;
+  text-align: center;
+  border: 1px dashed var(--border);
+  background: var(--surface);
+}
+.tl-empty-title {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text); margin-bottom: 0.4rem;
+}
+.tl-empty-sub {
+  font-size: 0.78rem; color: var(--muted);
+  max-width: 480px; margin: 0 auto; line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HMDA TAB — Government Monitoring Information + LAR fields
+   
+   Reuses .disc-panel classes for visual consistency. Adds a completeness
+   progress bar at the top and a demographic-capture grid per borrower.
+   ═══════════════════════════════════════════════════════════════════════ */
+.hmda-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.hmda-progress-card {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 1.1rem 1.25rem;
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 1rem; align-items: center;
+}
+.hmda-progress-info { min-width: 0; }
+.hmda-progress-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem;
+}
+.hmda-progress-bar {
+  height: 6px; background: var(--border); position: relative;
+  margin-bottom: 0.3rem;
+}
+.hmda-progress-bar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  width: var(--p, 0%); background: var(--accent);
+  transition: width 0.3s;
+}
+.hmda-progress-bar.complete::after { background: var(--accent2); }
+.hmda-progress-sub {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.hmda-progress-pct {
+  font-family: var(--serif); font-size: 2.2rem; color: var(--accent);
+  line-height: 1;
+}
+.hmda-progress-pct.complete { color: var(--accent2); }
+
+.hmda-demo-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.75rem;
+}
+.hmda-demo-card {
+  background: var(--panel); border: 1px solid var(--border);
+  padding: 0.95rem 1.05rem;
+}
+.hmda-demo-card-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+}
+.hmda-demo-name {
+  font-family: var(--sans); font-size: 0.92rem; color: var(--white);
+  font-weight: 500;
+}
+.hmda-demo-role {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.hmda-demo-section {
+  margin-bottom: 0.7rem;
+}
+.hmda-demo-section:last-child { margin-bottom: 0; }
+.hmda-demo-section-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+.hmda-demo-section-value {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--text);
+  line-height: 1.4;
+}
+.hmda-demo-section-value.missing { color: var(--amber); font-style: italic; }
+.hmda-demo-section-value.declined { color: var(--muted); font-style: italic; }
+.hmda-demo-method {
+  font-family: var(--mono); font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem; display: block;
+}
+
+.hmda-action-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid; font-family: var(--mono);
+  font-size: 0.78rem; letter-spacing: 0.04em;
+}
+.hmda-action-badge.originated { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.hmda-action-badge.approved   { color: var(--accent);  border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+.hmda-action-badge.denied,
+.hmda-action-badge.declined   { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.hmda-action-badge.withdrawn  { color: var(--muted);   border-color: var(--border); }
+.hmda-action-badge.pending    { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+
+.hmda-lar-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 0.4rem 1.5rem;
+}
+.hmda-lar-cell {
+  display: grid; grid-template-columns: 160px 1fr;
+  gap: 0.6rem; align-items: baseline;
+  padding: 0.3rem 0;
+  border-bottom: 1px dotted var(--border);
+}
+.hmda-lar-key {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); text-transform: uppercase;
+}
+.hmda-lar-val {
+  font-family: var(--mono); font-size: 0.78rem; color: var(--white);
+}
+.hmda-lar-val.missing { color: var(--amber); font-style: italic; }
+
+@media (max-width: 720px) {
+  .hmda-progress-card { grid-template-columns: 1fr; text-align: center; }
+  .hmda-lar-grid { grid-template-columns: 1fr; }
+  .hmda-lar-cell { grid-template-columns: 1fr; gap: 0.2rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MESSAGES TAB — iframes /loan_messages.html. The iframe pages itself
    has its own nav bar, which looks chunky here (two nav bars stacked).
    v1 ships as is; future patch can add ?embed=1 to loan_messages.html
@@ -4372,29 +4587,714 @@ function normalizeTradelineType(t) {
   return 'other';
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TIMELINE TAB — FUNCTIONAL
+//
+// Merged event log for this loan. Pulls from multiple source tables and
+// renders chronologically. Each source fails open — if a table is missing,
+// it contributes zero events instead of erroring the whole tab.
+//
+// Sources today:
+//   - loan_documents.created_at        → "Doc uploaded"
+//   - conditions.created_at            → "Condition added"
+//   - conditions.cleared_at            → "Condition cleared (manual / AI)"
+//   - disclosures.delivered_at         → "LE/CD delivered"
+//   - intent_to_proceed.captured_at    → "ITP captured"
+//   - change_of_circumstance.occurred_at → "COC logged"
+//   - aus_findings.run_at              → "AUS run"
+//   - credit_reports.report_pulled_at  → "Credit pulled"
+//
+// Not in scope today (gated by 13.5.1 universal audit log):
+//   - Field-level edits to the loan record
+//   - Login/logout events
+//   - Document downloads / views
+//   - Status transitions
+//
+// When 13.5.1 ships, those events become first-class entries in this
+// timeline via the `audit_log` table (a new source added to fetchTimeline).
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _tlState = {
+  events: [],
+  profiles: {},
+  filter: 'all',  // 'all' | 'docs' | 'conditions' | 'disclosures' | 'other'
+};
+
 function renderTimeline() {
-  return emptyTab({
-    icon: '∷',
-    eyebrow: 'Timeline — coming soon',
-    title: 'Full audit timeline for this loan',
-    sub: `Every field write, every document touch, every state transition, every login, every doc download
-          on this loan — chronological, immutable, append-only. Per-loan slice of the universal audit log.
-          The thing your compliance officer wants when a regulator asks "what happened on file 1043 on March 14?"`,
-    checklistRef: '13.5.1 universal audit log · 13.5.2 audit log viewer',
+  setTimeout(() => loadAndRenderTimeline(), 0);
+  return `
+    <div class="tl-pane" id="tl-pane">
+      <div class="tl-loading">Loading timeline…</div>
+    </div>
+  `;
+}
+
+async function loadAndRenderTimeline() {
+  const paneEl = document.getElementById('tl-pane');
+  if (!paneEl) return;
+
+  // Fetch every source in parallel
+  const [docs, conds, discs, itp, cocs, findings, credits] = await Promise.all([
+    fetchTlDocs(),
+    fetchTlConditions(),
+    fetchTlDisclosures(),
+    fetchTlItp(),
+    fetchTlCocs(),
+    fetchTlFindings(),
+    fetchTlCredits(),
+  ]);
+
+  // Build unified event list
+  const events = [];
+
+  // Documents → upload events
+  for (const d of docs) {
+    events.push({
+      at: d.uploaded_at || d.created_at,
+      category: 'docs',
+      color: 'cyan',
+      icon: '⬆',
+      actor_id: d.uploaded_by,
+      title: `<strong>Document uploaded</strong> · ${escapeHtml(d.file_name || 'unnamed')}`,
+      sub: d.doc_type ? `Classified as ${escapeHtml(String(d.doc_type).replace(/_/g, ' '))}` : '',
+    });
+  }
+
+  // Conditions → created + cleared events
+  for (const c of conds) {
+    events.push({
+      at: c.created_at,
+      category: 'conditions',
+      color: 'amber',
+      icon: '⚐',
+      actor_id: c.created_by_user_id,
+      title: `<strong>Condition added</strong> · ${escapeHtml(c.title || 'Untitled')}`,
+      sub: `${escapeHtml(c.category || '?')}${c.assigned_to_role ? ' · assigned to ' + escapeHtml(c.assigned_to_role) : ''}`,
+    });
+    if (c.cleared_at) {
+      const isAi = c.cleared_method === 'ai' || !c.cleared_by_user_id;
+      events.push({
+        at: c.cleared_at,
+        category: 'conditions',
+        color: 'green',
+        icon: '✓',
+        actor_id: c.cleared_by_user_id,
+        actor_is_ai: isAi,
+        title: `<strong>Condition cleared</strong> · ${escapeHtml(c.title || 'Untitled')}`,
+        sub: isAi
+          ? `Auto-cleared by AI${c.ai_confidence != null ? ' · ' + Math.round((Number(c.ai_confidence) <= 1 ? Number(c.ai_confidence) * 100 : Number(c.ai_confidence))) + '% conf' : ''}`
+          : `Manually cleared`,
+      });
+    }
+  }
+
+  // Disclosures → delivery events
+  for (const d of discs) {
+    events.push({
+      at: d.delivered_at || d.created_at,
+      category: 'disclosures',
+      color: 'cyan',
+      icon: '⊟',
+      actor_id: d.delivered_by_user_id,
+      title: `<strong>${d.kind === 'CD' ? 'Closing Disclosure' : 'Loan Estimate'} delivered</strong>${d.version > 1 ? ' · v' + d.version + ' (revision)' : ' · initial'}`,
+      sub: `Delivered via ${escapeHtml(String(d.delivery_method || 'unknown').replace(/_/g, ' '))}${d.reason_for_revision ? ' · ' + escapeHtml(d.reason_for_revision) : ''}`,
+    });
+  }
+
+  // Intent to Proceed
+  if (itp) {
+    events.push({
+      at: itp.captured_at,
+      category: 'disclosures',
+      color: 'green',
+      icon: '✓',
+      actor_id: itp.captured_by_user_id,
+      title: `<strong>Intent to Proceed captured</strong>`,
+      sub: `Method: ${escapeHtml(String(itp.method || 'unknown').replace(/_/g, ' '))}`,
+    });
+  }
+
+  // Change of Circumstance
+  for (const c of cocs) {
+    events.push({
+      at: c.occurred_at || c.created_at,
+      category: 'disclosures',
+      color: 'amber',
+      icon: '⇄',
+      actor_id: c.created_by_user_id,
+      title: `<strong>Change of Circumstance logged</strong> · ${escapeHtml(c.reason || 'Reason not stated')}`,
+      sub: c.triggers_redisclosure
+        ? (c.redisclosed_at ? `Redisclosure issued ${timeAgo(c.redisclosed_at)}` : 'Redisclosure required')
+        : 'No redisclosure required',
+    });
+  }
+
+  // AUS Findings
+  for (const f of findings) {
+    const rec = String(f.recommendation || '').toLowerCase();
+    const color = rec.includes('approve') || rec === 'accept' ? 'green'
+                : rec.includes('ineligible') || rec.includes('out_of_scope') ? 'red'
+                : 'amber';
+    events.push({
+      at: f.run_at || f.created_at,
+      category: 'other',
+      color,
+      icon: '✓',
+      actor_id: f.run_by_user_id,
+      title: `<strong>${escapeHtml((f.engine || 'AUS').toUpperCase())} run</strong> · ${escapeHtml(String(f.recommendation || 'Unknown').toUpperCase().replace(/_/g, ' / '))}`,
+      sub: f.casefile_id ? `Casefile ${escapeHtml(f.casefile_id)}` : '',
+    });
+  }
+
+  // Credit Reports
+  for (const r of credits) {
+    events.push({
+      at: r.report_pulled_at || r.created_at,
+      category: 'other',
+      color: 'cyan',
+      icon: '⌗',
+      actor_id: null,
+      title: `<strong>Credit report pulled</strong>${r.decision_score != null ? ' · ' + r.decision_score : ''}`,
+      sub: r.expires_at ? `Expires ${formatDate(r.expires_at)}` : '',
+    });
+  }
+
+  // Loan creation event (always present)
+  if (loan?.created_at) {
+    events.push({
+      at: loan.created_at,
+      category: 'other',
+      color: 'cyan',
+      icon: '◇',
+      actor_id: null,
+      title: `<strong>Loan record created</strong> · ${escapeHtml(loan.loan_number || '—')}`,
+      sub: 'Application received',
+    });
+  }
+
+  // Sort all events by timestamp desc
+  events.sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0));
+
+  // Fetch actor profiles
+  const actorIds = [...new Set(events.map(e => e.actor_id).filter(Boolean))];
+  if (actorIds.length) {
+    try {
+      const { data } = await supa.from('profiles')
+        .select('id, full_name, role').in('id', actorIds);
+      _tlState.profiles = Object.fromEntries((data || []).map(p => [p.id, p]));
+    } catch (_) {}
+  }
+
+  _tlState.events = events;
+  renderTlPane();
+}
+
+async function fetchTlDocs() {
+  try {
+    const { data } = await supa.from('loan_documents')
+      .select('id, file_name, doc_type, uploaded_at, uploaded_by, created_at')
+      .eq('loan_id', loan.id).is('archived_at', null);
+    return data || [];
+  } catch (_) {
+    try {
+      const { data } = await supa.from('documents')
+        .select('id, file_name, doc_type, uploaded_at, uploaded_by, created_at')
+        .eq('loan_id', loan.id);
+      return data || [];
+    } catch (_) { return []; }
+  }
+}
+
+async function fetchTlConditions() {
+  try {
+    const { data } = await supa.from('conditions')
+      .select('id, title, category, created_at, created_by_user_id, cleared_at, cleared_by_user_id, cleared_method, ai_confidence, assigned_to_role')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchTlDisclosures() {
+  try {
+    const { data } = await supa.from('disclosures')
+      .select('id, kind, version, delivered_at, delivered_by_user_id, delivery_method, reason_for_revision, created_at')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchTlItp() {
+  try {
+    const { data } = await supa.from('intent_to_proceed')
+      .select('captured_at, captured_by_user_id, method')
+      .eq('loan_id', loan.id).order('captured_at', { ascending: false }).limit(1).maybeSingle();
+    return data || null;
+  } catch (_) { return null; }
+}
+
+async function fetchTlCocs() {
+  try {
+    const { data } = await supa.from('change_of_circumstance')
+      .select('id, occurred_at, reason, triggers_redisclosure, redisclosed_at, created_by_user_id, created_at')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchTlFindings() {
+  try {
+    const { data } = await supa.from('aus_findings')
+      .select('id, engine, recommendation, casefile_id, run_at, run_by_user_id, created_at')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchTlCredits() {
+  try {
+    const { data } = await supa.from('credit_reports')
+      .select('id, report_pulled_at, expires_at, decision_score, created_at')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+function renderTlPane() {
+  const paneEl = document.getElementById('tl-pane');
+  if (!paneEl) return;
+
+  const all = _tlState.events;
+
+  // Counts per filter
+  const counts = {
+    all:         all.length,
+    docs:        all.filter(e => e.category === 'docs').length,
+    conditions:  all.filter(e => e.category === 'conditions').length,
+    disclosures: all.filter(e => e.category === 'disclosures').length,
+    other:       all.filter(e => e.category === 'other').length,
+  };
+
+  // Apply filter
+  const filtered = _tlState.filter === 'all'
+    ? all
+    : all.filter(e => e.category === _tlState.filter);
+
+  let html = '';
+
+  // Filter chips
+  html += `
+    <div class="tl-filter-row">
+      <span class="tl-chip ${_tlState.filter === 'all' ? 'active' : ''}" data-tl-filter="all">All <b>${counts.all}</b></span>
+      <span class="tl-chip ${_tlState.filter === 'docs' ? 'active' : ''}" data-tl-filter="docs">Documents <b>${counts.docs}</b></span>
+      <span class="tl-chip ${_tlState.filter === 'conditions' ? 'active' : ''}" data-tl-filter="conditions">Conditions <b>${counts.conditions}</b></span>
+      <span class="tl-chip ${_tlState.filter === 'disclosures' ? 'active' : ''}" data-tl-filter="disclosures">Disclosures <b>${counts.disclosures}</b></span>
+      <span class="tl-chip ${_tlState.filter === 'other' ? 'active' : ''}" data-tl-filter="other">Other <b>${counts.other}</b></span>
+    </div>
+  `;
+
+  if (filtered.length === 0) {
+    html += `
+      <div class="tl-empty">
+        <div class="tl-empty-title">${all.length === 0 ? 'No timeline events yet' : 'Nothing matches'}</div>
+        <div class="tl-empty-sub">
+          ${all.length === 0
+            ? 'Events appear here as documents get uploaded, conditions land, and disclosures go out.  Full audit trail (field edits, logins, downloads) lands with checklist 13.5.1.'
+            : 'Try the All filter to see all events.'}
+        </div>
+      </div>
+    `;
+  } else {
+    // Group by date bucket
+    const buckets = { today: [], yesterday: [], thisWeek: [], earlier: [] };
+    for (const e of filtered) {
+      const days = condDaysSince(e.at);
+      if (days === 0) buckets.today.push(e);
+      else if (days === 1) buckets.yesterday.push(e);
+      else if (days < 7) buckets.thisWeek.push(e);
+      else buckets.earlier.push(e);
+    }
+
+    const bucketLabels = {
+      today: 'Today',
+      yesterday: 'Yesterday',
+      thisWeek: 'Earlier this week',
+      earlier: 'Earlier',
+    };
+
+    for (const key of ['today', 'yesterday', 'thisWeek', 'earlier']) {
+      if (buckets[key].length === 0) continue;
+      html += `
+        <div class="tl-group">
+          <div class="tl-group-head">${bucketLabels[key]} · ${buckets[key].length}</div>
+          <div class="tl-events">
+            ${buckets[key].map(renderTlEvent).join('')}
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  paneEl.innerHTML = html;
+
+  paneEl.querySelectorAll('[data-tl-filter]').forEach(c => {
+    c.addEventListener('click', () => {
+      _tlState.filter = c.dataset.tlFilter;
+      renderTlPane();
+    });
   });
 }
 
+function renderTlEvent(e) {
+  const actorProfile = e.actor_id ? _tlState.profiles[e.actor_id] : null;
+  const actorName = e.actor_is_ai ? 'Claude (AI)'
+                  : actorProfile?.full_name
+                  || (e.actor_id ? 'Staff' : 'System');
+  const actorCls = e.actor_is_ai ? 'actor ai' : 'actor';
+  return `
+    <div class="tl-event ${e.color || ''}">
+      <div class="tl-event-body">
+        <div class="tl-event-title">${e.title}</div>
+        ${e.sub
+          ? `<div class="tl-event-sub">${e.sub}${e.sub ? ' · ' : ''}<span class="${actorCls}">${escapeHtml(actorName)}</span></div>`
+          : `<div class="tl-event-sub"><span class="${actorCls}">${escapeHtml(actorName)}</span></div>`}
+      </div>
+      <span class="tl-event-time">${escapeHtml(timeAgo(e.at))}</span>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HMDA TAB — FUNCTIONAL
+//
+// Surfaces Government Monitoring Information (Reg B / Reg C demographics)
+// per borrower, plus the action-taken disposition, denial reasons, and
+// the LAR record fields that get reported annually to the CFPB.
+//
+// IMPORTANT: forward-looking UI. HMDA collection lands with checklist
+// 12.5.11; LAR export with 13.5.3.
+//
+// Schema assumptions (queries fail open):
+//   hmda_demographics  | id, borrower_id, loan_id,
+//                      | ethnicity (text[] or JSONB — multi-select),
+//                      | ethnicity_collected_visually (bool),
+//                      | race (text[] or JSONB — multi-select),
+//                      | race_collected_visually (bool),
+//                      | sex, sex_collected_visually,
+//                      | applicant_did_not_wish_to_provide (bool),
+//                      | created_at, updated_at
+//
+//   hmda_lar           | id, loan_id, action_taken
+//                      | ('originated'|'approved_not_accepted'|'denied'
+//                      |  |'withdrawn'|'closed_incomplete'|'purchased'),
+//                      | action_date, denial_reasons (text[]),
+//                      | rate_spread, hoepa_status, lien_status,
+//                      | aus_used, census_tract, total_loan_costs,
+//                      | total_points_and_fees, origination_charges,
+//                      | discount_points, lender_credits, intro_rate_period,
+//                      | created_at, updated_at
+//
+// Many of these fields can be pulled from elsewhere in the loan record
+// (loan.loan_amount, loan.subject_state, loan.dti, etc.) — we fall back
+// to those values when the dedicated LAR row is absent.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _hmdaState = { demographics: [], lar: null, borrowers: [] };
+
 function renderHmda() {
-  return emptyTab({
-    icon: '◷',
-    eyebrow: 'HMDA — coming soon',
-    title: 'Reg B Government Monitoring + HMDA fields',
-    sub: `Collects race, ethnicity, sex (borrower self-reports or LO-collects-visually per Reg B),
-          action taken codes, denial reasons (if applicable), gross income, property location.
-          All HMDA-required fields stored on every loan regardless of disposition.
-          Feeds the annual / quarterly LAR export at the branch level.`,
-    checklistRef: '12.5.11 HMDA data collection · 13.5.3 LAR export',
-  });
+  setTimeout(() => loadAndRenderHmda(), 0);
+  return `
+    <div class="hmda-pane" id="hmda-pane">
+      <div class="disc-loading">
+        <div class="disc-loading-spinner"></div>
+        Loading HMDA data…
+      </div>
+    </div>
+  `;
+}
+
+async function loadAndRenderHmda() {
+  const paneEl = document.getElementById('hmda-pane');
+  if (!paneEl) return;
+
+  // Borrowers
+  let borrowers = [];
+  try {
+    const { data } = await supa.from('borrowers')
+      .select('id, first_name, last_name, is_primary')
+      .eq('loan_id', loan.id)
+      .order('is_primary', { ascending: false });
+    borrowers = data || [];
+  } catch (_) {}
+  _hmdaState.borrowers = borrowers;
+
+  // Demographics
+  let demos = [];
+  try {
+    const { data } = await supa.from('hmda_demographics')
+      .select('id, borrower_id, ethnicity, ethnicity_collected_visually, race, race_collected_visually, sex, sex_collected_visually, applicant_did_not_wish_to_provide, updated_at')
+      .eq('loan_id', loan.id);
+    demos = data || [];
+  } catch (_) {}
+  _hmdaState.demographics = demos;
+
+  // LAR
+  let lar = null;
+  try {
+    const { data } = await supa.from('hmda_lar')
+      .select('id, action_taken, action_date, denial_reasons, rate_spread, hoepa_status, lien_status, aus_used, census_tract, total_loan_costs, total_points_and_fees, origination_charges, discount_points, lender_credits, intro_rate_period, updated_at')
+      .eq('loan_id', loan.id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    lar = data || null;
+  } catch (_) {}
+  _hmdaState.lar = lar;
+
+  renderHmdaPane();
+}
+
+function renderHmdaPane() {
+  const paneEl = document.getElementById('hmda-pane');
+  if (!paneEl) return;
+
+  const { demographics, lar, borrowers } = _hmdaState;
+
+  // ─── Completeness math ──────────────────────────────────────────────
+  // For each borrower we expect 3 demographic categories (ethnicity, race, sex).
+  // Each is "complete" if either provided OR explicitly declined.
+  let demoComplete = 0;
+  const demoTotal = borrowers.length * 3;
+  for (const b of borrowers) {
+    const d = demographics.find(x => x.borrower_id === b.id);
+    if (d) {
+      if (hmdaFieldFilled(d.ethnicity) || d.applicant_did_not_wish_to_provide) demoComplete++;
+      if (hmdaFieldFilled(d.race)      || d.applicant_did_not_wish_to_provide) demoComplete++;
+      if (hmdaFieldFilled(d.sex)       || d.applicant_did_not_wish_to_provide) demoComplete++;
+    }
+  }
+
+  // LAR core fields (12 key fields tracked for completeness)
+  const larChecks = [
+    ['Loan Amount',          loan.loan_amount != null],
+    ['Loan Purpose',         !!loan.purpose],
+    ['Occupancy',            !!loan.occupancy],
+    ['Property Type',        !!loan.property_type],
+    ['Lien Status',          !!(lar?.lien_status)],
+    ['Loan Type / Program',  !!loan.loan_program],
+    ['Action Taken',         !!(lar?.action_taken)],
+    ['Action Date',          !!(lar?.action_date) || !!loan.updated_at],
+    ['Census Tract',         !!(lar?.census_tract)],
+    ['Subject State',        !!loan.subject_state],
+    ['Income (Gross)',       loan.gross_income != null || loan.borrower_income != null],
+    ['HOEPA Status',         !!(lar?.hoepa_status)],
+  ];
+  const larComplete = larChecks.filter(([_, ok]) => ok).length;
+  const larTotal    = larChecks.length;
+
+  const totalComplete = demoComplete + larComplete;
+  const totalAll      = demoTotal + larTotal;
+  const pct           = totalAll > 0 ? Math.round((totalComplete / totalAll) * 100) : 0;
+
+  let html = '';
+
+  // ─── Progress strip ─────────────────────────────────────────────────
+  html += `
+    <div class="hmda-progress-card">
+      <div class="hmda-progress-info">
+        <div class="hmda-progress-label">HMDA Completeness</div>
+        <div class="hmda-progress-bar ${pct === 100 ? 'complete' : ''}" style="--p:${pct}%"></div>
+        <div class="hmda-progress-sub">
+          ${totalComplete} of ${totalAll} required fields complete
+          ${pct < 100 ? `· ${totalAll - totalComplete} missing` : ''}
+          ${pct === 100 ? '· ready for LAR' : ''}
+        </div>
+      </div>
+      <div class="hmda-progress-pct ${pct === 100 ? 'complete' : ''}">${pct}%</div>
+    </div>
+  `;
+
+  // ─── Demographics section ───────────────────────────────────────────
+  html += `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">
+          Government Monitoring Information
+          <span class="disc-status-pill ${demoComplete === demoTotal ? 'captured' : 'pending'}">${demoComplete}/${demoTotal}</span>
+        </span>
+        <div class="disc-panel-actions">
+          <button class="btn sm" onclick="alert('Demographic capture form lands with 12.5.11. Borrower fills via the URLA section in the portal, or LO captures from in-person/phone application per Reg B visual observation rules.')">Capture / Update</button>
+        </div>
+      </div>
+      <div class="disc-panel-body">
+        ${borrowers.length === 0
+          ? `<div style="font-family: var(--mono); font-size: 0.7rem; color: var(--muted); text-align: center; padding: 1rem;">No borrowers on this loan yet.</div>`
+          : `<div class="hmda-demo-grid">${borrowers.map(b => renderHmdaDemoCard(b, demographics.find(d => d.borrower_id === b.id))).join('')}</div>`}
+      </div>
+    </div>
+  `;
+
+  // ─── Action Taken section ───────────────────────────────────────────
+  html += renderHmdaActionPanel(lar);
+
+  // ─── LAR Preview ────────────────────────────────────────────────────
+  html += renderHmdaLarPreview(lar, larChecks);
+
+  paneEl.innerHTML = html;
+}
+
+function renderHmdaDemoCard(borrower, demo) {
+  const name = `${borrower.first_name || '?'} ${borrower.last_name || '?'}`;
+  const role = borrower.is_primary ? 'Primary' : 'Co-Borrower';
+
+  function fieldLine(label, value, visualFlag) {
+    if (!value || (Array.isArray(value) && value.length === 0)) {
+      const declined = demo?.applicant_did_not_wish_to_provide;
+      return `
+        <div class="hmda-demo-section">
+          <div class="hmda-demo-section-label">${escapeHtml(label)}</div>
+          <div class="hmda-demo-section-value ${declined ? 'declined' : 'missing'}">
+            ${declined ? 'Applicant declined to provide' : 'Not yet captured'}
+          </div>
+        </div>
+      `;
+    }
+    const formatted = Array.isArray(value)
+      ? value.map(v => titleCase(String(v).replace(/_/g, ' '))).join(', ')
+      : titleCase(String(value).replace(/_/g, ' '));
+    return `
+      <div class="hmda-demo-section">
+        <div class="hmda-demo-section-label">${escapeHtml(label)}</div>
+        <div class="hmda-demo-section-value">${escapeHtml(formatted)}</div>
+        <span class="hmda-demo-method">${visualFlag ? 'Collected via visual observation / surname' : 'Self-reported'}</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="hmda-demo-card">
+      <div class="hmda-demo-card-head">
+        <span class="hmda-demo-name">${escapeHtml(name)}</span>
+        <span class="hmda-demo-role">${escapeHtml(role)}</span>
+      </div>
+      ${fieldLine('Ethnicity', demo?.ethnicity, demo?.ethnicity_collected_visually)}
+      ${fieldLine('Race',      demo?.race,      demo?.race_collected_visually)}
+      ${fieldLine('Sex',       demo?.sex,       demo?.sex_collected_visually)}
+    </div>
+  `;
+}
+
+function renderHmdaActionPanel(lar) {
+  const action = lar?.action_taken || hmdaInferActionFromLoanStatus(loan.status);
+  let badgeCls = 'pending', badgeLabel = 'Pending';
+  if (action) {
+    const a = action.toLowerCase();
+    if (a === 'originated' || a === 'funded') { badgeCls = 'originated'; badgeLabel = 'Originated'; }
+    else if (a === 'approved_not_accepted')   { badgeCls = 'approved';   badgeLabel = 'Approved but Not Accepted'; }
+    else if (a === 'denied' || a === 'declined') { badgeCls = 'denied';  badgeLabel = 'Denied'; }
+    else if (a === 'withdrawn')                  { badgeCls = 'withdrawn'; badgeLabel = 'Withdrawn'; }
+    else if (a === 'closed_incomplete')          { badgeCls = 'withdrawn'; badgeLabel = 'Closed — Incomplete'; }
+    else if (a === 'purchased')                  { badgeCls = 'approved'; badgeLabel = 'Purchased'; }
+  }
+
+  const denials = Array.isArray(lar?.denial_reasons) ? lar.denial_reasons : [];
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Action Taken</span>
+        <div class="disc-panel-actions">
+          <button class="btn sm" onclick="alert('Action selection + finalization happens automatically based on loan disposition. Denials require denial reason codes per Reg B (12 CFR 1002.9). Lands with 12.5.11.')">Update</button>
+        </div>
+      </div>
+      <div class="disc-panel-body">
+        <div class="disc-kv-grid">
+          <span class="disc-kv-key">Action</span>
+          <span class="disc-kv-val">
+            <span class="hmda-action-badge ${badgeCls}">${escapeHtml(badgeLabel)}</span>
+            ${!lar?.action_taken ? '<span class="sub">inferred from loan status; not yet finalized</span>' : ''}
+          </span>
+
+          <span class="disc-kv-key">Action Date</span>
+          <span class="disc-kv-val">${escapeHtml(lar?.action_date ? formatDate(lar.action_date) : (loan.updated_at ? formatDate(loan.updated_at) + ' (inferred)' : '—'))}</span>
+
+          ${badgeCls === 'denied' ? `
+            <span class="disc-kv-key">Denial Reasons</span>
+            <span class="disc-kv-val">
+              ${denials.length > 0
+                ? denials.map(r => escapeHtml(titleCase(String(r).replace(/_/g, ' ')))).join(', ')
+                : '<span class="amber">Required — not yet captured</span>'}
+              <span class="sub">Reg B requires specific denial reasons within 30 days · 12 CFR 1002.9</span>
+            </span>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderHmdaLarPreview(lar, checks) {
+  // Pull values from loan + lar with fallbacks
+  const incomeStr = loan.gross_income != null ? dollars(loan.gross_income)
+                  : loan.borrower_income != null ? dollars(loan.borrower_income)
+                  : null;
+  const rows = [
+    ['Loan Amount',         loan.loan_amount != null ? dollars(loan.loan_amount) : null],
+    ['Loan Purpose',        loan.purpose ? titleCase(String(loan.purpose).replace(/_/g, ' ')) : null],
+    ['Loan Type',           loan.loan_program ? String(loan.loan_program).toUpperCase() : null],
+    ['Occupancy',           loan.occupancy ? titleCase(String(loan.occupancy).replace(/_/g, ' ')) : null],
+    ['Property Type',       loan.property_type ? titleCase(String(loan.property_type).replace(/_/g, ' ')) : null],
+    ['Property State',      loan.subject_state || null],
+    ['Census Tract',        lar?.census_tract || null],
+    ['Income (Gross)',      incomeStr],
+    ['DTI',                 loan.dti != null ? Number(loan.dti).toFixed(2) + '%' : null],
+    ['CLTV',                loan.hcltv != null ? Number(loan.hcltv).toFixed(2) + '%' : loan.ltv != null ? Number(loan.ltv).toFixed(2) + '%' : null],
+    ['Lien Status',         lar?.lien_status ? titleCase(lar.lien_status) : null],
+    ['HOEPA Status',        lar?.hoepa_status ? titleCase(lar.hoepa_status) : null],
+    ['Rate Spread',         lar?.rate_spread != null ? Number(lar.rate_spread).toFixed(3) + '%' : null],
+    ['AUS Used',            lar?.aus_used ? String(lar.aus_used).toUpperCase() : null],
+    ['Total Loan Costs',    lar?.total_loan_costs != null ? dollars(lar.total_loan_costs) : null],
+    ['Origination Charges', lar?.origination_charges != null ? dollars(lar.origination_charges) : null],
+    ['Discount Points',     lar?.discount_points != null ? dollars(lar.discount_points) : null],
+    ['Lender Credits',      lar?.lender_credits != null ? dollars(lar.lender_credits) : null],
+  ];
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">LAR Record Preview</span>
+        <div class="disc-panel-actions">
+          <button class="btn sm" onclick="alert('LAR export lands with 13.5.3. Branch owner exports YTD LAR as CSV/TSV in the CFPB filing format; quarterly QA reports flag incomplete records.')">Export LAR Row</button>
+        </div>
+      </div>
+      <div class="disc-panel-body">
+        <div class="hmda-lar-grid">
+          ${rows.map(([key, val]) => `
+            <div class="hmda-lar-cell">
+              <span class="hmda-lar-key">${escapeHtml(key)}</span>
+              <span class="hmda-lar-val ${val == null ? 'missing' : ''}">${val != null ? escapeHtml(val) : 'not collected'}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top: 0.85rem; font-family: var(--mono); font-size: 0.58rem; color: var(--muted); letter-spacing: 0.04em;">
+          This row will appear in the annual Loan Application Register (LAR) submitted to the CFPB. Census tract is auto-geocoded from property address; the full LAR has ~110 fields — this view shows the headline ones.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── HMDA helpers ──────────────────────────────────────────────────────
+function hmdaFieldFilled(v) {
+  if (v == null) return false;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === 'object') return Object.keys(v).length > 0;
+  return String(v).trim().length > 0;
+}
+
+function hmdaInferActionFromLoanStatus(status) {
+  if (!status) return null;
+  const s = String(status).toLowerCase();
+  if (s.includes('fund') || s === 'closed' || s.includes('closed_funded')) return 'originated';
+  if (s.includes('declin') || s.includes('denied')) return 'denied';
+  if (s.includes('withdraw')) return 'withdrawn';
+  return null; // pending while in active stages
 }
 
 function renderDecision() {
