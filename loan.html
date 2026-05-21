@@ -1642,6 +1642,287 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   DECISION TAB — UW workspace · the biggest single tab in the app
+   
+   This is where the underwriter makes the credit decision. The tab
+   assembles every data source onto one surface, then offers four big
+   actions: Approve · Approve with Conditions · Suspend · Decline.
+   
+   For Decline: Reg B denial reasons must be selected (12 CFR 1002.9).
+   For Approve with Conditions: condition_templates engine auto-seeds
+   the PTC/ATC conditions (12.5.9, partial today).
+   Adverse action notice PDF generation lands with 13.5.4.
+   ═══════════════════════════════════════════════════════════════════════ */
+.dec-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.dec-loading {
+  padding: 3rem 1rem; text-align: center; color: var(--muted);
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em;
+}
+
+/* Current-decision banner (only shown if a prior decision exists) */
+.dec-current-banner {
+  padding: 1.1rem 1.4rem;
+  border: 1px solid; border-left-width: 4px;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 1.25rem; align-items: center;
+}
+.dec-current-icon {
+  font-family: var(--mono); font-size: 1.6rem;
+}
+.dec-current-label {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.15rem;
+}
+.dec-current-decision {
+  font-family: var(--serif); font-size: 1.5rem; line-height: 1.1;
+  color: var(--white);
+}
+.dec-current-meta {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.04em;
+  color: var(--muted); margin-top: 0.2rem;
+}
+
+.dec-current-banner.approve {
+  background: rgba(0,255,157,0.04); border-color: rgba(0,255,157,0.4);
+  border-left-color: var(--accent2);
+}
+.dec-current-banner.approve .dec-current-decision,
+.dec-current-banner.approve .dec-current-icon { color: var(--accent2); }
+.dec-current-banner.approve_with_conditions {
+  background: rgba(0,212,255,0.04); border-color: rgba(0,212,255,0.4);
+  border-left-color: var(--accent);
+}
+.dec-current-banner.approve_with_conditions .dec-current-decision,
+.dec-current-banner.approve_with_conditions .dec-current-icon { color: var(--accent); }
+.dec-current-banner.suspend {
+  background: rgba(245,166,35,0.04); border-color: rgba(245,166,35,0.4);
+  border-left-color: var(--amber);
+}
+.dec-current-banner.suspend .dec-current-decision,
+.dec-current-banner.suspend .dec-current-icon { color: var(--amber); }
+.dec-current-banner.decline {
+  background: rgba(255,68,68,0.04); border-color: rgba(255,68,68,0.4);
+  border-left-color: var(--red);
+}
+.dec-current-banner.decline .dec-current-decision,
+.dec-current-banner.decline .dec-current-icon { color: var(--red); }
+
+/* Stat strip — reuse docs-summary classes for the top metrics */
+
+/* Two-column review grid */
+.dec-review-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.dec-review-grid > .disc-panel { margin: 0; }
+
+/* Ratios vs guidelines */
+.dec-ratio-row {
+  display: grid; grid-template-columns: 80px 1fr auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.45rem 0;
+  border-bottom: 1px dotted var(--border);
+}
+.dec-ratio-row:last-child { border-bottom: none; }
+.dec-ratio-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.dec-ratio-bar {
+  position: relative; height: 8px;
+  background: var(--border);
+}
+.dec-ratio-bar::after {
+  content: ''; position: absolute; left: 0; top: 0; height: 100%;
+  width: var(--p, 0%); background: var(--accent);
+  transition: width 0.2s;
+}
+.dec-ratio-bar.over::after  { background: var(--red); }
+.dec-ratio-bar.warn::after  { background: var(--amber); }
+.dec-ratio-bar.ok::after    { background: var(--accent2); }
+.dec-ratio-bar .threshold {
+  position: absolute; top: -3px; bottom: -3px;
+  width: 1px; background: var(--white);
+  opacity: 0.6;
+}
+.dec-ratio-vals {
+  font-family: var(--mono); font-size: 0.78rem; color: var(--white);
+  white-space: nowrap;
+}
+.dec-ratio-vals .lim { color: var(--muted); }
+.dec-ratio-vals.over { color: var(--red); }
+.dec-ratio-vals.warn { color: var(--amber); }
+
+/* The decision controls — big buttons */
+.dec-controls-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.dec-controls-head {
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.1rem;
+}
+.dec-controls-title {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--white);
+}
+.dec-controls-sub {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.04em;
+  color: var(--muted); margin-top: 0.2rem;
+}
+.dec-controls-body {
+  padding: 1.25rem 1.1rem;
+}
+
+.dec-buttons {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+.dec-btn {
+  padding: 1rem 0.85rem;
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--border); background: var(--panel);
+  color: var(--text); cursor: pointer; transition: all 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+}
+.dec-btn:hover { background: var(--surface); }
+.dec-btn-icon { font-size: 1.4rem; }
+.dec-btn.selected.approve {
+  background: rgba(0,255,157,0.1); border-color: var(--accent2);
+  color: var(--accent2);
+}
+.dec-btn.selected.approve_with_conditions {
+  background: rgba(0,212,255,0.1); border-color: var(--accent);
+  color: var(--accent);
+}
+.dec-btn.selected.suspend {
+  background: rgba(245,166,35,0.1); border-color: var(--amber);
+  color: var(--amber);
+}
+.dec-btn.selected.decline {
+  background: rgba(255,68,68,0.1); border-color: var(--red);
+  color: var(--red);
+}
+.dec-btn-label { font-weight: 700; }
+.dec-btn-sub {
+  font-size: 0.55rem; letter-spacing: 0.04em; color: var(--muted);
+  text-transform: none; font-weight: 400; line-height: 1.3;
+}
+.dec-btn.selected .dec-btn-sub { color: inherit; opacity: 0.85; }
+
+/* Decision form (shown after a button is selected) */
+.dec-form { margin-top: 1.25rem; }
+.dec-form-section { margin-bottom: 1.1rem; }
+.dec-form-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 0.4rem; display: block;
+}
+.dec-form-label .req { color: var(--red); margin-left: 0.3rem; }
+.dec-form textarea, .dec-form input[type="text"] {
+  width: 100%;
+  background: var(--panel); border: 1px solid var(--border);
+  color: var(--white); padding: 0.65rem 0.85rem;
+  font-family: var(--sans); font-size: 0.85rem; line-height: 1.5;
+  outline: none; transition: border-color 0.15s;
+  resize: vertical; min-height: 80px;
+}
+.dec-form textarea:focus, .dec-form input:focus { border-color: var(--accent); }
+
+.dec-denial-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.4rem;
+}
+.dec-denial-check {
+  display: flex; align-items: flex-start; gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--panel); border: 1px solid var(--border);
+  cursor: pointer; font-size: 0.78rem; color: var(--text);
+  transition: all 0.15s;
+}
+.dec-denial-check:hover { border-color: rgba(0,212,255,0.4); }
+.dec-denial-check input {
+  margin-top: 0.2rem; accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.dec-denial-check.checked {
+  background: rgba(0,212,255,0.06); border-color: var(--accent);
+}
+.dec-denial-check small {
+  display: block; font-family: var(--mono); font-size: 0.55rem;
+  color: var(--muted); letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+
+.dec-submit-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 1.5rem; padding-top: 1.1rem;
+  border-top: 1px dashed var(--border);
+  flex-wrap: wrap; gap: 0.85rem;
+}
+.dec-submit-warning {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.04em;
+  color: var(--amber); flex: 1; min-width: 200px;
+}
+.dec-submit-btn {
+  padding: 0.75rem 1.5rem;
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+  text-transform: uppercase; font-weight: 700;
+  border: 1px solid; cursor: pointer; transition: all 0.15s;
+}
+.dec-submit-btn:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.dec-submit-btn.approve { background: var(--accent2); color: var(--navy); border-color: var(--accent2); }
+.dec-submit-btn.approve_with_conditions { background: var(--accent); color: var(--navy); border-color: var(--accent); }
+.dec-submit-btn.suspend { background: var(--amber); color: var(--navy); border-color: var(--amber); }
+.dec-submit-btn.decline { background: var(--red); color: var(--white); border-color: var(--red); }
+.dec-submit-btn:hover:not(:disabled) { opacity: 0.85; }
+
+/* Decision history */
+.dec-history-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: baseline;
+  padding: 0.6rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+  margin-bottom: 0.4rem;
+}
+.dec-history-row.superseded { opacity: 0.55; }
+.dec-history-pill {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  padding: 0.18rem 0.5rem; border: 1px solid;
+  text-transform: uppercase; min-width: 5rem; text-align: center;
+}
+.dec-history-pill.approve, .dec-history-pill.approve_with_conditions { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.dec-history-pill.suspend  { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.dec-history-pill.decline  { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.dec-history-body {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--text);
+  line-height: 1.4;
+}
+.dec-history-body small {
+  display: block; font-family: var(--mono); font-size: 0.58rem;
+  color: var(--muted); letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+.dec-history-when {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .dec-review-grid { grid-template-columns: 1fr; }
+  .dec-buttons { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .dec-current-banner { grid-template-columns: 1fr; text-align: center; }
+  .dec-buttons { grid-template-columns: 1fr; }
+  .dec-ratio-row { grid-template-columns: 60px 1fr; }
+  .dec-ratio-vals { grid-column: 1 / -1; text-align: right; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MESSAGES TAB — iframes /loan_messages.html. The iframe pages itself
    has its own nav bar, which looks chunky here (two nav bars stacked).
    v1 ships as is; future patch can add ?embed=1 to loan_messages.html
@@ -5297,17 +5578,748 @@ function hmdaInferActionFromLoanStatus(status) {
   return null; // pending while in active stages
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// DECISION TAB — FUNCTIONAL · UW workspace
+//
+// This is the heaviest single tab in loan.html. The UW reviews everything
+// assembled from other tabs, then makes a credit decision.
+//
+// What it does:
+//   1. Quick stats strip (loan amount · program · DTI · LTV · credit score)
+//   2. Current decision banner (if a prior decision exists)
+//   3. Two-column review: AUS recommendation · Credit summary · Ratios vs
+//      guidelines · Conditions snapshot
+//   4. Decision controls: 4 big buttons (Approve · Approve+Conditions ·
+//      Suspend · Decline) — clicking one opens the decision form
+//   5. Decision form: notes textarea + (for Decline) Reg B denial reason
+//      checklist per 12 CFR 1002.9
+//   6. Decision history (prior decisions, with supersession tracking)
+//
+// What it does NOT do yet (gated by 12.5.8):
+//   - Auto-seed PTC/ATC conditions on "Approve with Conditions"
+//     (the condition_templates engine handles this — wires up here once
+//     the seed RPC is callable)
+//   - Generate adverse action notice PDF on Decline (13.5.4)
+//   - Email the borrower the decision
+//
+// However, the decision-writing IS wired — clicking Submit inserts a row
+// into uw_decisions. If the table doesn't exist, falls back to alert+stub.
+//
+// Schema assumed (graceful fallback when missing):
+//   uw_decisions  | id, loan_id, branch_id,
+//                 | decided_at, decided_by_user_id,
+//                 | decision ('approve'|'approve_with_conditions'
+//                 |          |'suspend'|'decline'),
+//                 | denial_reasons (text[] or JSONB) — required if decline,
+//                 | notes, conditions_seeded (bool),
+//                 | adverse_action_notice_id, superseded (bool),
+//                 | superseded_by_decision_id, created_at, updated_at
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _decState = {
+  decisions: [],
+  current: null,        // latest non-superseded decision
+  conditions: [],
+  findings: null,       // latest aus_findings row
+  creditReports: [],
+  profiles: {},
+  // Form state
+  selectedDecision: null,  // 'approve' | 'approve_with_conditions' | 'suspend' | 'decline'
+  selectedDenialReasons: new Set(),
+  formNotes: '',
+};
+
+// Reg B denial reasons per 12 CFR 1002 Appendix C (subset of most common)
+const REG_B_DENIAL_REASONS = [
+  { code: 'credit_app_incomplete',     label: 'Credit application incomplete',                  cite: '1002.9(a)(1)' },
+  { code: 'insufficient_income',       label: 'Income insufficient for amount of credit requested', cite: '1002.9(b)(2)' },
+  { code: 'excessive_obligations',     label: 'Excessive obligations in relation to income',     cite: '1002.9(b)(2)' },
+  { code: 'unable_to_verify_income',   label: 'Unable to verify income',                         cite: '1002.9(b)(2)' },
+  { code: 'temporary_employment',      label: 'Temporary or irregular employment',               cite: '1002.9(b)(2)' },
+  { code: 'unable_to_verify_emp',      label: 'Unable to verify employment',                     cite: '1002.9(b)(2)' },
+  { code: 'length_of_employment',      label: 'Length of employment',                            cite: '1002.9(b)(2)' },
+  { code: 'no_credit_file',            label: 'No credit file',                                  cite: '1002.9(b)(2)' },
+  { code: 'limited_credit_experience', label: 'Limited credit experience',                       cite: '1002.9(b)(2)' },
+  { code: 'delinquent_credit',         label: 'Delinquent past or present credit obligations',   cite: '1002.9(b)(2)' },
+  { code: 'collection_judgment',       label: 'Collection action or judgment',                   cite: '1002.9(b)(2)' },
+  { code: 'bankruptcy',                label: 'Bankruptcy',                                      cite: '1002.9(b)(2)' },
+  { code: 'foreclosure_repo',          label: 'Foreclosure or repossession',                     cite: '1002.9(b)(2)' },
+  { code: 'collateral_value',          label: 'Value or type of collateral not sufficient',      cite: '1002.9(b)(2)' },
+  { code: 'recent_inquiries',          label: 'Number of recent inquiries on credit report',     cite: '1002.9(b)(2)' },
+  { code: 'other',                     label: 'Other (specify in notes)',                        cite: '1002.9(b)(2)' },
+];
+
+// Program-specific ratio thresholds (rough — adjust per branch's overlays)
+const PROGRAM_THRESHOLDS = {
+  CONV:  { dti: 43, dti_max: 50, ltv: 95,  ltv_max: 97,    min_score: 620 },
+  FHA:   { dti: 43, dti_max: 57, ltv: 96.5, ltv_max: 96.5, min_score: 580 },
+  VA:    { dti: 41, dti_max: 60, ltv: 100, ltv_max: 100,   min_score: 580 },
+  USDA:  { dti: 41, dti_max: 44, ltv: 100, ltv_max: 100,   min_score: 640 },
+  JUMBO: { dti: 43, dti_max: 45, ltv: 80,  ltv_max: 90,    min_score: 700 },
+};
+
 function renderDecision() {
-  return emptyTab({
-    icon: '⚖',
-    eyebrow: 'Decision — coming soon',
-    title: 'Underwriter decision workspace',
-    sub: `The UW's single-pane assembly: 1003 summary, AUS findings, extracted income/asset/employment,
-          conditions list, comparable's against guidelines, ratios (DTI, LTV, HCLTV).
-          Approve · Suspend · Decline with reason; conditional approval generates the conditions list
-          the processor works. Adverse action notice generated automatically on decline per Reg B.`,
-    checklistRef: '12.5.8 UW decision surface · 13.5.4 Reg B adverse action',
+  setTimeout(() => loadAndRenderDecision(), 0);
+  return `
+    <div class="dec-pane" id="dec-pane">
+      <div class="dec-loading">Loading decision workspace…</div>
+    </div>
+  `;
+}
+
+async function loadAndRenderDecision() {
+  const paneEl = document.getElementById('dec-pane');
+  if (!paneEl) return;
+
+  // Parallel fetch
+  const [decisions, conditions, findings, credits] = await Promise.all([
+    fetchDecDecisions(),
+    fetchDecConditions(),
+    fetchDecFindings(),
+    fetchDecCredits(),
+  ]);
+  _decState.decisions = decisions;
+  _decState.current   = decisions.find(d => !d.superseded) || decisions[0] || null;
+  _decState.conditions = conditions;
+  _decState.findings   = findings;
+  _decState.creditReports = credits;
+
+  // Profile lookup for deciders
+  const userIds = [...new Set(decisions.map(d => d.decided_by_user_id).filter(Boolean))];
+  if (userIds.length) {
+    try {
+      const { data } = await supa.from('profiles').select('id, full_name').in('id', userIds);
+      _decState.profiles = Object.fromEntries((data || []).map(p => [p.id, p]));
+    } catch (_) {}
+  }
+
+  renderDecPane();
+}
+
+async function fetchDecDecisions() {
+  try {
+    const { data, error } = await supa
+      .from('uw_decisions')
+      .select('id, decided_at, decided_by_user_id, decision, denial_reasons, notes, conditions_seeded, superseded, superseded_by_decision_id, created_at')
+      .eq('loan_id', loan.id)
+      .order('decided_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchDecConditions() {
+  try {
+    const { data } = await supa.from('conditions')
+      .select('id, category, status, title, ai_confidence, cleared_method, cleared_at, cleared_by_user_id')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchDecFindings() {
+  try {
+    const { data } = await supa.from('aus_findings')
+      .select('engine, recommendation, recommendation_summary, ratios_dti, ratios_ltv, ratios_hcltv, run_at')
+      .eq('loan_id', loan.id).order('run_at', { ascending: false }).limit(1).maybeSingle();
+    return data || null;
+  } catch (_) { return null; }
+}
+
+async function fetchDecCredits() {
+  try {
+    const { data } = await supa.from('credit_reports')
+      .select('borrower_id, decision_score, report_pulled_at, expires_at')
+      .eq('loan_id', loan.id);
+    return data || [];
+  } catch (_) { return []; }
+}
+
+function renderDecPane() {
+  const paneEl = document.getElementById('dec-pane');
+  if (!paneEl) return;
+
+  let html = '';
+
+  // ─── Stats strip (reuse docs-summary classes) ─────────────────────
+  html += renderDecStatsStrip();
+
+  // ─── Current decision banner ──────────────────────────────────────
+  if (_decState.current) {
+    html += renderDecCurrentBanner(_decState.current);
+  }
+
+  // ─── Two-column review grid ───────────────────────────────────────
+  html += `
+    <div class="dec-review-grid">
+      ${renderDecAusPanel()}
+      ${renderDecCreditPanel()}
+      ${renderDecRatiosPanel()}
+      ${renderDecConditionsPanel()}
+    </div>
+  `;
+
+  // ─── Decision controls ────────────────────────────────────────────
+  html += renderDecControlsPanel();
+
+  // ─── Decision history ─────────────────────────────────────────────
+  if (_decState.decisions.length > 0) {
+    html += renderDecHistoryPanel();
+  }
+
+  paneEl.innerHTML = html;
+
+  // Wire decision buttons
+  paneEl.querySelectorAll('[data-dec-btn]').forEach(b => {
+    b.addEventListener('click', () => {
+      _decState.selectedDecision = b.dataset.decBtn;
+      _decState.selectedDenialReasons = new Set(); // reset on switch
+      renderDecPane();
+    });
   });
+  // Wire denial reason checkboxes
+  paneEl.querySelectorAll('[data-denial-code]').forEach(c => {
+    c.addEventListener('click', (e) => {
+      // Allow clicking the whole label, not just the checkbox
+      const code = c.dataset.denialCode;
+      if (_decState.selectedDenialReasons.has(code)) _decState.selectedDenialReasons.delete(code);
+      else _decState.selectedDenialReasons.add(code);
+      renderDecPane();
+    });
+  });
+  // Wire notes textarea (preserve focus + cursor)
+  const notesEl = paneEl.querySelector('#dec-notes');
+  if (notesEl) {
+    notesEl.value = _decState.formNotes;
+    notesEl.addEventListener('input', (e) => { _decState.formNotes = e.target.value; });
+  }
+  // Wire submit
+  const submitEl = paneEl.querySelector('#dec-submit');
+  if (submitEl) {
+    submitEl.addEventListener('click', () => submitDecision());
+  }
+}
+
+function renderDecStatsStrip() {
+  const decScore = _decState.creditReports.length > 0
+    ? Math.min(..._decState.creditReports.map(r => r.decision_score).filter(x => x != null))
+    : null;
+  const dti = loan.dti != null ? Number(loan.dti).toFixed(2) + '%' : '—';
+  const ltv = loan.ltv != null ? Number(loan.ltv).toFixed(2) + '%' : '—';
+  const amt = loan.loan_amount != null ? '$' + Math.round(loan.loan_amount / 1000) + 'K' : '—';
+  const prog = loanProgramLabel(loan.loan_program, loan.term) || '—';
+  const aus = _decState.findings?.recommendation
+    ? String(_decState.findings.recommendation).toUpperCase().replace(/_/g, '/')
+    : 'NOT RUN';
+
+  return `
+    <div class="docs-summary" style="grid-template-columns: repeat(6, 1fr);">
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Loan Amount</div>
+        <div class="docs-summary-value">${escapeHtml(amt)}</div>
+        <div class="docs-summary-sub">${escapeHtml(prog)}</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">AUS</div>
+        <div class="docs-summary-value" style="font-size: 0.95rem; ${aus.includes('APPROVE') ? 'color: var(--accent2);' : aus.includes('REFER') ? 'color: var(--amber);' : aus.includes('INELIGIBLE') ? 'color: var(--red);' : ''}">${escapeHtml(aus)}</div>
+        <div class="docs-summary-sub">${_decState.findings ? escapeHtml((_decState.findings.engine || 'AUS')) : 'no run on file'}</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Credit (low)</div>
+        <div class="docs-summary-value ${decScore != null && decScore >= 740 ? 'green' : decScore != null && decScore >= 660 ? 'cyan' : decScore != null ? 'amber' : ''}">${decScore != null ? decScore : '—'}</div>
+        <div class="docs-summary-sub">lowest mid-score across borrowers</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">DTI</div>
+        <div class="docs-summary-value">${escapeHtml(dti)}</div>
+        <div class="docs-summary-sub">qualifying back-end</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">LTV</div>
+        <div class="docs-summary-value">${escapeHtml(ltv)}</div>
+        <div class="docs-summary-sub">loan-to-value</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Conditions</div>
+        <div class="docs-summary-value">${_decState.conditions.length}</div>
+        <div class="docs-summary-sub">${_decState.conditions.filter(c => c.status === 'open').length} open · ${_decState.conditions.filter(c => c.status === 'cleared').length} cleared</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDecCurrentBanner(d) {
+  const decKey = d.decision || 'pending';
+  const decLabel = {
+    approve: 'Approved',
+    approve_with_conditions: 'Approved with Conditions',
+    suspend: 'Suspended',
+    decline: 'Declined',
+  }[decKey] || decKey.toUpperCase();
+  const iconMap = { approve: '✓', approve_with_conditions: '✓', suspend: '⏸', decline: '✗' };
+  const deciderName = _decState.profiles[d.decided_by_user_id]?.full_name || 'UW';
+
+  return `
+    <div class="dec-current-banner ${decKey}">
+      <span class="dec-current-icon">${iconMap[decKey] || '◇'}</span>
+      <div>
+        <div class="dec-current-label">Current Decision</div>
+        <div class="dec-current-decision">${escapeHtml(decLabel)}</div>
+        <div class="dec-current-meta">
+          by ${escapeHtml(deciderName)} · ${escapeHtml(timeAgo(d.decided_at))}${d.conditions_seeded ? ' · conditions seeded' : ''}
+          ${d.notes ? '<br>Note: ' + escapeHtml(d.notes.slice(0, 200)) + (d.notes.length > 200 ? '…' : '') : ''}
+        </div>
+      </div>
+      <button class="btn" onclick="alert('Override decision: select a new action below and confirm. The current decision will be marked superseded, with audit trail preserved.')">Override</button>
+    </div>
+  `;
+}
+
+function renderDecAusPanel() {
+  const f = _decState.findings;
+  if (!f) {
+    return `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">AUS Recommendation <span class="disc-status-pill na">Not Run</span></span>
+        </div>
+        <div class="disc-panel-body">
+          <div class="disc-empty-body">
+            <strong>No AUS run on file.</strong><br>
+            UW typically reviews AUS findings before decisioning. Run DU/LPA on the Findings tab.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  const rec = String(f.recommendation || '').toLowerCase();
+  const cls = rec.includes('approve') ? 'captured' : rec.includes('ineligible') ? 'missing' : 'pending';
+  const label = String(f.recommendation || 'Unknown').toUpperCase().replace(/_/g, ' / ');
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">AUS Recommendation <span class="disc-status-pill ${cls}">${escapeHtml((f.engine || 'AUS').toUpperCase())}</span></span>
+      </div>
+      <div class="disc-panel-body">
+        <div class="disc-kv-grid">
+          <span class="disc-kv-key">Recommendation</span>
+          <span class="disc-kv-val"><strong>${escapeHtml(label)}</strong></span>
+
+          <span class="disc-kv-key">Engine</span>
+          <span class="disc-kv-val">${escapeHtml((f.engine || 'unknown').toUpperCase())}</span>
+
+          <span class="disc-kv-key">Last Run</span>
+          <span class="disc-kv-val">${escapeHtml(timeAgo(f.run_at))}</span>
+
+          ${f.recommendation_summary ? `
+            <span class="disc-kv-key">Summary</span>
+            <span class="disc-kv-val" style="font-size: 0.78rem;">${escapeHtml(f.recommendation_summary)}</span>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDecCreditPanel() {
+  const reports = _decState.creditReports;
+  if (reports.length === 0) {
+    return `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">Credit Summary <span class="disc-status-pill na">No Reports</span></span>
+        </div>
+        <div class="disc-panel-body">
+          <div class="disc-empty-body">
+            <strong>No credit reports on file.</strong><br>
+            Credit pull required before UW decision. See the Credit tab.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  const scores = reports.map(r => r.decision_score).filter(x => x != null);
+  const low = scores.length ? Math.min(...scores) : null;
+  const high = scores.length ? Math.max(...scores) : null;
+  const oldestExpiry = reports.map(r => r.expires_at).filter(Boolean).sort()[0];
+  const daysToExpiry = oldestExpiry ? -daysSince(oldestExpiry) : null;
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Credit Summary <span class="disc-status-pill ${low != null && low >= 660 ? 'captured' : 'pending'}">${reports.length} report${reports.length === 1 ? '' : 's'}</span></span>
+      </div>
+      <div class="disc-panel-body">
+        <div class="disc-kv-grid">
+          <span class="disc-kv-key">Decision Score (low)</span>
+          <span class="disc-kv-val"><strong class="${low >= 740 ? 'green' : low >= 660 ? 'accent' : 'amber'}">${low != null ? low : '—'}</strong></span>
+
+          <span class="disc-kv-key">Decision Score (high)</span>
+          <span class="disc-kv-val">${high != null ? high : '—'}</span>
+
+          <span class="disc-kv-key">Reports on file</span>
+          <span class="disc-kv-val">${reports.length}</span>
+
+          ${oldestExpiry ? `
+            <span class="disc-kv-key">Oldest Expires</span>
+            <span class="disc-kv-val ${daysToExpiry < 0 ? 'red' : daysToExpiry <= 14 ? 'amber' : ''}">
+              ${escapeHtml(formatDate(oldestExpiry))}
+              <span class="sub">${daysToExpiry < 0 ? 're-pull required' : 'in ' + daysToExpiry + 'd'}</span>
+            </span>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDecRatiosPanel() {
+  // Determine threshold by program
+  const programKey = String(loan.loan_program || 'CONV').toUpperCase();
+  const t = PROGRAM_THRESHOLDS[programKey] || PROGRAM_THRESHOLDS.CONV;
+
+  const lowScore = _decState.creditReports.length > 0
+    ? Math.min(..._decState.creditReports.map(r => r.decision_score).filter(x => x != null))
+    : null;
+
+  function ratioBar(label, value, threshold, hardCap) {
+    if (value == null) {
+      return `
+        <div class="dec-ratio-row">
+          <span class="dec-ratio-label">${escapeHtml(label)}</span>
+          <div class="dec-ratio-bar"></div>
+          <span class="dec-ratio-vals">—</span>
+        </div>
+      `;
+    }
+    const v = Number(value);
+    const cap = hardCap || threshold * 1.4;
+    const pct = Math.min(100, (v / cap) * 100);
+    let cls = 'ok';
+    let valCls = '';
+    if (v > threshold * 1.1)  { cls = 'over';  valCls = 'over'; }
+    else if (v > threshold)   { cls = 'warn';  valCls = 'warn'; }
+    return `
+      <div class="dec-ratio-row">
+        <span class="dec-ratio-label">${escapeHtml(label)}</span>
+        <div class="dec-ratio-bar ${cls}" style="--p:${pct.toFixed(1)}%">
+          <span class="threshold" style="left: ${((threshold / cap) * 100).toFixed(1)}%;"></span>
+        </div>
+        <span class="dec-ratio-vals ${valCls}">${v.toFixed(2)}% <span class="lim">/ ${threshold}%</span></span>
+      </div>
+    `;
+  }
+
+  function scoreBar(label, value, threshold) {
+    if (value == null) {
+      return `
+        <div class="dec-ratio-row">
+          <span class="dec-ratio-label">${escapeHtml(label)}</span>
+          <div class="dec-ratio-bar"></div>
+          <span class="dec-ratio-vals">—</span>
+        </div>
+      `;
+    }
+    const cap = 850;
+    const pct = (value / cap) * 100;
+    let cls = 'ok', valCls = '';
+    if (value < threshold) { cls = 'over'; valCls = 'over'; }
+    else if (value < threshold + 20) { cls = 'warn'; valCls = 'warn'; }
+    return `
+      <div class="dec-ratio-row">
+        <span class="dec-ratio-label">${escapeHtml(label)}</span>
+        <div class="dec-ratio-bar ${cls}" style="--p:${pct.toFixed(1)}%">
+          <span class="threshold" style="left: ${((threshold / cap) * 100).toFixed(1)}%;"></span>
+        </div>
+        <span class="dec-ratio-vals ${valCls}">${value} <span class="lim">/ min ${threshold}</span></span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Ratios vs Guidelines</span>
+        <div class="disc-panel-actions">
+          <span style="font-family: var(--mono); font-size: 0.55rem; color: var(--muted); letter-spacing: 0.04em;">${escapeHtml(programKey)} thresholds</span>
+        </div>
+      </div>
+      <div class="disc-panel-body">
+        ${ratioBar('DTI', loan.dti, t.dti, t.dti_max)}
+        ${ratioBar('LTV', loan.ltv, t.ltv, t.ltv_max)}
+        ${ratioBar('CLTV', loan.hcltv, t.ltv, t.ltv_max)}
+        ${scoreBar('Score', lowScore, t.min_score)}
+      </div>
+    </div>
+  `;
+}
+
+function renderDecConditionsPanel() {
+  const conds = _decState.conditions;
+  const open = conds.filter(c => c.status === 'open');
+  const cleared = conds.filter(c => c.status === 'cleared');
+  const ptd = open.filter(c => c.category === 'PTD').length;
+  const ptc = open.filter(c => c.category === 'PTC').length;
+  const atc = open.filter(c => c.category === 'ATC').length;
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Conditions Snapshot</span>
+        <div class="disc-panel-actions">
+          <a class="btn sm" href="#tab=conditions">Open Conditions →</a>
+        </div>
+      </div>
+      <div class="disc-panel-body">
+        <div class="disc-kv-grid">
+          <span class="disc-kv-key">Total</span>
+          <span class="disc-kv-val">${conds.length} <span class="sub">${open.length} open · ${cleared.length} cleared</span></span>
+
+          <span class="disc-kv-key">Open PTD</span>
+          <span class="disc-kv-val ${ptd > 0 ? 'red' : 'green'}">${ptd}</span>
+
+          <span class="disc-kv-key">Open PTC</span>
+          <span class="disc-kv-val ${ptc > 0 ? 'amber' : 'green'}">${ptc}</span>
+
+          <span class="disc-kv-key">Open ATC</span>
+          <span class="disc-kv-val ${atc > 0 ? 'accent' : 'green'}">${atc}</span>
+        </div>
+        ${ptd > 0 ? `
+          <div style="margin-top: 0.85rem; padding: 0.55rem 0.75rem; background: rgba(255,68,68,0.04); border: 1px solid rgba(255,68,68,0.3); font-family: var(--mono); font-size: 0.6rem; color: var(--red); letter-spacing: 0.04em;">
+            ⚠ ${ptd} open PTD condition${ptd === 1 ? '' : 's'} — must clear before doc-out
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderDecControlsPanel() {
+  const sel = _decState.selectedDecision;
+  const buttons = [
+    { key: 'approve',                 icon: '✓', label: 'Approve',          sub: 'Clean approval — no conditions' },
+    { key: 'approve_with_conditions', icon: '✓', label: 'Approve + Conds',  sub: 'Approve, seeds PTC/ATC conditions' },
+    { key: 'suspend',                 icon: '⏸', label: 'Suspend',          sub: 'Pause for additional information' },
+    { key: 'decline',                 icon: '✗', label: 'Decline',          sub: 'Reg B reasons required' },
+  ];
+
+  let html = `
+    <div class="dec-controls-panel">
+      <div class="dec-controls-head">
+        <div class="dec-controls-title">Underwriting Decision</div>
+        <div class="dec-controls-sub">Pick a disposition. Notes and (for Decline) Reg B denial reasons are required before submit.</div>
+      </div>
+      <div class="dec-controls-body">
+        <div class="dec-buttons">
+          ${buttons.map(b => `
+            <button class="dec-btn ${b.key} ${sel === b.key ? 'selected' : ''}" data-dec-btn="${b.key}">
+              <span class="dec-btn-icon">${b.icon}</span>
+              <span class="dec-btn-label">${escapeHtml(b.label)}</span>
+              <span class="dec-btn-sub">${escapeHtml(b.sub)}</span>
+            </button>
+          `).join('')}
+        </div>
+  `;
+
+  if (sel) {
+    html += `<div class="dec-form">`;
+
+    if (sel === 'decline') {
+      html += `
+        <div class="dec-form-section">
+          <label class="dec-form-label">
+            Reg B Denial Reasons <span class="req">required · 12 CFR 1002.9</span>
+          </label>
+          <div class="dec-denial-grid">
+            ${REG_B_DENIAL_REASONS.map(r => `
+              <label class="dec-denial-check ${_decState.selectedDenialReasons.has(r.code) ? 'checked' : ''}" data-denial-code="${escapeHtml(r.code)}">
+                <input type="checkbox" ${_decState.selectedDenialReasons.has(r.code) ? 'checked' : ''} onclick="event.stopPropagation();">
+                <div>
+                  ${escapeHtml(r.label)}
+                  <small>${escapeHtml(r.cite)}</small>
+                </div>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    if (sel === 'approve_with_conditions') {
+      const wouldSeed = _decState.conditions.filter(c => ['PTC', 'ATC'].includes(c.category) && c.status === 'open').length;
+      html += `
+        <div class="dec-form-section">
+          <label class="dec-form-label">Conditions to be seeded</label>
+          <div style="padding: 0.7rem 0.85rem; background: var(--panel); border: 1px solid var(--border); font-size: 0.82rem; color: var(--text); line-height: 1.5;">
+            On submit, the condition_templates engine will seed standard PTC/ATC conditions for this loan program.
+            ${wouldSeed > 0 ? ` <strong>${wouldSeed}</strong> PTC/ATC conditions already exist and will be merged with the seeded set.` : ''}
+            <div style="font-family: var(--mono); font-size: 0.58rem; color: var(--muted); letter-spacing: 0.04em; margin-top: 0.35rem;">
+              Auto-seed lands with 12.5.9 — for now, this submit just creates the uw_decision row.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (sel === 'suspend') {
+      html += `
+        <div class="dec-form-section" style="padding: 0.7rem 0.85rem; background: rgba(245,166,35,0.06); border: 1px solid rgba(245,166,35,0.3); font-family: var(--mono); font-size: 0.62rem; color: var(--amber); letter-spacing: 0.04em;">
+          ⏸ Suspended loans go back to processing — the processor receives a notification with the suspend reason and required follow-up items.
+        </div>
+      `;
+    }
+
+    if (sel === 'approve') {
+      html += `
+        <div class="dec-form-section" style="padding: 0.7rem 0.85rem; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.3); font-family: var(--mono); font-size: 0.62rem; color: var(--accent2); letter-spacing: 0.04em;">
+          ✓ Clean approval — no new conditions will be seeded. The loan moves to clear-to-close (or whichever stage is next per the configured workflow).
+        </div>
+      `;
+    }
+
+    html += `
+        <div class="dec-form-section">
+          <label class="dec-form-label" for="dec-notes">
+            UW Notes ${sel === 'decline' ? '<span class="req">required for Decline</span>' : '<span style="color: var(--muted); margin-left: 0.3rem;">optional</span>'}
+          </label>
+          <textarea id="dec-notes" placeholder="${sel === 'decline' ? 'Required: free-text reasoning beyond the Reg B codes. This narrative may appear in the adverse action notice.' : 'Optional: comments for the file.'}"></textarea>
+        </div>
+
+        <div class="dec-submit-row">
+          ${renderDecSubmitWarning(sel)}
+          <button class="dec-submit-btn ${sel}" id="dec-submit" ${!isDecisionSubmittable() ? 'disabled' : ''}>
+            ${sel === 'approve' ? '✓ Confirm Approval'
+             : sel === 'approve_with_conditions' ? '✓ Approve with Conditions'
+             : sel === 'suspend' ? '⏸ Suspend Loan'
+             : '✗ Confirm Decline'}
+          </button>
+        </div>
+    `;
+    html += `</div>`;
+  }
+
+  html += `
+      </div>
+    </div>
+  `;
+  return html;
+}
+
+function renderDecSubmitWarning(sel) {
+  if (sel === 'decline') {
+    if (_decState.selectedDenialReasons.size === 0) {
+      return `<span class="dec-submit-warning">⚠ Select at least one Reg B denial reason before submit.</span>`;
+    }
+    if (!_decState.formNotes.trim()) {
+      return `<span class="dec-submit-warning">⚠ UW notes required for Decline (will appear in adverse action notice).</span>`;
+    }
+    return `<span class="dec-submit-warning" style="color: var(--muted);">${_decState.selectedDenialReasons.size} reason${_decState.selectedDenialReasons.size === 1 ? '' : 's'} selected · ready to submit</span>`;
+  }
+  if (_decState.current && !_decState.current.superseded) {
+    return `<span class="dec-submit-warning" style="color: var(--muted);">Submitting will supersede the current decision and create an audit entry.</span>`;
+  }
+  return '<span style="flex: 1;"></span>';
+}
+
+function isDecisionSubmittable() {
+  const sel = _decState.selectedDecision;
+  if (!sel) return false;
+  if (sel === 'decline') {
+    if (_decState.selectedDenialReasons.size === 0) return false;
+    if (!_decState.formNotes.trim()) return false;
+  }
+  return true;
+}
+
+function renderDecHistoryPanel() {
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Decision History <span class="disc-status-pill na">${_decState.decisions.length}</span></span>
+      </div>
+      <div class="disc-panel-body">
+        ${_decState.decisions.map(d => {
+          const decKey = d.decision || 'pending';
+          const label = {
+            approve: 'Approved',
+            approve_with_conditions: 'Approve + Conditions',
+            suspend: 'Suspended',
+            decline: 'Declined',
+          }[decKey] || decKey.toUpperCase();
+          const decider = _decState.profiles[d.decided_by_user_id]?.full_name || 'UW';
+          return `
+            <div class="dec-history-row ${d.superseded ? 'superseded' : ''}">
+              <span class="dec-history-pill ${decKey}">${escapeHtml(label)}</span>
+              <div class="dec-history-body">
+                ${escapeHtml(decider)}${d.superseded ? ' · superseded' : ''}
+                ${d.notes ? `<small>${escapeHtml(d.notes.slice(0, 160))}${d.notes.length > 160 ? '…' : ''}</small>` : ''}
+              </div>
+              <span class="dec-history-when">${escapeHtml(timeAgo(d.decided_at))}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ─── Submission ──────────────────────────────────────────────────────────
+async function submitDecision() {
+  if (!isDecisionSubmittable()) return;
+  const sel = _decState.selectedDecision;
+
+  // Confirm
+  const confirmMsg = sel === 'decline'
+    ? `Confirm DECLINE for ${loan.loan_number || 'this loan'}?\n\nThis triggers an adverse action notice per Reg B (12.5.4 — stubbed today).`
+    : sel === 'suspend'
+    ? `Confirm SUSPEND for ${loan.loan_number || 'this loan'}?\n\nProcessor will be notified.`
+    : sel === 'approve_with_conditions'
+    ? `Confirm APPROVE WITH CONDITIONS for ${loan.loan_number || 'this loan'}?\n\nCondition seeding lands with 12.5.9 — for now this just creates the decision row.`
+    : `Confirm APPROVE for ${loan.loan_number || 'this loan'}?`;
+
+  if (!confirm(confirmMsg)) return;
+
+  const submitEl = document.getElementById('dec-submit');
+  if (submitEl) { submitEl.disabled = true; submitEl.textContent = 'Submitting…'; }
+
+  // Build the patch + insert
+  const patch = {
+    loan_id: loan.id,
+    branch_id: loan.branch_id || branch?.id,
+    decided_at: new Date().toISOString(),
+    decided_by_user_id: me.id,
+    decision: sel,
+    notes: _decState.formNotes || null,
+  };
+  if (sel === 'decline') {
+    patch.denial_reasons = [..._decState.selectedDenialReasons];
+  }
+
+  // If there's a current non-superseded decision, mark it superseded
+  if (_decState.current && !_decState.current.superseded) {
+    try {
+      await supa.from('uw_decisions')
+        .update({ superseded: true })
+        .eq('id', _decState.current.id);
+    } catch (_) { /* not fatal */ }
+  }
+
+  try {
+    const { data, error } = await supa.from('uw_decisions').insert(patch).select().single();
+    if (error) throw error;
+    // Reset form, reload, re-render
+    _decState.selectedDecision = null;
+    _decState.selectedDenialReasons = new Set();
+    _decState.formNotes = '';
+    showToast('Decision recorded');
+    await loadAndRenderDecision();
+  } catch (err) {
+    alert(
+      'Failed to record decision: ' + err.message +
+      '\n\nIf the uw_decisions table doesn\'t exist yet, this is expected — the decision workflow lands with checklist 12.5.8. The UI is ready; the table needs to be created.'
+    );
+    if (submitEl) { submitEl.disabled = false; renderDecPane(); }
+  }
 }
 
 
