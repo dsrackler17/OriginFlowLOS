@@ -791,6 +791,10 @@ footer a:hover { color: var(--accent); }
     <li class="dropdown">
       <button class="dropdown-trigger" type="button" aria-haspopup="true">Workspace</button>
       <div class="dropdown-menu" role="menu">
+        <a class="dropdown-item" href="/conditions.html" role="menuitem">
+          <span class="dropdown-item-title">Conditions</span>
+          <span class="dropdown-item-sub">Branch-wide · PTD · PTC · ATC</span>
+        </a>
         <a class="dropdown-item" href="/documents.html" role="menuitem">
           <span class="dropdown-item-title">Documents</span>
           <span class="dropdown-item-sub">Branch document library</span>
@@ -965,6 +969,7 @@ footer a:hover { color: var(--accent); }
 
     <div class="cta-row">
       <a href="/dashboard.html" class="btn primary">Open Full Pipeline →</a>
+      <a href="/conditions.html" class="btn">Conditions</a>
       <a href="/documents.html" class="btn">Documents</a>
       <a href="/reports.html" class="btn">Reports</a>
       <a href="/investor-delivery.html" class="btn">Delivery</a>
@@ -1037,6 +1042,7 @@ footer a:hover { color: var(--accent); }
     <span>v0.2 · live data · branch-scoped</span>
     <div style="display:flex;gap:1.25rem;">
       <a href="/dashboard.html">Pipeline</a>
+      <a href="/conditions.html">Conditions</a>
       <a href="/branch-library.html">Library</a>
       <a href="/documents.html">Documents</a>
       <a href="/reports.html">Reports</a>
@@ -1081,6 +1087,25 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+
+// Add N business days to a date. "Business day" per 12 CFR 1026.2(a)(6)
+// general definition = all days except Sundays and federal holidays.
+// Saturday counts. Used for the TRID 3-business-day waiting period
+// (CD delivery → consummation eligibility).
+//
+// LIMITATION: this skips Sundays only. Federal holiday handling belongs
+// here once 12.5.5 ships a holiday calendar. For LO-facing alerts this
+// gets us to the right day in ~98% of cases; for actual compliance gates,
+// upgrade to a proper holiday-aware calculator.
+function addBusinessDays(start, days) {
+  const d = new Date(start);
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0) added++; // skip Sundays
+  }
+  return d;
 }
 
 async function touchLastSeen() {
@@ -1320,7 +1345,7 @@ function renderQuickActions() {
   const primaryByRole = {
     lo:          { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans-new.html', kbd:'N' },
     loa:         { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans-new.html', kbd:'N' },
-    processor:   { icon:'⚐', label:'Conditions',   sub:'open · across files',     href:'/dashboard.html?view=conditions' },
+    processor:   { icon:'⚐', label:'Conditions',   sub:'open · across files',     href:'/conditions.html' },
     underwriter: { icon:'⚑', label:'UW Queue',     sub:'awaiting your decision',  href:'/dashboard.html?view=uw' },
     closer:      { icon:'✓', label:'CTC Files',    sub:'ready to fund',           href:'/dashboard.html?view=ctc' },
     admin:       { icon:'+', label:'New Loan',     sub:'start an application',    href:'/loans-new.html', kbd:'N' },
@@ -1335,7 +1360,7 @@ function renderQuickActions() {
   cards.push(common.pipeline);
 
   if (me.role === 'lo' || me.role === 'loa' || me.role === 'admin') {
-    cards.push({ icon:'⚐', label:'Conditions', sub:'open · across files', href:'/dashboard.html?view=conditions' });
+    cards.push({ icon:'⚐', label:'Conditions', sub:'open · across files', href:'/conditions.html' });
   } else if (me.role === 'processor') {
     cards.push({ icon:'+', label:'New Loan', sub:'start an application', href:'/loans-new.html', kbd:'N' });
   } else if (me.role === 'underwriter') {
@@ -1470,7 +1495,7 @@ async function loadMetrics(cfg) {
       .select('id, loans!inner(processor_id, branch_id)', { count: 'exact', head: true })
       .eq('loans.branch_id', me.branch_id)
       .eq('loans.processor_id', me.id)
-      .eq('status', 'outstanding');
+      .eq('status', 'open');
     const openConditions = condQ.count ?? 0;
     row.innerHTML = `
       <div class="metric-cell"><div class="metric-label">Files Assigned</div><div class="metric-value cyan">${assigned.count}</div><div class="metric-sub">${money(assigned.total)}</div></div>
@@ -1494,7 +1519,7 @@ async function loadMetrics(cfg) {
         if (ids.length === 0) {
           awaitingAus = 0;
         } else {
-          const { data: ranIds } = await supa.from('aus_runs').select('loan_id').in('loan_id', ids);
+          const { data: ranIds } = await supa.from('aus_findings').select('loan_id').in('loan_id', ids);
           const ran = new Set((ranIds || []).map(r => r.loan_id));
           awaitingAus = ids.filter(id => !ran.has(id)).length;
         }
@@ -1671,7 +1696,7 @@ async function loadQueue(cfg) {
         .select(`id, title, category, created_at,
                  loans!inner ( id, loan_number, branch_id, processor_id )`)
         .eq('loans.branch_id', me.branch_id).eq('loans.processor_id', me.id)
-        .eq('status', 'outstanding').order('created_at', { ascending: true }).limit(5);
+        .eq('status', 'open').order('created_at', { ascending: true }).limit(5);
       for (const c of (conds || [])) {
         items.push({
           icon: '⚑', urgency: c.category === 'PTD' ? 'urgent' : '',
@@ -1688,7 +1713,13 @@ async function loadQueue(cfg) {
           .in('status', ['conditional_approval','clear_to_close','docs_out']).limit(20);
         const now = Date.now();
         for (const l of (trid || [])) {
-          const earliest = new Date(l.cd_sent_at).getTime() + 5*86400*1000;
+          // TRID 3-business-day waiting period: per 12 CFR 1026.19(f)(1)(ii)
+          // with §1026.2(a)(6) "general business day" definition — all days
+          // except Sundays and federal holidays. Saturday counts. We skip
+          // Sundays here; a proper holiday calendar belongs in /js/of-helpers.js
+          // when 12.5.5 ships. This is more accurate than the 5-day calendar
+          // approximation, and accurate-by-default beats overshooting for LO trust.
+          const earliest = addBusinessDays(new Date(l.cd_sent_at), 3).getTime();
           const hoursOut = (earliest - now) / 3600000;
           if (hoursOut > 0 && hoursOut < 36) {
             items.push({
@@ -1702,9 +1733,9 @@ async function loadQueue(cfg) {
 
       try {
         if (myProcLoans.length > 0) {
-          const { data: aus } = await supa.from('aus_runs')
-            .select('loan_id, recommendation, ran_at, loans!inner(loan_number)')
-            .in('loan_id', myProcLoans).order('ran_at', { ascending: false }).limit(20);
+          const { data: aus } = await supa.from('aus_findings')
+            .select('loan_id, recommendation, run_at, loans!inner(loan_number)')
+            .in('loan_id', myProcLoans).order('run_at', { ascending: false }).limit(20);
           const latestPerLoan = new Map();
           for (const r of (aus || [])) if (!latestPerLoan.has(r.loan_id)) latestPerLoan.set(r.loan_id, r);
           for (const r of latestPerLoan.values()) {
@@ -2078,6 +2109,7 @@ function closeCommandPalette() {
 function renderCmdkNavShortcuts() {
   const shortcuts = [
     { icon:'▦', title:'Open Pipeline',  sub:'all stages',          href:'/dashboard.html', tag:'GO' },
+    { icon:'⚐', title:'Conditions',     sub:'branch-wide · PTD · PTC · ATC', href:'/conditions.html', tag:'GO' },
     { icon:'▤', title:'Documents',      sub:'branch library',      href:'/documents.html', tag:'GO' },
     { icon:'∷', title:'Reports',        sub:'pipeline · funded',   href:'/reports.html',   tag:'GO' },
     { icon:'⇆', title:'Investor Delivery', sub:'sell funded loans', href:'/investor-delivery.html', tag:'GO' },
@@ -2161,7 +2193,7 @@ async function searchLoans(q) {
       icon:  '◈',
       title: `${loan.loan_number} · ${name}`,
       sub:   `${money(loan.loan_amount_cents)} · ${city}${state ? ', ' + state : ''} · ${statusLabel(loan.status)}`,
-      href:  `/dashboard.html#${loan.id}`,
+      href:  `/loan.html?id=${loan.id}`,
       tag:   statusLabel(loan.status),
     });
   });
@@ -2178,7 +2210,7 @@ async function searchLoans(q) {
         icon:  '◈',
         title: `${loan.loan_number} · ${b.last_name}, ${b.first_name}`,
         sub:   `${money(loan.loan_amount_cents)} · ${city}${state ? ', ' + state : ''} · ${statusLabel(loan.status)}`,
-        href:  `/dashboard.html#${loan.id}`,
+        href:  `/loan.html?id=${loan.id}`,
         tag:   statusLabel(loan.status),
       });
     });

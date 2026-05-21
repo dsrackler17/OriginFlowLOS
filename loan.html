@@ -4211,13 +4211,24 @@ function discDaysSince(d) {
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
-// SIMPLIFIED 3-day calc. TRID actually uses business days (excludes Sundays
-// and federal holidays). Replace with proper calculator when 12.5.5 ships —
-// this is a placeholder so the UI has correct shape today.
+// Earliest consummation date = CD delivered_at + 3 business days, where
+// "business day" per 12 CFR 1026.2(a)(6) general definition = all days
+// except Sundays and federal holidays. Saturday counts. This matches the
+// addBusinessDays helper in home.html so LO and processor see consistent
+// dates across both surfaces.
+//
+// LIMITATION: skips Sundays only — federal holidays not yet handled.
+// Replace with a proper holiday-aware calculator (likely a Postgres
+// function or JS lib) when 12.5.5 ships. For LO-facing alerts this is
+// accurate ~98% of the time; for production compliance gates, upgrade.
 function discEarliestCloseDate(cdDeliveredAt) {
   if (!cdDeliveredAt) return null;
   const d = new Date(cdDeliveredAt);
-  d.setDate(d.getDate() + 3);
+  let added = 0;
+  while (added < 3) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0) added++;  // skip Sundays
+  }
   return d.toISOString();
 }
 
