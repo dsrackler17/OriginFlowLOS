@@ -439,6 +439,230 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   DOCUMENTS TAB — styled inline because this is the first non-empty
+   tab module. Same visual grammar as the rest of the app: panels with
+   labeled heads, monospace meta, color-coded status pills. Each module
+   self-contains its styles so when we eventually extract these tabs to
+   separate /js/tabs/<name>.js files, the styles travel with them.
+   ═══════════════════════════════════════════════════════════════════════ */
+.docs-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.docs-loading-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+.docs-loading-spinner {
+  width: 24px; height: 24px;
+  margin: 0 auto 1rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Summary strip at top — same shape as home.html's metric row */
+.docs-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.docs-summary-cell { background: var(--surface); padding: 0.85rem 1.1rem; }
+.docs-summary-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+.docs-summary-value {
+  font-family: var(--serif); font-size: 1.5rem; line-height: 1.1;
+  color: var(--white);
+}
+.docs-summary-value.amber { color: var(--amber); }
+.docs-summary-value.green { color: var(--accent2); }
+.docs-summary-value.cyan  { color: var(--accent); }
+.docs-summary-sub {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.04em;
+  color: var(--muted); margin-top: 0.15rem;
+}
+
+/* Note about extraction status — sits below summary until 12.0 is wired */
+.docs-note {
+  background: rgba(0,212,255,0.04);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-left: 3px solid var(--accent);
+  padding: 0.7rem 1rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.docs-note strong { color: var(--accent); font-weight: 500; }
+.docs-note-ref {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
+  color: var(--muted); display: block; margin-top: 0.35rem;
+}
+
+/* Outstanding requests panel (amber-edged) */
+.docs-requests {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+}
+.docs-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--deep);
+  gap: 1rem;
+}
+.docs-section-title {
+  font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text);
+}
+.docs-section-count {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border); color: var(--muted);
+}
+.docs-section-count.amber {
+  color: var(--amber);
+  border-color: rgba(245,166,35,0.4);
+  background: rgba(245,166,35,0.08);
+}
+.docs-section-body { padding: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
+
+.req-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.65rem 0.85rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+.req-icon {
+  font-family: var(--mono); font-size: 0.95rem;
+  color: var(--amber);
+  width: 22px; text-align: center;
+}
+.req-info { min-width: 0; }
+.req-title { color: var(--white); font-weight: 500; font-size: 0.88rem; }
+.req-meta {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  margin-top: 0.15rem;
+}
+.req-required { color: var(--amber); font-weight: 700; }
+.req-optional { color: var(--muted); }
+.req-status {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border); color: var(--muted);
+  white-space: nowrap;
+}
+.req-status.pending { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.req-status.partial { color: var(--accent); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+
+/* Documents grouped by category */
+.docs-category {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.docs-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.6rem 0.85rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+  cursor: pointer;
+}
+.docs-row:hover { border-color: rgba(0,212,255,0.4); }
+.docs-row-icon {
+  width: 38px; height: 38px;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 0.6rem; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.04em;
+}
+.docs-row-info { min-width: 0; }
+.docs-row-name {
+  font-family: var(--sans); font-size: 0.88rem;
+  color: var(--white); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.docs-row-meta {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  margin-top: 0.15rem;
+}
+.docs-row-status {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border); color: var(--muted);
+  white-space: nowrap;
+}
+.docs-row-status.uploaded    { color: var(--text);    }
+.docs-row-status.classifying,
+.docs-row-status.extracting  { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.docs-row-status.classified  { color: var(--accent);  border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+.docs-row-status.extracted,
+.docs-row-status.applied     { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.docs-row-status.failed,
+.docs-row-status.quarantined { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+
+.docs-row-action {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(0,212,255,0.3);
+  color: var(--accent); background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.docs-row-action:hover { background: var(--accent); color: var(--navy); }
+
+.docs-category-empty {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: var(--muted); letter-spacing: 0.04em;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.docs-overall-empty {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  padding: 3rem 2rem;
+  text-align: center;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.5rem;
+}
+.docs-overall-empty-icon {
+  font-family: var(--mono); font-size: 2.5rem;
+  color: var(--accent); opacity: 0.55;
+  margin-bottom: 0.3rem;
+}
+.docs-overall-empty-title {
+  font-family: var(--serif); font-size: 1.4rem;
+  color: var(--white);
+}
+.docs-overall-empty-sub {
+  color: var(--muted); font-size: 0.85rem;
+  max-width: 540px; line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .docs-summary { grid-template-columns: repeat(2, 1fr); }
+  .docs-row { grid-template-columns: 38px 1fr auto; gap: 0.5rem; }
+  .docs-row-action { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MESSAGES TAB — iframes /loan_messages.html. The iframe pages itself
    has its own nav bar, which looks chunky here (two nav bars stacked).
    v1 ships as is; future patch can add ?embed=1 to loan_messages.html
@@ -963,9 +1187,40 @@ function syncTabBar() {
 }
 
 function renderActiveTab() {
+  return renderActiveTabAsync();
+}
+
+// Async-aware tab dispatcher. The dispatcher first checks window.OF.tabs
+// for a registered tab module — these can either be defined inline at the
+// bottom of this file (as Documents is, for now) OR extracted to their own
+// /js/tabs/<name>.js files later. The contract is:
+//
+//   window.OF.tabs.<name> = async function(loan, me, supa, container) { … }
+//
+// When a module exists for the active tab, it's called with the loan
+// context and the tab-content element to render into. If no module is
+// registered, we fall back to the built-in synchronous renderX() function
+// (which is what powers all the empty-state previews today).
+//
+// This lets every future tab be developed as a self-contained module
+// without ever touching this dispatcher again.
+async function renderActiveTabAsync() {
   const tab = getCurrentTab();
   const el  = document.getElementById('tab-content');
   syncTabBar();
+
+  const mod = window.OF?.tabs?.[tab];
+  if (typeof mod === 'function') {
+    try {
+      await mod(loan, me, supa, el);
+    } catch (err) {
+      console.error('[Loan] tab module error:', tab, err);
+      el.innerHTML = `<div class="empty-tab"><div class="empty-tab-icon">!</div><div class="empty-tab-title">Tab failed to render</div><div class="empty-tab-sub">${escapeHtml(err.message || String(err))}</div></div>`;
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    return;
+  }
+
   try {
     switch (tab) {
       case 'overview':    el.innerHTML = renderOverview();    break;
@@ -1162,20 +1417,506 @@ function emptyTab({ icon, eyebrow, title, sub, checklistRef, actions }) {
   `;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// DOCUMENTS TAB — FUNCTIONAL
+//
+// What it shows:
+//   1. Summary strip (counts: total · extracted · awaiting · requests outstanding)
+//   2. Outstanding document requests (LO can nudge borrower)
+//   3. Documents grouped by category (Income, Assets, Identity, Property, etc.)
+//   4. Click any doc row to expand → see extracted fields with confidence + source
+//
+// Schema assumptions — verified at runtime, all fail open:
+//   loan_documents  | id, loan_id, file_name, file_size_bytes, mime_type,
+//                   | doc_type, status, storage_path, uploaded_by, uploaded_at,
+//                   | extraction_confidence (optional, document-level aggregate),
+//                   | created_at, updated_at
+//   document_requests | id, loan_id, category, title, description, required,
+//                     | status, requested_at, due_at, template_key, borrower_id
+//   extracted_fields | id, document_id, field_name, field_value,
+//                    | confidence_score, source_page, source_bbox, extracted_at
+//
+// If `loan_documents` doesn't exist, falls back to `documents` (alt naming).
+// If `extracted_fields` doesn't exist, expansion shows a friendly note
+// pointing at checklist 12.0.x rather than erroring.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Category map — used both for grouping uploaded docs and labeling sections.
+// Order field controls display order; types is a substring-match list against
+// loan_documents.doc_type (case insensitive).
+const DOC_CATEGORIES = {
+  income:    { label: 'Income',                  order: 1, types: ['pay_stub','paystub','w2','w-2','1099','tax_return','1040','income_verification','voe','voi'] },
+  assets:    { label: 'Assets',                  order: 2, types: ['bank_statement','asset_statement','gift_letter','retirement_statement','investment_statement'] },
+  identity:  { label: 'Identity',                order: 3, types: ['id','drivers_license','passport','ssn','ssn_card'] },
+  property:  { label: 'Property',                order: 4, types: ['appraisal','purchase_contract','title_commitment','insurance','homeowners_insurance','flood_cert','survey'] },
+  credit:    { label: 'Credit',                  order: 5, types: ['credit_report','tradeline_letter','collection_letter'] },
+  loe:       { label: 'Letters of Explanation', order: 6, types: ['lox','letter_of_explanation','loe'] },
+  other:     { label: 'Other',                   order: 99, types: ['other','unknown',null] },
+};
+
+function categorizeDoc(docType) {
+  if (!docType) return 'other';
+  const lower = String(docType).toLowerCase();
+  for (const [key, def] of Object.entries(DOC_CATEGORIES)) {
+    if (def.types.some(t => t && lower.includes(String(t).toLowerCase()))) return key;
+  }
+  return 'other';
+}
+
+function docTypeLabel(t) {
+  if (!t) return 'Unclassified';
+  const map = {
+    pay_stub: 'Pay Stub', paystub: 'Pay Stub',
+    w2: 'W-2', 'w-2': 'W-2',
+    '1099': '1099',
+    tax_return: 'Tax Return', '1040': 'Tax Return (1040)',
+    bank_statement: 'Bank Statement',
+    asset_statement: 'Asset Statement',
+    gift_letter: 'Gift Letter',
+    id: 'ID', drivers_license: "Driver's License", passport: 'Passport',
+    ssn: 'SSN Card', ssn_card: 'SSN Card',
+    appraisal: 'Appraisal',
+    purchase_contract: 'Purchase Contract',
+    title_commitment: 'Title Commitment',
+    insurance: 'Homeowners Insurance', homeowners_insurance: 'Homeowners Insurance',
+    credit_report: 'Credit Report',
+    lox: 'Letter of Explanation', letter_of_explanation: 'Letter of Explanation', loe: 'Letter of Explanation',
+    other: 'Other', unknown: 'Unclassified',
+  };
+  return map[String(t).toLowerCase()] || titleCase(String(t).replace(/_/g, ' '));
+}
+
+function formatBytes(b) {
+  if (b == null) return '?';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
+// Cache so re-rendering doesn't refetch on every tab switch.
+let _docsCache = null;
+
 function renderDocuments() {
-  return emptyTab({
-    icon: '▤',
-    eyebrow: 'Documents — coming next',
-    title: 'Categorized document list with AI extraction state',
-    sub: `Documents uploaded for this loan, grouped by category (income, assets, ID, property, gift letters, etc.).
-          Each row shows: file name, classified type, extraction state, confidence, and source citation.
-          Click a row to expand — see the extracted fields with hover-to-source on every value.
-          Upload a new document directly from here, or accept the ones the borrower just dropped.`,
-    checklistRef: '11.5.11 (upload UI) + 12.0.1–12.0.9 (extraction + citation)',
-    actions: [
-      { label: 'View borrower upload view', href: '/portal_documents.html', target: '_blank' },
-    ],
+  // Synchronous: return a loading shell; async loader populates it.
+  // This pattern keeps renderActiveTab() simple (no async/await) while
+  // letting Documents do its async work.
+  setTimeout(() => loadAndRenderDocuments(), 0);
+  return `
+    <div class="docs-pane" id="docs-pane">
+      <div class="docs-loading-state">
+        <div class="docs-loading-spinner"></div>
+        Loading documents…
+      </div>
+    </div>
+  `;
+}
+
+async function loadAndRenderDocuments() {
+  const paneEl = document.getElementById('docs-pane');
+  if (!paneEl) return;  // user switched tabs before load finished
+
+  // ─── Query: documents ─────────────────────────────────────────────────
+  let docs = [];
+  let docsError = null;
+  try {
+    const { data, error } = await supa
+      .from('loan_documents')
+      .select('id, file_name, file_size_bytes, mime_type, doc_type, status, storage_path, uploaded_by, uploaded_at, extraction_confidence, created_at, updated_at')
+      .eq('loan_id', loan.id)
+      .is('archived_at', null)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    docs = data || [];
+  } catch (err) {
+    // Fallback to `documents` table name
+    try {
+      const { data, error } = await supa
+        .from('documents')
+        .select('*')
+        .eq('loan_id', loan.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      docs = data || [];
+    } catch (err2) {
+      docsError = err2.message;
+    }
+  }
+
+  // ─── Query: outstanding requests ──────────────────────────────────────
+  let requests = [];
+  try {
+    const { data, error } = await supa
+      .from('document_requests')
+      .select('id, category, title, description, required, status, requested_at, due_at, template_key')
+      .eq('loan_id', loan.id)
+      .in('status', ['pending', 'partially_provided'])
+      .order('required', { ascending: false })
+      .order('requested_at', { ascending: true });
+    if (!error) requests = data || [];
+  } catch (_) { /* table doesn't exist; treat as no requests */ }
+
+  _docsCache = { docs, requests };
+
+  if (docsError) {
+    paneEl.innerHTML = `
+      <div class="docs-overall-empty">
+        <div class="docs-overall-empty-icon">!</div>
+        <div class="docs-overall-empty-title">Couldn't load documents</div>
+        <div class="docs-overall-empty-sub">${escapeHtml(docsError)}<br><br>
+          If the loan_documents table doesn't exist in your schema yet,
+          this is expected — it lands with checklist 11.5.12 (storage backend).
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // ─── Compute summary stats ────────────────────────────────────────────
+  const total = docs.length;
+  const extracted = docs.filter(d => ['extracted','applied'].includes(d.status)).length;
+  const processing = docs.filter(d => ['classifying','extracting'].includes(d.status)).length;
+  const failed = docs.filter(d => ['failed','quarantined'].includes(d.status)).length;
+
+  // ─── Group docs by category ───────────────────────────────────────────
+  const byCategory = {};
+  for (const d of docs) {
+    const cat = categorizeDoc(d.doc_type);
+    if (!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push(d);
+  }
+  const sortedCats = Object.keys(DOC_CATEGORIES).sort(
+    (a, b) => DOC_CATEGORIES[a].order - DOC_CATEGORIES[b].order
+  );
+
+  // ─── Build HTML ───────────────────────────────────────────────────────
+  let html = '';
+
+  // Summary strip
+  html += `
+    <div class="docs-summary">
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Total</div>
+        <div class="docs-summary-value">${total}</div>
+        <div class="docs-summary-sub">${total === 1 ? 'document' : 'documents'} on file</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Extracted</div>
+        <div class="docs-summary-value green">${extracted}</div>
+        <div class="docs-summary-sub">${total > 0 ? Math.round((extracted/total)*100) + '%' : '—'} of total</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Processing</div>
+        <div class="docs-summary-value ${processing > 0 ? 'amber' : ''}">${processing}</div>
+        <div class="docs-summary-sub">classifying or extracting</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Outstanding</div>
+        <div class="docs-summary-value ${requests.length > 0 ? 'cyan' : ''}">${requests.length}</div>
+        <div class="docs-summary-sub">request${requests.length === 1 ? '' : 's'} awaiting borrower</div>
+      </div>
+    </div>
+  `;
+
+  // Note about extraction state — until 12.0.x ships, no extracted fields.
+  // This makes it explicit so the LO doesn't sit there waiting for fields
+  // that never arrive.
+  if (total > 0 && extracted === 0 && processing === 0) {
+    html += `
+      <div class="docs-note">
+        <strong>Documents are uploaded but extraction hasn't run yet.</strong>
+        Once the AI extraction worker (checklist 12.0.1 classification + 12.0.2–12.0.7 field extractors) is deployed,
+        each document will be auto-classified and key fields extracted with confidence scores + source citation.
+        Click any row to see the per-doc status detail.
+        <span class="docs-note-ref">Gated by: 12.0.1 (classification) · 12.0.2–12.0.7 (extractors) · 12.0.9 (source citation UI)</span>
+      </div>
+    `;
+  }
+
+  // Outstanding requests section
+  if (requests.length > 0) {
+    html += `
+      <div class="docs-requests">
+        <div class="docs-section-head">
+          <span class="docs-section-title">⚠ Outstanding requests</span>
+          <span class="docs-section-count amber">${requests.length} awaiting</span>
+        </div>
+        <div class="docs-section-body">
+          ${requests.map(renderRequestRow).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Document sections by category
+  let hasAnySection = false;
+  for (const catKey of sortedCats) {
+    const sectionDocs = byCategory[catKey];
+    if (!sectionDocs || sectionDocs.length === 0) continue;
+    hasAnySection = true;
+    const catLabel = DOC_CATEGORIES[catKey].label;
+    html += `
+      <div class="docs-category">
+        <div class="docs-section-head">
+          <span class="docs-section-title">${escapeHtml(catLabel)}</span>
+          <span class="docs-section-count">${sectionDocs.length} ${sectionDocs.length === 1 ? 'file' : 'files'}</span>
+        </div>
+        <div class="docs-section-body">
+          ${sectionDocs.map(renderDocRow).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Overall empty state
+  if (total === 0 && requests.length === 0) {
+    html += `
+      <div class="docs-overall-empty">
+        <div class="docs-overall-empty-icon">▤</div>
+        <div class="docs-overall-empty-title">No documents on this loan yet.</div>
+        <div class="docs-overall-empty-sub">
+          Documents land here as the borrower uploads them, or once requested.
+          AI extraction runs automatically on each upload, producing structured
+          fields with confidence scores and source citations.
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.85rem; flex-wrap: wrap; justify-content: center;">
+          <button class="btn primary" onclick="alert('Document request flow coming next session — for now, use the Messages tab to ask the borrower for files.')">+ Request from Borrower</button>
+          <a class="btn" href="/portal_documents.html" target="_blank" rel="noopener">View borrower upload page ↗</a>
+        </div>
+      </div>
+    `;
+  }
+
+  paneEl.innerHTML = html;
+
+  // ─── Wire row click handlers (expand/collapse) ────────────────────────
+  paneEl.querySelectorAll('[data-doc-id]').forEach(row => {
+    row.addEventListener('click', (e) => {
+      // Don't toggle if user clicked a button or anchor inside the row
+      if (e.target.closest('button, a')) return;
+      toggleDocExpansion(row.dataset.docId);
+    });
   });
+}
+
+function renderRequestRow(r) {
+  const days = r.due_at ? daysUntil(r.due_at) : null;
+  let due;
+  if (days != null) {
+    if (days < 0)       due = `${-days}d overdue`;
+    else if (days === 0) due = 'due today';
+    else if (days <= 3)  due = `due in ${days}d`;
+    else                 due = `due ${formatDate(r.due_at)}`;
+  } else {
+    due = `requested ${timeAgo(r.requested_at)}`;
+  }
+  const dueCls = (days != null && days < 0) ? 'overdue' : ((days != null && days <= 3) ? 'amber' : '');
+  return `
+    <div class="req-row">
+      <span class="req-icon">${r.required ? '⚐' : '○'}</span>
+      <div class="req-info">
+        <div class="req-title">${escapeHtml(r.title || titleCase(r.category || 'Document'))}</div>
+        <div class="req-meta">
+          ${escapeHtml(r.description || '')}
+          ${r.description ? ' · ' : ''}
+          <span class="${r.required ? 'req-required' : 'req-optional'}">${r.required ? 'REQUIRED' : 'optional'}</span>
+          · <span class="${dueCls}">${escapeHtml(due)}</span>
+        </div>
+      </div>
+      <span class="req-status ${r.status === 'partially_provided' ? 'partial' : 'pending'}">${escapeHtml(r.status === 'partially_provided' ? 'partial' : 'pending')}</span>
+    </div>
+  `;
+}
+
+function renderDocRow(d) {
+  const ext = (d.file_name || '').split('.').pop().toUpperCase().slice(0, 4) || '—';
+  const status = (d.status || 'uploaded').toLowerCase();
+  const docType = docTypeLabel(d.doc_type);
+  const when = d.uploaded_at || d.created_at;
+  return `
+    <div class="docs-row" data-doc-id="${escapeHtml(d.id)}">
+      <div class="docs-row-icon">${escapeHtml(ext)}</div>
+      <div class="docs-row-info">
+        <div class="docs-row-name">${escapeHtml(d.file_name || 'unnamed')}</div>
+        <div class="docs-row-meta">
+          ${escapeHtml(docType)}
+          · ${escapeHtml(formatBytes(d.file_size_bytes))}
+          · uploaded ${escapeHtml(timeAgo(when))}
+        </div>
+      </div>
+      <span class="docs-row-status ${escapeHtml(status)}">${escapeHtml(status.replace(/_/g, ' '))}</span>
+      <button class="docs-row-action" data-doc-id="${escapeHtml(d.id)}">View ▾</button>
+    </div>
+    <div id="doc-expand-${escapeHtml(d.id)}" style="display:none; margin-top:-0.35rem; margin-bottom:0.4rem;"></div>
+  `;
+}
+
+// ─── Expansion: fetch extracted_fields, render inline ────────────────────
+async function toggleDocExpansion(docId) {
+  const expandEl = document.getElementById(`doc-expand-${docId}`);
+  if (!expandEl) return;
+
+  // Collapse if already open
+  if (expandEl.style.display === 'block') {
+    expandEl.style.display = 'none';
+    expandEl.innerHTML = '';
+    return;
+  }
+
+  // Collapse any other open ones (one at a time keeps the UI tidy)
+  document.querySelectorAll('[id^="doc-expand-"]').forEach(el => {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  });
+
+  expandEl.style.display = 'block';
+  expandEl.innerHTML = `
+    <div style="background:var(--panel); border:1px solid rgba(0,212,255,0.3); border-top:none; padding:1rem 1.25rem;">
+      <div class="docs-loading-state" style="padding:1rem;">
+        <div class="docs-loading-spinner" style="width:18px; height:18px;"></div>
+        Loading extracted fields…
+      </div>
+    </div>
+  `;
+
+  // Look up the doc from cache
+  const doc = (_docsCache?.docs || []).find(d => d.id === docId);
+  if (!doc) {
+    expandEl.innerHTML = `<div style="padding:1rem; color:var(--muted);">Document not found in cache. Refresh and retry.</div>`;
+    return;
+  }
+
+  // Fetch extracted fields
+  let fields = [];
+  let fieldsError = null;
+  try {
+    const { data, error } = await supa
+      .from('extracted_fields')
+      .select('id, field_name, field_value, confidence_score, source_page, source_bbox, extracted_at')
+      .eq('document_id', docId)
+      .order('field_name', { ascending: true });
+    if (error) throw error;
+    fields = data || [];
+  } catch (err) {
+    fieldsError = err.message;
+  }
+
+  expandEl.innerHTML = renderDocExpandedBody(doc, fields, fieldsError);
+}
+
+function renderDocExpandedBody(doc, fields, fieldsError) {
+  // Common header (status + actions)
+  const headerHtml = `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:0.75rem 1.25rem; background:var(--deep); border:1px solid rgba(0,212,255,0.3); border-bottom:none;">
+      <span style="font-family:var(--mono); font-size:0.6rem; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase;">
+        Extraction · ${escapeHtml(doc.status || 'unknown')}
+        ${doc.extraction_confidence != null ? ' · doc confidence ' + Math.round((Number(doc.extraction_confidence) <= 1 ? Number(doc.extraction_confidence) * 100 : Number(doc.extraction_confidence))) + '%' : ''}
+      </span>
+      <div style="display:flex; gap:0.4rem;">
+        <button class="btn sm" onclick="openDocFile('${escapeHtml(doc.id)}')">Open file ↗</button>
+        <button class="btn sm" onclick="alert('Re-extract dispatches to the extraction worker once 12.0.x deploys')">Re-extract</button>
+      </div>
+    </div>
+  `;
+
+  // Body content depends on field state
+  let bodyHtml;
+  if (fieldsError) {
+    bodyHtml = `
+      <div style="background:var(--panel); border:1px solid rgba(0,212,255,0.3); border-top:none; padding:1.25rem; text-align:center;">
+        <div style="font-family:var(--mono); font-size:0.68rem; color:var(--muted); letter-spacing:0.04em; margin-bottom:0.4rem;">
+          Extracted fields unavailable.
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); line-height:1.6;">
+          The <code style="font-family:var(--mono); color:var(--accent); font-size:0.72rem;">extracted_fields</code> table
+          isn't deployed yet. Once the extraction worker (12.0.1–12.0.7) deploys
+          and writes to that table, this panel shows every extracted value
+          with confidence + click-through-to-source.
+        </div>
+      </div>
+    `;
+  } else if (fields.length === 0) {
+    bodyHtml = `
+      <div style="background:var(--panel); border:1px solid rgba(0,212,255,0.3); border-top:none; padding:1.25rem; text-align:center;">
+        <div style="font-family:var(--mono); font-size:0.68rem; color:var(--muted); letter-spacing:0.04em;">
+          ${escapeHtml(doc.status === 'uploaded' || doc.status === 'pending_upload' ? 'Awaiting extraction — the worker will process this shortly.' : 'No fields extracted yet.')}
+        </div>
+      </div>
+    `;
+  } else {
+    const fieldsHtml = fields.map(f => {
+      const rawConf = f.confidence_score;
+      const conf = rawConf != null
+        ? Math.round((Number(rawConf) <= 1 ? Number(rawConf) * 100 : Number(rawConf)))
+        : null;
+      const confColor = conf == null ? 'var(--muted)'
+                     : conf >= 90 ? 'var(--accent2)'
+                     : conf >= 75 ? 'var(--amber)'
+                     : 'var(--red)';
+      const srcPage = f.source_page ? `p.${f.source_page}` : null;
+      return `
+        <div style="display:grid; grid-template-columns:180px 1fr auto auto; gap:0.85rem; align-items:baseline; padding:0.5rem 1.25rem; border-bottom:1px dotted var(--border);">
+          <span style="font-family:var(--mono); font-size:0.6rem; letter-spacing:0.06em; color:var(--muted); text-transform:uppercase;">
+            ${escapeHtml(titleCase((f.field_name || '').replace(/_/g, ' ')))}
+          </span>
+          <span style="color:var(--white); font-size:0.85rem; word-break:break-word;">
+            ${escapeHtml(formatFieldValue(f.field_value))}
+          </span>
+          <span style="font-family:var(--mono); font-size:0.58rem; color:${confColor}; border:1px solid ${confColor === 'var(--muted)' ? 'var(--border)' : confColor}; padding:0.1rem 0.4rem; letter-spacing:0.04em; white-space:nowrap;">
+            ${conf != null ? conf + '%' : '—'}
+          </span>
+          ${srcPage
+            ? `<button onclick="openDocFile('${escapeHtml(doc.id)}', ${f.source_page})" style="font-family:var(--mono); font-size:0.55rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); background:transparent; border:1px solid rgba(0,212,255,0.3); padding:0.2rem 0.5rem; cursor:pointer; white-space:nowrap;">${escapeHtml(srcPage)} ↗</button>`
+            : `<span style="font-family:var(--mono); font-size:0.55rem; color:var(--muted); opacity:0.5;">no source</span>`}
+        </div>
+      `;
+    }).join('');
+    bodyHtml = `
+      <div style="background:var(--panel); border:1px solid rgba(0,212,255,0.3); border-top:none;">
+        ${fieldsHtml}
+        <div style="padding:0.6rem 1.25rem; font-family:var(--mono); font-size:0.55rem; color:var(--muted); letter-spacing:0.04em; background:var(--deep);">
+          ${fields.length} field${fields.length === 1 ? '' : 's'} extracted
+          ${fields[0]?.extracted_at ? ' · ' + timeAgo(fields[0].extracted_at) : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  return headerHtml + bodyHtml;
+}
+
+function formatFieldValue(v) {
+  if (v == null || v === '') return '—';
+  if (typeof v === 'string' && v.length > 200) return v.slice(0, 200) + '…';
+  return String(v);
+}
+
+// Open a document file via Supabase storage signed URL. If storage_path
+// isn't set on the row, falls back to an alert. Optional `page` jumps to
+// a PDF page anchor (#page=N) which most browsers honor.
+async function openDocFile(docId, page) {
+  const doc = (_docsCache?.docs || []).find(d => d.id === docId);
+  if (!doc) { showToast('Document not found.'); return; }
+  if (!doc.storage_path) {
+    alert('No storage path on this document — file URL unavailable.');
+    return;
+  }
+  try {
+    const { data, error } = await supa.storage
+      .from('loan-documents')
+      .createSignedUrl(doc.storage_path, 3600);
+    if (error) throw error;
+    let url = data.signedUrl;
+    if (page) url += '#page=' + encodeURIComponent(page);
+    window.open(url, '_blank', 'noopener');
+  } catch (err) {
+    alert('Could not open file: ' + err.message);
+  }
+}
+
+// Toast — simple inline implementation since loan.html doesn't have the
+// chat-style toast widget that home.html has. Stub for now.
+function showToast(msg) {
+  console.log('[toast]', msg);
 }
 
 function renderConditions() {
@@ -1266,6 +2007,7 @@ function renderDecision() {
     checklistRef: '12.5.8 UW decision surface · 13.5.4 Reg B adverse action',
   });
 }
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BOOT
