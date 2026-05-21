@@ -1102,6 +1102,331 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   AUS FINDINGS TAB — DU / LPA recommendation, findings, LLPAs
+   
+   Forward-looking UI: the aus_findings table and parser ship with 12.5.6.
+   Until then, empty state with upload-PDF stub. Reuses .disc-panel/-body
+   classes from Disclosures for visual consistency.
+   ═══════════════════════════════════════════════════════════════════════ */
+.findings-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.findings-rec-banner {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid; border-left-width: 4px;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 1.25rem; align-items: center;
+}
+.findings-rec-engine {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+  text-transform: uppercase; padding: 0.35rem 0.7rem;
+  border: 1px solid; min-width: 4rem; text-align: center;
+}
+.findings-rec-status {
+  font-family: var(--serif); font-size: 1.9rem; line-height: 1.05;
+  color: var(--white); font-weight: 400;
+}
+.findings-rec-summary {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.04em;
+  color: var(--muted); margin-top: 0.25rem; line-height: 1.4;
+}
+.findings-rec-meta {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
+  color: var(--muted); text-align: right; white-space: nowrap;
+}
+.findings-rec-banner.approve {
+  background: rgba(0,255,157,0.04); border-color: rgba(0,255,157,0.4);
+  border-left-color: var(--accent2);
+}
+.findings-rec-banner.approve .findings-rec-engine { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.08); }
+.findings-rec-banner.approve .findings-rec-status { color: var(--accent2); }
+.findings-rec-banner.refer {
+  background: rgba(245,166,35,0.04); border-color: rgba(245,166,35,0.4);
+  border-left-color: var(--amber);
+}
+.findings-rec-banner.refer .findings-rec-engine { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.08); }
+.findings-rec-banner.refer .findings-rec-status { color: var(--amber); }
+.findings-rec-banner.ineligible {
+  background: rgba(255,68,68,0.04); border-color: rgba(255,68,68,0.4);
+  border-left-color: var(--red);
+}
+.findings-rec-banner.ineligible .findings-rec-engine { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.08); }
+.findings-rec-banner.ineligible .findings-rec-status { color: var(--red); }
+
+.findings-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.findings-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: baseline;
+  padding: 0.55rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+}
+.findings-row-num {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.06em;
+  color: var(--accent); padding: 0.18rem 0.5rem;
+  border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.06);
+  min-width: 2.5rem; text-align: center;
+}
+.findings-row-body {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--text);
+  line-height: 1.4;
+}
+.findings-row-cite {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.06em;
+  color: var(--muted); display: block; margin-top: 0.2rem;
+}
+.findings-row-sev {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 0.18rem 0.5rem;
+  border: 1px solid; white-space: nowrap;
+}
+.findings-row-sev.req     { color: var(--red);    border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.findings-row-sev.info    { color: var(--muted);  border-color: var(--border); }
+.findings-row-sev.warning { color: var(--amber);  border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+
+.findings-llpa-row,
+.findings-discrep-row {
+  display: grid; grid-template-columns: 1fr auto auto;
+  gap: 0.85rem; align-items: baseline;
+  padding: 0.55rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+  margin-bottom: 0.4rem;
+}
+.findings-llpa-row:last-child,
+.findings-discrep-row:last-child { margin-bottom: 0; }
+.findings-llpa-name,
+.findings-discrep-field {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--text);
+}
+.findings-llpa-pct {
+  font-family: var(--mono); font-size: 0.78rem; color: var(--amber);
+  text-align: right;
+}
+.findings-llpa-pct.zero { color: var(--muted); }
+.findings-discrep-side {
+  font-family: var(--mono); font-size: 0.7rem; color: var(--text);
+}
+.findings-discrep-side small {
+  display: block; font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* Shared empty hero for Findings + Credit */
+.upload-hero {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  padding: 3rem 2rem;
+  text-align: center;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.85rem;
+}
+.upload-hero-icon {
+  font-family: var(--mono); font-size: 2.75rem;
+  color: var(--accent); opacity: 0.55;
+}
+.upload-hero-title {
+  font-family: var(--serif); font-size: 1.4rem;
+  color: var(--white);
+}
+.upload-hero-sub {
+  color: var(--muted); font-size: 0.85rem;
+  max-width: 580px; line-height: 1.6;
+}
+.upload-hero-actions {
+  display: flex; gap: 0.6rem; flex-wrap: wrap;
+  justify-content: center; margin-top: 0.5rem;
+}
+.upload-hero-ref {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  color: var(--muted); margin-top: 0.3rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CREDIT REPORT TAB — per-borrower score cards + tradelines + history
+   
+   Forward-looking UI: credit_reports table + parser ship with 12.5.7.
+   FCRA-compliant pull authorization belongs to 13.5.5 (not implemented here).
+   ═══════════════════════════════════════════════════════════════════════ */
+.credit-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.credit-scores-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.credit-score-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.1rem 1.2rem;
+  display: flex; flex-direction: column;
+  gap: 0.7rem;
+}
+.credit-score-card-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.credit-score-card-name {
+  font-family: var(--sans); font-size: 0.95rem; color: var(--white);
+  font-weight: 500;
+}
+.credit-score-card-role {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+.credit-decision-score {
+  font-family: var(--serif); font-size: 3rem; line-height: 1;
+  font-weight: 400;
+}
+.credit-decision-score .label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  display: block; margin-bottom: 0.15rem;
+}
+.credit-decision-score.tier-excellent { color: var(--accent2); }
+.credit-decision-score.tier-good      { color: var(--accent); }
+.credit-decision-score.tier-fair      { color: var(--amber); }
+.credit-decision-score.tier-poor      { color: var(--red); }
+
+.credit-agency-scores {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border);
+}
+.credit-agency-score {
+  background: var(--panel); padding: 0.5rem 0.65rem;
+  text-align: center;
+}
+.credit-agency-score .agency {
+  font-family: var(--mono); font-size: 0.5rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+.credit-agency-score .num {
+  font-family: var(--mono); font-size: 0.95rem; color: var(--white);
+  font-weight: 700;
+}
+.credit-agency-score .num.dec { color: var(--accent2); }
+.credit-agency-score .num.amber { color: var(--amber); }
+
+.credit-score-factors {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.04em;
+  color: var(--muted); line-height: 1.5;
+}
+.credit-score-factors strong {
+  color: var(--text); font-weight: 500;
+  display: block; margin-bottom: 0.2rem; letter-spacing: 0.12em;
+  text-transform: uppercase; font-size: 0.55rem;
+}
+.credit-score-factors ul {
+  list-style: none; padding: 0; margin: 0;
+}
+.credit-score-factors li {
+  padding: 0.15rem 0;
+  padding-left: 0.7rem; position: relative;
+}
+.credit-score-factors li::before {
+  content: '·'; position: absolute; left: 0; color: var(--accent);
+}
+
+.credit-subtabs {
+  display: flex; gap: 0.4rem; border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.credit-subtab {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.55rem 0.9rem;
+  border: 1px solid transparent;
+  background: transparent; color: var(--muted);
+  cursor: pointer; transition: all 0.15s;
+  margin-bottom: -1px;
+}
+.credit-subtab:hover { color: var(--text); }
+.credit-subtab.active {
+  color: var(--accent); border-color: var(--border);
+  border-bottom-color: var(--surface);
+  background: var(--surface);
+}
+.credit-subtab b { color: inherit; margin-left: 0.35rem; font-size: 0.65rem; }
+
+.credit-tradeline-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface); border: 1px solid var(--border);
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+}
+.credit-tradeline-row:last-child { margin-bottom: 0; }
+.credit-tradeline-row.delinquent {
+  border-left: 3px solid var(--red);
+  background: rgba(255,68,68,0.04);
+}
+.credit-tradeline-row.collection {
+  border-left: 3px solid var(--red);
+  background: rgba(255,68,68,0.06);
+}
+
+.credit-tradeline-type-pill {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.2rem 0.5rem;
+  border: 1px solid; min-width: 4.5rem; text-align: center;
+}
+.credit-tradeline-type-pill.mortgage   { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.credit-tradeline-type-pill.installment{ color: var(--accent);  border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+.credit-tradeline-type-pill.revolving  { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.credit-tradeline-type-pill.auto       { color: var(--accent);  border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+.credit-tradeline-type-pill.collection { color: var(--red);     border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.credit-tradeline-type-pill.student    { color: var(--muted);   border-color: var(--border); }
+
+.credit-tradeline-info { min-width: 0; }
+.credit-tradeline-creditor {
+  font-family: var(--sans); color: var(--white); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.credit-tradeline-meta {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+
+.credit-tradeline-balance,
+.credit-tradeline-payment {
+  font-family: var(--mono); font-size: 0.85rem;
+  color: var(--white); text-align: right;
+}
+.credit-tradeline-balance small,
+.credit-tradeline-payment small {
+  display: block; font-size: 0.55rem; color: var(--muted);
+  letter-spacing: 0.06em; margin-top: 0.1rem;
+}
+
+.credit-tradeline-status {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 0.18rem 0.5rem;
+  border: 1px solid; white-space: nowrap;
+}
+.credit-tradeline-status.current { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.credit-tradeline-status.paid    { color: var(--muted);   border-color: var(--border); }
+.credit-tradeline-status.late    { color: var(--amber);   border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.credit-tradeline-status.delinquent,
+.credit-tradeline-status.collection { color: var(--red);  border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+
+.credit-meta-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.04em;
+  color: var(--muted); padding: 0.6rem 0;
+  flex-wrap: wrap; gap: 0.5rem;
+}
+.credit-meta-row .expires.warn { color: var(--amber); }
+.credit-meta-row .expires.crit { color: var(--red); }
+
+@media (max-width: 720px) {
+  .findings-rec-banner { grid-template-columns: 1fr; text-align: center; gap: 0.5rem; }
+  .findings-rec-meta { text-align: center; }
+  .credit-scores-row { grid-template-columns: 1fr; }
+  .credit-tradeline-row { grid-template-columns: auto 1fr auto; }
+  .credit-tradeline-payment, .credit-tradeline-status { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MESSAGES TAB — iframes /loan_messages.html. The iframe pages itself
    has its own nav bar, which looks chunky here (two nav bars stacked).
    v1 ships as is; future patch can add ?embed=1 to loan_messages.html
@@ -3421,29 +3746,630 @@ function discITPMethodLabel(m) {
   return map[String(m || '').toLowerCase()] || (m ? titleCase(String(m)) : 'Method unknown');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// AUS FINDINGS TAB — FUNCTIONAL
+//
+// Surfaces DU / LPA recommendations, findings list, LLPAs, ratio
+// comparison vs 1003, discrepancies that became conditions.
+//
+// IMPORTANT: forward-looking UI. The aus_findings table + parser ship
+// with checklist 12.5.6. Until then, empty state with upload-PDF stub.
+//
+// Schema assumptions (query fails open):
+//   aus_findings  | id, loan_id, branch_id,
+//                 | engine ('DU'|'LP'|'LPA'),
+//                 | casefile_id, recommendation
+//                 | ('approve_eligible'|'refer'|'refer_with_caution'
+//                 |  |'ineligible'|'out_of_scope'),
+//                 | risk_class, recommendation_summary,
+//                 | ratios_dti, ratios_ltv, ratios_hcltv,
+//                 | findings (JSONB array of {num, severity, body, citation}),
+//                 | llpas (JSONB array of {name, pct, amount}),
+//                 | discrepancies (JSONB array of {field, aus_value, los_value}),
+//                 | run_at, run_by_user_id, document_id,
+//                 | ai_parsed, ai_confidence,
+//                 | created_at, updated_at
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _findingsState = { record: null, profiles: {} };
+
 function renderFindings() {
-  return emptyTab({
-    icon: '✓',
-    eyebrow: 'AUS Findings — coming soon',
-    title: 'DU / LPA findings parser',
-    sub: `Lender runs DU or LP in their existing tool and uploads the findings PDF here.
-          OF parses the recommendation (Approve / Refer / Caution / Ineligible), the conditions list,
-          the loan-level price adjustments, and the ratios — stores them as structured findings.
-          Compares against the 1003 stated values and flags discrepancies as new conditions.`,
-    checklistRef: '12.5.6 AUS findings upload + parser (STUB — real DU/LPA submission is Phase 4)',
+  setTimeout(() => loadAndRenderFindings(), 0);
+  return `
+    <div class="findings-pane" id="findings-pane">
+      <div class="disc-loading">
+        <div class="disc-loading-spinner"></div>
+        Loading AUS findings…
+      </div>
+    </div>
+  `;
+}
+
+async function loadAndRenderFindings() {
+  const paneEl = document.getElementById('findings-pane');
+  if (!paneEl) return;
+
+  let record = null;
+  try {
+    const { data, error } = await supa
+      .from('aus_findings')
+      .select('id, engine, casefile_id, recommendation, risk_class, recommendation_summary, ratios_dti, ratios_ltv, ratios_hcltv, findings, llpas, discrepancies, run_at, run_by_user_id, document_id, ai_parsed, ai_confidence, created_at')
+      .eq('loan_id', loan.id)
+      .order('run_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    record = data;
+  } catch (_) { /* table absent — empty state */ }
+
+  if (record?.run_by_user_id) {
+    try {
+      const { data } = await supa.from('profiles')
+        .select('id, full_name').eq('id', record.run_by_user_id);
+      _findingsState.profiles = Object.fromEntries((data || []).map(p => [p.id, p]));
+    } catch (_) {}
+  }
+  _findingsState.record = record;
+
+  paneEl.innerHTML = record ? renderFindingsLoaded(record) : renderFindingsEmpty();
+}
+
+function renderFindingsEmpty() {
+  return `
+    <div class="upload-hero">
+      <div class="upload-hero-icon">✓</div>
+      <div class="upload-hero-title">No AUS findings on file</div>
+      <div class="upload-hero-sub">
+        Run DU (Fannie Mae) or LPA (Freddie Mac) in your existing AUS tool, then upload the findings PDF here.
+        OF parses the recommendation, findings list, LLPAs, and ratios — then compares them against the 1003
+        and flags discrepancies as new conditions in the Conditions tab.
+      </div>
+      <div class="upload-hero-actions">
+        <button class="btn primary" onclick="alert('Findings PDF upload + parser lands with checklist 12.5.6.\\n\\nFor now, the LO/UW runs DU or LPA in their existing tool — direct AUS submission is Phase 4 work.')">⤴ Upload Findings PDF</button>
+      </div>
+      <div class="upload-hero-ref">Gated by 12.5.6 (AUS findings upload + parser)</div>
+    </div>
+  `;
+}
+
+function renderFindingsLoaded(r) {
+  const recKey = String(r.recommendation || '').toLowerCase();
+  let recCls = 'refer', recLabel = (r.recommendation || 'Unknown').toUpperCase().replace(/_/g, ' / ');
+  if (recKey === 'approve_eligible' || recKey === 'accept' || recKey === 'approve/eligible') {
+    recCls = 'approve'; recLabel = 'APPROVE / ELIGIBLE';
+  } else if (recKey === 'ineligible' || recKey === 'out_of_scope') {
+    recCls = 'ineligible'; recLabel = recKey === 'ineligible' ? 'INELIGIBLE' : 'OUT OF SCOPE';
+  } else if (recKey.startsWith('refer')) {
+    recCls = 'refer'; recLabel = recKey === 'refer_with_caution' ? 'REFER WITH CAUTION' : 'REFER';
+  }
+
+  const engineLabel = (r.engine || 'AUS').toUpperCase();
+  const runner = _findingsState.profiles[r.run_by_user_id]?.full_name || 'Staff';
+
+  let html = `
+    <div class="findings-rec-banner ${recCls}">
+      <span class="findings-rec-engine">${escapeHtml(engineLabel)}</span>
+      <div>
+        <div class="findings-rec-status">${escapeHtml(recLabel)}</div>
+        <div class="findings-rec-summary">${escapeHtml(r.recommendation_summary || (recCls === 'approve' ? 'Loan meets eligibility standards per the agency selling guide.' : 'Manual review required — see findings list below.'))}</div>
+      </div>
+      <div class="findings-rec-meta">
+        ${r.casefile_id ? `Casefile ${escapeHtml(r.casefile_id)}<br>` : ''}
+        Run ${escapeHtml(timeAgo(r.run_at))}<br>
+        by ${escapeHtml(runner)}
+      </div>
+    </div>
+  `;
+
+  // Ratios panel — compare AUS ratios against loan record's ratios from 1003
+  const ratios = [
+    { label: 'DTI',   aus: r.ratios_dti,   los: loan.dti,   suffix: '%' },
+    { label: 'LTV',   aus: r.ratios_ltv,   los: loan.ltv,   suffix: '%' },
+    { label: 'HCLTV', aus: r.ratios_hcltv, los: loan.hcltv, suffix: '%' },
+  ].filter(x => x.aus != null || x.los != null);
+
+  if (ratios.length > 0) {
+    html += `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">Ratios — AUS vs 1003</span>
+        </div>
+        <div class="disc-panel-body">
+          <div class="disc-kv-grid">
+            ${ratios.map(rr => {
+              const ausVal = rr.aus != null ? Number(rr.aus).toFixed(2) + rr.suffix : '—';
+              const losVal = rr.los != null ? Number(rr.los).toFixed(2) + rr.suffix : '—';
+              const same = rr.aus != null && rr.los != null && Math.abs(Number(rr.aus) - Number(rr.los)) < 0.5;
+              return `
+                <span class="disc-kv-key">${escapeHtml(rr.label)}</span>
+                <span class="disc-kv-val">
+                  <span class="${same ? 'green' : 'amber'}">AUS: ${escapeHtml(ausVal)}</span>
+                  &nbsp;·&nbsp;<span style="color: var(--muted);">1003: ${escapeHtml(losVal)}</span>
+                  ${!same && rr.aus != null && rr.los != null
+                    ? '<span class="sub">discrepancy — UW review</span>'
+                    : ''}
+                </span>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Findings list
+  const findings = Array.isArray(r.findings) ? r.findings : [];
+  if (findings.length > 0) {
+    html += `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">Findings <span class="disc-status-pill na">${findings.length}</span></span>
+        </div>
+        <div class="disc-panel-body">
+          <div class="findings-list">
+            ${findings.map((f, i) => {
+              const sev = String(f.severity || 'info').toLowerCase();
+              const sevCls = sev === 'required' || sev === 'req' ? 'req'
+                          : sev === 'warning' || sev === 'caution' ? 'warning'
+                          : 'info';
+              const sevLabel = sevCls === 'req' ? 'Required'
+                            : sevCls === 'warning' ? 'Caution'
+                            : 'Info';
+              return `
+                <div class="findings-row">
+                  <span class="findings-row-num">${escapeHtml(String(f.num || i + 1))}</span>
+                  <div class="findings-row-body">
+                    ${escapeHtml(f.body || f.text || 'No description')}
+                    ${f.citation ? `<span class="findings-row-cite">${escapeHtml(f.citation)}</span>` : ''}
+                  </div>
+                  <span class="findings-row-sev ${sevCls}">${escapeHtml(sevLabel)}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // LLPAs
+  const llpas = Array.isArray(r.llpas) ? r.llpas : [];
+  if (llpas.length > 0) {
+    const totalPct = llpas.reduce((sum, l) => sum + (Number(l.pct) || 0), 0);
+    html += `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">Loan-Level Price Adjustments <span class="disc-status-pill na">${totalPct.toFixed(3)}% total</span></span>
+        </div>
+        <div class="disc-panel-body">
+          ${llpas.map(l => `
+            <div class="findings-llpa-row">
+              <span class="findings-llpa-name">${escapeHtml(l.name || 'Unnamed adjustment')}</span>
+              <span class="findings-llpa-pct ${Number(l.pct) === 0 ? 'zero' : ''}">${escapeHtml((Number(l.pct) >= 0 ? '+' : '') + Number(l.pct).toFixed(3) + '%')}</span>
+              <span class="findings-llpa-pct" style="color: var(--muted);">${l.amount != null ? escapeHtml(dollars(l.amount)) : ''}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Discrepancies
+  const discreps = Array.isArray(r.discrepancies) ? r.discrepancies : [];
+  if (discreps.length > 0) {
+    html += `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">Discrepancies vs 1003 <span class="disc-status-pill missing">${discreps.length}</span></span>
+        </div>
+        <div class="disc-panel-body">
+          ${discreps.map(d => `
+            <div class="findings-discrep-row">
+              <span class="findings-discrep-field">${escapeHtml(d.field || 'Field')}</span>
+              <span class="findings-discrep-side"><small>AUS</small>${escapeHtml(String(d.aus_value ?? '—'))}</span>
+              <span class="findings-discrep-side"><small>1003</small>${escapeHtml(String(d.los_value ?? '—'))}</span>
+            </div>
+          `).join('')}
+          <div style="margin-top: 0.85rem; font-family: var(--mono); font-size: 0.58rem; color: var(--muted); letter-spacing: 0.04em;">
+            Each discrepancy should generate a condition on the Conditions tab requiring UW review.
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Actions row
+  html += `
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+      ${r.document_id ? `<button class="btn" onclick="alert('Findings PDF view will fetch document_id from aus_findings and open via Storage signed URL.')">View Findings PDF</button>` : ''}
+      <button class="btn" onclick="alert('Re-running the parser against the existing PDF lands with 12.5.6.')">Re-parse</button>
+      <button class="btn primary" onclick="alert('Upload new findings PDF — replaces this record (history retained for audit).')">⤴ Upload New Run</button>
+    </div>
+  `;
+
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREDIT REPORT TAB — FUNCTIONAL
+//
+// Surfaces tri-merge credit data per borrower: decision score, agency
+// breakdown, score factors, tradelines, public records, inquiries.
+//
+// IMPORTANT: forward-looking UI. The credit_reports table + parser ship
+// with 12.5.7. FCRA-compliant pull authorization belongs to 13.5.5.
+//
+// Schema assumptions (queries fail open):
+//   credit_reports  | id, loan_id, borrower_id,
+//                   | report_pulled_at, expires_at,
+//                   | decision_score, scores (JSONB {experian, equifax, transunion}),
+//                   | score_factors (JSONB array of strings),
+//                   | tradelines (JSONB array),
+//                   | public_records (JSONB array),
+//                   | inquiries (JSONB array),
+//                   | disputes_count, has_frozen,
+//                   | total_monthly_payments,
+//                   | document_id, ai_parsed, ai_confidence,
+//                   | created_at
+//
+// Credit reports are valid for 120 days for conventional (per FNMA),
+// 90 days for FHA. We show expiration with appropriate warning thresholds.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _creditState = {
+  reports: [],         // one per borrower
+  borrowers: [],
+  activeSubtab: 'tradelines',  // tradelines | public | inquiries
+};
+
+function renderCredit() {
+  setTimeout(() => loadAndRenderCredit(), 0);
+  return `
+    <div class="credit-pane" id="credit-pane">
+      <div class="disc-loading">
+        <div class="disc-loading-spinner"></div>
+        Loading credit report…
+      </div>
+    </div>
+  `;
+}
+
+async function loadAndRenderCredit() {
+  const paneEl = document.getElementById('credit-pane');
+  if (!paneEl) return;
+
+  // Load borrowers for this loan (needed even if no credit report exists)
+  let borrowers = [];
+  try {
+    const { data } = await supa.from('borrowers')
+      .select('id, first_name, last_name, is_primary')
+      .eq('loan_id', loan.id)
+      .order('is_primary', { ascending: false });
+    borrowers = data || [];
+  } catch (_) {}
+  _creditState.borrowers = borrowers;
+
+  // Load credit reports (one per borrower, latest only)
+  let reports = [];
+  try {
+    const { data, error } = await supa
+      .from('credit_reports')
+      .select('id, borrower_id, report_pulled_at, expires_at, decision_score, scores, score_factors, tradelines, public_records, inquiries, disputes_count, has_frozen, total_monthly_payments, document_id, ai_parsed, ai_confidence, created_at')
+      .eq('loan_id', loan.id)
+      .order('report_pulled_at', { ascending: false });
+    if (error) throw error;
+    // Keep only the latest per borrower
+    const seen = new Set();
+    for (const r of (data || [])) {
+      if (!seen.has(r.borrower_id)) {
+        reports.push(r);
+        seen.add(r.borrower_id);
+      }
+    }
+  } catch (_) { /* table absent — empty state */ }
+  _creditState.reports = reports;
+
+  renderCreditPane();
+}
+
+function renderCreditPane() {
+  const paneEl = document.getElementById('credit-pane');
+  if (!paneEl) return;
+
+  const { reports, borrowers, activeSubtab } = _creditState;
+
+  if (reports.length === 0) {
+    paneEl.innerHTML = renderCreditEmpty();
+    return;
+  }
+
+  // Aggregate across all reports
+  const allTradelines    = reports.flatMap(r => Array.isArray(r.tradelines)     ? r.tradelines.map(t => ({ ...t, _borrower: r.borrower_id })) : []);
+  const allPublic        = reports.flatMap(r => Array.isArray(r.public_records) ? r.public_records.map(p => ({ ...p, _borrower: r.borrower_id })) : []);
+  const allInquiries     = reports.flatMap(r => Array.isArray(r.inquiries)      ? r.inquiries.map(q => ({ ...q, _borrower: r.borrower_id })) : []);
+
+  // Find oldest report's expiration for the footer
+  const oldestExpiry = reports
+    .map(r => r.expires_at).filter(Boolean)
+    .sort()[0];
+  const oldestPulled = reports
+    .map(r => r.report_pulled_at).filter(Boolean)
+    .sort()[0];
+  const daysToExpiry = oldestExpiry ? -daysSince(oldestExpiry) : null;
+  let expiryCls = '', expiryTxt = '';
+  if (daysToExpiry != null) {
+    if (daysToExpiry < 0)       { expiryCls = 'crit'; expiryTxt = `Expired ${-daysToExpiry}d ago — re-pull required`; }
+    else if (daysToExpiry <= 14) { expiryCls = 'warn'; expiryTxt = `Expires in ${daysToExpiry}d`; }
+    else                         { expiryTxt = `Expires in ${daysToExpiry}d`; }
+  }
+
+  let html = '';
+
+  // ─── Score cards row ────────────────────────────────────────────────
+  html += `<div class="credit-scores-row">`;
+  for (const b of borrowers) {
+    const r = reports.find(x => x.borrower_id === b.id);
+    html += renderCreditScoreCard(b, r);
+  }
+  // If we have reports for non-listed borrowers, show those too
+  for (const r of reports) {
+    if (!borrowers.find(b => b.id === r.borrower_id)) {
+      html += renderCreditScoreCard(
+        { id: r.borrower_id, first_name: '?', last_name: '?', is_primary: false },
+        r
+      );
+    }
+  }
+  html += `</div>`;
+
+  // ─── Subtabs ────────────────────────────────────────────────────────
+  html += `
+    <div class="credit-subtabs">
+      <button class="credit-subtab ${activeSubtab === 'tradelines' ? 'active' : ''}" data-credit-subtab="tradelines">Tradelines <b>${allTradelines.length}</b></button>
+      <button class="credit-subtab ${activeSubtab === 'public' ? 'active' : ''}" data-credit-subtab="public">Public Records <b>${allPublic.length}</b></button>
+      <button class="credit-subtab ${activeSubtab === 'inquiries' ? 'active' : ''}" data-credit-subtab="inquiries">Inquiries <b>${allInquiries.length}</b></button>
+    </div>
+  `;
+
+  // ─── Active subtab body ────────────────────────────────────────────
+  html += `<div style="padding: 1rem 0;">`;
+  if (activeSubtab === 'tradelines') {
+    html += renderTradelinesList(allTradelines);
+  } else if (activeSubtab === 'public') {
+    html += renderPublicRecordsList(allPublic);
+  } else if (activeSubtab === 'inquiries') {
+    html += renderInquiriesList(allInquiries);
+  }
+  html += `</div>`;
+
+  // ─── Footer meta row ───────────────────────────────────────────────
+  html += `
+    <div class="credit-meta-row">
+      <span>Pulled ${escapeHtml(oldestPulled ? timeAgo(oldestPulled) : '—')} · ${escapeHtml(reports.length)} report${reports.length === 1 ? '' : 's'} on file</span>
+      ${expiryTxt ? `<span class="expires ${expiryCls}">${escapeHtml(expiryTxt)}</span>` : ''}
+      <button class="btn" style="margin-left: auto;" onclick="alert('Re-pull triggers a fresh credit pull via the configured CRA. Lands with 12.5.7 (parser) + 13.5.5 (FCRA auth).')">⤴ Re-pull</button>
+    </div>
+  `;
+
+  paneEl.innerHTML = html;
+
+  // Wire subtabs
+  paneEl.querySelectorAll('[data-credit-subtab]').forEach(t => {
+    t.addEventListener('click', () => {
+      _creditState.activeSubtab = t.dataset.creditSubtab;
+      renderCreditPane();
+    });
   });
 }
 
-function renderCredit() {
-  return emptyTab({
-    icon: '⌗',
-    eyebrow: 'Credit Report — coming soon',
-    title: 'Tri-merge credit report parser',
-    sub: `Lender pulls the tri-merge in their existing bureau tool and uploads the PDF here.
-          OF parses the three scores, tradelines, public records, inquiries, and prior addresses.
-          FCRA-compliant credit pull authorization captured in advance; revocable; 60-day scope.`,
-    checklistRef: '12.5.7 credit report upload + parser (STUB — real bureau pull is Phase 4) · 13.5.5 FCRA auth',
+function renderCreditEmpty() {
+  return `
+    <div class="upload-hero">
+      <div class="upload-hero-icon">⌗</div>
+      <div class="upload-hero-title">No credit report on file</div>
+      <div class="upload-hero-sub">
+        Pull a tri-merge credit report in your existing bureau tool, then upload the PDF here.
+        OF parses the three agency scores, picks the decision score per borrower, extracts every
+        tradeline, public record, and inquiry, and feeds the monthly debt total into DTI calculation.
+        FCRA-compliant authorization must be captured before any pull.
+      </div>
+      <div class="upload-hero-actions">
+        <button class="btn primary" onclick="alert('Credit report PDF upload + parser lands with checklist 12.5.7.\\n\\nFCRA pull authorization belongs to 13.5.5 — borrower must explicitly authorize the pull before it happens (60-day scope, revocable).')">⤴ Upload Credit Report PDF</button>
+        <button class="btn" onclick="alert('Direct bureau API pull (Experian/Equifax/TransUnion) is Phase 4 work. For now, lender pulls in their existing tool and uploads the PDF.')">Connect Bureau API</button>
+      </div>
+      <div class="upload-hero-ref">Gated by 12.5.7 (parser) · 13.5.5 (FCRA auth capture)</div>
+    </div>
+  `;
+}
+
+function renderCreditScoreCard(borrower, report) {
+  const name = `${borrower.first_name || '?'} ${borrower.last_name || '?'}`;
+  const role = borrower.is_primary ? 'Primary' : 'Co-Borrower';
+
+  if (!report) {
+    return `
+      <div class="credit-score-card">
+        <div class="credit-score-card-head">
+          <span class="credit-score-card-name">${escapeHtml(name)}</span>
+          <span class="credit-score-card-role">${escapeHtml(role)}</span>
+        </div>
+        <div class="credit-decision-score" style="color: var(--muted);">
+          <span class="label">Decision Score</span>
+          —
+        </div>
+        <div style="font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em;">
+          No credit report on file for this borrower.
+        </div>
+      </div>
+    `;
+  }
+
+  const decision = report.decision_score;
+  const tier = scoreTier(decision);
+  const scores = report.scores || {};
+  const exp = scores.experian ?? scores.exp;
+  const eq  = scores.equifax  ?? scores.eq;
+  const tu  = scores.transunion ?? scores.tu;
+  const middleAgency = pickMiddleAgency(exp, eq, tu);
+  const factors = Array.isArray(report.score_factors) ? report.score_factors : [];
+
+  return `
+    <div class="credit-score-card">
+      <div class="credit-score-card-head">
+        <span class="credit-score-card-name">${escapeHtml(name)}</span>
+        <span class="credit-score-card-role">${escapeHtml(role)}</span>
+      </div>
+      <div class="credit-decision-score ${tier}">
+        <span class="label">Decision Score</span>
+        ${decision != null ? escapeHtml(String(decision)) : '—'}
+      </div>
+      <div class="credit-agency-scores">
+        <div class="credit-agency-score">
+          <div class="agency">Experian</div>
+          <div class="num ${middleAgency === 'exp' ? 'dec' : ''}">${exp != null ? escapeHtml(String(exp)) : '—'}</div>
+        </div>
+        <div class="credit-agency-score">
+          <div class="agency">Equifax</div>
+          <div class="num ${middleAgency === 'eq' ? 'dec' : ''}">${eq != null ? escapeHtml(String(eq)) : '—'}</div>
+        </div>
+        <div class="credit-agency-score">
+          <div class="agency">TransUnion</div>
+          <div class="num ${middleAgency === 'tu' ? 'dec' : ''}">${tu != null ? escapeHtml(String(tu)) : '—'}</div>
+        </div>
+      </div>
+      ${factors.length > 0 ? `
+        <div class="credit-score-factors">
+          <strong>Top Factors</strong>
+          <ul>
+            ${factors.slice(0, 4).map(f => `<li>${escapeHtml(f)}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+      ${report.has_frozen ? `<div style="font-family: var(--mono); font-size: 0.58rem; color: var(--amber); letter-spacing: 0.04em;">⚠ One or more bureaus frozen — borrower must lift before pull</div>` : ''}
+      ${report.disputes_count > 0 ? `<div style="font-family: var(--mono); font-size: 0.58rem; color: var(--amber); letter-spacing: 0.04em;">⚠ ${report.disputes_count} tradeline${report.disputes_count === 1 ? '' : 's'} under dispute</div>` : ''}
+    </div>
+  `;
+}
+
+function renderTradelinesList(tradelines) {
+  if (tradelines.length === 0) {
+    return `<div style="padding: 2rem 1rem; text-align: center; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); letter-spacing: 0.04em;">No tradelines parsed.</div>`;
+  }
+  // Group by type, then sort within group by balance desc
+  const typeOrder = ['mortgage', 'auto', 'installment', 'student', 'revolving', 'collection', 'other'];
+  const sorted = [...tradelines].sort((a, b) => {
+    const ai = typeOrder.indexOf(normalizeTradelineType(a.type)) ;
+    const bi = typeOrder.indexOf(normalizeTradelineType(b.type));
+    if (ai !== bi) return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    return (Number(b.balance) || 0) - (Number(a.balance) || 0);
   });
+  return sorted.map(renderTradelineRow).join('');
+}
+
+function renderTradelineRow(t) {
+  const type = normalizeTradelineType(t.type);
+  const status = String(t.status || 'current').toLowerCase();
+  const delinquent = ['late', 'delinquent', 'collection', '30', '60', '90', '120'].some(k => status.includes(k));
+  const rowCls = ['credit-tradeline-row'];
+  if (delinquent) rowCls.push('delinquent');
+  if (type === 'collection') rowCls.push('collection');
+
+  return `
+    <div class="${rowCls.join(' ')}">
+      <span class="credit-tradeline-type-pill ${type}">${escapeHtml(type)}</span>
+      <div class="credit-tradeline-info">
+        <div class="credit-tradeline-creditor">${escapeHtml(t.creditor || 'Unknown creditor')}</div>
+        <div class="credit-tradeline-meta">
+          ${t.account_number ? 'Acct ' + escapeHtml(String(t.account_number).slice(-4).padStart(4, '*')) + ' · ' : ''}
+          ${t.opened_at ? 'opened ' + escapeHtml(formatDate(t.opened_at)) : ''}
+          ${t.months_reviewed ? ' · ' + escapeHtml(String(t.months_reviewed)) + 'mo reviewed' : ''}
+        </div>
+      </div>
+      <div class="credit-tradeline-balance">
+        ${t.balance != null ? escapeHtml(dollars(t.balance)) : '—'}
+        <small>${t.credit_limit != null ? 'of ' + dollars(t.credit_limit) : t.high_credit != null ? 'high ' + dollars(t.high_credit) : 'balance'}</small>
+      </div>
+      <div class="credit-tradeline-payment">
+        ${t.monthly_payment != null ? escapeHtml(dollars(t.monthly_payment)) : '—'}
+        <small>monthly</small>
+      </div>
+      <span class="credit-tradeline-status ${status.replace(/\s+/g, '-')}">${escapeHtml(t.status || 'Current')}</span>
+    </div>
+  `;
+}
+
+function renderPublicRecordsList(items) {
+  if (items.length === 0) {
+    return `<div style="padding: 2rem 1rem; text-align: center; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); letter-spacing: 0.04em;">No public records — clean.</div>`;
+  }
+  return items.map(p => `
+    <div class="credit-tradeline-row" style="border-left: 3px solid var(--red); background: rgba(255,68,68,0.04); grid-template-columns: auto 1fr auto;">
+      <span class="credit-tradeline-type-pill collection">${escapeHtml((p.type || 'public').toUpperCase())}</span>
+      <div class="credit-tradeline-info">
+        <div class="credit-tradeline-creditor">${escapeHtml(p.description || p.court || 'Public record')}</div>
+        <div class="credit-tradeline-meta">
+          ${p.filed_at ? 'filed ' + escapeHtml(formatDate(p.filed_at)) : ''}
+          ${p.status ? ' · ' + escapeHtml(p.status) : ''}
+          ${p.amount != null ? ' · ' + escapeHtml(dollars(p.amount)) : ''}
+        </div>
+      </div>
+      <span class="credit-tradeline-status delinquent">${escapeHtml(p.status || 'On Record')}</span>
+    </div>
+  `).join('');
+}
+
+function renderInquiriesList(items) {
+  if (items.length === 0) {
+    return `<div style="padding: 2rem 1rem; text-align: center; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); letter-spacing: 0.04em;">No recent inquiries.</div>`;
+  }
+  return items.map(q => `
+    <div class="credit-tradeline-row" style="grid-template-columns: auto 1fr auto;">
+      <span class="credit-tradeline-type-pill" style="color: var(--muted); border-color: var(--border);">INQUIRY</span>
+      <div class="credit-tradeline-info">
+        <div class="credit-tradeline-creditor">${escapeHtml(q.creditor || q.business || 'Unknown')}</div>
+        <div class="credit-tradeline-meta">
+          ${q.inquired_at ? escapeHtml(timeAgo(q.inquired_at)) : ''}
+          ${q.purpose ? ' · ' + escapeHtml(q.purpose) : ''}
+        </div>
+      </div>
+      <span class="credit-tradeline-status" style="color: var(--muted); border-color: var(--border);">${escapeHtml(q.bureau || 'Soft')}</span>
+    </div>
+  `).join('');
+}
+
+// ─── Credit helpers ────────────────────────────────────────────────────
+function scoreTier(score) {
+  if (score == null) return '';
+  const s = Number(score);
+  if (s >= 740) return 'tier-excellent';
+  if (s >= 700) return 'tier-good';
+  if (s >= 660) return 'tier-fair';
+  return 'tier-poor';
+}
+
+function pickMiddleAgency(exp, eq, tu) {
+  const arr = [
+    { agency: 'exp', score: exp },
+    { agency: 'eq',  score: eq },
+    { agency: 'tu',  score: tu },
+  ].filter(x => x.score != null);
+  if (arr.length === 0) return null;
+  if (arr.length === 1) return arr[0].agency;
+  if (arr.length === 2) return arr.sort((a, b) => b.score - a.score)[1].agency; // lower of two
+  arr.sort((a, b) => a.score - b.score);
+  return arr[1].agency; // middle score
+}
+
+function normalizeTradelineType(t) {
+  if (!t) return 'other';
+  const lower = String(t).toLowerCase();
+  if (lower.includes('mortgage') || lower.includes('home_loan')) return 'mortgage';
+  if (lower.includes('auto') || lower.includes('vehicle'))       return 'auto';
+  if (lower.includes('student') || lower.includes('education'))  return 'student';
+  if (lower.includes('revolving') || lower.includes('credit_card') || lower.includes('charge')) return 'revolving';
+  if (lower.includes('collection') || lower.includes('charge_off')) return 'collection';
+  if (lower.includes('installment') || lower.includes('personal')) return 'installment';
+  return 'other';
 }
 
 function renderTimeline() {
