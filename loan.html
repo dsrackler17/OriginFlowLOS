@@ -663,6 +663,174 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   CONDITIONS TAB — loan-scoped variant of /conditions.html
+   
+   Visual grammar matches both /conditions.html (the branch-wide surface)
+   and the Documents tab above. The shared row design lets users move
+   between surfaces without re-learning anything.
+   ═══════════════════════════════════════════════════════════════════════ */
+.cond-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.cond-loading {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em;
+}
+.cond-loading-spinner {
+  width: 24px; height: 24px;
+  margin: 0 auto 1rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.cond-filter-row {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+}
+.cond-chip {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted); padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border); background: var(--surface);
+  cursor: pointer; transition: all 0.15s;
+}
+.cond-chip:hover { color: var(--white); border-color: rgba(0,212,255,0.4); }
+.cond-chip.active {
+  color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.1);
+}
+.cond-chip b {
+  color: inherit; margin-left: 0.4rem; font-size: 0.62rem;
+}
+.cond-chip.ptd { color: var(--red); }
+.cond-chip.ptc { color: var(--amber); }
+.cond-chip.atc { color: var(--accent); }
+.cond-chip.cleared { color: var(--accent2); }
+
+.cond-live-dot {
+  display: inline-block; width: 6px; height: 6px;
+  background: var(--accent2); border-radius: 50%;
+  margin-right: 0.45rem; animation: pulse 1.8s infinite;
+  vertical-align: middle;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.cond-list { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.cond-group-head {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0.4rem 0 0.3rem;
+  border-bottom: 1px dashed var(--border);
+  margin-top: 0.5rem;
+}
+.cond-group-head:first-child { margin-top: 0; }
+
+.cond-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: 0.82rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cond-row:hover { border-color: rgba(0,212,255,0.3); }
+.cond-row.cleared {
+  background: rgba(0,255,157,0.04);
+  border-color: rgba(0,255,157,0.2);
+}
+.cond-row.cleared .cond-title { text-decoration: line-through; color: var(--muted); }
+.cond-row.stale { border-color: rgba(245,166,35,0.4); }
+.cond-row.waived {
+  background: rgba(90,122,153,0.05);
+  opacity: 0.7;
+}
+.cond-row.waived .cond-title { text-decoration: line-through; }
+
+.cond-checkbox {
+  width: 1.05rem; height: 1.05rem;
+  border: 1px solid var(--border); background: var(--deep);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.7rem;
+  flex-shrink: 0; cursor: pointer; transition: all 0.15s;
+}
+.cond-row.cleared .cond-checkbox {
+  background: var(--accent2); color: var(--navy); border-color: var(--accent2);
+}
+.cond-checkbox:hover { border-color: var(--accent); }
+
+.cond-cat {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  padding: 0.2rem 0.55rem; border: 1px solid;
+  flex-shrink: 0; text-align: center; min-width: 3rem;
+}
+.cond-cat.PTD { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.cond-cat.PTC { color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06); }
+.cond-cat.ATC { color: var(--accent); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+
+.cond-body { min-width: 0; }
+.cond-title {
+  color: var(--text); line-height: 1.3; font-weight: 500;
+  font-family: var(--sans);
+}
+.cond-desc {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  margin-top: 0.2rem; letter-spacing: 0.03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cond-desc .ai { color: var(--accent2); }
+.cond-desc .stale-txt { color: var(--amber); }
+
+.cond-owner {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em;
+  color: var(--muted); flex-shrink: 0; display: flex; align-items: center;
+}
+.cond-owner .av {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.4rem; height: 1.4rem;
+  font-weight: 700; font-size: 0.55rem;
+  background: var(--accent); color: var(--navy);
+  margin-right: 0.35rem;
+}
+.cond-owner .av.proc  { background: var(--accent2); }
+.cond-owner .av.uw    { background: var(--amber); }
+.cond-owner .av.ai    { background: var(--accent); color: var(--navy); }
+.cond-owner .av.empty { background: var(--border); color: var(--muted); }
+
+.cond-action {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+  flex-shrink: 0;
+}
+.cond-action:hover { color: var(--accent); border-color: var(--accent); }
+
+.cond-empty {
+  padding: 2.5rem 2rem;
+  text-align: center;
+  border: 1px dashed var(--border);
+  background: var(--surface);
+}
+.cond-empty-title {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text); margin-bottom: 0.4rem;
+}
+.cond-empty-sub {
+  font-size: 0.78rem; color: var(--muted);
+  max-width: 480px; margin: 0 auto; line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .cond-row { grid-template-columns: auto auto 1fr auto; gap: 0.5rem; }
+  .cond-action { display: none; }
+  .cond-owner .av { margin-right: 0; }
+  .cond-owner span:not(.av) { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MESSAGES TAB — iframes /loan_messages.html. The iframe pages itself
    has its own nav bar, which looks chunky here (two nav bars stacked).
    v1 ships as is; future patch can add ?embed=1 to loan_messages.html
@@ -1919,17 +2087,413 @@ function showToast(msg) {
   console.log('[toast]', msg);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CONDITIONS TAB — FUNCTIONAL
+//
+// Loan-scoped variant of the branch-wide /conditions.html surface.
+//
+// What it shows:
+//   1. Summary strip: Total / Open / Cleared / AI-cleared (4-cell)
+//   2. Filter chips: All · PTD · PTC · ATC · Cleared · Stale
+//   3. Conditions list grouped by status (Open first, then Cleared)
+//      sorted by category within each group (PTD → PTC → ATC)
+//   4. Click checkbox to clear/reopen (optimistic + DB write + rollback)
+//   5. Realtime subscription scoped to this loan — when AI clears,
+//      this surface updates without refresh
+//
+// Schema assumptions identical to /conditions.html (see header in that file).
+// If `cleared_method` column doesn't exist, AI-cleared inferred from
+// "status=cleared AND cleared_by_user_id IS NULL".
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Per-loan conditions cache + realtime channel, scoped to this loan
+const _condState = {
+  conditions: [],
+  assignees: {},    // user_id → profile
+  filter: 'all',    // 'all' | 'ptd' | 'ptc' | 'atc' | 'cleared' | 'stale'
+  channel: null,
+};
+const COND_STALE_DAYS = 5;
+
 function renderConditions() {
-  return emptyTab({
-    icon: '⚐',
-    eyebrow: 'Conditions — coming next',
-    title: 'Conditions clearing workflow',
-    sub: `All open, submitted, cleared, and waived conditions for this loan.
-          Each condition has an owner (borrower / LO / processor / UW / settlement), a state,
-          and linked evidence document. AI auto-clears what it can; the rest flows through this surface.
-          Underwriters add conditions here at decision time; processors clear them here.`,
-    checklistRef: '12.5.9 conditions clearing workflow',
+  // Sync entry — return loading shell, kick off async load
+  setTimeout(() => loadAndRenderConditions(), 0);
+  return `
+    <div class="cond-pane" id="cond-pane">
+      <div class="cond-loading">
+        <div class="cond-loading-spinner"></div>
+        Loading conditions…
+      </div>
+    </div>
+  `;
+}
+
+async function loadAndRenderConditions() {
+  const paneEl = document.getElementById('cond-pane');
+  if (!paneEl) return; // user switched tabs
+
+  // ─── Load conditions ────────────────────────────────────────────────
+  let conds = [];
+  const cols = `id, loan_id, branch_id, title, description, category, status,
+                template_key, kind, assigned_to_role, assigned_to_user_id,
+                cleared_at, cleared_by_user_id, cleared_method,
+                ai_confidence, evidence_document_id,
+                created_at, updated_at`;
+  try {
+    const { data, error } = await supa
+      .from('conditions')
+      .select(cols)
+      .eq('loan_id', loan.id);
+    if (error) throw error;
+    conds = data || [];
+  } catch (err) {
+    // Fallback to select(*) if a column doesn't exist
+    try {
+      const { data, error } = await supa
+        .from('conditions')
+        .select('*')
+        .eq('loan_id', loan.id);
+      if (error) throw error;
+      conds = data || [];
+    } catch (err2) {
+      paneEl.innerHTML = `
+        <div class="cond-empty">
+          <div class="cond-empty-title">Couldn't load conditions</div>
+          <div class="cond-empty-sub">
+            ${escapeHtml(err2.message)}<br><br>
+            If the conditions table doesn't exist yet, this is expected — it lands
+            with checklist 12.5.9 (conditions clearing workflow).
+          </div>
+        </div>
+      `;
+      return;
+    }
+  }
+  _condState.conditions = conds;
+
+  // ─── Load assignee profiles (and clearers) ──────────────────────────
+  const userIds = [...new Set(
+    conds.flatMap(c => [c.assigned_to_user_id, c.cleared_by_user_id]).filter(Boolean)
+  )];
+  if (userIds.length) {
+    try {
+      const { data } = await supa
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('id', userIds);
+      _condState.assignees = Object.fromEntries((data || []).map(p => [p.id, p]));
+    } catch (_) { /* profiles optional */ }
+  }
+
+  // ─── Subscribe to realtime — but only once per session ──────────────
+  if (!_condState.channel) {
+    _condState.channel = supa
+      .channel('cond-loan-' + loan.id)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'conditions',
+        filter: `loan_id=eq.${loan.id}`,
+      }, (payload) => {
+        try { handleCondRealtime(payload); } catch (e) { console.error('cond realtime:', e); }
+      })
+      .subscribe();
+  }
+
+  renderCondPane();
+}
+
+function handleCondRealtime(payload) {
+  // Don't bother updating if the user has switched tabs away from conditions
+  if (!document.getElementById('cond-pane')) return;
+
+  if (payload.eventType === 'INSERT') {
+    if (!_condState.conditions.find(c => c.id === payload.new.id)) {
+      _condState.conditions.push(payload.new);
+    }
+  } else if (payload.eventType === 'UPDATE') {
+    const idx = _condState.conditions.findIndex(c => c.id === payload.new.id);
+    if (idx >= 0) _condState.conditions[idx] = payload.new;
+    else _condState.conditions.push(payload.new);
+  } else if (payload.eventType === 'DELETE') {
+    _condState.conditions = _condState.conditions.filter(c => c.id !== payload.old.id);
+  }
+  renderCondPane();
+}
+
+function renderCondPane() {
+  const paneEl = document.getElementById('cond-pane');
+  if (!paneEl) return;
+
+  const all = _condState.conditions;
+  const open    = all.filter(c => c.status === 'open');
+  const cleared = all.filter(c => c.status === 'cleared');
+  const aiCleared = cleared.filter(condIsAiCleared);
+  const stale = open.filter(condIsStale);
+
+  const counts = {
+    all: all.length,
+    ptd: open.filter(c => c.category === 'PTD').length,
+    ptc: open.filter(c => c.category === 'PTC').length,
+    atc: open.filter(c => c.category === 'ATC').length,
+    cleared: cleared.length,
+    stale: stale.length,
+  };
+
+  // ─── Build HTML ─────────────────────────────────────────────────────
+  let html = '';
+
+  // Summary strip (reuse docs-summary classes for visual consistency)
+  const clearedPct = all.length > 0 ? Math.round((cleared.length / all.length) * 100) : 0;
+  const aiPct      = cleared.length > 0 ? Math.round((aiCleared.length / cleared.length) * 100) : 0;
+  html += `
+    <div class="docs-summary">
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Total</div>
+        <div class="docs-summary-value">${all.length}</div>
+        <div class="docs-summary-sub">condition${all.length === 1 ? '' : 's'} on this loan</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Open</div>
+        <div class="docs-summary-value ${open.length > 0 ? 'amber' : 'green'}">${open.length}</div>
+        <div class="docs-summary-sub">awaiting clearance</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">Cleared</div>
+        <div class="docs-summary-value green">${cleared.length}</div>
+        <div class="docs-summary-sub">${clearedPct}% of total</div>
+      </div>
+      <div class="docs-summary-cell">
+        <div class="docs-summary-label">AI-Cleared</div>
+        <div class="docs-summary-value ${aiCleared.length > 0 ? 'cyan' : ''}">${aiCleared.length}</div>
+        <div class="docs-summary-sub">${aiPct}% of cleared</div>
+      </div>
+    </div>
+  `;
+
+  // Filter chips — live indicator on the left if realtime is connected
+  const live = _condState.channel ? '<span class="cond-live-dot" title="Live updates active"></span>' : '';
+  html += `
+    <div class="cond-filter-row">
+      ${live}
+      <span class="cond-chip ${_condState.filter === 'all' ? 'active' : ''}" data-cond-filter="all">All <b>${counts.all}</b></span>
+      <span class="cond-chip ptd ${_condState.filter === 'ptd' ? 'active' : ''}" data-cond-filter="ptd">PTD <b>${counts.ptd}</b></span>
+      <span class="cond-chip ptc ${_condState.filter === 'ptc' ? 'active' : ''}" data-cond-filter="ptc">PTC <b>${counts.ptc}</b></span>
+      <span class="cond-chip atc ${_condState.filter === 'atc' ? 'active' : ''}" data-cond-filter="atc">ATC <b>${counts.atc}</b></span>
+      <span class="cond-chip cleared ${_condState.filter === 'cleared' ? 'active' : ''}" data-cond-filter="cleared">Cleared <b>${counts.cleared}</b></span>
+      <span class="cond-chip ${_condState.filter === 'stale' ? 'active' : ''}" data-cond-filter="stale" style="color: var(--amber);">Stale &gt; ${COND_STALE_DAYS}d <b>${counts.stale}</b></span>
+    </div>
+  `;
+
+  // ─── Filter + group + sort ──────────────────────────────────────────
+  let filtered = all;
+  if (_condState.filter === 'ptd')          filtered = open.filter(c => c.category === 'PTD');
+  else if (_condState.filter === 'ptc')     filtered = open.filter(c => c.category === 'PTC');
+  else if (_condState.filter === 'atc')     filtered = open.filter(c => c.category === 'ATC');
+  else if (_condState.filter === 'cleared') filtered = cleared;
+  else if (_condState.filter === 'stale')   filtered = stale;
+
+  // Group by status (Open first, Cleared second). Inside groups, sort by
+  // category (PTD → PTC → ATC), then by created_at asc for open / cleared_at desc for cleared.
+  const catOrder = { PTD: 1, PTC: 2, ATC: 3 };
+  const openFiltered = filtered.filter(c => c.status === 'open').sort((a, b) => {
+    const ca = (catOrder[a.category] || 9) - (catOrder[b.category] || 9);
+    if (ca !== 0) return ca;
+    return new Date(a.created_at || 0) - new Date(b.created_at || 0);
   });
+  const clearedFiltered = filtered.filter(c => c.status === 'cleared').sort((a, b) =>
+    new Date(b.cleared_at || 0) - new Date(a.cleared_at || 0)
+  );
+  const waivedFiltered = filtered.filter(c => c.status === 'waived');
+
+  // ─── Render list ────────────────────────────────────────────────────
+  if (filtered.length === 0) {
+    const emptyMsg = all.length === 0
+      ? `No conditions exist for this loan yet. They appear here once underwriting reviews the file, or the condition_templates engine auto-creates them on submission. (Gated by checklist 12.5.9.)`
+      : `No conditions match the current filter. Try the All chip or a different category.`;
+    html += `
+      <div class="cond-empty">
+        <div class="cond-empty-title">${all.length === 0 ? 'No conditions' : 'Nothing matches'}</div>
+        <div class="cond-empty-sub">${escapeHtml(emptyMsg)}</div>
+      </div>
+    `;
+  } else {
+    html += '<div class="cond-list">';
+
+    // OPEN group
+    if (openFiltered.length > 0) {
+      if (_condState.filter !== 'cleared') {
+        html += `<div class="cond-group-head">Open · ${openFiltered.length}</div>`;
+      }
+      html += openFiltered.map(renderCondRow).join('');
+    }
+    // CLEARED group
+    if (clearedFiltered.length > 0) {
+      html += `<div class="cond-group-head">Cleared · ${clearedFiltered.length}</div>`;
+      html += clearedFiltered.map(renderCondRow).join('');
+    }
+    // WAIVED group (rare but handled)
+    if (waivedFiltered.length > 0) {
+      html += `<div class="cond-group-head">Waived · ${waivedFiltered.length}</div>`;
+      html += waivedFiltered.map(renderCondRow).join('');
+    }
+
+    html += '</div>';
+  }
+
+  paneEl.innerHTML = html;
+
+  // ─── Wire interactions ──────────────────────────────────────────────
+  paneEl.querySelectorAll('[data-cond-filter]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      _condState.filter = chip.dataset.condFilter;
+      renderCondPane();
+    });
+  });
+  paneEl.querySelectorAll('[data-cond-id]').forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCondClear(cb.dataset.condId);
+    });
+  });
+}
+
+function renderCondRow(c) {
+  const isCleared = c.status === 'cleared';
+  const isWaived  = c.status === 'waived';
+  const isStaleR  = c.status === 'open' && condIsStale(c);
+  const ai        = condIsAiCleared(c);
+
+  // Description
+  let desc;
+  if (isCleared && ai) {
+    const conf = formatCondConfidence(c.ai_confidence);
+    desc = `<span class="ai">Auto-cleared by AI${conf ? ' · ' + conf : ''}</span> · ${timeAgo(c.cleared_at)}`;
+  } else if (isCleared) {
+    const name = _condState.assignees[c.cleared_by_user_id]?.full_name || 'Staff';
+    desc = `Cleared by ${escapeHtml(name)} · ${timeAgo(c.cleared_at)}`;
+  } else if (isWaived) {
+    desc = `Waived · ${timeAgo(c.cleared_at)}`;
+  } else {
+    desc = c.description ? escapeHtml(c.description) : `Created ${timeAgo(c.created_at)}`;
+  }
+  if (isStaleR) {
+    const d = condDaysSince(c.created_at);
+    desc = `<span class="stale-txt">⚠ ${d}d open</span> · ${desc}`;
+  }
+
+  // Owner avatar + label
+  let ownerAv, ownerLabel;
+  if (isCleared && ai) {
+    ownerAv = '<span class="av ai">AI</span>';
+    ownerLabel = '<span>Claude</span>';
+  } else {
+    const assignee = c.assigned_to_user_id ? _condState.assignees[c.assigned_to_user_id] : null;
+    const role     = (c.assigned_to_role || assignee?.role || '').toLowerCase();
+    let avCls = '';
+    if (role.includes('process')) avCls = 'proc';
+    else if (role.includes('underwrit')) avCls = 'uw';
+
+    if (assignee) {
+      const initials = (assignee.full_name || '?')
+        .split(/\s+/).map(p => p[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+      ownerAv = `<span class="av ${avCls}">${escapeHtml(initials)}</span>`;
+      ownerLabel = `<span>${escapeHtml((assignee.full_name || '').split(' ')[0] || '—')}</span>`;
+    } else if (role) {
+      ownerAv = `<span class="av ${avCls}">${escapeHtml(role.slice(0, 2).toUpperCase())}</span>`;
+      ownerLabel = `<span>${escapeHtml(titleCase(role))}</span>`;
+    } else {
+      ownerAv = '<span class="av empty">—</span>';
+      ownerLabel = '<span style="color:var(--muted);">Unassigned</span>';
+    }
+  }
+
+  const rowCls = ['cond-row'];
+  if (isCleared) rowCls.push('cleared');
+  if (isWaived)  rowCls.push('waived');
+  if (isStaleR)  rowCls.push('stale');
+
+  const action = isCleared ? 'Reopen' : (isStaleR ? 'Chase' : 'Notify');
+
+  return `
+    <div class="${rowCls.join(' ')}">
+      <span class="cond-checkbox" data-cond-id="${escapeHtml(c.id)}" title="${isCleared ? 'Reopen this condition' : 'Mark cleared'}">${isCleared ? '✓' : ''}</span>
+      <span class="cond-cat ${escapeHtml(c.category || 'PTD')}">${escapeHtml(c.category || '?')}</span>
+      <div class="cond-body">
+        <div class="cond-title">${escapeHtml(c.title || 'Untitled condition')}</div>
+        <div class="cond-desc">${desc}</div>
+      </div>
+      <span class="cond-owner">${ownerAv}${ownerLabel}</span>
+      <button class="cond-action" onclick="alert('Condition detail panel coming next session — shows full history, evidence document links, override controls, and audit trail.')">${action}</button>
+    </div>
+  `;
+}
+
+// ─── Clear / Reopen mutation ────────────────────────────────────────────
+async function toggleCondClear(condId) {
+  const c = _condState.conditions.find(x => x.id === condId);
+  if (!c) return;
+
+  const prev = {
+    status: c.status,
+    cleared_at: c.cleared_at,
+    cleared_by_user_id: c.cleared_by_user_id,
+    cleared_method: c.cleared_method,
+  };
+
+  const goingToCleared = c.status !== 'cleared';
+  if (goingToCleared) {
+    c.status = 'cleared';
+    c.cleared_at = new Date().toISOString();
+    c.cleared_by_user_id = me.id;
+    c.cleared_method = 'manual';
+  } else {
+    c.status = 'open';
+    c.cleared_at = null;
+    c.cleared_by_user_id = null;
+    c.cleared_method = null;
+  }
+  renderCondPane();
+
+  const patch = goingToCleared
+    ? { status: 'cleared', cleared_at: c.cleared_at, cleared_by_user_id: me.id, cleared_method: 'manual' }
+    : { status: 'open',    cleared_at: null,         cleared_by_user_id: null,    cleared_method: null    };
+
+  try {
+    const { error } = await supa.from('conditions').update(patch).eq('id', condId);
+    if (error) throw error;
+  } catch (err) {
+    // Rollback
+    Object.assign(c, prev);
+    renderCondPane();
+    alert(
+      'Failed to update condition: ' + err.message +
+      '\n\nIf this is a column-missing error, check your conditions schema for: status, cleared_at, cleared_by_user_id, cleared_method.'
+    );
+  }
+}
+
+// ─── Helpers (prefixed `cond` to avoid colliding with other tab helpers) ──
+function condIsAiCleared(c) {
+  if (c.status !== 'cleared') return false;
+  if (c.cleared_method === 'ai') return true;
+  // Fallback if cleared_method column doesn't exist
+  if (!c.cleared_by_user_id) return true;
+  return false;
+}
+
+function condIsStale(c) {
+  return condDaysSince(c.created_at) >= COND_STALE_DAYS;
+}
+
+function condDaysSince(d) {
+  if (!d) return 0;
+  return Math.floor((Date.now() - new Date(d).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatCondConfidence(v) {
+  if (v == null) return '';
+  const n = Number(v);
+  if (Number.isNaN(n)) return '';
+  return Math.round(n <= 1 ? n * 100 : n) + '% conf';
 }
 
 function renderDisclosures() {
