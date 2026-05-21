@@ -831,6 +831,277 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   DISCLOSURES TAB — LE · ITP · CD · COC · Fee Tolerance
+   
+   Forward-looking UI: most backing tables (disclosures, intent_to_proceed,
+   change_of_circumstance, fee_tolerance) ship with checklist 12.5.1–12.5.5.
+   Until then, each panel shows a graceful empty state citing its gate.
+   Once the data lands, panels populate without further code changes.
+   ═══════════════════════════════════════════════════════════════════════ */
+.disc-pane { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.disc-loading {
+  padding: 3rem 1rem; text-align: center; color: var(--muted);
+  font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em;
+}
+.disc-loading-spinner {
+  width: 24px; height: 24px; margin: 0 auto 1rem;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+
+/* Top alert banner */
+.disc-alert {
+  padding: 0.75rem 1rem; border: 1px solid; border-left-width: 3px;
+  display: flex; align-items: center; gap: 0.85rem;
+  font-size: 0.82rem; line-height: 1.4;
+}
+.disc-alert-icon {
+  font-family: var(--mono); font-size: 1.1rem; flex-shrink: 0;
+}
+.disc-alert-body { flex: 1; }
+.disc-alert-title {
+  font-family: var(--sans); font-weight: 500; color: var(--white);
+  margin-bottom: 0.15rem;
+}
+.disc-alert-sub {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.disc-alert.red {
+  background: rgba(255,68,68,0.06); border-color: rgba(255,68,68,0.4);
+  border-left-color: var(--red);
+}
+.disc-alert.red .disc-alert-icon { color: var(--red); }
+.disc-alert.amber {
+  background: rgba(245,166,35,0.06); border-color: rgba(245,166,35,0.4);
+  border-left-color: var(--amber);
+}
+.disc-alert.amber .disc-alert-icon { color: var(--amber); }
+.disc-alert.cyan {
+  background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.4);
+  border-left-color: var(--accent);
+}
+.disc-alert.cyan .disc-alert-icon { color: var(--accent); }
+.disc-alert.green {
+  background: rgba(0,255,157,0.06); border-color: rgba(0,255,157,0.4);
+  border-left-color: var(--accent2);
+}
+.disc-alert.green .disc-alert-icon { color: var(--accent2); }
+
+/* Panel */
+.disc-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.disc-panel-head {
+  background: var(--deep);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+.disc-panel-title {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.disc-panel-title .disc-status-pill {
+  font-size: 0.55rem; letter-spacing: 0.12em;
+  padding: 0.2rem 0.55rem; border: 1px solid;
+}
+.disc-status-pill.delivered, .disc-status-pill.captured {
+  color: var(--accent2); border-color: rgba(0,255,157,0.4);
+  background: rgba(0,255,157,0.06);
+}
+.disc-status-pill.pending {
+  color: var(--amber); border-color: rgba(245,166,35,0.4);
+  background: rgba(245,166,35,0.06);
+}
+.disc-status-pill.missing {
+  color: var(--red); border-color: rgba(255,68,68,0.4);
+  background: rgba(255,68,68,0.06);
+}
+.disc-status-pill.na {
+  color: var(--muted); border-color: var(--border);
+}
+.disc-panel-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.disc-panel-body { padding: 1rem 1.1rem; }
+
+/* Key-value rows inside a panel */
+.disc-kv-grid {
+  display: grid; grid-template-columns: 180px 1fr;
+  gap: 0.55rem 1rem;
+}
+.disc-kv-key {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--muted); text-transform: uppercase;
+  align-self: center;
+}
+.disc-kv-val {
+  font-family: var(--sans); font-size: 0.88rem; color: var(--white);
+  word-break: break-word;
+}
+.disc-kv-val .sub {
+  display: block; font-family: var(--mono); font-size: 0.58rem;
+  color: var(--muted); letter-spacing: 0.04em; margin-top: 0.1rem;
+}
+.disc-kv-val .accent { color: var(--accent); }
+.disc-kv-val .green  { color: var(--accent2); }
+.disc-kv-val .amber  { color: var(--amber); }
+.disc-kv-val .red    { color: var(--red); }
+
+/* Version history list */
+.disc-history {
+  margin-top: 0.85rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.85rem;
+}
+.disc-history-head {
+  font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem;
+}
+.disc-history-row {
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 0.85rem; align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px dotted var(--border);
+  font-size: 0.78rem;
+}
+.disc-history-row:last-child { border-bottom: none; }
+.disc-history-version {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  color: var(--accent); padding: 0.15rem 0.45rem;
+  border: 1px solid rgba(0,212,255,0.3); background: rgba(0,212,255,0.06);
+  min-width: 2.5rem; text-align: center;
+}
+.disc-history-info {
+  font-family: var(--sans); color: var(--text);
+}
+.disc-history-info .reason {
+  display: block; font-family: var(--mono); font-size: 0.58rem;
+  color: var(--muted); letter-spacing: 0.04em; margin-top: 0.1rem;
+}
+.disc-history-when {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+
+/* COC log */
+.disc-coc-row {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  gap: 0.85rem; align-items: center;
+  padding: 0.55rem 0.85rem;
+  background: var(--panel); border: 1px solid var(--border);
+  margin-bottom: 0.4rem;
+}
+.disc-coc-row:last-child { margin-bottom: 0; }
+.disc-coc-icon {
+  font-family: var(--mono); font-size: 1rem; color: var(--accent);
+}
+.disc-coc-body { min-width: 0; }
+.disc-coc-reason {
+  font-family: var(--sans); font-size: 0.85rem; color: var(--white);
+  font-weight: 500;
+}
+.disc-coc-desc {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.1rem;
+}
+.disc-coc-pill {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  padding: 0.18rem 0.5rem; border: 1px solid; white-space: nowrap;
+}
+.disc-coc-pill.redisclosed {
+  color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06);
+}
+.disc-coc-pill.pending {
+  color: var(--amber); border-color: rgba(245,166,35,0.4); background: rgba(245,166,35,0.06);
+}
+.disc-coc-pill.no-redisc {
+  color: var(--muted); border-color: var(--border);
+}
+.disc-coc-when {
+  font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+
+/* Fee tolerance buckets */
+.disc-fees {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+.disc-fee-bucket {
+  background: var(--panel); border: 1px solid var(--border);
+  padding: 0.85rem 1rem;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.disc-fee-bucket-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.disc-fee-bucket-label {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.disc-fee-bucket-limit {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.disc-fee-bucket-amounts {
+  font-family: var(--serif); font-size: 1.4rem; color: var(--white);
+  line-height: 1.1;
+}
+.disc-fee-bucket-amounts .delta {
+  font-family: var(--mono); font-size: 0.7rem;
+  margin-left: 0.45rem; font-weight: normal;
+}
+.disc-fee-bucket-amounts .delta.up { color: var(--red); }
+.disc-fee-bucket-amounts .delta.same { color: var(--muted); }
+.disc-fee-bucket-amounts .delta.down { color: var(--accent2); }
+.disc-fee-bucket-sub {
+  font-family: var(--mono); font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.disc-fee-bucket.breach {
+  border-color: rgba(255,68,68,0.4);
+  background: rgba(255,68,68,0.04);
+}
+.disc-fee-bucket.breach .disc-fee-bucket-label { color: var(--red); }
+.disc-fee-bucket.cured {
+  border-color: rgba(0,255,157,0.3);
+}
+.disc-fee-bucket-status {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 0.18rem 0.5rem;
+  border: 1px solid; align-self: flex-start;
+}
+.disc-fee-bucket-status.ok { color: var(--accent2); border-color: rgba(0,255,157,0.4); background: rgba(0,255,157,0.06); }
+.disc-fee-bucket-status.breach { color: var(--red); border-color: rgba(255,68,68,0.4); background: rgba(255,68,68,0.06); }
+.disc-fee-bucket-status.cured { color: var(--accent); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.06); }
+
+/* Empty / pending states inside a panel */
+.disc-empty-body {
+  padding: 1.25rem 1rem;
+  text-align: center;
+  font-family: var(--mono); font-size: 0.68rem;
+  color: var(--muted); letter-spacing: 0.04em;
+}
+.disc-empty-body strong { color: var(--text); font-weight: 500; }
+.disc-empty-body .ref {
+  display: block; margin-top: 0.4rem;
+  font-size: 0.55rem; letter-spacing: 0.08em;
+  color: var(--muted); opacity: 0.7;
+}
+
+@media (max-width: 720px) {
+  .disc-kv-grid { grid-template-columns: 1fr; gap: 0.3rem; }
+  .disc-kv-key  { margin-top: 0.4rem; }
+  .disc-fees { grid-template-columns: 1fr; }
+  .disc-coc-row { grid-template-columns: auto 1fr auto; }
+  .disc-coc-pill { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MESSAGES TAB — iframes /loan_messages.html. The iframe pages itself
    has its own nav bar, which looks chunky here (two nav bars stacked).
    v1 ships as is; future patch can add ?embed=1 to loan_messages.html
@@ -2496,17 +2767,658 @@ function formatCondConfidence(v) {
   return Math.round(n <= 1 ? n * 100 : n) + '% conf';
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// DISCLOSURES TAB — FUNCTIONAL
+//
+// Surfaces TRID compliance state: LE / ITP / CD / COC / fee tolerance.
+//
+// IMPORTANT: this tab is mostly forward-looking. The backing tables ship
+// with checklist 12.5.1–12.5.5. Until then, each panel renders an empty
+// state citing its checklist gate. The UI gives the user the mental model
+// of the workflow before the backend implementation lands; once the data
+// flows, the panels populate without further code changes.
+//
+// Schema assumptions (all queries fail open with try/catch):
+//   disclosures             | id, loan_id, branch_id, kind ('LE'|'CD'),
+//                           | version (int), delivered_at, delivered_by_user_id,
+//                           | delivery_method, apr_disclosed,
+//                           | reason_for_revision, document_id, created_at
+//   intent_to_proceed       | id, loan_id, captured_at, captured_by_user_id,
+//                           | method ('signed'|'electronic'|'oral'|'written'),
+//                           | notes
+//   change_of_circumstance  | id, loan_id, occurred_at, reason, description,
+//                           | triggers_redisclosure, redisclosed_at,
+//                           | created_by_user_id, created_at
+//   fee_tolerance           | id, loan_id, bucket ('zero'|'ten'|'unlimited'),
+//                           | le_total, cd_total, delta, breached, cured_at
+//
+// TRID timing notes:
+//   - LE must be delivered within 3 business days of application
+//   - CD must be delivered at least 3 business days before consummation
+//   - Revised LE within 3 BD of COC trigger
+//   - "Business day" = all days except Sundays + 10 federal holidays
+//   The math below uses a simple 3-CALENDAR-day approximation; replace
+//   with proper business-day calc (likely a Postgres function or JS lib)
+//   when 12.5.5 ships.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _discState = {
+  disclosures: [],
+  itp: null,
+  cocs: [],
+  fees: [],
+  profiles: {},
+};
+
 function renderDisclosures() {
-  return emptyTab({
-    icon: '⊟',
-    eyebrow: 'Disclosures — coming soon',
-    title: 'LE · CD · TRID timers · fee tolerance',
-    sub: `Loan Estimate status with delivery date and version history. Change-of-circumstance log with
-          redisclosure timeline. Closing Disclosure status with the 3-business-day TRID waiting clock.
-          Fee tolerance tracker across the three TRID buckets (0% / 10% / no-limit) — breaches flagged
-          before CD goes out. Intent-to-proceed timestamp captured per regulatory requirement.`,
-    checklistRef: '12.5.1 – 12.5.5 (LE/CD/COC/tolerance/intent)',
-  });
+  setTimeout(() => loadAndRenderDisclosures(), 0);
+  return `
+    <div class="disc-pane" id="disc-pane">
+      <div class="disc-loading">
+        <div class="disc-loading-spinner"></div>
+        Loading disclosures…
+      </div>
+    </div>
+  `;
+}
+
+async function loadAndRenderDisclosures() {
+  const paneEl = document.getElementById('disc-pane');
+  if (!paneEl) return;
+
+  // ─── Try each table independently; each failure is fine ─────────────
+  // Each promise resolves with an array (or null for ITP which is single-row).
+  const [discResult, itpResult, cocResult, feeResult] = await Promise.all([
+    fetchDisclosures(),
+    fetchIntentToProceed(),
+    fetchCocs(),
+    fetchFeeTolerance(),
+  ]);
+  _discState.disclosures = discResult;
+  _discState.itp         = itpResult;
+  _discState.cocs        = cocResult;
+  _discState.fees        = feeResult;
+
+  // Profile lookup for everyone who delivered/captured anything
+  const userIds = [...new Set([
+    ...discResult.map(d => d.delivered_by_user_id).filter(Boolean),
+    itpResult?.captured_by_user_id,
+    ...cocResult.map(c => c.created_by_user_id).filter(Boolean),
+  ].filter(Boolean))];
+  if (userIds.length) {
+    try {
+      const { data } = await supa.from('profiles')
+        .select('id, full_name, role').in('id', userIds);
+      _discState.profiles = Object.fromEntries((data || []).map(p => [p.id, p]));
+    } catch (_) { /* optional */ }
+  }
+
+  renderDiscPane();
+}
+
+async function fetchDisclosures() {
+  try {
+    const { data, error } = await supa
+      .from('disclosures')
+      .select('id, kind, version, delivered_at, delivered_by_user_id, delivery_method, apr_disclosed, reason_for_revision, document_id, created_at')
+      .eq('loan_id', loan.id)
+      .order('delivered_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchIntentToProceed() {
+  try {
+    const { data, error } = await supa
+      .from('intent_to_proceed')
+      .select('id, captured_at, captured_by_user_id, method, notes')
+      .eq('loan_id', loan.id)
+      .order('captured_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data || null;
+  } catch (_) { return null; }
+}
+
+async function fetchCocs() {
+  try {
+    const { data, error } = await supa
+      .from('change_of_circumstance')
+      .select('id, occurred_at, reason, description, triggers_redisclosure, redisclosed_at, created_by_user_id, created_at')
+      .eq('loan_id', loan.id)
+      .order('occurred_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (_) { return []; }
+}
+
+async function fetchFeeTolerance() {
+  try {
+    const { data, error } = await supa
+      .from('fee_tolerance')
+      .select('id, bucket, le_total, cd_total, delta, breached, cured_at')
+      .eq('loan_id', loan.id);
+    if (error) throw error;
+    return data || [];
+  } catch (_) { return []; }
+}
+
+function renderDiscPane() {
+  const paneEl = document.getElementById('disc-pane');
+  if (!paneEl) return;
+
+  const { disclosures, itp, cocs, fees } = _discState;
+  const les = disclosures.filter(d => d.kind === 'LE')
+    .sort((a, b) => (b.version || 0) - (a.version || 0));
+  const cds = disclosures.filter(d => d.kind === 'CD')
+    .sort((a, b) => (b.version || 0) - (a.version || 0));
+  const latestLE = les[0] || null;
+  const latestCD = cds[0] || null;
+
+  // ─── Top alerts ─────────────────────────────────────────────────────
+  const alerts = [];
+  const appDate = loan.application_date || loan.application_received_at || loan.created_at;
+  if (!latestLE && appDate) {
+    const daysSinceApp = discDaysSince(appDate);
+    if (daysSinceApp >= 3) {
+      alerts.push({
+        kind: 'red', icon: '⚠',
+        title: 'Initial Loan Estimate is overdue',
+        sub: `Application received ${discFormatDate(appDate)} (${daysSinceApp}d ago). LE due within 3 business days. TILA/RESPA compliance gap.`,
+      });
+    } else {
+      alerts.push({
+        kind: 'amber', icon: '⏱',
+        title: 'Initial LE due soon',
+        sub: `Application received ${discFormatDate(appDate)}. LE due within 3 business days.`,
+      });
+    }
+  }
+  if (latestLE && !itp) {
+    alerts.push({
+      kind: 'amber', icon: '⚠',
+      title: 'Intent to Proceed not captured',
+      sub: 'LE delivered, but borrower has not indicated intent to proceed. Fees beyond credit report are restricted until ITP is captured.',
+    });
+  }
+  if (latestCD) {
+    const earliest = discEarliestCloseDate(latestCD.delivered_at);
+    const daysToClose = discDaysSince(earliest) * -1;
+    if (daysToClose > 0) {
+      alerts.push({
+        kind: 'cyan', icon: '⏱',
+        title: `TRID 3-day waiting period active`,
+        sub: `CD delivered ${discFormatDate(latestCD.delivered_at)}. Earliest consummation: ${discFormatDate(earliest)} (${daysToClose}d).`,
+      });
+    } else {
+      alerts.push({
+        kind: 'green', icon: '✓',
+        title: 'TRID waiting period satisfied',
+        sub: `CD delivered ${discFormatDate(latestCD.delivered_at)}. Loan can be consummated.`,
+      });
+    }
+  }
+  const feeBreaches = fees.filter(f => f.breached && !f.cured_at);
+  if (feeBreaches.length > 0) {
+    alerts.push({
+      kind: 'red', icon: '!',
+      title: `${feeBreaches.length} fee tolerance breach${feeBreaches.length === 1 ? '' : 'es'} — cure required`,
+      sub: 'Lender cure must be issued before CD goes out, or alongside revised CD.',
+    });
+  }
+
+  // ─── Build HTML ─────────────────────────────────────────────────────
+  let html = '';
+
+  // Top alerts
+  if (alerts.length > 0) {
+    html += alerts.map(a => `
+      <div class="disc-alert ${a.kind}">
+        <span class="disc-alert-icon">${a.icon}</span>
+        <div class="disc-alert-body">
+          <div class="disc-alert-title">${escapeHtml(a.title)}</div>
+          <div class="disc-alert-sub">${escapeHtml(a.sub)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // LE Panel
+  html += renderLEPanel(les, latestLE);
+
+  // ITP Panel
+  html += renderITPPanel(itp, !!latestLE);
+
+  // CD Panel
+  html += renderCDPanel(cds, latestCD);
+
+  // COC Panel
+  html += renderCOCPanel(cocs);
+
+  // Fee Tolerance Panel
+  html += renderFeeTolerancePanel(fees);
+
+  paneEl.innerHTML = html;
+}
+
+function renderLEPanel(les, latest) {
+  let body;
+  let pill;
+  let actions = `
+    <button class="btn sm" onclick="alert('LE PDF generation lands with checklist 12.5.1. The generator emits the standardized TRID LE form, stamps the delivery timestamp, and creates a disclosures row with version + delivery method.')">Issue ${latest ? 'Revised LE' : 'Initial LE'}</button>
+  `;
+
+  if (!latest) {
+    pill = '<span class="disc-status-pill missing">Not Delivered</span>';
+    body = `
+      <div class="disc-empty-body">
+        <strong>No Loan Estimate delivered yet.</strong><br>
+        The LE must be delivered within 3 business days of application receipt.
+        Once 12.5.1 ships, the Generate LE action above will emit a TRID-compliant PDF, stamp the delivery time, and create a disclosures row.
+        <span class="ref">Gated by 12.5.1 (LE generation) · 12.5.2 (delivery tracking)</span>
+      </div>
+    `;
+  } else {
+    pill = '<span class="disc-status-pill delivered">Delivered</span>';
+    const delivererName = _discState.profiles[latest.delivered_by_user_id]?.full_name || 'Staff';
+    const kvHtml = `
+      <div class="disc-kv-grid">
+        <span class="disc-kv-key">Latest Version</span>
+        <span class="disc-kv-val">
+          <span class="accent">v${latest.version || 1}</span>
+          ${latest.reason_for_revision
+            ? `<span class="sub">${escapeHtml(latest.reason_for_revision)}</span>`
+            : ''}
+        </span>
+
+        <span class="disc-kv-key">Delivered</span>
+        <span class="disc-kv-val">
+          ${escapeHtml(discFormatDate(latest.delivered_at, true))}
+          <span class="sub">${escapeHtml(delivererName)} · ${escapeHtml(discDeliveryLabel(latest.delivery_method))}</span>
+        </span>
+
+        ${latest.apr_disclosed != null ? `
+          <span class="disc-kv-key">Disclosed APR</span>
+          <span class="disc-kv-val">${escapeHtml(ratePct(latest.apr_disclosed))}</span>
+        ` : ''}
+      </div>
+    `;
+    let historyHtml = '';
+    if (les.length > 1) {
+      historyHtml = `
+        <div class="disc-history">
+          <div class="disc-history-head">Version History (${les.length} total)</div>
+          ${les.map(d => `
+            <div class="disc-history-row">
+              <span class="disc-history-version">v${d.version || 1}</span>
+              <div class="disc-history-info">
+                ${d.reason_for_revision
+                  ? escapeHtml(d.reason_for_revision)
+                  : (d.version === 1 || !d.version ? 'Initial Loan Estimate' : 'Revised LE')}
+                <span class="reason">${escapeHtml(_discState.profiles[d.delivered_by_user_id]?.full_name || 'Staff')} · ${escapeHtml(discDeliveryLabel(d.delivery_method))}</span>
+              </div>
+              <span class="disc-history-when">${escapeHtml(discFormatDate(d.delivered_at))}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    actions = `
+      <button class="btn sm" onclick="alert('LE PDF view will fetch the document_id from disclosures and open via Storage signed URL — lands with 12.5.1.')">View Latest</button>
+      ${actions}
+    `;
+    body = kvHtml + historyHtml;
+  }
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Loan Estimate · LE ${pill}</span>
+        <div class="disc-panel-actions">${actions}</div>
+      </div>
+      <div class="disc-panel-body">${body}</div>
+    </div>
+  `;
+}
+
+function renderITPPanel(itp, hasLE) {
+  let pill, body, actions;
+  if (itp) {
+    pill = '<span class="disc-status-pill captured">Captured</span>';
+    const name = _discState.profiles[itp.captured_by_user_id]?.full_name || 'Staff';
+    body = `
+      <div class="disc-kv-grid">
+        <span class="disc-kv-key">Captured At</span>
+        <span class="disc-kv-val">
+          ${escapeHtml(discFormatDate(itp.captured_at, true))}
+          <span class="sub">recorded by ${escapeHtml(name)}</span>
+        </span>
+
+        <span class="disc-kv-key">Method</span>
+        <span class="disc-kv-val">${escapeHtml(discITPMethodLabel(itp.method))}</span>
+
+        ${itp.notes ? `
+          <span class="disc-kv-key">Notes</span>
+          <span class="disc-kv-val">${escapeHtml(itp.notes)}</span>
+        ` : ''}
+      </div>
+    `;
+    actions = '';
+  } else {
+    pill = '<span class="disc-status-pill missing">Not Captured</span>';
+    body = `
+      <div class="disc-empty-body">
+        <strong>Borrower has not indicated intent to proceed.</strong><br>
+        ${hasLE
+          ? 'LE has been delivered. Capture ITP to unlock fee collection beyond the credit report fee. ITP can be captured via signed form, electronic signature, recorded oral response, or written communication.'
+          : 'ITP can only be captured after the initial LE has been delivered. Generate the LE first.'}
+        <span class="ref">Gated by 12.5.4 (intent capture flow)</span>
+      </div>
+    `;
+    actions = hasLE
+      ? `<button class="btn sm" onclick="alert('ITP capture flow lands with 12.5.4 — borrower clicks a magic link or signs in the portal, the timestamp + method get stamped onto intent_to_proceed, audit trail entry created.')">Capture ITP</button>`
+      : '';
+  }
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Intent to Proceed · ITP ${pill}</span>
+        <div class="disc-panel-actions">${actions}</div>
+      </div>
+      <div class="disc-panel-body">${body}</div>
+    </div>
+  `;
+}
+
+function renderCDPanel(cds, latest) {
+  let pill, body, actions;
+  if (!latest) {
+    pill = '<span class="disc-status-pill na">Not Yet Issued</span>';
+    body = `
+      <div class="disc-empty-body">
+        <strong>No Closing Disclosure issued yet.</strong><br>
+        CD must be delivered at least 3 business days before consummation.
+        Once 12.5.3 ships, the Issue CD action will emit a TRID-compliant PDF and start the 3-BD waiting clock.
+        <span class="ref">Gated by 12.5.3 (CD generation) · 12.5.5 (TRID waiting clock)</span>
+      </div>
+    `;
+    actions = `<button class="btn sm" onclick="alert('CD generation lands with 12.5.3.')">Issue Initial CD</button>`;
+  } else {
+    pill = '<span class="disc-status-pill delivered">Delivered</span>';
+    const deliverer = _discState.profiles[latest.delivered_by_user_id]?.full_name || 'Staff';
+    const earliest = discEarliestCloseDate(latest.delivered_at);
+    const earliestDays = discDaysSince(earliest);
+    let earliestText, earliestCls;
+    if (earliestDays >= 0) {
+      earliestText = `${discFormatDate(earliest)} (${earliestDays === 0 ? 'today' : earliestDays + 'd ago'} — eligible)`;
+      earliestCls = 'green';
+    } else {
+      earliestText = `${discFormatDate(earliest)} (in ${Math.abs(earliestDays)}d)`;
+      earliestCls = 'amber';
+    }
+
+    body = `
+      <div class="disc-kv-grid">
+        <span class="disc-kv-key">Latest Version</span>
+        <span class="disc-kv-val">
+          <span class="accent">v${latest.version || 1}</span>
+          ${latest.reason_for_revision
+            ? `<span class="sub">${escapeHtml(latest.reason_for_revision)}</span>`
+            : ''}
+        </span>
+
+        <span class="disc-kv-key">Delivered</span>
+        <span class="disc-kv-val">
+          ${escapeHtml(discFormatDate(latest.delivered_at, true))}
+          <span class="sub">${escapeHtml(deliverer)} · ${escapeHtml(discDeliveryLabel(latest.delivery_method))}</span>
+        </span>
+
+        <span class="disc-kv-key">Earliest Consummation</span>
+        <span class="disc-kv-val">
+          <span class="${earliestCls}">${escapeHtml(earliestText)}</span>
+          <span class="sub">3 business days after CD delivery (TRID waiting period)</span>
+        </span>
+
+        ${latest.apr_disclosed != null ? `
+          <span class="disc-kv-key">Disclosed APR</span>
+          <span class="disc-kv-val">${escapeHtml(ratePct(latest.apr_disclosed))}</span>
+        ` : ''}
+      </div>
+    `;
+    if (cds.length > 1) {
+      body += `
+        <div class="disc-history">
+          <div class="disc-history-head">Version History (${cds.length} total)</div>
+          ${cds.map(d => `
+            <div class="disc-history-row">
+              <span class="disc-history-version">v${d.version || 1}</span>
+              <div class="disc-history-info">
+                ${d.reason_for_revision
+                  ? escapeHtml(d.reason_for_revision)
+                  : (d.version === 1 || !d.version ? 'Initial Closing Disclosure' : 'Revised CD')}
+                <span class="reason">${escapeHtml(_discState.profiles[d.delivered_by_user_id]?.full_name || 'Staff')} · ${escapeHtml(discDeliveryLabel(d.delivery_method))}</span>
+              </div>
+              <span class="disc-history-when">${escapeHtml(discFormatDate(d.delivered_at))}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    actions = `
+      <button class="btn sm" onclick="alert('CD PDF view will fetch the document_id from disclosures.')">View Latest</button>
+      <button class="btn sm" onclick="alert('Revised CD with reason tracking lands with 12.5.3 — issuing a revised CD restarts the 3-BD clock if certain fields changed.')">Issue Revised CD</button>
+    `;
+  }
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Closing Disclosure · CD ${pill}</span>
+        <div class="disc-panel-actions">${actions}</div>
+      </div>
+      <div class="disc-panel-body">${body}</div>
+    </div>
+  `;
+}
+
+function renderCOCPanel(cocs) {
+  let body;
+  if (cocs.length === 0) {
+    body = `
+      <div class="disc-empty-body">
+        <strong>No changes of circumstance logged.</strong><br>
+        COC events (rate locks, value changes, borrower requests) get logged here.
+        Each event marks whether a revised LE is required, and if so, the 3-BD redisclosure clock starts.
+        <span class="ref">Gated by 12.5.2 (COC log) · 12.5.5 (redisclosure timing)</span>
+      </div>
+    `;
+  } else {
+    body = cocs.map(c => {
+      let pillCls = 'no-redisc', pillText = 'No redisclosure';
+      if (c.triggers_redisclosure) {
+        if (c.redisclosed_at) { pillCls = 'redisclosed'; pillText = 'Redisclosed'; }
+        else { pillCls = 'pending'; pillText = 'Redisclosure due'; }
+      }
+      const creator = _discState.profiles[c.created_by_user_id]?.full_name || 'Staff';
+      return `
+        <div class="disc-coc-row">
+          <span class="disc-coc-icon">⇄</span>
+          <div class="disc-coc-body">
+            <div class="disc-coc-reason">${escapeHtml(c.reason || 'Change of circumstance')}</div>
+            <div class="disc-coc-desc">
+              ${escapeHtml(c.description || '')}
+              ${c.description ? ' · ' : ''}logged by ${escapeHtml(creator)}
+            </div>
+          </div>
+          <span class="disc-coc-pill ${pillCls}">${escapeHtml(pillText)}</span>
+          <span class="disc-coc-when">${escapeHtml(discFormatDate(c.occurred_at || c.created_at))}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">
+          Change of Circumstance · COC
+          ${cocs.length > 0 ? `<span class="disc-status-pill na">${cocs.length} logged</span>` : ''}
+        </span>
+        <div class="disc-panel-actions">
+          <button class="btn sm" onclick="alert('COC entry form lands with 12.5.2 — pick reason, describe the change, system decides whether redisclosure is triggered based on the change-type rules in 12 CFR 1026.19(e)(3)(iv).')">Log COC</button>
+        </div>
+      </div>
+      <div class="disc-panel-body">${body}</div>
+    </div>
+  `;
+}
+
+function renderFeeTolerancePanel(fees) {
+  const buckets = [
+    { key: 'zero',      label: '0% Tolerance',   limit: 'no increase allowed' },
+    { key: 'ten',       label: '10% Bucket',     limit: '10% in aggregate'    },
+    { key: 'unlimited', label: 'Unlimited',      limit: 'no cap'              },
+  ];
+
+  if (fees.length === 0) {
+    return `
+      <div class="disc-panel">
+        <div class="disc-panel-head">
+          <span class="disc-panel-title">Fee Tolerance</span>
+          <div class="disc-panel-actions"></div>
+        </div>
+        <div class="disc-panel-body">
+          <div class="disc-fees">
+            ${buckets.map(b => `
+              <div class="disc-fee-bucket">
+                <div class="disc-fee-bucket-head">
+                  <span class="disc-fee-bucket-label">${escapeHtml(b.label)}</span>
+                  <span class="disc-fee-bucket-limit">${escapeHtml(b.limit)}</span>
+                </div>
+                <div class="disc-fee-bucket-amounts" style="color: var(--muted); font-size: 0.95rem;">—</div>
+                <div class="disc-fee-bucket-sub">awaiting CD vs LE comparison</div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="disc-empty-body" style="margin-top: 1rem;">
+            <strong>Fee tolerance comparison runs after both LE and CD are issued.</strong><br>
+            Each fee category gets matched against its initial LE estimate. Breaches in the 0% or 10% bucket require lender cure before close.
+            <span class="ref">Gated by 12.5.5 (fee tolerance engine)</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // We have fee_tolerance rows
+  const byBucket = {};
+  for (const f of fees) byBucket[f.bucket] = f;
+
+  return `
+    <div class="disc-panel">
+      <div class="disc-panel-head">
+        <span class="disc-panel-title">Fee Tolerance</span>
+        <div class="disc-panel-actions">
+          <button class="btn sm" onclick="alert('Per-fee detail panel coming next — shows every fee line item across the three buckets with LE vs CD vs delta vs limit.')">Detail</button>
+        </div>
+      </div>
+      <div class="disc-panel-body">
+        <div class="disc-fees">
+          ${buckets.map(b => {
+            const f = byBucket[b.key];
+            if (!f) {
+              return `
+                <div class="disc-fee-bucket">
+                  <div class="disc-fee-bucket-head">
+                    <span class="disc-fee-bucket-label">${escapeHtml(b.label)}</span>
+                    <span class="disc-fee-bucket-limit">${escapeHtml(b.limit)}</span>
+                  </div>
+                  <div class="disc-fee-bucket-amounts" style="color: var(--muted); font-size: 0.95rem;">—</div>
+                  <div class="disc-fee-bucket-sub">no fees in this bucket</div>
+                </div>
+              `;
+            }
+            const le = Number(f.le_total || 0);
+            const cd = Number(f.cd_total || 0);
+            const delta = Number(f.delta != null ? f.delta : cd - le);
+            const deltaCls = delta > 0 ? 'up' : (delta < 0 ? 'down' : 'same');
+            const deltaTxt = (delta > 0 ? '+' : '') + dollars(delta);
+            const bucketCls = f.breached
+              ? (f.cured_at ? 'cured' : 'breach')
+              : '';
+            const statusCls = f.breached ? (f.cured_at ? 'cured' : 'breach') : 'ok';
+            const statusTxt = f.breached
+              ? (f.cured_at ? `Cured ${discFormatDate(f.cured_at)}` : 'Breach — cure due')
+              : 'Within tolerance';
+            return `
+              <div class="disc-fee-bucket ${bucketCls}">
+                <div class="disc-fee-bucket-head">
+                  <span class="disc-fee-bucket-label">${escapeHtml(b.label)}</span>
+                  <span class="disc-fee-bucket-limit">${escapeHtml(b.limit)}</span>
+                </div>
+                <div class="disc-fee-bucket-amounts">
+                  ${escapeHtml(dollars(cd))}
+                  <span class="delta ${deltaCls}">${escapeHtml(deltaTxt)}</span>
+                </div>
+                <div class="disc-fee-bucket-sub">vs LE ${escapeHtml(dollars(le))}</div>
+                <div class="disc-fee-bucket-status ${statusCls}">${escapeHtml(statusTxt)}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Disclosures helpers (prefixed to avoid collision with other tabs) ───
+function discFormatDate(d, withTime) {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (withTime) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+         + ' at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function discDaysSince(d) {
+  if (!d) return 0;
+  const diff = Date.now() - new Date(d).getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+// SIMPLIFIED 3-day calc. TRID actually uses business days (excludes Sundays
+// and federal holidays). Replace with proper calculator when 12.5.5 ships —
+// this is a placeholder so the UI has correct shape today.
+function discEarliestCloseDate(cdDeliveredAt) {
+  if (!cdDeliveredAt) return null;
+  const d = new Date(cdDeliveredAt);
+  d.setDate(d.getDate() + 3);
+  return d.toISOString();
+}
+
+function discDeliveryLabel(m) {
+  const map = {
+    email:        'email',
+    mail:         'mail (USPS)',
+    in_person:    'in person',
+    electronic:   'electronic signature',
+    hand_delivered: 'hand delivered',
+  };
+  return map[String(m || '').toLowerCase()] || (m ? String(m) : 'method unknown');
+}
+
+function discITPMethodLabel(m) {
+  const map = {
+    signed:     'Signed acknowledgment form',
+    electronic: 'Electronic signature',
+    oral:       'Oral (recorded)',
+    written:    'Written communication',
+  };
+  return map[String(m || '').toLowerCase()] || (m ? titleCase(String(m)) : 'Method unknown');
 }
 
 function renderFindings() {
