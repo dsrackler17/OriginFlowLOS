@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Intent to Proceed · OriginFlow LOS</title>
+<meta name="description" content="Capture the borrower's Intent to Proceed and clear the TRID fee gate.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main,footer{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;flex-shrink:0;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-back{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.4rem .8rem;transition:all .15s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
+.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .75rem;transition:all .2s;cursor:pointer;background:none;}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
+
+main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
+.wrap{width:100%;max-width:760px;}
+
+.page-head{margin-bottom:1.5rem;}
+.page-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.page-title{font-family:var(--serif);font-size:2rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:.4rem;}
+
+.state-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;min-height:50vh;text-align:center;}
+.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem;}
+.state-heading{font-family:var(--serif);font-size:1.6rem;color:var(--white);margin-bottom:.85rem;max-width:560px;}
+.state-text{max-width:520px;color:var(--muted);margin-bottom:1.5rem;}
+.btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.25rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* loan picker */
+.picker{border:1px solid var(--border);background:var(--surface);}
+.picker-head{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text);padding:.85rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.picker-row{display:grid;grid-template-columns:auto 1fr auto;gap:.85rem;align-items:center;padding:.75rem 1.1rem;border-bottom:1px solid var(--border);text-decoration:none;color:var(--text);transition:background .12s;}
+.picker-row:last-child{border-bottom:none;}
+.picker-row:hover{background:var(--panel);}
+.picker-num{font-family:var(--mono);font-size:.72rem;color:var(--accent);font-weight:700;}
+.picker-name{font-size:.85rem;color:var(--white);}
+.picker-meta{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.04em;}
+.picker-empty{font-family:var(--mono);font-size:.7rem;color:var(--muted);padding:2rem 1rem;text-align:center;}
+
+.flag-note{margin-top:1.25rem;font-family:var(--mono);font-size:.62rem;line-height:1.7;color:var(--muted);border-left:2px solid var(--amber);padding:.4rem .85rem;background:rgba(245,166,35,.05);letter-spacing:.02em;}
+.flag-note b{color:var(--amber);}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <div class="nav-right">
+    <a href="/home.html" class="nav-back">← Home</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span class="nav-user-name" id="nav-user-name">…</span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+
+    <div class="state-screen" id="state-loading">
+      <div class="spinner"></div>
+      <div class="state-eyebrow">Authenticating</div>
+      <div class="state-heading" style="font-size:1.3rem;">Loading…</div>
+    </div>
+
+    <div class="state-screen" id="state-signed-out" style="display:none;">
+      <div class="state-eyebrow">Sign in required</div>
+      <h1 class="state-heading">You're not signed in.</h1>
+      <p class="state-text">Sign in to record a borrower's Intent to Proceed.</p>
+      <a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+
+    <!-- loan picker (no ?loan= param) -->
+    <div id="picker-view" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow">Loan Lifecycle · TRID</div>
+        <h1 class="page-title">Intent to Proceed</h1>
+        <p class="page-sub">Pick a loan to record the borrower's intent and clear the fee gate.</p>
+      </header>
+      <div class="picker">
+        <div class="picker-head">Recent active files in your branch</div>
+        <div id="picker-list"><div class="picker-empty">Loading…</div></div>
+      </div>
+      <div class="flag-note">
+        <b>⚑ Depends on migration 018.</b> The write target <code>public.intent_to_proceed</code> must exist on prod
+        (<code>zgmwtslzsmtmqcivngdq</code>) before recording will succeed. Run <code>018_loan_lifecycle_tables.sql</code> first.
+      </div>
+    </div>
+
+    <!-- capture view (?loan= resolved) -->
+    <div id="capture-view" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow" id="cap-eyebrow">Loan Lifecycle · TRID</div>
+        <h1 class="page-title">Intent to Proceed</h1>
+        <p class="page-sub" id="cap-sub">—</p>
+      </header>
+      <!-- ITP module mounts here -->
+      <div id="of-itp-root"></div>
+      <div class="flag-note">
+        <b>⚑ Two writes on submit:</b> inserts <code>intent_to_proceed</code> and clears any outstanding
+        <code>conditions</code> row with <code>template_key='intent_to_proceed'</code> for this loan.
+        A "nothing to clear" note just means this loan doesn't carry that condition — not an error.
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ─── ITP module styles (scoped under #of-itp-root) ─────────────────────── -->
+<style>
+  #of-itp-root{
+    --of-cyan:#00d4ff; --of-green:#00ff9d; --of-amber:#f5a623; --of-red:#ff4444;
+    --of-ink:#eaf4ff; --of-ink-2:#c8dff0; --of-ink-3:#5a7a99;
+    --of-line:#1a3a5c; --of-line-2:#235082; --of-panel:#0f2647; --of-surface:#0b1f3a;
+    font-family:var(--sans);color:var(--of-ink);background:var(--of-surface);
+    border:1px solid var(--of-line);border-radius:0;overflow:hidden;
+  }
+  #of-itp-root *{box-sizing:border-box;}
+  .of-itp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 22px;border-bottom:1px solid var(--of-line);background:var(--deep);}
+  .of-itp-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--of-cyan);margin:0 0 6px;}
+  .of-itp-title{font-family:var(--serif);font-size:22px;line-height:1.05;margin:0;}
+  .of-itp-cite{font-family:var(--mono);font-size:10.5px;color:var(--of-ink-3);margin-top:7px;}
+  .of-chip{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:6px 11px;white-space:nowrap;border:1px solid var(--of-line-2);display:inline-flex;align-items:center;gap:7px;}
+  .of-chip .dot{width:7px;height:7px;border-radius:50%;}
+  .of-chip[data-st="outstanding"]{color:var(--of-amber);border-color:rgba(245,166,35,.4);background:rgba(245,166,35,.08);}
+  .of-chip[data-st="outstanding"] .dot{background:var(--of-amber);}
+  .of-chip[data-st="received"]{color:var(--of-green);border-color:rgba(0,255,157,.4);background:rgba(0,255,157,.08);}
+  .of-chip[data-st="received"] .dot{background:var(--of-green);}
+  .of-gate{margin:16px 22px 0;padding:11px 13px;background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.28);font-size:12.5px;line-height:1.5;color:#f4d79a;display:flex;gap:10px;}
+  .of-gate b{color:var(--of-amber);}
+  .of-itp-body{padding:16px 22px 22px;}
+  .of-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 15px;}
+  .of-field{display:flex;flex-direction:column;gap:6px;}
+  .of-field.full{grid-column:1 / -1;}
+  .of-label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--of-ink-2);}
+  .of-label .req{color:var(--of-cyan);}
+  .of-input,.of-select,.of-textarea{font-family:var(--sans);font-size:14px;color:var(--of-ink);background:var(--of-panel);border:1px solid var(--of-line-2);padding:10px 12px;width:100%;transition:border-color .15s,box-shadow .15s;}
+  .of-textarea{resize:vertical;min-height:60px;font-size:13.5px;}
+  .of-input:focus,.of-select:focus,.of-textarea:focus{outline:none;border-color:var(--of-cyan);box-shadow:0 0 0 2px rgba(0,212,255,.18);}
+  .of-actions{display:flex;align-items:center;gap:14px;margin-top:18px;}
+  .of-btn{font-family:var(--mono);font-size:12px;letter-spacing:.06em;font-weight:700;padding:12px 22px;border:1px solid var(--of-cyan);cursor:pointer;background:var(--of-cyan);color:var(--navy);transition:background .15s,opacity .2s;}
+  .of-btn:hover{background:var(--of-green);border-color:var(--of-green);}
+  .of-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .of-hint{font-size:11.5px;color:var(--of-ink-3);font-family:var(--mono);}
+  .of-log{margin:14px 22px 20px;border:1px dashed var(--of-line-2);background:rgba(7,21,43,.6);display:none;}
+  .of-log.show{display:block;}
+  .of-log-row{display:flex;gap:10px;padding:10px 13px;font-family:var(--mono);font-size:11.5px;border-bottom:1px solid rgba(26,58,92,.5);}
+  .of-log-row:last-child{border-bottom:none;}
+  .of-log-row .ts{color:var(--of-ink-3);flex:none;}
+  .of-log-row .ok{color:var(--of-green);} .of-log-row .warn{color:var(--of-amber);} .of-log-row .err{color:var(--of-red);}
+  @media(max-width:560px){.of-grid{grid-template-columns:1fr;}}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// itp.html — boot, loan resolution, and ITP module mount
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = (s)=>document.querySelector(s);
+let supa=null, me=null, branch=null;
+
+function show(id){
+  ['state-loading','state-signed-out','picker-view','capture-view'].forEach(s=>{
+    var el=document.getElementById(s); if(el) el.style.display=(s===id)?(s.startsWith('state')?'flex':'block'):'none';
+  });
+}
+function handleSignOut(){ if(typeof ofSignOut==='function') ofSignOut(); else window.location.href='/login.html'; }
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function money(c){ if(c==null) return '—'; var n=Number(c)/100; if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M'; if(n>=1e3) return '$'+Math.round(n/1e3)+'K'; return '$'+n.toFixed(0); }
+
+async function boot(){
+  supa = (typeof getSupabase==='function') ? getSupabase() : null;
+  if(!supa){ console.error('[ITP] Supabase unavailable — check /js/config.js'); show('state-signed-out'); return; }
+
+  let session=null;
+  try{ session=(typeof ofGetSession==='function')? await ofGetSession() : null; }catch(e){ console.warn('[ITP] session',e); }
+  if(!session){ show('state-signed-out'); return; }
+
+  const { data:profile, error } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
+    .eq('id', session.user.id).maybeSingle();
+  if(error || !profile || !profile.branch_id){ console.warn('[ITP] profile', error); show('state-signed-out'); return; }
+
+  me = { id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch = profile.branches || { id:profile.branch_id, name:'Your Branch' };
+
+  // expose to the ITP module
+  window.OF_supabase = supa;
+  window.OF_USER_ID  = me.id;
+
+  $('#nav-user-name').textContent = me.full_name;
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+
+  const loanId = new URLSearchParams(location.search).get('loan')
+              || new URLSearchParams(location.search).get('id');
+  if(loanId) await resolveLoanAndMount(loanId);
+  else await renderPicker();
+}
+
+async function renderPicker(){
+  show('picker-view');
+  const list = $('#picker-list');
+  const { data, error } = await supa.from('loans')
+    .select('id, loan_number, status, loan_amount_cents, property_address, borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) )')
+    .eq('branch_id', me.branch_id).is('archived_at', null)
+    .in('status', ['application','submitted','processing','underwriting','conditional_approval'])
+    .order('updated_at', { ascending:false }).limit(12);
+  if(error){ list.innerHTML = `<div class="picker-empty" style="color:var(--red);">${esc(error.message)}</div>`; return; }
+  if(!data || !data.length){ list.innerHTML = `<div class="picker-empty">No active files. ITP applies after an application exists.</div>`; return; }
+  list.innerHTML = data.map(l=>{
+    const b=(l.borrowers||[]).sort((a,b)=>(a.position||0)-(b.position||0))[0]?.borrower;
+    const name=b?`${b.last_name}, ${b.first_name}`:'Borrower TBD';
+    const city=l.property_address?.city||'';
+    return `<a class="picker-row" href="/itp.html?loan=${esc(l.id)}">
+      <span class="picker-num">${esc(l.loan_number)}</span>
+      <span><span class="picker-name">${esc(name)}</span><br><span class="picker-meta">${esc(city)} · ${money(l.loan_amount_cents)} · ${esc((l.status||'').toUpperCase())}</span></span>
+      <span class="picker-meta">Record →</span>
+    </a>`;
+  }).join('');
+}
+
+async function resolveLoanAndMount(loanId){
+  show('capture-view');
+  // loan core
+  const { data:loan, error } = await supa.from('loans')
+    .select('id, loan_number, branch_id, lo_id, profiles:lo_id ( full_name )')
+    .eq('id', loanId).maybeSingle();
+  if(error || !loan){ $('#cap-sub').textContent='Loan not found or not in your branch.'; return; }
+
+  // borrowers + LE disclosures + existing ITP, in parallel
+  const [borRes, leRes, itpRes] = await Promise.all([
+    supa.from('loan_borrowers').select('position, borrower:borrower_id ( id, first_name, last_name )').eq('loan_id', loanId),
+    // [H5] LE taxonomy from migration 017
+    supa.from('disclosures').select('id, kind, version, created_at').eq('loan_id', loanId).in('kind', ['initial_le','revised_le']).is('archived_at', null).order('created_at', { ascending:false }),
+    supa.from('intent_to_proceed').select('received_at, method').eq('loan_id', loanId).order('received_at', { ascending:false }).limit(1)
+  ]);
+
+  const borrowers = (borRes.data||[]).sort((a,b)=>(a.position||0)-(b.position||0))
+    .map(r=>({ id:r.borrower?.id, name:r.borrower?`${r.borrower.last_name}, ${r.borrower.first_name}`:'Borrower' }))
+    .filter(b=>b.id);
+  const les = (leRes.data||[]).map(d=>({ id:d.id, label:`${d.kind==='revised_le'?'Revised LE':'Initial LE'} · v${d.version} · ${new Date(d.created_at).toLocaleDateString()}` }));
+  // intent_to_proceed table may not exist yet (pre-018) -> itpRes.error; treat as none
+  const already = (!itpRes.error && itpRes.data && itpRes.data[0]) ? itpRes.data[0].received_at : null;
+
+  $('#cap-eyebrow').textContent = `Loan Lifecycle · ${loan.loan_number} · TRID`;
+  $('#cap-sub').textContent = `LO ${loan.profiles?.full_name || '—'} · 12 CFR § 1026.19(e)(2)(i)(A)`;
+  if(itpRes.error) console.warn('[ITP] intent_to_proceed read failed (run migration 018?):', itpRes.error.message);
+
+  window.OF_ITP_CONTEXT = {
+    loan_id: loan.id, branch_id: loan.branch_id, loan_number: loan.loan_number,
+    lo_name: loan.profiles?.full_name || '—',
+    borrowers, les, already_received: already
+  };
+  // allow the conditions surface elsewhere to react
+  window.OF_onConditionsChanged = function(){ /* no-op on this page */ };
+
+  mountITP();
+}
+
+// ─── ITP capture module (callable; reads window.OF_ITP_CONTEXT) ──────────────
+function mountITP(){
+  function sbClient(){ return window.OF_supabase || window.supabaseClient || window.sb || null; }
+  var CTX = window.OF_ITP_CONTEXT;
+  var USER_ID = window.OF_USER_ID || null;
+  var METHODS = [['portal','Portal (borrower click)'],['phone','Phone'],['email','Email'],['esign','E-sign'],['written','Written / wet signature'],['in_person','In person'],['mail','Mail'],['fax','Fax'],['overnight','Overnight']];
+  function nowLocalInput(){var d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);}
+  function logTs(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+
+  var root=document.getElementById('of-itp-root');
+  var received = CTX.already_received;
+
+  root.innerHTML = [
+    '<div class="of-itp-head">',
+      '<div>',
+        '<p class="of-itp-eyebrow">'+esc(CTX.loan_number)+'</p>',
+        '<h2 class="of-itp-title">Record Intent to Proceed</h2>',
+        '<div class="of-itp-cite">LO '+esc(CTX.lo_name)+'</div>',
+      '</div>',
+      '<span class="of-chip" id="of-itp-chip" data-st="'+(received?'received':'outstanding')+'"><span class="dot"></span><span id="of-itp-chip-tx">'+(received?'Received':'Outstanding')+'</span></span>',
+    '</div>',
+    '<div class="of-gate"><span>⚠</span><div><b>Fee gate.</b> Until intent is received, no charge beyond a bona fide credit-report fee may be imposed on the borrower.</div></div>',
+    '<div class="of-itp-body">',
+      '<div class="of-grid">',
+        '<div class="of-field"><label class="of-label" for="of-itp-le">Disclosed LE'+(CTX.les.length?' <span class="req">*</span>':'')+'</label>',
+          '<select class="of-select" id="of-itp-le">'+(CTX.les.length?CTX.les.map(function(l){return '<option value="'+esc(l.id)+'">'+esc(l.label)+'</option>';}).join(''):'<option value="">— no LE on file —</option>')+'</select></div>',
+        '<div class="of-field"><label class="of-label" for="of-itp-method">Method <span class="req">*</span></label>',
+          '<select class="of-select" id="of-itp-method">'+METHODS.map(function(m){return '<option value="'+m[0]+'">'+m[1]+'</option>';}).join('')+'</select></div>',
+        '<div class="of-field"><label class="of-label" for="of-itp-when">Received at <span class="req">*</span></label>',
+          '<input class="of-input" type="datetime-local" id="of-itp-when" value="'+nowLocalInput()+'"></div>',
+        '<div class="of-field"><label class="of-label" for="of-itp-borrower">Expressed by</label>',
+          '<select class="of-select" id="of-itp-borrower"><option value="">— application level —</option>'+CTX.borrowers.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>';}).join('')+'</select></div>',
+        '<div class="of-field full"><label class="of-label" for="of-itp-notes">Notes</label>',
+          '<textarea class="of-textarea" id="of-itp-notes" placeholder="e.g. confirmed by phone, callback number on file; or portal click ref."></textarea></div>',
+      '</div>',
+      '<div class="of-actions"><button class="of-btn" id="of-itp-submit">Record Intent to Proceed</button>',
+        '<span class="of-hint" id="of-itp-hint">'+(sbClient()?'live · writes to prod':'no client')+'</span></div>',
+    '</div>',
+    '<div class="of-log" id="of-itp-log"></div>'
+  ].join('');
+
+  var chip=document.getElementById('of-itp-chip'), chipTx=document.getElementById('of-itp-chip-tx');
+  var btn=document.getElementById('of-itp-submit'), hint=document.getElementById('of-itp-hint'), logEl=document.getElementById('of-itp-log');
+  function pushLog(cls,ts,msg){logEl.classList.add('show');var r=document.createElement('div');r.className='of-log-row';r.innerHTML='<span class="ts">'+esc(ts)+'</span><span class="'+cls+'">'+esc(msg)+'</span>';logEl.appendChild(r);}
+  function markReceived(iso){received=iso;chip.setAttribute('data-st','received');chipTx.textContent='Received';btn.disabled=true;btn.textContent='Recorded';hint.textContent='ITP on file · '+new Date(iso).toLocaleString();}
+  if(received) markReceived(received);
+
+  window.OF_captureIntentToProceed = async function(p){
+    var sb=sbClient();
+    if(!sb) return {ok:false,stage:'client',error:'no supabase client'};
+    var ins=await sb.from('intent_to_proceed').insert({
+      branch_id:p.branch_id, loan_id:p.loan_id, le_disclosure_id:p.le_disclosure_id||null,
+      method:p.method, received_at:p.received_at, borrower_id:p.borrower_id||null,
+      notes:p.notes||null, created_by:USER_ID||null
+    }).select('id').single();
+    if(ins.error) return {ok:false, stage:'insert', error:ins.error.message};
+    var upd=await sb.from('conditions').update({
+      status:'cleared', cleared_at:p.received_at, auto_cleared:false,
+      cleared_by_user_id:USER_ID||null, cleared_reason:'Intent to Proceed recorded ('+p.method+')'
+    }).eq('loan_id',p.loan_id).eq('template_key','intent_to_proceed').eq('status','outstanding').select('id');
+    return {ok:true, itp:ins.data, cleared:(upd.data?upd.data.length:0), clearErr:upd.error?upd.error.message:null};
+  };
+
+  btn.addEventListener('click', async function(){
+    var le=document.getElementById('of-itp-le').value;
+    var method=document.getElementById('of-itp-method').value;
+    var whenLocal=document.getElementById('of-itp-when').value;
+    var borrower=document.getElementById('of-itp-borrower').value;
+    var notes=document.getElementById('of-itp-notes').value.trim();
+    if(!whenLocal){ pushLog('err',logTs(),'received-at is required'); return; }
+    var iso=new Date(whenLocal).toISOString();
+    btn.disabled=true;btn.textContent='Recording…';
+    pushLog('warn',logTs(),'→ writing intent_to_proceed for '+CTX.loan_number);
+    try{
+      var res=await window.OF_captureIntentToProceed({branch_id:CTX.branch_id,loan_id:CTX.loan_id,le_disclosure_id:le,method:method,received_at:iso,borrower_id:borrower,notes:notes});
+      if(!res.ok){ pushLog('err',logTs(),'✗ '+(res.stage||'')+' failed: '+res.error); btn.disabled=false;btn.textContent='Record Intent to Proceed'; return; }
+      pushLog('ok',logTs(),'✓ intent_to_proceed inserted · id '+(res.itp&&res.itp.id));
+      if(res.cleared>0) pushLog('ok',logTs(),'✓ condition intent_to_proceed → cleared ('+res.cleared+' row)');
+      else pushLog('warn',logTs(),'• no outstanding ITP condition on this loan (nothing to clear)');
+      if(res.clearErr) pushLog('warn',logTs(),'• condition update note: '+res.clearErr);
+      markReceived(iso);
+      if(typeof window.OF_onConditionsChanged==='function') window.OF_onConditionsChanged(CTX.loan_id);
+    }catch(e){ pushLog('err',logTs(),'✗ unexpected: '+(e&&e.message||e)); btn.disabled=false;btn.textContent='Record Intent to Proceed'; }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
