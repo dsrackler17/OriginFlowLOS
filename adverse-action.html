@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Adverse Action Notice · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — ECOA / Reg B adverse action notice.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-crumb{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--border);padding-left:1rem;margin-left:.25rem;}
+.nav-crumb b{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
+.nav-back,.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .75rem;cursor:pointer;background:none;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
+main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
+.wrap{width:100%;max-width:820px;}
+.page-head{margin-bottom:1.25rem;}
+.page-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.page-title{font-family:var(--serif);font-size:1.9rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:.4rem;font-size:.92rem;max-width:680px;}
+.loan-picker{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);padding:.75rem 1rem;}
+.loan-picker label{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.loan-picker select{flex:1;background:var(--deep);border:1px solid var(--border);color:var(--white);font-family:var(--sans);font-size:.85rem;padding:.5rem .7rem;outline:none;}
+.loan-picker select:focus{border-color:var(--accent);}
+.state{text-align:center;padding:4rem 2rem;}
+.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem;}
+.state-heading{font-family:var(--serif);font-size:1.5rem;color:var(--white);margin-bottom:.6rem;}
+.state-text{color:var(--muted);max-width:460px;margin:0 auto 1.25rem;}
+.btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.25rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.note{font-family:var(--sans);font-size:.8rem;color:#f4d79a;background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.28);padding:.7rem .9rem;margin-bottom:1.25rem;line-height:1.5;}
+.note b{color:var(--amber);}
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:1.25rem;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.panel-title{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text);}
+.panel-body{padding:1.1rem 1.2rem 1.3rem;}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:.4rem 1rem;font-size:.85rem;}
+.kv .k{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:.1rem;}
+.kv .v{color:var(--white);}
+.reasons{margin-top:1rem;display:flex;flex-direction:column;gap:.4rem;}
+.reason{display:flex;gap:.6rem;align-items:flex-start;font-size:.85rem;padding:.5rem .7rem;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--red);}
+.reason .code{font-family:var(--mono);font-size:.55rem;color:var(--muted);}
+.decision-pill{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:.2rem .6rem;border:1px solid var(--border);}
+.decision-pill.decline{color:var(--red);border-color:rgba(255,68,68,.4);background:rgba(255,68,68,.07);}
+.decision-pill.other{color:var(--muted);}
+.actions{display:flex;align-items:center;gap:1rem;margin-top:1.2rem;}
+.hint{font-family:var(--mono);font-size:.62rem;color:var(--muted);}
+.log{border:1px dashed var(--border);background:rgba(4,13,26,.5);display:none;margin-bottom:2rem;}
+.log.show{display:block;}
+.log-row{display:flex;gap:.6rem;padding:.6rem .8rem;font-family:var(--mono);font-size:.66rem;border-bottom:1px solid rgba(26,58,92,.5);}
+.log-row:last-child{border-bottom:none;}
+.log-row .ts{color:var(--muted);flex:none;}
+.log-row .ok{color:var(--accent2);} .log-row .warn{color:var(--amber);} .log-row .err{color:var(--red);}
+@media(max-width:680px){nav{padding:.85rem 1rem;}.nav-crumb,.nav-branch{display:none;}main{padding:1rem;}.kv{grid-template-columns:1fr;gap:.1rem;}.kv .k{padding-top:.5rem;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-crumb">Compliance · <b>Adverse Action</b></span>
+  <div class="nav-right">
+    <a href="/home.html" class="nav-back">← Home</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span class="nav-user-name" id="nav-user-name">…</span>
+    <button class="nav-signout" id="nav-signout">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="state" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.2rem;">Loading…</div></div>
+    <div class="state" id="state-signed-out" style="display:none;">
+      <div class="state-eyebrow">Sign in required</div><h1 class="state-heading">You're not signed in.</h1>
+      <a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+    <div class="state" id="state-empty" style="display:none;">
+      <div class="state-eyebrow">No loans</div><h1 class="state-heading">No active loans in this branch yet.</h1>
+      <a href="/loans-new.html" class="btn primary">+ New Loan</a>
+    </div>
+
+    <div id="app" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow">Compliance · 13.5.4 · ECOA / Reg B</div>
+        <h1 class="page-title">Adverse Action Notice</h1>
+        <p class="page-sub">Generate the ECOA adverse-action notice for a declined application — principal reasons, the federal non-discrimination notice, and the FCRA credit-report / credit-score disclosures.</p>
+      </header>
+      <div class="loan-picker"><label for="loan-select">Loan</label><select id="loan-select"></select></div>
+
+      <div class="note"><b>Legal review.</b> This generates a notice from the underwriting decision on file. The lender remains responsible for the accuracy of the principal reasons, the correct administering federal agency, and timely delivery (30 days of adverse action under ECOA). Verify lender identity in branch settings before sending.</div>
+
+      <div id="aa-mount"></div>
+      <div class="log" id="aa-logbox"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// adverse-action.html — wiring  (Phase 13.5.4)
+// ---------------------------------------------------------------------------
+// Reads the latest uw_decisions row for a loan. If decision='decline', renders
+// the decision + generates the ECOA/Reg B adverse-action notice as a PDF
+// (client-side pdf-lib). Pulls lender identity from branch_disclosure_settings
+// (017) and applicant name from the primary borrower.
+//
+// uw_decisions (verified): decision ∈ {approve, approve_with_conditions,
+//   suspend, decline}; CHECK requires denial_reason_codes (text[], non-empty)
+//   when decision='decline'. denial_reason_other, credit_snapshot/ratios/aus
+//   snapshots (jsonb).
+//
+// ⚠ FLAGGED ASSUMPTIONS (ship-flagged; defensive reads avoid 500s):
+//   [A1] denial_reason_codes vocabulary is UNCONSTRAINED in the DB. The map
+//        below covers the ECOA Model Form C-1 reasons; any unrecognized code is
+//        humanized and printed verbatim. If your app emits numeric codes or a
+//        different slug set, extend REASON_LABELS — nothing breaks meanwhile.
+//   [A2] branch_disclosure_settings read via select('*') with key fallbacks —
+--        column names guessed (legal_name / nmls / address). Wrong/missing keys
+//        print a clearly-marked placeholder, never crash. (Values are the 017
+//        PLACEHOLDER identity until real branch onboarding — a wrong NMLS on a
+//        compliance notice is a real problem; confirm before sending.)
+//   [A3] applicant mailing address falls back to property_address (borrower
+//        mailing-address columns unknown). Confirm/fix to borrower's address.
+//   [A4] credit score disclosure prints only if a score is found in
+//        credit_snapshot (keys tried: score/credit_score/decision_score/fico).
+//   [A5] administering federal agency is a PLACEHOLDER block — the correct
+//        agency (CFPB / FTC / prudential regulator) depends on the lender;
+//        must be set per-lender before sending.
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = (s)=>document.querySelector(s);
+let supa=null, me=null, branch=null, loans=[], currentLoanId=null;
+
+// ECOA Model Form C-1 principal reasons (Appendix C to Reg B). Keyed by likely
+// app slugs; unrecognized codes pass through humanized. [A1]
+const REASON_LABELS = {
+  incomplete_application:'Credit application incomplete',
+  insufficient_credit_refs:'Insufficient number of credit references provided',
+  unable_verify_credit_refs:'Unable to verify credit references',
+  temporary_employment:'Temporary or irregular employment',
+  unable_verify_employment:'Unable to verify employment',
+  employment_length:'Length of employment',
+  income_insufficient:'Income insufficient for amount of credit requested',
+  insufficient_income:'Income insufficient for amount of credit requested',
+  excessive_obligations:'Excessive obligations in relation to income',
+  dti_high:'Excessive obligations in relation to income',
+  unable_verify_income:'Unable to verify income',
+  residence_length:'Length of residence',
+  temporary_residence:'Temporary residence',
+  unable_verify_residence:'Unable to verify residence',
+  no_credit_file:'No credit file',
+  limited_credit_experience:'Limited credit experience',
+  poor_credit_performance:'Poor credit performance with us',
+  delinquent_credit:'Delinquent past or present credit obligations with others',
+  collection_judgment:'Collection action or judgment',
+  garnishment:'Garnishment or attachment',
+  foreclosure_repossession:'Foreclosure or repossession',
+  bankruptcy:'Bankruptcy',
+  excessive_inquiries:'Number of recent inquiries on credit bureau report',
+  insufficient_collateral:'Value or type of collateral not sufficient',
+  collateral_value:'Value or type of collateral not sufficient',
+  ltv_high:'Value or type of collateral not sufficient',
+  credit_score:'Credit bureau report / credit score',
+  other:'Other'
+};
+function reasonText(code){ return REASON_LABELS[code] || String(code||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function logTs(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+function fmtDate(iso){ return iso?new Date(iso).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):''; }
+function showState(id){ ['state-loading','state-signed-out','state-empty'].forEach(s=>{$('#'+s).style.display=(s===id)?'block':'none';}); $('#app').style.display=(id==='app')?'block':'none'; }
+// WinAnsi-safe: pdf-lib StandardFonts can't encode these glyphs (same class the
+// _shared/pdf primitives.ts fix handled). Normalize at the draw boundary.
+function ansi(s){ return String(s==null?'':s).replace(/[\u2212\u2013\u2014]/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/\u2026/g,'...').replace(/[^\x00-\xFF]/g,'?'); }
+
+async function bootstrap(){
+  $('#nav-signout').addEventListener('click',()=>{ if(typeof ofSignOut==='function') ofSignOut(); else location.href='/login.html'; });
+  supa=(typeof getSupabase==='function')?getSupabase():null;
+  if(!supa){ console.error('[AA] Supabase unavailable'); showState('state-signed-out'); return; }
+  let session=null;
+  try{ session=(typeof ofGetSession==='function')? await ofGetSession():null; }catch(e){ console.warn('[AA] session:',e); }
+  if(!session){ showState('state-signed-out'); return; }
+
+  const { data:profile, error } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id(id,name)')
+    .eq('id', session.user.id).maybeSingle();
+  if(error || !profile || !profile.branch_id){ showState('state-signed-out'); return; }
+  me={ id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch=profile.branches||{id:profile.branch_id,name:'Your Branch'};
+  $('#nav-user-name').textContent=me.full_name; $('#nav-branch-name').textContent=branch.name; $('#nav-branch-pill').style.display='inline-flex';
+
+  const { data:loanRows } = await supa.from('loans')
+    .select('id, loan_number, status, updated_at, property_address, borrowers:loan_borrowers(position, borrower:borrower_id(id,first_name,last_name))')
+    .eq('branch_id', me.branch_id).is('archived_at', null).order('updated_at',{ascending:false}).limit(50);
+  loans=loanRows||[];
+  if(loans.length===0){ showState('state-empty'); return; }
+
+  const want=new URLSearchParams(location.search).get('loan');
+  currentLoanId=(want && loans.some(l=>l.id===want))?want:loans[0].id;
+  $('#loan-select').innerHTML=loans.map(l=>{
+    const b=(l.borrowers||[]).sort((a,c)=>(a.position||0)-(c.position||0))[0]?.borrower;
+    const nm=b?`${b.last_name}, ${b.first_name}`:'Borrower TBD';
+    return `<option value="${esc(l.id)}" ${l.id===currentLoanId?'selected':''}>${esc(l.loan_number)} · ${esc(nm)} · ${esc((l.status||'').toUpperCase())}</option>`;
+  }).join('');
+  $('#loan-select').addEventListener('change',e=>{ currentLoanId=e.target.value; history.replaceState({},'',`/adverse-action.html?loan=${currentLoanId}`); loadDecision(); });
+
+  showState('app');
+  await loadDecision();
+}
+
+function pushLog(cls,ts,msg){ const box=$('#aa-logbox'); box.classList.add('show'); const r=document.createElement('div'); r.className='log-row'; r.innerHTML=`<span class="ts">${esc(ts)}</span><span class="${cls}">${esc(msg)}</span>`; box.appendChild(r); }
+
+let CTX=null;
+async function loadDecision(){
+  const mount=$('#aa-mount');
+  mount.innerHTML='<div class="state"><div class="spinner"></div><div class="state-eyebrow">Loading decision</div></div>';
+  const loan=loans.find(l=>l.id===currentLoanId);
+  const primary=(loan.borrowers||[]).sort((a,c)=>(a.position||0)-(c.position||0))[0]?.borrower;
+
+  const [{ data:decisions }, { data:lender }] = await Promise.all([
+    supa.from('uw_decisions').select('*').eq('loan_id', currentLoanId).order('decided_at',{ascending:false}).limit(1),
+    supa.from('branch_disclosure_settings').select('*').eq('branch_id', me.branch_id).maybeSingle()
+  ]);
+  const dec=(decisions&&decisions[0])||null;
+  CTX={ loan, primary, dec, lender:lender||{} };
+
+  if(!dec){
+    mount.innerHTML=`<div class="state"><div class="state-heading" style="font-size:1.15rem;">No underwriting decision on file</div><p class="state-text">Record a decision in the loan's Decision tab first. An adverse-action notice can only be generated for a decline.</p></div>`;
+    return;
+  }
+  const isDecline = dec.decision==='decline';
+  const codes = Array.isArray(dec.denial_reason_codes)?dec.denial_reason_codes:[];
+  const cs = dec.credit_snapshot||{};
+  const score = cs.score ?? cs.credit_score ?? cs.decision_score ?? cs.fico ?? null;
+
+  mount.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Decision on file · ${esc(loan.loan_number)}</span>
+        <span class="decision-pill ${isDecline?'decline':'other'}">${esc((dec.decision||'').replace(/_/g,' '))}</span></div>
+      <div class="panel-body">
+        <div class="kv">
+          <span class="k">Applicant</span><span class="v">${primary?esc(primary.first_name+' '+primary.last_name):'Borrower TBD'}</span>
+          <span class="k">Decided</span><span class="v">${esc(fmtDate(dec.decided_at))}</span>
+          <span class="k">Decision score</span><span class="v">${score!=null?esc(score):'—'}</span>
+          ${dec.decision_notes?`<span class="k">Notes</span><span class="v">${esc(dec.decision_notes)}</span>`:''}
+        </div>
+        ${isDecline ? `
+          <div class="reasons">${codes.map(c=>`<div class="reason"><span>${esc(reasonText(c))}</span><span class="code">${esc(c)}</span></div>`).join('')}
+          ${dec.denial_reason_other?`<div class="reason"><span>${esc(dec.denial_reason_other)}</span><span class="code">other</span></div>`:''}</div>
+          <div class="actions">
+            <button class="btn primary" id="aa-gen">Generate Reg B notice (PDF)</button>
+            <span class="hint">${codes.length} principal reason${codes.length===1?'':'s'} · lender: ${esc(lenderName(CTX.lender))}</span>
+          </div>`
+        : `<div class="note" style="margin-top:1rem;">This decision is <b>${esc((dec.decision||'').replace(/_/g,' '))}</b>, not a decline. An adverse-action notice is only required for a denial. (A "suspend" with an incomplete application may instead call for a Reg B incomplete-application notice — separate generator, 13.5.10.)</div>`}
+      </div>
+    </div>`;
+
+  if(isDecline){ $('#aa-gen').addEventListener('click', ()=>generatePdf(score)); }
+}
+
+function lenderName(L){ return L.legal_name || L.lender_legal_name || L.company_name || L.name || '[LENDER LEGAL NAME — set in branch settings]'; }
+function lenderLine(L){
+  const nmls = L.nmls_id || L.nmls || L.company_nmls || '';
+  const addr = L.address || L.street_address || L.address_line1 || '';
+  const city = L.city || ''; const stt = L.state || ''; const zip = L.zip || L.postal_code || '';
+  const cityline=[city, stt].filter(Boolean).join(', ')+(zip?' '+zip:'');
+  return { nmls, addr, cityline:cityline.trim() };
+}
+
+async function generatePdf(score){
+  const btn=$('#aa-gen'); btn.disabled=true; btn.textContent='Generating…';
+  pushLog('warn',logTs(),'→ building ECOA adverse-action notice');
+  try{
+    const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+    const doc=await PDFDocument.create();
+    let page=doc.addPage([612,792]);
+    const font=await doc.embedFont(StandardFonts.Helvetica);
+    const bold=await doc.embedFont(StandardFonts.HelveticaBold);
+    const M=54, RIGHT=612-54, BLACK=rgb(0.06,0.06,0.08);
+    let y=792-56;
+
+    const text=(s,x,size,f)=>{ page.drawText(ansi(s),{x,y,size,font:f||font,color:BLACK}); };
+    function wrap(s,x,size,maxW,gap,f){
+      f=f||font; s=ansi(s);
+      const words=s.split(/\s+/); let line='';
+      const flush=()=>{ if(line){ page.drawText(line,{x,y,size,font:f,color:BLACK}); y-=size+ (gap||4); line=''; } };
+      for(const w of words){
+        const test=line?line+' '+w:w;
+        if(f.widthOfTextAtSize(test,size) > maxW){ flush(); line=w; } else line=test;
+      }
+      flush();
+    }
+    const gapline=(n)=>{ y-=(n||1)*12; };
+    const newPageIfNeeded=(need)=>{ if(y < M+ (need||40)){ page=doc.addPage([612,792]); y=792-56; } };
+
+    const L=lenderLine(CTX.lender);
+    const applicant = CTX.primary ? (CTX.primary.first_name+' '+CTX.primary.last_name) : 'Applicant';
+    const pa = CTX.loan.property_address||{};
+    const applicantAddr = [pa.line1||pa.street||'', [pa.city,pa.state].filter(Boolean).join(', ')+(pa.zip?' '+pa.zip:'')].filter(Boolean);
+
+    // header
+    text('NOTICE OF ADVERSE ACTION', M, 14, bold); gapline(1.6);
+    text(fmtDate(new Date().toISOString()), M, 10); gapline(1.8);
+
+    // creditor block (right-ish, but keep simple left)
+    text('Creditor:', M, 9, bold); gapline(0.2);
+    text(lenderName(CTX.lender), M, 10); gapline(0.1);
+    if(L.addr){ text(L.addr, M, 9); gapline(0.1); }
+    if(L.cityline){ text(L.cityline, M, 9); gapline(0.1); }
+    if(L.nmls){ text('NMLS #'+L.nmls, M, 9); gapline(0.1); }
+    gapline(1.2);
+
+    // applicant block
+    text('Applicant:', M, 9, bold); gapline(0.2);
+    text(applicant, M, 10); gapline(0.1);
+    applicantAddr.forEach(l=>{ if(l){ text(l, M, 9); gapline(0.1); } });
+    text('Re: Loan / Application '+ (CTX.loan.loan_number||''), M, 9); gapline(1.6);
+
+    // action taken
+    text('Description of Action Taken', M, 11, bold); gapline(0.6);
+    wrap('Thank you for your recent application. After reviewing your application for the credit requested, we are unable to approve it at this time. This notice is provided under the Equal Credit Opportunity Act.', M, 10, RIGHT-M, 4); gapline(1.2);
+
+    // principal reasons
+    newPageIfNeeded(120);
+    text('Principal Reason(s) for Adverse Action', M, 11, bold); gapline(0.6);
+    const codes = Array.isArray(CTX.dec.denial_reason_codes)?CTX.dec.denial_reason_codes:[];
+    codes.forEach(c=>{ newPageIfNeeded(30); wrap('- '+reasonText(c), M+6, 10, RIGHT-M-6, 3); });
+    if(CTX.dec.denial_reason_other){ newPageIfNeeded(30); wrap('- '+CTX.dec.denial_reason_other, M+6, 10, RIGHT-M-6, 3); }
+    gapline(1.2);
+
+    // ECOA notice
+    newPageIfNeeded(140);
+    text('Federal Equal Credit Opportunity Act Notice', M, 11, bold); gapline(0.6);
+    wrap('The federal Equal Credit Opportunity Act prohibits creditors from discriminating against credit applicants on the basis of race, color, religion, national origin, sex, marital status, age (provided the applicant has the capacity to enter into a binding contract); because all or part of the applicant\u2019s income derives from any public assistance program; or because the applicant has in good faith exercised any right under the Consumer Credit Protection Act.', M, 9, RIGHT-M, 3); gapline(0.6);
+    wrap('The federal agency that administers compliance with this law concerning this creditor is: [ADMINISTERING FEDERAL AGENCY - NAME AND ADDRESS - set per lender].', M, 9, RIGHT-M, 3); gapline(1.2);
+
+    // FCRA + score disclosure
+    newPageIfNeeded(180);
+    text('Fair Credit Reporting Act Disclosure', M, 11, bold); gapline(0.6);
+    wrap('Our credit decision was based in whole or in part on information obtained in a report from a consumer reporting agency. Under the Fair Credit Reporting Act, you have the right to know the information contained in your credit file at the consumer reporting agency. The reporting agency played no part in our decision and is unable to supply specific reasons why we have denied credit to you.', M, 9, RIGHT-M, 3); gapline(0.6);
+    wrap('You have a right under the Fair Credit Reporting Act to obtain a free copy of your credit report from the reporting agency if you request it no later than 60 days after you receive this notice. You also have the right to dispute the accuracy or completeness of any information in your credit report furnished by the agency.', M, 9, RIGHT-M, 3); gapline(0.6);
+    wrap('Consumer reporting agency: [AGENCY NAME, ADDRESS, AND TOLL-FREE TELEPHONE - from the credit pull].', M, 9, RIGHT-M, 3); gapline(0.8);
+
+    if(score!=null){
+      const cs=CTX.dec.credit_snapshot||{};
+      const lo = cs.score_range_low ?? cs.range_low ?? 300;
+      const hi = cs.score_range_high ?? cs.range_high ?? 850;
+      const factors = cs.key_factors || cs.factors || cs.adverse_factors || [];
+      newPageIfNeeded(120);
+      text('Your Credit Score', M, 11, bold); gapline(0.6);
+      wrap('We also obtained your credit score from a consumer reporting agency and used it in making our credit decision. Your credit score is a number that reflects the information in your consumer report and can change over time.', M, 9, RIGHT-M, 3); gapline(0.4);
+      text('Your credit score: '+score, M, 10, bold); gapline(0.4);
+      text('Scores range from a low of '+lo+' to a high of '+hi+'.', M, 9); gapline(0.4);
+      if(Array.isArray(factors) && factors.length){
+        text('Key factors that adversely affected your credit score:', M, 9); gapline(0.3);
+        factors.slice(0,5).forEach(fk=>{ newPageIfNeeded(24); wrap('- '+(typeof fk==='string'?fk:(fk.description||fk.factor||JSON.stringify(fk))), M+6, 9, RIGHT-M-6, 2); });
+      }
+      gapline(1.0);
+    }
+
+    newPageIfNeeded(60);
+    wrap('If you have questions regarding this notice, please contact us at the address above. If we can provide further assistance, we welcome the opportunity to do so.', M, 9, RIGHT-M, 3); gapline(1.0);
+    text('Sincerely,', M, 10); gapline(1.0);
+    text(lenderName(CTX.lender), M, 10);
+
+    const bytes=await doc.save();
+    const blob=new Blob([bytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='adverse_action_'+(CTX.loan.loan_number||'notice')+'.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    pushLog('ok',logTs(),'✓ notice generated ('+(codes.length)+' reasons'+(score!=null?', score disclosed':'')+')');
+    pushLog('warn',logTs(),'• verify lender identity + administering agency before sending');
+    btn.disabled=false; btn.textContent='Generate Reg B notice (PDF)';
+  }catch(e){ pushLog('err',logTs(),'✗ '+(e&&e.message||e)); btn.disabled=false; btn.textContent='Generate Reg B notice (PDF)'; }
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+</body>
+</html>
