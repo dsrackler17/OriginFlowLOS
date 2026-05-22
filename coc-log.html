@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Change of Circumstance · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — TRID Change of Circumstance log.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-crumb{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--border);padding-left:1rem;margin-left:.25rem;}
+.nav-crumb b{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
+.nav-back,.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .75rem;cursor:pointer;background:none;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
+main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
+.wrap{width:100%;max-width:880px;}
+.page-head{margin-bottom:1.25rem;}
+.page-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.page-title{font-family:var(--serif);font-size:1.9rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:.4rem;font-size:.92rem;max-width:680px;}
+.loan-picker{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);padding:.75rem 1rem;}
+.loan-picker label{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.loan-picker select{flex:1;background:var(--deep);border:1px solid var(--border);color:var(--white);font-family:var(--sans);font-size:.85rem;padding:.5rem .7rem;outline:none;}
+.loan-picker select:focus{border-color:var(--accent);}
+.state{text-align:center;padding:4rem 2rem;}
+.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem;}
+.state-heading{font-family:var(--serif);font-size:1.5rem;color:var(--white);margin-bottom:.6rem;}
+.state-text{color:var(--muted);max-width:460px;margin:0 auto 1.25rem;}
+.btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.25rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:1.25rem;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.panel-title{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text);}
+.panel-body{padding:1.1rem 1.2rem 1.3rem;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem 1rem;}
+.field{display:flex;flex-direction:column;gap:.4rem;}
+.field.full{grid-column:1/-1;}
+.lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);}
+.lbl .req{color:var(--accent);}
+.inp,.sel,.ta{font-family:var(--sans);font-size:.88rem;color:var(--white);background:var(--deep);border:1px solid var(--border);padding:.6rem .7rem;width:100%;transition:border-color .15s,box-shadow .15s;}
+.ta{resize:vertical;min-height:62px;font-size:.85rem;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.14);}
+.cite{font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:.25rem;}
+.actions{display:flex;align-items:center;gap:1rem;margin-top:1.1rem;}
+.hint{font-family:var(--mono);font-size:.62rem;color:var(--muted);}
+.note{font-family:var(--sans);font-size:.8rem;color:#f4d79a;background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.28);padding:.7rem .9rem;margin-bottom:1.25rem;line-height:1.5;}
+.note b{color:var(--amber);}
+/* timeline */
+.coc{display:grid;grid-template-columns:auto 1fr auto;gap:.85rem;align-items:start;padding:.85rem 1rem;border:1px solid var(--border);border-left:3px solid var(--amber);background:var(--panel);margin:.5rem .6rem;}
+.coc.resolved{border-left-color:var(--accent2);opacity:.78;}
+.coc.redisclosed{border-left-color:var(--accent);}
+.coc-dot{font-family:var(--mono);color:var(--amber);font-size:.85rem;}
+.coc.resolved .coc-dot{color:var(--accent2);} .coc.redisclosed .coc-dot{color:var(--accent);}
+.coc-mid{min-width:0;}
+.coc-type{font-family:var(--sans);font-size:.88rem;color:var(--white);font-weight:500;}
+.coc-meta{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.04em;margin-top:.2rem;}
+.coc-desc{font-size:.82rem;color:var(--text);margin-top:.35rem;}
+.coc-right{display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;}
+.st{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem;border:1px solid var(--border);}
+.st.open{color:var(--amber);border-color:rgba(245,166,35,.4);}
+.st.redisclosed{color:var(--accent);border-color:rgba(0,212,255,.4);}
+.st.resolved{color:var(--accent2);border-color:rgba(0,255,157,.4);}
+.st.waived{color:var(--muted);}
+.mini{font-family:var(--mono);font-size:.55rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:none;border:1px solid rgba(0,212,255,.3);padding:.25rem .5rem;cursor:pointer;}
+.mini:hover{background:rgba(0,212,255,.08);}
+.empty{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center;padding:2rem;}
+.log{border:1px dashed var(--border);background:rgba(4,13,26,.5);display:none;margin-bottom:2rem;}
+.log.show{display:block;}
+.log-row{display:flex;gap:.6rem;padding:.6rem .8rem;font-family:var(--mono);font-size:.66rem;border-bottom:1px solid rgba(26,58,92,.5);}
+.log-row:last-child{border-bottom:none;}
+.log-row .ts{color:var(--muted);flex:none;}
+.log-row .ok{color:var(--accent2);} .log-row .warn{color:var(--amber);} .log-row .err{color:var(--red);}
+@media(max-width:680px){nav{padding:.85rem 1rem;}.nav-crumb,.nav-branch{display:none;}main{padding:1rem;}.grid{grid-template-columns:1fr;}.coc{grid-template-columns:auto 1fr;}.coc-right{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-crumb">Lifecycle · <b>Change of Circumstance</b></span>
+  <div class="nav-right">
+    <a href="/home.html" class="nav-back">← Home</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span class="nav-user-name" id="nav-user-name">…</span>
+    <button class="nav-signout" id="nav-signout">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="state" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.2rem;">Loading…</div></div>
+    <div class="state" id="state-signed-out" style="display:none;">
+      <div class="state-eyebrow">Sign in required</div><h1 class="state-heading">You're not signed in.</h1>
+      <p class="state-text">Sign in to log a Change of Circumstance.</p><a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+    <div class="state" id="state-empty" style="display:none;">
+      <div class="state-eyebrow">No loans</div><h1 class="state-heading">No active loans in this branch yet.</h1>
+      <a href="/loans-new.html" class="btn primary">+ New Loan</a>
+    </div>
+
+    <div id="app" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow">Loan Lifecycle · 12.5.2</div>
+        <h1 class="page-title">Change of Circumstance</h1>
+        <p class="page-sub">Log a TRID changed circumstance. A valid COC is what resets the fee-tolerance baseline — it's the lawful path for a charge to increase without a cure. The 3-business-day revised-LE clock starts at detection.</p>
+      </header>
+      <div class="loan-picker"><label for="loan-select">Loan</label><select id="loan-select"></select></div>
+
+      <div class="note"><b>Tolerance link.</b> Logging a COC here is the documented justification the Fee Tolerance engine looks for. Without a COC on record, any §A/§B/§C increase shows as a cure owed to the borrower.</div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Log a changed circumstance</span></div>
+        <div class="panel-body">
+          <div class="grid">
+            <div class="field">
+              <label class="lbl" for="coc-type">Reason <span class="req">*</span></label>
+              <select class="sel" id="coc-type"></select>
+              <span class="cite" id="coc-cite"></span>
+            </div>
+            <div class="field">
+              <label class="lbl" for="coc-source">Detection source <span class="req">*</span></label>
+              <select class="sel" id="coc-source">
+                <option value="manual">Manual (LO/processor logged)</option>
+                <option value="system">System (auto-detected)</option>
+                <option value="ai">AI (extraction flagged)</option>
+                <option value="import">Import</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="coc-when">Detected at <span class="req">*</span></label>
+              <input class="inp" type="datetime-local" id="coc-when">
+            </div>
+            <div class="field">
+              <label class="lbl" for="coc-due">Revised LE due by</label>
+              <input class="inp" type="datetime-local" id="coc-due">
+              <span class="cite">auto = +3 business days · 1026.19(e)(4)(i)</span>
+            </div>
+            <div class="field full">
+              <label class="lbl" for="coc-desc">Description <span class="req">*</span></label>
+              <textarea class="ta" id="coc-desc" placeholder="What changed and why it qualifies — e.g. appraisal came in requiring a second valuation; borrower requested a different title company; rate locked at 6.875% triggering revised points."></textarea>
+            </div>
+            <div class="field">
+              <label class="lbl" for="coc-section">Affected fee section</label>
+              <select class="sel" id="coc-section">
+                <option value="">— none / multiple —</option>
+                <option value="A">A · Origination</option>
+                <option value="B">B · Can't-shop services</option>
+                <option value="C">C · Shoppable services</option>
+                <option value="E">E · Gov't / recording</option>
+                <option value="F">F · Prepaids</option>
+                <option value="G">G · Escrow</option>
+                <option value="H">H · Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl">Amount move (optional)</label>
+              <div style="display:flex;gap:.5rem;">
+                <input class="inp" type="number" id="coc-prior" placeholder="prior $" step="0.01" style="min-width:0;">
+                <input class="inp" type="number" id="coc-new" placeholder="new $" step="0.01" style="min-width:0;">
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="coc-save">Log change of circumstance</button>
+            <span class="hint" id="coc-hint">writes → change_of_circumstance · status open</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="log" id="coc-logbox"></div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">COC history</span><span class="panel-title" id="coc-count" style="color:var(--muted);"></span></div>
+        <div id="coc-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// coc-log.html — wiring  (Phase 12.5.2)
+// ---------------------------------------------------------------------------
+// Logs + lists rows in public.change_of_circumstance. Required (NOT NULL, no
+// default) cols supplied on insert: loan_id, branch_id, coc_type,
+// detection_source, description, detail (jsonb -> {} or structured), detected_at,
+// status. created_at/updated_at default now().
+//
+// ⚠ FLAGGED ASSUMPTIONS (text cols are CHECK-constrained; values guessed from
+//    TRID. If an insert 23514s, the constraint rejected a value — fix the slug
+//    list below. To see the real allowed sets in one shot:
+//      select conname, pg_get_constraintdef(oid) from pg_constraint
+//       where conrelid='public.change_of_circumstance'::regclass and contype='c';
+//   [A1] coc_type ∈ the 6 TRID reasons under 1026.19(e)(3)(iv), slugged below.
+//   [A2] detection_source ∈ {manual, system, ai, import}.
+//   [A3] status lifecycle ∈ {open, redisclosed, resolved, waived}; new = 'open'.
+//   [A4] revised LE due = detected + 3 business days (Sundays skipped only —
+//        NOT holiday-aware; same documented approximation as home.html).
+//   [A5] structured detail (affected_section / prior_cents / new_cents) packed
+//        into the detail jsonb; empty → {}.
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = (s)=>document.querySelector(s);
+let supa=null, me=null, branch=null, loans=[], currentLoanId=null;
+
+const COC_TYPES = [
+  ['changed_circumstance_charges','Changed circumstance — settlement charges','1026.19(e)(3)(iv)(A)'],
+  ['changed_circumstance_eligibility','Changed circumstance — eligibility','1026.19(e)(3)(iv)(B)'],
+  ['borrower_requested','Borrower-requested change','1026.19(e)(3)(iv)(C)'],
+  ['rate_lock','Interest rate locked','1026.19(e)(3)(iv)(D)'],
+  ['le_expired','LE expired — no intent in 10 business days','1026.19(e)(3)(iv)(E)'],
+  ['new_construction_delay','New construction — settlement >60 days out','1026.19(e)(3)(iv)(F)']
+];
+const TYPE_LABEL = Object.fromEntries(COC_TYPES.map(t=>[t[0],t[1]]));
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function logTs(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+function nowLocalInput(d){ d=d||new Date(); const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); }
+function fmtDate(iso){ return iso?new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'; }
+function showState(id){ ['state-loading','state-signed-out','state-empty'].forEach(s=>{$('#'+s).style.display=(s===id)?'block':'none';}); $('#app').style.display=(id==='app')?'block':'none'; }
+// Sunday-skipping business-day add (NOT holiday-aware — see [A4])
+function addBusinessDays(start,days){ const d=new Date(start); let a=0; while(a<days){ d.setDate(d.getDate()+1); if(d.getDay()!==0) a++; } return d; }
+
+async function bootstrap(){
+  $('#nav-signout').addEventListener('click',()=>{ if(typeof ofSignOut==='function') ofSignOut(); else location.href='/login.html'; });
+  supa=(typeof getSupabase==='function')?getSupabase():null;
+  if(!supa){ console.error('[COC] Supabase unavailable'); showState('state-signed-out'); return; }
+  let session=null;
+  try{ session=(typeof ofGetSession==='function')? await ofGetSession():null; }catch(e){ console.warn('[COC] session:',e); }
+  if(!session){ showState('state-signed-out'); return; }
+
+  const { data:profile, error } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id(id,name)')
+    .eq('id', session.user.id).maybeSingle();
+  if(error || !profile || !profile.branch_id){ showState('state-signed-out'); return; }
+  me={ id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch=profile.branches||{id:profile.branch_id,name:'Your Branch'};
+  $('#nav-user-name').textContent=me.full_name; $('#nav-branch-name').textContent=branch.name; $('#nav-branch-pill').style.display='inline-flex';
+
+  // type select + cite
+  $('#coc-type').innerHTML=COC_TYPES.map(t=>`<option value="${t[0]}">${esc(t[1])}</option>`).join('');
+  const setCite=()=>{ const t=COC_TYPES.find(x=>x[0]===$('#coc-type').value); $('#coc-cite').textContent=t?('12 CFR § '+t[2]):''; };
+  $('#coc-type').addEventListener('change',setCite); setCite();
+
+  // detected_at default now; due auto +3 BD
+  $('#coc-when').value=nowLocalInput();
+  const recompDue=()=>{ const base=$('#coc-when').value?new Date($('#coc-when').value):new Date(); $('#coc-due').value=nowLocalInput(addBusinessDays(base,3)); };
+  $('#coc-when').addEventListener('change',recompDue); recompDue();
+
+  const { data:loanRows } = await supa.from('loans')
+    .select('id, loan_number, status, updated_at, borrowers:loan_borrowers(position, borrower:borrower_id(id,first_name,last_name))')
+    .eq('branch_id', me.branch_id).is('archived_at', null).order('updated_at',{ascending:false}).limit(50);
+  loans=loanRows||[];
+  if(loans.length===0){ showState('state-empty'); return; }
+
+  const want=new URLSearchParams(location.search).get('loan');
+  currentLoanId=(want && loans.some(l=>l.id===want))?want:loans[0].id;
+  $('#loan-select').innerHTML=loans.map(l=>{
+    const b=(l.borrowers||[]).sort((a,c)=>(a.position||0)-(c.position||0))[0]?.borrower;
+    const nm=b?`${b.last_name}, ${b.first_name}`:'Borrower TBD';
+    return `<option value="${esc(l.id)}" ${l.id===currentLoanId?'selected':''}>${esc(l.loan_number)} · ${esc(nm)} · ${esc((l.status||'').toUpperCase())}</option>`;
+  }).join('');
+  $('#loan-select').addEventListener('change',e=>{ currentLoanId=e.target.value; history.replaceState({},'',`/coc-log.html?loan=${currentLoanId}`); loadHistory(); });
+
+  $('#coc-save').addEventListener('click', saveCoc);
+  showState('app');
+  await loadHistory();
+}
+
+function pushLog(cls,ts,msg){ const box=$('#coc-logbox'); box.classList.add('show'); const r=document.createElement('div'); r.className='log-row'; r.innerHTML=`<span class="ts">${esc(ts)}</span><span class="${cls}">${esc(msg)}</span>`; box.appendChild(r); }
+
+async function saveCoc(){
+  const btn=$('#coc-save');
+  const coc_type=$('#coc-type').value;
+  const detection_source=$('#coc-source').value;
+  const whenLocal=$('#coc-when').value;
+  const dueLocal=$('#coc-due').value;
+  const description=$('#coc-desc').value.trim();
+  if(!description){ pushLog('err',logTs(),'description is required'); return; }
+  if(!whenLocal){ pushLog('err',logTs(),'detected-at is required'); return; }
+
+  // structured detail -> jsonb (NOT NULL, default {})
+  const detail={};
+  const sec=$('#coc-section').value; if(sec) detail.affected_section=sec;
+  const pr=parseFloat($('#coc-prior').value), nw=parseFloat($('#coc-new').value);
+  if(!isNaN(pr)) detail.prior_cents=Math.round(pr*100);
+  if(!isNaN(nw)) detail.new_cents=Math.round(nw*100);
+  if(!isNaN(pr)&&!isNaN(nw)) detail.delta_cents=Math.round((nw-pr)*100);
+
+  btn.disabled=true; btn.textContent='Logging…';
+  pushLog('warn',logTs(),'→ writing COC ('+TYPE_LABEL[coc_type]+')');
+  try{
+    const { data, error } = await supa.from('change_of_circumstance').insert({
+      branch_id: me.branch_id, loan_id: currentLoanId,
+      coc_type, detection_source, description,
+      detail,
+      detected_at: new Date(whenLocal).toISOString(),
+      revised_le_due_at: dueLocal ? new Date(dueLocal).toISOString() : null,
+      status: 'open',
+      detected_by: me.id
+    }).select('id, revised_le_due_at').single();
+    if(error){ pushLog('err',logTs(),'✗ insert failed: '+error.message); btn.disabled=false; btn.textContent='Log change of circumstance'; return; }
+    pushLog('ok',logTs(),'✓ COC logged · id '+data.id);
+    if(data.revised_le_due_at) pushLog('warn',logTs(),'• revised LE due by '+new Date(data.revised_le_due_at).toLocaleString());
+    $('#coc-desc').value=''; $('#coc-prior').value=''; $('#coc-new').value=''; $('#coc-section').value='';
+    btn.disabled=false; btn.textContent='Log change of circumstance';
+    await loadHistory();
+  }catch(e){ pushLog('err',logTs(),'✗ unexpected: '+(e&&e.message||e)); btn.disabled=false; btn.textContent='Log change of circumstance'; }
+}
+
+async function resolveCoc(id){
+  const notes=prompt('Resolution notes (optional):','');
+  if(notes===null) return; // cancelled
+  const { error } = await supa.from('change_of_circumstance').update({
+    status:'resolved', resolved_at:new Date().toISOString(), resolved_by:me.id,
+    resolution_notes: notes||null
+  }).eq('id', id);
+  if(error){ pushLog('err',logTs(),'✗ resolve failed: '+error.message); return; }
+  pushLog('ok',logTs(),'✓ COC '+id.slice(0,8)+'… resolved');
+  await loadHistory();
+}
+window.__resolveCoc = resolveCoc;
+
+async function loadHistory(){
+  const list=$('#coc-list');
+  list.innerHTML='<div class="empty">Loading…</div>';
+  const { data, error } = await supa.from('change_of_circumstance')
+    .select('id, coc_type, detection_source, description, detail, detected_at, revised_le_due_at, status, resolved_at, resolution_notes, created_at')
+    .eq('loan_id', currentLoanId).is('archived_at', null)
+    .order('detected_at',{ascending:false});
+  if(error){ list.innerHTML=`<div class="empty" style="color:var(--red);">${esc(error.message)}</div>`; return; }
+  $('#coc-count').textContent=(data||[]).length+' on file';
+  if(!data || data.length===0){ list.innerHTML='<div class="empty">No changes of circumstance logged for this loan.</div>'; return; }
+
+  list.innerHTML=data.map(c=>{
+    const st=(c.status||'open').toLowerCase();
+    const cls = st==='resolved'?'resolved':st==='redisclosed'?'redisclosed':'';
+    const d=c.detail||{};
+    const move = (d.prior_cents!=null && d.new_cents!=null)
+      ? ` · §${esc(d.affected_section||'?')} $${(d.prior_cents/100).toLocaleString()}→$${(d.new_cents/100).toLocaleString()}`
+      : (d.affected_section?` · §${esc(d.affected_section)}`:'');
+    const due = c.revised_le_due_at ? ` · LE due ${fmtDate(c.revised_le_due_at)}` : '';
+    const resolveBtn = (st==='open'||st==='redisclosed')
+      ? `<button class="mini" onclick="window.__resolveCoc('${c.id}')">Resolve</button>` : '';
+    return `<div class="coc ${cls}">
+      <span class="coc-dot">◆</span>
+      <div class="coc-mid">
+        <div class="coc-type">${esc(TYPE_LABEL[c.coc_type]||c.coc_type)}</div>
+        <div class="coc-meta">${fmtDate(c.detected_at)} · ${esc(c.detection_source)}${esc(move)}${esc(due)}</div>
+        <div class="coc-desc">${esc(c.description)}</div>
+        ${c.resolution_notes?`<div class="coc-meta" style="color:var(--accent2);">resolved: ${esc(c.resolution_notes)}</div>`:''}
+      </div>
+      <div class="coc-right"><span class="st ${st}">${esc(st)}</span>${resolveBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+</body>
+</html>
