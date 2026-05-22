@@ -163,9 +163,10 @@ main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
               <label class="lbl" for="coc-source">Detection source <span class="req">*</span></label>
               <select class="sel" id="coc-source">
                 <option value="manual">Manual (LO/processor logged)</option>
-                <option value="system">System (auto-detected)</option>
-                <option value="ai">AI (extraction flagged)</option>
-                <option value="import">Import</option>
+                <option value="auto_trigger">Auto-trigger</option>
+                <option value="aus_finding">AUS finding</option>
+                <option value="detect_coc_function">COC detector function</option>
+                <option value="system">System</option>
               </select>
             </div>
             <div class="field">
@@ -179,7 +180,7 @@ main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
             </div>
             <div class="field full">
               <label class="lbl" for="coc-desc">Description <span class="req">*</span></label>
-              <textarea class="ta" id="coc-desc" placeholder="What changed and why it qualifies — e.g. appraisal came in requiring a second valuation; borrower requested a different title company; rate locked at 6.875% triggering revised points."></textarea>
+              <textarea class="ta" id="coc-desc" maxlength="500" placeholder="What changed and why it qualifies — e.g. appraisal came in requiring a second valuation; borrower requested a different title company; rate locked at 6.875% triggering revised points."></textarea>
             </div>
             <div class="field">
               <label class="lbl" for="coc-section">Affected fee section</label>
@@ -228,14 +229,16 @@ main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
 // detection_source, description, detail (jsonb -> {} or structured), detected_at,
 // status. created_at/updated_at default now().
 //
-// ⚠ FLAGGED ASSUMPTIONS (text cols are CHECK-constrained; values guessed from
-//    TRID. If an insert 23514s, the constraint rejected a value — fix the slug
-//    list below. To see the real allowed sets in one shot:
-//      select conname, pg_get_constraintdef(oid) from pg_constraint
-//       where conrelid='public.change_of_circumstance'::regclass and contype='c';
-//   [A1] coc_type ∈ the 6 TRID reasons under 1026.19(e)(3)(iv), slugged below.
-//   [A2] detection_source ∈ {manual, system, ai, import}.
-//   [A3] status lifecycle ∈ {open, redisclosed, resolved, waived}; new = 'open'.
+// ⚠ FLAGGED ASSUMPTIONS (text cols are CHECK-constrained — VALUES NOW VERIFIED
+//    against pg_constraint on 2026-05-22; see COC_TYPES + selects below):
+//   [A1] coc_type ∈ {tolerance_bust, borrower_requested, rate_lock_change,
+//        property_value_change, borrower_change, closing_date_change,
+//        eligibility_change, other}.  verified
+//   [A2] detection_source ∈ {auto_trigger, manual, aus_finding,
+//        detect_coc_function, system}.  verified
+//   [A3] status ∈ {open, revised_le_dispatched, revised_le_signed,
+//        resolved_no_action, voided}; new = 'open'.  verified
+//        description <=500, resolution_notes <=2000 (CHECK).  enforced
 //   [A4] revised LE due = detected + 3 business days (Sundays skipped only —
 //        NOT holiday-aware; same documented approximation as home.html).
 //   [A5] structured detail (affected_section / prior_cents / new_cents) packed
@@ -244,13 +247,16 @@ main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
 const $ = (s)=>document.querySelector(s);
 let supa=null, me=null, branch=null, loans=[], currentLoanId=null;
 
+// VALUES VERIFIED against change_of_circumstance_coc_type_check (CHECK constraint).
 const COC_TYPES = [
-  ['changed_circumstance_charges','Changed circumstance — settlement charges','1026.19(e)(3)(iv)(A)'],
-  ['changed_circumstance_eligibility','Changed circumstance — eligibility','1026.19(e)(3)(iv)(B)'],
+  ['tolerance_bust','Tolerance bust — fees exceeded tolerance','1026.19(e)(3)'],
   ['borrower_requested','Borrower-requested change','1026.19(e)(3)(iv)(C)'],
-  ['rate_lock','Interest rate locked','1026.19(e)(3)(iv)(D)'],
-  ['le_expired','LE expired — no intent in 10 business days','1026.19(e)(3)(iv)(E)'],
-  ['new_construction_delay','New construction — settlement >60 days out','1026.19(e)(3)(iv)(F)']
+  ['rate_lock_change','Interest rate lock / change','1026.19(e)(3)(iv)(D)'],
+  ['property_value_change','Property value change','1026.19(e)(3)(iv)(A)'],
+  ['borrower_change','Borrower added / removed','1026.19(e)(3)(iv)(B)'],
+  ['closing_date_change','Closing date change',''],
+  ['eligibility_change','Eligibility / creditworthiness change','1026.19(e)(3)(iv)(B)'],
+  ['other','Other','']
 ];
 const TYPE_LABEL = Object.fromEntries(COC_TYPES.map(t=>[t[0],t[1]]));
 
@@ -280,7 +286,7 @@ async function bootstrap(){
 
   // type select + cite
   $('#coc-type').innerHTML=COC_TYPES.map(t=>`<option value="${t[0]}">${esc(t[1])}</option>`).join('');
-  const setCite=()=>{ const t=COC_TYPES.find(x=>x[0]===$('#coc-type').value); $('#coc-cite').textContent=t?('12 CFR § '+t[2]):''; };
+  const setCite=()=>{ const t=COC_TYPES.find(x=>x[0]===$('#coc-type').value); $('#coc-cite').textContent=(t&&t[2])?('12 CFR § '+t[2]):''; };
   $('#coc-type').addEventListener('change',setCite); setCite();
 
   // detected_at default now; due auto +3 BD
@@ -349,18 +355,25 @@ async function saveCoc(){
   }catch(e){ pushLog('err',logTs(),'✗ unexpected: '+(e&&e.message||e)); btn.disabled=false; btn.textContent='Log change of circumstance'; }
 }
 
-async function resolveCoc(id){
-  const notes=prompt('Resolution notes (optional):','');
-  if(notes===null) return; // cancelled
-  const { error } = await supa.from('change_of_circumstance').update({
-    status:'resolved', resolved_at:new Date().toISOString(), resolved_by:me.id,
-    resolution_notes: notes||null
-  }).eq('id', id);
-  if(error){ pushLog('err',logTs(),'✗ resolve failed: '+error.message); return; }
-  pushLog('ok',logTs(),'✓ COC '+id.slice(0,8)+'… resolved');
+// real status lifecycle: open → revised_le_dispatched → revised_le_signed → resolved_no_action ; or → voided
+const STATUS_LABEL = { open:'open', revised_le_dispatched:'LE dispatched', revised_le_signed:'LE signed', resolved_no_action:'resolved', voided:'voided' };
+const STATUS_PILL  = { open:'open', revised_le_dispatched:'redisclosed', revised_le_signed:'resolved', resolved_no_action:'resolved', voided:'waived' };
+
+async function setStatus(id, newStatus, askNotes){
+  const patch = { status:newStatus };
+  if(newStatus==='resolved_no_action' || newStatus==='voided'){
+    let notes = askNotes ? prompt('Resolution / void notes (optional, ≤2000 chars):','') : '';
+    if(notes===null) return; // cancelled
+    patch.resolved_at = new Date().toISOString();
+    patch.resolved_by = me.id;
+    patch.resolution_notes = notes ? notes.slice(0,2000) : null;
+  }
+  const { error } = await supa.from('change_of_circumstance').update(patch).eq('id', id);
+  if(error){ pushLog('err',logTs(),'✗ status update failed: '+error.message); return; }
+  pushLog('ok',logTs(),'✓ COC '+id.slice(0,8)+'… → '+(STATUS_LABEL[newStatus]||newStatus));
   await loadHistory();
 }
-window.__resolveCoc = resolveCoc;
+window.__cocStatus = setStatus;
 
 async function loadHistory(){
   const list=$('#coc-list');
@@ -375,14 +388,25 @@ async function loadHistory(){
 
   list.innerHTML=data.map(c=>{
     const st=(c.status||'open').toLowerCase();
-    const cls = st==='resolved'?'resolved':st==='redisclosed'?'redisclosed':'';
+    const pill=STATUS_PILL[st]||'open';
+    const cls = (st==='resolved_no_action'||st==='revised_le_signed')?'resolved':(st==='revised_le_dispatched')?'redisclosed':'';
     const d=c.detail||{};
     const move = (d.prior_cents!=null && d.new_cents!=null)
       ? ` · §${esc(d.affected_section||'?')} $${(d.prior_cents/100).toLocaleString()}→$${(d.new_cents/100).toLocaleString()}`
       : (d.affected_section?` · §${esc(d.affected_section)}`:'');
     const due = c.revised_le_due_at ? ` · LE due ${fmtDate(c.revised_le_due_at)}` : '';
-    const resolveBtn = (st==='open'||st==='redisclosed')
-      ? `<button class="mini" onclick="window.__resolveCoc('${c.id}')">Resolve</button>` : '';
+    // lifecycle actions per current status
+    let acts='';
+    if(st==='open'){
+      acts = `<button class="mini" onclick="window.__cocStatus('${c.id}','revised_le_dispatched',false)">LE sent</button>`
+           + `<button class="mini" onclick="window.__cocStatus('${c.id}','resolved_no_action',true)">Resolve</button>`
+           + `<button class="mini" onclick="window.__cocStatus('${c.id}','voided',true)">Void</button>`;
+    } else if(st==='revised_le_dispatched'){
+      acts = `<button class="mini" onclick="window.__cocStatus('${c.id}','revised_le_signed',false)">Mark signed</button>`
+           + `<button class="mini" onclick="window.__cocStatus('${c.id}','resolved_no_action',true)">Resolve</button>`;
+    } else if(st==='revised_le_signed'){
+      acts = `<button class="mini" onclick="window.__cocStatus('${c.id}','resolved_no_action',true)">Resolve</button>`;
+    }
     return `<div class="coc ${cls}">
       <span class="coc-dot">◆</span>
       <div class="coc-mid">
@@ -391,7 +415,7 @@ async function loadHistory(){
         <div class="coc-desc">${esc(c.description)}</div>
         ${c.resolution_notes?`<div class="coc-meta" style="color:var(--accent2);">resolved: ${esc(c.resolution_notes)}</div>`:''}
       </div>
-      <div class="coc-right"><span class="st ${st}">${esc(st)}</span>${resolveBtn}</div>
+      <div class="coc-right"><span class="st ${pill}">${esc(STATUS_LABEL[st]||st)}</span>${acts}</div>
     </div>`;
   }).join('');
 }
