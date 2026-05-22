@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>HMDA LAR Export · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — HMDA Loan Application Register export.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-crumb{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--border);padding-left:1rem;margin-left:.25rem;}
+.nav-crumb b{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
+.nav-back,.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .75rem;cursor:pointer;background:none;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
+main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
+.wrap{width:100%;max-width:1120px;}
+.page-head{margin-bottom:1.1rem;}
+.page-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.page-title{font-family:var(--serif);font-size:1.9rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:.4rem;font-size:.92rem;max-width:760px;}
+.state{text-align:center;padding:4rem 2rem;}
+.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem;}
+.state-heading{font-family:var(--serif);font-size:1.5rem;color:var(--white);margin-bottom:.6rem;}
+.state-text{color:var(--muted);max-width:460px;margin:0 auto 1.25rem;}
+.btn{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:.6rem 1.1rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.note{font-family:var(--sans);font-size:.8rem;color:#f4d79a;background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.28);padding:.75rem .9rem;margin-bottom:1.25rem;line-height:1.55;}
+.note b{color:var(--amber);}
+.bar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;background:var(--deep);border:1px solid var(--border);padding:.75rem 1rem;margin-bottom:1.1rem;}
+.bar label{font-family:var(--mono);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.bar select{font-family:var(--mono);font-size:.7rem;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.45rem .7rem;outline:none;}
+.bar select:focus{border-color:var(--accent);}
+.bar .spacer{flex:1;}
+.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:1.1rem;}
+.sc{background:var(--surface);padding:.85rem 1rem;}
+.sc .l{font-family:var(--mono);font-size:.55rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.sc .v{font-family:var(--serif);font-size:1.5rem;color:var(--white);}
+.sc .v.green{color:var(--accent2);} .sc .v.amber{color:var(--amber);} .sc .v.red{color:var(--red);}
+.tbl-wrap{border:1px solid var(--border);overflow-x:auto;background:var(--surface);}
+.tbl{width:100%;border-collapse:collapse;min-width:900px;}
+.tbl th{font-family:var(--mono);font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--border);background:var(--deep);white-space:nowrap;}
+.tbl td{padding:.5rem .7rem;border-bottom:1px solid rgba(26,58,92,.5);font-size:.76rem;white-space:nowrap;}
+.tbl tr:hover td{background:var(--panel);}
+.lar-status{font-family:var(--mono);font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;padding:.1rem .45rem;border:1px solid var(--border);}
+.lar-status.ok{color:var(--accent2);border-color:rgba(0,255,157,.4);}
+.lar-status.warn{color:var(--amber);border-color:rgba(245,166,35,.4);}
+.code{font-family:var(--mono);font-size:.72rem;color:var(--white);}
+.code small{color:var(--muted);}
+.miss{font-family:var(--mono);font-size:.58rem;color:var(--amber);}
+.empty{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center;padding:3rem;}
+@media(max-width:760px){nav{padding:.85rem 1rem;}.nav-crumb,.nav-branch{display:none;}main{padding:1rem;}.summary-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-crumb">Compliance · <b>HMDA LAR</b></span>
+  <div class="nav-right">
+    <a href="/home.html" class="nav-back">← Home</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span class="nav-user-name" id="nav-user-name">…</span>
+    <button class="nav-signout" id="nav-signout">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="state" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.2rem;">Loading…</div></div>
+    <div class="state" id="state-signed-out" style="display:none;">
+      <div class="state-eyebrow">Sign in required</div><h1 class="state-heading">You're not signed in.</h1>
+      <a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+
+    <div id="app" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow">Compliance · 13.5.3 / 12.5.11</div>
+        <h1 class="page-title">HMDA LAR Export</h1>
+        <p class="page-sub">Review and export this branch's Loan Application Register records with CFPB-coded values and per-row completeness checks.</p>
+      </header>
+
+      <div class="note"><b>Subset export — not a FIG submission file.</b> This exports the LAR fields OriginFlow currently captures, with CFPB numeric codes, for internal QC and to feed a filing tool. A complete HMDA submission requires the full CFPB field set (including applicant demographics from <code>hmda_demographics</code>), a transmittal sheet, and validation against the current Filing Instructions Guide. Do not submit this file as-is.</div>
+
+      <div class="bar">
+        <label for="f-year">Year</label>
+        <select id="f-year"><option value="">All years</option></select>
+        <label for="f-action" style="margin-left:.5rem;">Action</label>
+        <select id="f-action">
+          <option value="">All actions</option>
+          <option value="originated">Originated</option>
+          <option value="approved_not_accepted">Approved, not accepted</option>
+          <option value="denied">Denied</option>
+          <option value="withdrawn">Withdrawn</option>
+          <option value="file_closed_incomplete">File closed (incomplete)</option>
+          <option value="purchased">Purchased</option>
+        </select>
+        <span class="spacer"></span>
+        <button class="btn" id="btn-pipe">↓ Export LAR (pipe)</button>
+        <button class="btn primary" id="btn-csv">↓ Export CSV</button>
+      </div>
+
+      <div class="summary-row" id="summary"></div>
+      <div class="tbl-wrap"><table class="tbl" id="lar-table"><tbody><tr><td class="empty">Loading…</td></tr></tbody></table></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// hmda-lar.html — wiring  (Phase 13.5.3 / 12.5.11)
+// ---------------------------------------------------------------------------
+// Reads public.hmda_lar (migration 018, v1 SUBSET) for the branch, validates
+// per-row completeness, and exports CFPB-coded pipe-delimited + CSV.
+//
+// HONESTY DISCIPLINE (same as the audit log): the table is a documented subset,
+// so the export is labeled a subset, NOT a FIG submission file. We never imply
+// filing-readiness. Codes below follow the CFPB FIG numeric vocabulary; the
+// loose DB CHECKs store readable slugs which we map here.
+//
+// ⚠ FLAGGED: hmda_lar columns are exactly as defined in 018 (read from source).
+//   Demographics (race/ethnicity/sex/age/income) live in hmda_demographics and
+//   are NOT joined here — full LAR assembly is a later step.
+// ═══════════════════════════════════════════════════════════════════════════
+const $=(s)=>document.querySelector(s);
+let supa=null, me=null, branch=null, lar=[];
+
+// internal slug → CFPB FIG numeric code
+const C={
+  loan_type:{conventional:'1',fha:'2',va:'3',rhs:'4'},
+  loan_purpose:{purchase:'1',home_improvement:'2',refinance:'31',cash_out_refinance:'32',other:'4',na:'5'},
+  occupancy_type:{principal:'1',second:'2',investment:'3'},
+  lien_status:{first:'1',subordinate:'2'},
+  preapproval:{requested:'1',not_requested:'2',na:'1111'},
+  action_taken:{originated:'1',approved_not_accepted:'2',denied:'3',withdrawn:'4',file_closed_incomplete:'5',purchased:'6',preapproval_denied:'7',preapproval_approved_not_accepted:'8'},
+  hoepa_status:{high_cost:'1',not_high_cost:'2',na:'3'}
+};
+const yn=(b)=> b===true?'1': b===false?'2':'';   // HMDA: 1=applies, 2=does not
+function code(field,val){ if(val==null||val==='') return ''; const m=C[field]; return (m&&m[val]!=null)?m[val]:String(val); }
+function dollars(cents){ return cents==null?'':String(Math.round(Number(cents)/100)); }
+function ymd(d){ if(!d) return ''; const x=new Date(d); if(isNaN(x)) return String(d); return x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0'); }
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function showState(id){ ['state-loading','state-signed-out'].forEach(s=>{$('#'+s).style.display=(s===id)?'block':'none';}); $('#app').style.display=(id==='app')?'block':'none'; }
+
+// fields HMDA requires for a reportable record (within our captured subset)
+const REQUIRED=['application_date','loan_type','loan_purpose','occupancy_type','lien_status','loan_amount_cents','action_taken','action_taken_date','property_state','census_tract'];
+function missingOf(r){ return REQUIRED.filter(f=>r[f]==null||r[f]===''); }
+
+async function bootstrap(){
+  $('#nav-signout').addEventListener('click',()=>{ if(typeof ofSignOut==='function') ofSignOut(); else location.href='/login.html'; });
+  supa=(typeof getSupabase==='function')?getSupabase():null;
+  if(!supa){ showState('state-signed-out'); return; }
+  let session=null; try{ session=(typeof ofGetSession==='function')? await ofGetSession():null; }catch(e){}
+  if(!session){ showState('state-signed-out'); return; }
+  const { data:profile, error } = await supa.from('profiles').select('id, branch_id, full_name, email, branches:branch_id(id,name)').eq('id', session.user.id).maybeSingle();
+  if(error||!profile||!profile.branch_id){ showState('state-signed-out'); return; }
+  me={ id:profile.id, branch_id:profile.branch_id, full_name:profile.full_name||session.user.email };
+  branch=profile.branches||{id:profile.branch_id,name:'Your Branch'};
+  $('#nav-user-name').textContent=me.full_name; $('#nav-branch-name').textContent=branch.name; $('#nav-branch-pill').style.display='inline-flex';
+
+  $('#f-year').addEventListener('change',render);
+  $('#f-action').addEventListener('change',render);
+  $('#btn-pipe').addEventListener('click',()=>exportFile('pipe'));
+  $('#btn-csv').addEventListener('click',()=>exportFile('csv'));
+
+  showState('app');
+  await load();
+}
+
+async function load(){
+  const { data, error } = await supa.from('hmda_lar').select('*').eq('branch_id', me.branch_id).order('action_taken_date',{ascending:false,nullsFirst:false});
+  if(error){ $('#lar-table').innerHTML=`<tbody><tr><td class="empty" style="color:var(--red);">${esc(error.message)}</td></tr></tbody>`; return; }
+  lar=data||[];
+  // year options from action_taken_date / application_date
+  const years=new Set();
+  lar.forEach(r=>{ const d=r.action_taken_date||r.application_date; if(d) years.add(new Date(d).getFullYear()); });
+  $('#f-year').innerHTML='<option value="">All years</option>'+[...years].sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');
+  render();
+}
+
+function filtered(){
+  const yr=$('#f-year').value; const act=$('#f-action').value;
+  return lar.filter(r=>{
+    if(act && r.action_taken!==act) return false;
+    if(yr){ const d=r.action_taken_date||r.application_date; if(!d||String(new Date(d).getFullYear())!==yr) return false; }
+    return true;
+  });
+}
+
+function render(){
+  const rows=filtered();
+  const complete=rows.filter(r=>missingOf(r).length===0).length;
+  const incomplete=rows.length-complete;
+  $('#summary').innerHTML=`
+    <div class="sc"><div class="l">Records</div><div class="v">${rows.length}</div></div>
+    <div class="sc"><div class="l">Complete (subset)</div><div class="v green">${complete}</div></div>
+    <div class="sc"><div class="l">Missing fields</div><div class="v ${incomplete?'amber':''}">${incomplete}</div></div>
+    <div class="sc"><div class="l">Originated</div><div class="v">${rows.filter(r=>r.action_taken==='originated').length}</div></div>`;
+
+  if(rows.length===0){ $('#lar-table').innerHTML='<tbody><tr><td class="empty">No LAR records for this branch / filter. Records are written as loans reach a reportable action.</td></tr></tbody>'; return; }
+  const head=['Status','ULI','App date','Type','Purpose','Occ','Lien','Amount','Action','Act date','State','Census tract','Rate spread','HOEPA'];
+  const body=rows.map(r=>{
+    const miss=missingOf(r);
+    const st=miss.length?`<span class="lar-status warn" title="missing: ${esc(miss.join(', '))}">⚠ ${miss.length}</span>`:`<span class="lar-status ok">ok</span>`;
+    const cell=(field,val)=>`<span class="code">${esc(code(field,val)||'—')}<small> ${esc(val||'')}</small></span>`;
+    return `<tr>
+      <td>${st}</td>
+      <td class="code">${esc(r.uli||'—')}</td>
+      <td class="code">${esc(ymd(r.application_date)||'—')}</td>
+      <td>${cell('loan_type',r.loan_type)}</td>
+      <td>${cell('loan_purpose',r.loan_purpose)}</td>
+      <td>${cell('occupancy_type',r.occupancy_type)}</td>
+      <td>${cell('lien_status',r.lien_status)}</td>
+      <td class="code">${esc(dollars(r.loan_amount_cents)||'—')}</td>
+      <td>${cell('action_taken',r.action_taken)}</td>
+      <td class="code">${esc(ymd(r.action_taken_date)||'—')}</td>
+      <td class="code">${esc(r.property_state||'—')}</td>
+      <td class="code">${esc(r.census_tract||'—')}</td>
+      <td class="code">${esc(r.rate_spread!=null?r.rate_spread:'—')}</td>
+      <td>${cell('hoepa_status',r.hoepa_status)}</td>
+    </tr>`;
+  }).join('');
+  $('#lar-table').innerHTML=`<thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody>`;
+}
+
+// Pipe-delimited (subset, FIG-inspired field order) or CSV. Header row labels
+// the fields; values are CFPB codes. NOT a FIG submission file.
+const EXPORT_FIELDS=[
+  ['uli', r=>r.uli||''],
+  ['application_date', r=>ymd(r.application_date)],
+  ['loan_type', r=>code('loan_type',r.loan_type)],
+  ['loan_purpose', r=>code('loan_purpose',r.loan_purpose)],
+  ['preapproval', r=>code('preapproval',r.preapproval)],
+  ['occupancy_type', r=>code('occupancy_type',r.occupancy_type)],
+  ['loan_amount', r=>dollars(r.loan_amount_cents)],
+  ['action_taken', r=>code('action_taken',r.action_taken)],
+  ['action_taken_date', r=>ymd(r.action_taken_date)],
+  ['property_state', r=>r.property_state||''],
+  ['property_county_fips', r=>r.property_county_fips||''],
+  ['census_tract', r=>r.census_tract||''],
+  ['property_zip', r=>r.property_zip||''],
+  ['rate_spread', r=>r.rate_spread!=null?r.rate_spread:''],
+  ['hoepa_status', r=>code('hoepa_status',r.hoepa_status)],
+  ['lien_status', r=>code('lien_status',r.lien_status)],
+  ['reverse_mortgage', r=>yn(r.reverse_mortgage)],
+  ['open_end_line', r=>yn(r.open_end_line)],
+  ['business_purpose', r=>yn(r.business_purpose)],
+  ['interest_rate', r=>r.interest_rate!=null?r.interest_rate:'']
+];
+function exportFile(kind){
+  const rows=filtered();
+  if(rows.length===0){ alert('No records to export for this filter.'); return; }
+  const sep = kind==='pipe' ? '|' : ',';
+  const header=EXPORT_FIELDS.map(f=>f[0]).join(sep);
+  const cell=(v)=>{ const s=String(v==null?'':v); if(kind==='csv' && /[",\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`; return s; };
+  const lines=[header, ...rows.map(r=>EXPORT_FIELDS.map(f=>cell(f[1](r))).join(sep))];
+  const ext = kind==='pipe'?'txt':'csv';
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  const yr=$('#f-year').value||'all';
+  a.href=url; a.download=`hmda_lar_subset_${branch.name.replace(/\s+/g,'_')}_${yr}.${ext}`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+</body>
+</html>
