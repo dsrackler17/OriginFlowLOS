@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fee Tolerance · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — TRID fee tolerance engine.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-crumb{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--border);padding-left:1rem;margin-left:.25rem;}
+.nav-crumb b{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
+.nav-back,.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .75rem;cursor:pointer;background:none;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
+main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
+.wrap{width:100%;max-width:920px;}
+.page-head{margin-bottom:1.25rem;}
+.page-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.page-title{font-family:var(--serif);font-size:1.9rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:.4rem;font-size:.92rem;max-width:680px;}
+.loan-picker{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);padding:.75rem 1rem;}
+.loan-picker label{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.loan-picker select{flex:1;background:var(--deep);border:1px solid var(--border);color:var(--white);font-family:var(--sans);font-size:.85rem;padding:.5rem .7rem;outline:none;}
+.loan-picker select:focus{border-color:var(--accent);}
+.state{text-align:center;padding:4rem 2rem;}
+.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem;}
+.state-heading{font-family:var(--serif);font-size:1.5rem;color:var(--white);margin-bottom:.6rem;}
+.state-text{color:var(--muted);max-width:460px;margin:0 auto 1.25rem;}
+.btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.25rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* cure banner */
+.cure-banner{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.25rem;border:1px solid var(--border);margin-bottom:1.25rem;}
+.cure-banner.ok{background:rgba(0,255,157,.06);border-color:rgba(0,255,157,.35);}
+.cure-banner.due{background:rgba(255,68,68,.07);border-color:rgba(255,68,68,.4);}
+.cure-banner .lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.cure-banner .val{font-family:var(--serif);font-size:1.7rem;}
+.cure-banner.ok .val{color:var(--accent2);}
+.cure-banner.due .val{color:var(--red);}
+
+/* bucket cards */
+.buckets{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);margin-bottom:1.5rem;}
+.bucket{background:var(--surface);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.5rem;}
+.bucket-head{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;}
+.bucket.zero .bucket-head{color:var(--red);}
+.bucket.ten .bucket-head{color:var(--amber);}
+.bucket.none .bucket-head{color:var(--muted);}
+.bucket-rule{font-family:var(--mono);font-size:.55rem;color:var(--muted);letter-spacing:.04em;}
+.bucket-line{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;}
+.bucket-line .k{color:var(--muted);} .bucket-line .v{color:var(--white);}
+.bucket-cure{margin-top:.25rem;padding-top:.5rem;border-top:1px solid var(--border);font-family:var(--mono);font-size:.72rem;}
+.bucket-cure.ok{color:var(--accent2);} .bucket-cure.bad{color:var(--red);}
+
+/* fee table */
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:1.25rem;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.panel-title{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text);}
+.panel-tag{font-family:var(--mono);font-size:.56rem;letter-spacing:.08em;color:var(--muted);padding:.15rem .5rem;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;}
+th,td{text-align:left;padding:.55rem .9rem;font-size:.8rem;border-bottom:1px solid rgba(26,58,92,.5);}
+th{font-family:var(--mono);font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+td.amt,th.amt{text-align:right;font-family:var(--mono);}
+.sec-tag{font-family:var(--mono);font-size:.5rem;letter-spacing:.06em;padding:.05rem .3rem;border:1px solid var(--border);color:var(--muted);}
+.btag{font-family:var(--mono);font-size:.5rem;letter-spacing:.06em;padding:.05rem .35rem;border-radius:2px;}
+.btag.zero{color:var(--red);border:1px solid rgba(255,68,68,.4);}
+.btag.ten{color:var(--amber);border:1px solid rgba(245,166,35,.4);}
+.btag.none{color:var(--muted);border:1px solid var(--border);}
+.flag{font-family:var(--mono);font-size:.5rem;color:var(--muted);}
+.actions{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;}
+.hint{font-family:var(--mono);font-size:.62rem;color:var(--muted);}
+.log{border:1px dashed var(--border);background:rgba(4,13,26,.5);display:none;margin-bottom:2rem;}
+.log.show{display:block;}
+.log-row{display:flex;gap:.6rem;padding:.6rem .8rem;font-family:var(--mono);font-size:.66rem;border-bottom:1px solid rgba(26,58,92,.5);}
+.log-row:last-child{border-bottom:none;}
+.log-row .ts{color:var(--muted);flex:none;}
+.log-row .ok{color:var(--accent2);} .log-row .warn{color:var(--amber);} .log-row .err{color:var(--red);}
+@media(max-width:680px){nav{padding:.85rem 1rem;}.nav-crumb,.nav-branch{display:none;}main{padding:1rem;}.buckets{grid-template-columns:1fr;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-crumb">Lifecycle · <b>Fee Tolerance</b></span>
+  <div class="nav-right">
+    <a href="/home.html" class="nav-back">← Home</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span class="nav-user-name" id="nav-user-name">…</span>
+    <button class="nav-signout" id="nav-signout">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="state" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.2rem;">Loading…</div></div>
+    <div class="state" id="state-signed-out" style="display:none;">
+      <div class="state-eyebrow">Sign in required</div><h1 class="state-heading">You're not signed in.</h1>
+      <p class="state-text">Sign in to run fee tolerance on a loan.</p><a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+    <div class="state" id="state-empty" style="display:none;">
+      <div class="state-eyebrow">No loans</div><h1 class="state-heading">No active loans in this branch yet.</h1>
+      <a href="/loans-new.html" class="btn primary">+ New Loan</a>
+    </div>
+
+    <div id="app" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow">Loan Lifecycle · 12.5.5</div>
+        <h1 class="page-title">Fee Tolerance</h1>
+        <p class="page-sub">Buckets disclosed fees into the three TRID tolerance categories, compares the CD against the LE baseline, and computes any cure owed to the borrower. Saving writes a snapshot to <code>fee_tolerance</code>.</p>
+      </header>
+      <div class="loan-picker"><label for="loan-select">Loan</label><select id="loan-select"></select></div>
+      <div id="ft-mount"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// fee-tolerance.html — wiring
+// ---------------------------------------------------------------------------
+// Reads public.fees (real schema: section A/B/C/E/F/G/H, amount_cents bigint,
+// paid_by, poc, source). Derives the TRID tolerance bucket from `section`
+// because fees has NO tolerance_category column. Compares CD totals vs LE
+// baseline per bucket, computes cure, and persists 3 rows (one per category)
+// into the fee_tolerance table from migration 018.
+//
+// ⚠ FLAGGED ASSUMPTIONS:
+//   [A1] Section → bucket map per CFPB LE/CD layout:
+//        A (origination) + B (can't-shop)        → zero tolerance
+//        C (can-shop, from lender list)           → 10% cumulative
+//        E recording fees                         → 10% ; E transfer/deed taxes → zero
+//        F (prepaids) + G (escrow) + H (other)    → no tolerance
+//        Section C is 10% ONLY if the borrower used a provider from the
+//        lender's written list. If they shopped OFF-list those fees become
+//        no-tolerance — there's no off-list flag on fees yet, so C defaults to
+//        10% (the cure-protective choice). Wire a flag when shopping is tracked.
+//   [A2] Only paid_by='borrower' fees count toward the borrower's tolerance.
+//        Seller-paid excluded. POC (paid outside closing) still counts — it's a
+//        borrower charge.
+//   [A3] LE baseline = source in (le,estimated,revised_le); final = (cd,revised_cd).
+//        NOTE: …0007 is a hollow-LE test loan ($0 LE side) — every CD fee then
+//        reads as an increase from $0. That's expected; the point is the compare
+//        runs. On a real loan with a populated LE this produces true cures.
+//   [A4] fee_tolerance.variance_cents is GENERATED — never inserted.
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = (s)=>document.querySelector(s);
+let supa=null, me=null, branch=null, loans=[], currentLoanId=null;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function usd(c){ const n=(Number(c)||0)/100; return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function logTs(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+function showState(id){ ['state-loading','state-signed-out','state-empty'].forEach(s=>{$('#'+s).style.display=(s===id)?'block':'none';}); $('#app').style.display=(id==='app')?'block':'none'; }
+
+const CATS = { zero:{label:'Zero tolerance',rule:'§A/B + transfer taxes · 0% increase',cls:'zero'},
+               ten_percent:{label:'10% cumulative',rule:'§C shoppable-from-list + recording',cls:'ten'},
+               no_tolerance:{label:'No tolerance',rule:'§F/G/H prepaids · escrow · other',cls:'none'} };
+
+function bucketFor(fee){
+  const s=(fee.section||'').toUpperCase();
+  const nm=(fee.name||'').toLowerCase();
+  if(s==='E') return /transfer tax|deed tax|mortgage tax|grantor tax|stamp/.test(nm) ? 'zero' : 'ten_percent';
+  if(s==='A'||s==='B') return 'zero';
+  if(s==='C') return 'ten_percent';
+  if(s==='F'||s==='G'||s==='H') return 'no_tolerance';
+  return 'no_tolerance'; // unknown section → unlimited, never a false cure
+}
+function isLe(src){ return ['le','estimated','revised_le'].includes(src); }
+function isCd(src){ return ['cd','revised_cd'].includes(src); }
+function cureFor(cat,le,cd){
+  if(cat==='no_tolerance') return {allowed:null,req:false,cure:0};
+  const allowed = cat==='ten_percent' ? Math.round(le*1.10) : le;
+  const cure = Math.max(0, cd-allowed);
+  return {allowed,req:cure>0,cure};
+}
+
+async function bootstrap(){
+  $('#nav-signout').addEventListener('click',()=>{ if(typeof ofSignOut==='function') ofSignOut(); else location.href='/login.html'; });
+  supa=(typeof getSupabase==='function')?getSupabase():null;
+  if(!supa){ console.error('[FT] Supabase unavailable — check /js/config.js'); showState('state-signed-out'); return; }
+  let session=null;
+  try{ session=(typeof ofGetSession==='function')? await ofGetSession():null; }catch(e){ console.warn('[FT] session:',e); }
+  if(!session){ showState('state-signed-out'); return; }
+
+  const { data:profile, error } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id(id,name)')
+    .eq('id', session.user.id).maybeSingle();
+  if(error || !profile || !profile.branch_id){ console.warn('[FT] profile:',error); showState('state-signed-out'); return; }
+  me={ id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch=profile.branches||{id:profile.branch_id,name:'Your Branch'};
+  $('#nav-user-name').textContent=me.full_name; $('#nav-branch-name').textContent=branch.name; $('#nav-branch-pill').style.display='inline-flex';
+
+  const { data:loanRows } = await supa.from('loans')
+    .select('id, loan_number, status, updated_at, borrowers:loan_borrowers(position, borrower:borrower_id(id,first_name,last_name))')
+    .eq('branch_id', me.branch_id).is('archived_at', null).order('updated_at',{ascending:false}).limit(50);
+  loans=loanRows||[];
+  if(loans.length===0){ showState('state-empty'); return; }
+
+  const want=new URLSearchParams(location.search).get('loan');
+  currentLoanId=(want && loans.some(l=>l.id===want))?want:loans[0].id;
+  $('#loan-select').innerHTML=loans.map(l=>{
+    const b=(l.borrowers||[]).sort((a,c)=>(a.position||0)-(c.position||0))[0]?.borrower;
+    const nm=b?`${b.last_name}, ${b.first_name}`:'Borrower TBD';
+    return `<option value="${esc(l.id)}" ${l.id===currentLoanId?'selected':''}>${esc(l.loan_number)} · ${esc(nm)} · ${esc((l.status||'').toUpperCase())}</option>`;
+  }).join('');
+  $('#loan-select').addEventListener('change',e=>{ currentLoanId=e.target.value; history.replaceState({},'',`/fee-tolerance.html?loan=${currentLoanId}`); loadAndRender(); });
+
+  showState('app');
+  await loadAndRender();
+}
+
+async function loadAndRender(){
+  const mount=$('#ft-mount');
+  mount.innerHTML='<div class="state"><div class="spinner"></div><div class="state-eyebrow">Loading fees</div></div>';
+  const loan=loans.find(l=>l.id===currentLoanId);
+
+  const [{ data:fees, error:fErr }, { data:discs }] = await Promise.all([
+    supa.from('fees').select('id, section, name, hud_line, amount_cents, paid_by, poc, apr_flag, source, payee')
+        .eq('loan_id', currentLoanId).is('archived_at', null).order('sort_order',{ascending:true}),
+    supa.from('disclosures').select('id, kind, version, created_at, archived_at')
+        .eq('loan_id', currentLoanId).is('archived_at', null)
+        .in('kind',['initial_le','revised_le','cd','revised_cd']).order('created_at',{ascending:false})
+  ]);
+  if(fErr){ mount.innerHTML=`<div class="state"><div class="state-heading" style="color:var(--red);font-size:1.1rem;">fees query failed</div><p class="state-text">${esc(fErr.message)}</p></div>`; return; }
+
+  const leDisc=(discs||[]).find(d=>d.kind==='revised_le')||(discs||[]).find(d=>d.kind==='initial_le')||null;
+  const cdDisc=(discs||[]).find(d=>d.kind==='revised_cd')||(discs||[]).find(d=>d.kind==='cd')||null;
+
+  // bucket totals (borrower-paid only)
+  const tot={zero:{le:0,cd:0},ten_percent:{le:0,cd:0},no_tolerance:{le:0,cd:0}};
+  (fees||[]).forEach(f=>{
+    if(f.paid_by!=='borrower') return;
+    const b=bucketFor(f), amt=Number(f.amount_cents)||0;
+    if(isCd(f.source)) tot[b].cd+=amt; else if(isLe(f.source)) tot[b].le+=amt;
+  });
+  const results={}; let totalCure=0;
+  for(const cat of Object.keys(tot)){ results[cat]=cureFor(cat,tot[cat].le,tot[cat].cd); totalCure+=results[cat].cure; }
+
+  renderFT(mount, {loan, fees:fees||[], tot, results, totalCure, leDisc, cdDisc});
+}
+
+function renderFT(root, M){
+  const hasLe = Object.values(M.tot).some(t=>t.le>0);
+  const cureCls = M.totalCure>0?'due':'ok';
+
+  const bucketCards = Object.keys(CATS).map(cat=>{
+    const t=M.tot[cat], r=M.results[cat], c=CATS[cat];
+    const allowedLine = cat==='no_tolerance' ? '' :
+      `<div class="bucket-line"><span class="k">Allowed</span><span class="v">${usd(r.allowed)}</span></div>`;
+    const cureLine = cat==='no_tolerance'
+      ? `<div class="bucket-cure ok">no limit · informational</div>`
+      : (r.req ? `<div class="bucket-cure bad">⚠ cure ${usd(r.cure)}</div>` : `<div class="bucket-cure ok">✓ within tolerance</div>`);
+    return `<div class="bucket ${c.cls}">
+      <div class="bucket-head">${c.label}</div>
+      <div class="bucket-rule">${c.rule}</div>
+      <div class="bucket-line"><span class="k">LE baseline</span><span class="v">${usd(t.le)}</span></div>
+      <div class="bucket-line"><span class="k">CD final</span><span class="v">${usd(t.cd)}</span></div>
+      ${allowedLine}
+      ${cureLine}
+    </div>`;
+  }).join('');
+
+  const rows = M.fees.map(f=>{
+    const cat=bucketFor(f), c=CATS[cat];
+    const flags=[]; if(f.paid_by!=='borrower') flags.push(esc(f.paid_by)); if(f.poc) flags.push('POC'); if(f.apr_flag) flags.push('APR');
+    const counted = f.paid_by==='borrower';
+    return `<tr style="${counted?'':'opacity:.5;'}">
+      <td><span class="sec-tag">${esc(f.section)}</span> ${esc(f.name)}</td>
+      <td><span class="btag ${c.cls}">${cat==='no_tolerance'?'NONE':cat==='ten_percent'?'10%':'ZERO'}</span></td>
+      <td><span class="flag">${flags.join(' · ')||'borrower'}</span></td>
+      <td class="amt">${usd(f.amount_cents)}</td>
+    </tr>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="cure-banner ${cureCls}">
+      <div><div class="lbl">Total cure owed to borrower</div><div class="val">${usd(M.totalCure)}</div></div>
+      <div class="hint">${M.totalCure>0?'Re-disclose &amp; cure before consummation':'No tolerance violation detected'}</div>
+    </div>
+    ${!hasLe?`<div class="cure-banner" style="border-color:rgba(245,166,35,.4);background:rgba(245,166,35,.06);"><div class="hint" style="color:var(--amber);">⚠ No LE-source fees on this loan — baselines read $0, so every CD charge shows as an increase. Expected on the …0007 test loan; load a loan with a populated LE for a true compare.</div></div>`:''}
+    <div class="buckets">${bucketCards}</div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Disclosed Fees · ${esc(M.loan.loan_number)}</span><span class="panel-tag">${M.fees.length} lines · borrower-paid counted</span></div>
+      <table>
+        <thead><tr><th>Fee</th><th>Bucket</th><th>Flags</th><th class="amt">Amount</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem;">No fees on this loan.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="ft-save">Compute &amp; save snapshot</button>
+      <span class="hint" id="ft-hint">writes 3 rows → fee_tolerance · LE ${M.leDisc?'v'+M.leDisc.version:'none'} → CD ${M.cdDisc?'v'+M.cdDisc.version:'none'}</span>
+    </div>
+    <div class="log" id="ft-log"></div>`;
+
+  const btn=$('#ft-save'), logEl=$('#ft-log');
+  function pushLog(cls,ts,msg){ logEl.classList.add('show'); const r=document.createElement('div'); r.className='log-row'; r.innerHTML=`<span class="ts">${esc(ts)}</span><span class="${cls}">${esc(msg)}</span>`; logEl.appendChild(r); }
+
+  btn.addEventListener('click', async ()=>{
+    btn.disabled=true; btn.textContent='Saving…';
+    pushLog('warn',logTs(),'→ writing fee_tolerance snapshot ('+M.loan.loan_number+')');
+    try{
+      const rows = Object.keys(M.tot).map(cat=>({
+        branch_id: me.branch_id, loan_id: currentLoanId,
+        baseline_disclosure_id: M.leDisc?M.leDisc.id:null,
+        compared_disclosure_id: M.cdDisc?M.cdDisc.id:null,
+        tolerance_category: cat,
+        baseline_amount_cents: M.tot[cat].le,
+        final_amount_cents: M.tot[cat].cd,
+        cure_required: M.results[cat].req,
+        cure_amount_cents: M.results[cat].cure,
+        created_by: me.id
+        // variance_cents omitted — GENERATED column
+      }));
+      const { data, error } = await supa.from('fee_tolerance').insert(rows).select('id, tolerance_category, cure_amount_cents');
+      if(error){ pushLog('err',logTs(),'✗ insert failed: '+error.message); btn.disabled=false; btn.textContent='Compute & save snapshot'; return; }
+      pushLog('ok',logTs(),'✓ '+(data?data.length:0)+' tolerance rows saved');
+      if(M.totalCure>0) pushLog('warn',logTs(),'• cure owed: '+usd(M.totalCure)+' — re-disclose required');
+      else pushLog('ok',logTs(),'• no cure — within tolerance');
+      btn.textContent='Saved ✓';
+    }catch(e){ pushLog('err',logTs(),'✗ unexpected: '+(e&&e.message||e)); btn.disabled=false; btn.textContent='Compute & save snapshot'; }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+</body>
+</html>
