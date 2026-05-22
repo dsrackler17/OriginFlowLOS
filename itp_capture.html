@@ -1,0 +1,305 @@
+<!--
+  OriginFlow LOS — Intent to Proceed capture module  (Phase 12.5.4 / Track B)
+  ---------------------------------------------------------------------------
+  Drop-in panel for loan.html's lifecycle tab. On submit it does TWO writes:
+    1. INSERT into public.intent_to_proceed   (the table from migration 018)
+    2. UPDATE the matching condition -> status='cleared'  (template_key='intent_to_proceed')
+  -> closes 12.5.4 AND demonstrates a MANUAL condition-clear path that does not
+     wait on the 12.0.x extractors. This is the "rule-executor not rule-author"
+     model: capturing the ITP event satisfies the pre-authored blocking condition.
+
+  TRID: 12 CFR 1026.19(e)(2)(i)(A) — no fee beyond a bona fide credit-report fee
+  may be imposed before the borrower's intent to proceed is received.
+
+  INTEGRATION HOOKS (window.OF_*) + ⚠ FLAGGED ASSUMPTIONS:
+    [H1] Supabase client resolved via window.OF_supabase || window.supabaseClient
+         || window.sb. ⚠ point this at whatever config.js exposes.
+    [H2] Current loan/branch/borrowers/LEs are read from window.OF_ITP_CONTEXT
+         (loan.html should set this before mounting). Falls back to mock so the
+         panel renders standalone in the artifact viewer.
+    [H3] created_by / cleared_by_user_id pulled from window.OF_USER_ID if present;
+         else left null and an edge fn / RLS default fills it. ⚠ confirm.
+    [H4] Condition clear targets template_key='intent_to_proceed', status='outstanding'.
+         No-op (0 rows) if this loan has no such condition — that's fine/expected.
+    [H5] disclosures filtered to kind in ('initial_le','revised_le') for the LE picker
+         (verified taxonomy from 017).
+-->
+<div id="of-itp-root"></div>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Serif+Display&family=Space+Mono:wght@400;700&display=swap');
+
+  #of-itp-root {
+    /* OriginFlow palette */
+    --of-navy:#0a1526; --of-navy-2:#0f1f38; --of-panel:#0d1c33;
+    --of-line:#1d3454; --of-line-2:#27456b;
+    --of-cyan:#34d3ee; --of-cyan-dim:#1b9fb8;
+    --of-green:#3fdd9a; --of-amber:#f0b541; --of-red:#f0676b;
+    --of-ink:#e8f0fb; --of-ink-2:#9fb4d0; --of-ink-3:#6781a3;
+
+    --of-mono:'Space Mono',ui-monospace,monospace;
+    --of-serif:'DM Serif Display',Georgia,serif;
+    --of-sans:'DM Sans',system-ui,sans-serif;
+
+    font-family:var(--of-sans);
+    color:var(--of-ink);
+    background:
+      radial-gradient(1200px 400px at 90% -10%, rgba(52,211,238,.07), transparent 60%),
+      linear-gradient(180deg,var(--of-navy),var(--of-navy-2));
+    border:1px solid var(--of-line);
+    border-radius:14px;
+    padding:0;
+    max-width:720px;
+    margin:0 auto;
+    overflow:hidden;
+    box-shadow:0 18px 50px -20px rgba(0,0,0,.7);
+  }
+  #of-itp-root *{box-sizing:border-box;}
+
+  /* header */
+  .of-itp-head{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+    padding:20px 24px 18px;
+    border-bottom:1px solid var(--of-line);
+    background:linear-gradient(180deg,rgba(52,211,238,.04),transparent);
+  }
+  .of-itp-eyebrow{
+    font-family:var(--of-mono);font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--of-cyan);margin:0 0 7px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .of-itp-eyebrow::before{content:"";width:6px;height:6px;border-radius:1px;background:var(--of-cyan);box-shadow:0 0 10px var(--of-cyan);}
+  .of-itp-title{font-family:var(--of-serif);font-size:26px;line-height:1.05;margin:0;letter-spacing:.2px;}
+  .of-itp-cite{font-family:var(--of-mono);font-size:11px;color:var(--of-ink-3);margin-top:8px;}
+
+  /* status chip */
+  .of-chip{
+    font-family:var(--of-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:7px 12px;border-radius:999px;white-space:nowrap;
+    border:1px solid var(--of-line-2);display:inline-flex;align-items:center;gap:7px;
+  }
+  .of-chip .dot{width:7px;height:7px;border-radius:50%;}
+  .of-chip[data-st="outstanding"]{color:var(--of-amber);border-color:rgba(240,181,65,.4);background:rgba(240,181,65,.08);}
+  .of-chip[data-st="outstanding"] .dot{background:var(--of-amber);box-shadow:0 0 8px var(--of-amber);}
+  .of-chip[data-st="received"]{color:var(--of-green);border-color:rgba(63,221,154,.4);background:rgba(63,221,154,.08);}
+  .of-chip[data-st="received"] .dot{background:var(--of-green);box-shadow:0 0 8px var(--of-green);}
+
+  /* gate banner */
+  .of-gate{
+    margin:18px 24px 0;padding:12px 14px;border-radius:9px;
+    background:rgba(240,181,65,.07);border:1px solid rgba(240,181,65,.28);
+    font-size:13px;line-height:1.5;color:#f4d79a;display:flex;gap:10px;
+  }
+  .of-gate b{color:var(--of-amber);}
+  .of-gate svg{flex:none;margin-top:1px;}
+
+  /* form grid */
+  .of-itp-body{padding:18px 24px 24px;}
+  .of-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;}
+  .of-field{display:flex;flex-direction:column;gap:6px;}
+  .of-field.full{grid-column:1 / -1;}
+  .of-label{font-family:var(--of-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--of-ink-2);}
+  .of-label .req{color:var(--of-cyan);}
+  .of-input,.of-select,.of-textarea{
+    font-family:var(--of-sans);font-size:14px;color:var(--of-ink);
+    background:var(--of-panel);border:1px solid var(--of-line-2);
+    border-radius:8px;padding:10px 12px;width:100%;transition:border-color .15s,box-shadow .15s;
+  }
+  .of-textarea{resize:vertical;min-height:64px;font-size:13.5px;}
+  .of-input:focus,.of-select:focus,.of-textarea:focus{
+    outline:none;border-color:var(--of-cyan);box-shadow:0 0 0 3px rgba(52,211,238,.14);
+  }
+  .of-select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--of-ink-3) 50%),linear-gradient(135deg,var(--of-ink-3) 50%,transparent 50%);background-position:calc(100% - 18px) 17px,calc(100% - 13px) 17px;background-size:5px 5px;background-repeat:no-repeat;}
+
+  /* actions */
+  .of-actions{display:flex;align-items:center;gap:14px;margin-top:20px;}
+  .of-btn{
+    font-family:var(--of-mono);font-size:12.5px;letter-spacing:.06em;font-weight:700;
+    padding:12px 22px;border-radius:9px;border:1px solid var(--of-cyan);cursor:pointer;
+    background:var(--of-cyan);color:#06121f;transition:transform .12s,box-shadow .2s,opacity .2s;
+    box-shadow:0 8px 24px -10px var(--of-cyan);
+  }
+  .of-btn:hover{transform:translateY(-1px);box-shadow:0 12px 30px -10px var(--of-cyan);}
+  .of-btn:active{transform:translateY(0);}
+  .of-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+  .of-hint{font-size:12px;color:var(--of-ink-3);font-family:var(--of-mono);}
+
+  /* audit / result line */
+  .of-log{
+    margin:16px 24px 22px;border:1px dashed var(--of-line-2);border-radius:9px;
+    background:rgba(8,18,33,.6);padding:0;overflow:hidden;display:none;
+  }
+  .of-log.show{display:block;animation:ofIn .3s ease both;}
+  .of-log-row{display:flex;gap:10px;padding:11px 14px;font-family:var(--of-mono);font-size:12px;border-bottom:1px solid rgba(29,52,84,.5);}
+  .of-log-row:last-child{border-bottom:none;}
+  .of-log-row .ts{color:var(--of-ink-3);flex:none;}
+  .of-log-row .ok{color:var(--of-green);}
+  .of-log-row .warn{color:var(--of-amber);}
+  .of-log-row .err{color:var(--of-red);}
+  @keyframes ofIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  @media(max-width:560px){.of-grid{grid-template-columns:1fr;}.of-itp-head{flex-direction:column;}}
+</style>
+
+<script>
+(function(){
+  // ---- [H1] resolve supabase client (null in standalone artifact -> mock) ----
+  function sbClient(){ return window.OF_supabase || window.supabaseClient || window.sb || null; }
+
+  // ---- [H2] loan context; mock fallback uses OF-2026 numbering + Avery Sutton ----
+  var CTX = window.OF_ITP_CONTEXT || {
+    loan_id:   '10000000-0000-0000-0000-000000000007',
+    branch_id: 'c3f21dc2-028c-44cc-854e-e9e2f254085e',  // Lubbock Branch — Beta
+    loan_number:'OF-2026-0007',
+    lo_name:'Avery Sutton',
+    borrowers:[
+      {id:'b0000000-0000-0000-0000-000000000007', name:'Boudreaux, Marie'},
+      {id:'b0000000-0000-0000-0000-000000000008', name:'Boudreaux, Andre'}
+    ],
+    // [H5] LE disclosures only
+    les:[
+      {id:'d0000000-0000-0000-0000-0000000000a2', label:'Initial LE · v2 · issued 2026-05-14'},
+      {id:'d0000000-0000-0000-0000-0000000000a1', label:'Initial LE · v1 · issued 2026-04-30 (archived)'}
+    ],
+    already_received:null   // set to ISO string if an ITP already exists
+  };
+  var USER_ID = window.OF_USER_ID || null;  // [H3]
+
+  var METHODS = [
+    ['portal','Portal (borrower click)'],['phone','Phone'],['email','Email'],
+    ['esign','E-sign'],['written','Written / wet signature'],['in_person','In person'],
+    ['mail','Mail'],['fax','Fax'],['overnight','Overnight']
+  ];
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function nowLocalInput(){var d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);}
+  function logTs(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+
+  var root=document.getElementById('of-itp-root');
+  var received = CTX.already_received;
+
+  root.innerHTML = [
+    '<div class="of-itp-head">',
+      '<div>',
+        '<p class="of-itp-eyebrow">Loan Lifecycle · '+esc(CTX.loan_number)+'</p>',
+        '<h2 class="of-itp-title">Intent to Proceed</h2>',
+        '<div class="of-itp-cite">12 CFR § 1026.19(e)(2)(i)(A) · LO '+esc(CTX.lo_name)+'</div>',
+      '</div>',
+      '<span class="of-chip" id="of-itp-chip" data-st="'+(received?'received':'outstanding')+'">',
+        '<span class="dot"></span><span id="of-itp-chip-tx">'+(received?'Received':'Outstanding')+'</span>',
+      '</span>',
+    '</div>',
+
+    '<div class="of-gate">',
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" stroke="#f0b541" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      '<div><b>Fee gate.</b> Until intent is received, no charge beyond a bona fide credit-report fee may be imposed on the borrower.</div>',
+    '</div>',
+
+    '<div class="of-itp-body">',
+      '<div class="of-grid">',
+        '<div class="of-field">',
+          '<label class="of-label" for="of-itp-le">Disclosed LE <span class="req">*</span></label>',
+          '<select class="of-select" id="of-itp-le">'+CTX.les.map(function(l){return '<option value="'+esc(l.id)+'">'+esc(l.label)+'</option>';}).join('')+'</select>',
+        '</div>',
+        '<div class="of-field">',
+          '<label class="of-label" for="of-itp-method">Method <span class="req">*</span></label>',
+          '<select class="of-select" id="of-itp-method">'+METHODS.map(function(m){return '<option value="'+m[0]+'">'+m[1]+'</option>';}).join('')+'</select>',
+        '</div>',
+        '<div class="of-field">',
+          '<label class="of-label" for="of-itp-when">Received at <span class="req">*</span></label>',
+          '<input class="of-input" type="datetime-local" id="of-itp-when" value="'+nowLocalInput()+'">',
+        '</div>',
+        '<div class="of-field">',
+          '<label class="of-label" for="of-itp-borrower">Expressed by</label>',
+          '<select class="of-select" id="of-itp-borrower"><option value="">— application level —</option>'+CTX.borrowers.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>';}).join('')+'</select>',
+        '</div>',
+        '<div class="of-field full">',
+          '<label class="of-label" for="of-itp-notes">Notes</label>',
+          '<textarea class="of-textarea" id="of-itp-notes" placeholder="e.g. confirmed by phone, callback number on file; or portal click ref."></textarea>',
+        '</div>',
+      '</div>',
+      '<div class="of-actions">',
+        '<button class="of-btn" id="of-itp-submit">Record Intent to Proceed</button>',
+        '<span class="of-hint" id="of-itp-hint">'+(sbClient()?'live · writes to prod':'standalone preview · mock write')+'</span>',
+      '</div>',
+    '</div>',
+
+    '<div class="of-log" id="of-itp-log"></div>'
+  ].join('');
+
+  var chip   = document.getElementById('of-itp-chip');
+  var chipTx = document.getElementById('of-itp-chip-tx');
+  var btn    = document.getElementById('of-itp-submit');
+  var hint   = document.getElementById('of-itp-hint');
+  var logEl  = document.getElementById('of-itp-log');
+
+  function pushLog(cls,ts,msg){
+    logEl.classList.add('show');
+    var row=document.createElement('div');row.className='of-log-row';
+    row.innerHTML='<span class="ts">'+esc(ts)+'</span><span class="'+cls+'">'+esc(msg)+'</span>';
+    logEl.appendChild(row);
+  }
+  function markReceived(iso){
+    received=iso;chip.setAttribute('data-st','received');chipTx.textContent='Received';
+    btn.disabled=true;btn.textContent='Recorded';
+    hint.textContent='ITP on file · '+new Date(iso).toLocaleString();
+  }
+  if(received) markReceived(received);
+
+  // ---- the real backend write (exposed as a hook so loan.html can reuse it) ----
+  // window.OF_captureIntentToProceed(payload) -> {ok, itp, cleared}
+  window.OF_captureIntentToProceed = async function(p){
+    var sb=sbClient();
+    if(!sb){ // mock path for standalone preview
+      await new Promise(function(r){setTimeout(r,650);});
+      return {ok:true, mock:true, itp:{id:'mock-'+Date.now()}, cleared:1};
+    }
+    // 1) insert the ITP record (table from migration 018)
+    var ins=await sb.from('intent_to_proceed').insert({
+      branch_id:p.branch_id, loan_id:p.loan_id, le_disclosure_id:p.le_disclosure_id||null,
+      method:p.method, received_at:p.received_at, borrower_id:p.borrower_id||null,
+      notes:p.notes||null, created_by:USER_ID||null            // [H3]
+    }).select('id').single();
+    if(ins.error) return {ok:false, stage:'insert', error:ins.error.message};
+
+    // 2) clear the matching blocking condition (manual clear; [H4])
+    var upd=await sb.from('conditions').update({
+      status:'cleared', cleared_at:p.received_at, auto_cleared:false,
+      cleared_by_user_id:USER_ID||null,
+      cleared_reason:'Intent to Proceed recorded ('+p.method+')'
+    }).eq('loan_id',p.loan_id).eq('template_key','intent_to_proceed').eq('status','outstanding').select('id');
+    // a 0-row clear is not an error — loan may not carry the ITP condition
+    return {ok:true, itp:ins.data, cleared:(upd.data?upd.data.length:0), clearErr:upd.error?upd.error.message:null};
+  };
+
+  btn.addEventListener('click', async function(){
+    var le=document.getElementById('of-itp-le').value;
+    var method=document.getElementById('of-itp-method').value;
+    var whenLocal=document.getElementById('of-itp-when').value;
+    var borrower=document.getElementById('of-itp-borrower').value;
+    var notes=document.getElementById('of-itp-notes').value.trim();
+    if(!whenLocal){ pushLog('err',logTs(),'received-at is required'); return; }
+    var iso=new Date(whenLocal).toISOString();
+
+    btn.disabled=true;btn.textContent='Recording…';
+    pushLog('warn',logTs(),'→ writing intent_to_proceed for '+CTX.loan_number);
+    try{
+      var res=await window.OF_captureIntentToProceed({
+        branch_id:CTX.branch_id, loan_id:CTX.loan_id, le_disclosure_id:le,
+        method:method, received_at:iso, borrower_id:borrower, notes:notes
+      });
+      if(!res.ok){ pushLog('err',logTs(),'✗ '+(res.stage||'')+' failed: '+res.error); btn.disabled=false;btn.textContent='Record Intent to Proceed'; return; }
+      pushLog('ok',logTs(),'✓ intent_to_proceed inserted'+(res.mock?' (mock)':' · id '+(res.itp&&res.itp.id)));
+      if(res.cleared>0) pushLog('ok',logTs(),'✓ condition intent_to_proceed → cleared ('+res.cleared+' row)');
+      else pushLog('warn',logTs(),'• no outstanding ITP condition on this loan (nothing to clear)');
+      if(res.clearErr) pushLog('warn',logTs(),'• condition update note: '+res.clearErr);
+      markReceived(iso);
+      // let loan.html refresh its conditions tab / fee gate
+      if(typeof window.OF_onConditionsChanged==='function') window.OF_onConditionsChanged(CTX.loan_id);
+    }catch(e){
+      pushLog('err',logTs(),'✗ unexpected: '+(e&&e.message||e));
+      btn.disabled=false;btn.textContent='Record Intent to Proceed';
+    }
+  });
+})();
+</script>
