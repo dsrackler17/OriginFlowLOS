@@ -795,6 +795,18 @@ footer a:hover { color: var(--accent); }
           <span class="dropdown-item-title">Intent to Proceed</span>
           <span class="dropdown-item-sub">TRID intent capture · per loan</span>
         </a>
+        <a class="dropdown-item" href="/fee-tolerance.html" role="menuitem">
+          <span class="dropdown-item-title">Fee Tolerance</span>
+          <span class="dropdown-item-sub">TRID buckets · cure calc</span>
+        </a>
+        <a class="dropdown-item" href="/coc-log.html" role="menuitem">
+          <span class="dropdown-item-title">Change of Circumstance</span>
+          <span class="dropdown-item-sub">COC log · revised-LE clock</span>
+        </a>
+        <a class="dropdown-item" href="/aus-findings.html" role="menuitem">
+          <span class="dropdown-item-title">AUS Findings</span>
+          <span class="dropdown-item-sub">DU · LPA · GUS submissions</span>
+        </a>
         <a class="dropdown-item" href="/documents.html" role="menuitem">
           <span class="dropdown-item-title">Documents</span>
           <span class="dropdown-item-sub">Branch document library</span>
@@ -970,6 +982,9 @@ footer a:hover { color: var(--accent); }
     <div class="cta-row">
       <a href="/dashboard.html" class="btn primary">Open Full Pipeline →</a>
       <a href="/itp.html" class="btn">Intent to Proceed</a>
+      <a href="/fee-tolerance.html" class="btn">Fee Tolerance</a>
+      <a href="/coc-log.html" class="btn">Change of Circ.</a>
+      <a href="/aus-findings.html" class="btn">AUS Findings</a>
       <a href="/documents.html" class="btn">Documents</a>
       <a href="/reports.html" class="btn">Reports</a>
       <a href="/investor-delivery.html" class="btn">Delivery</a>
@@ -1734,16 +1749,17 @@ async function loadQueue(cfg) {
       try {
         if (myProcLoans.length > 0) {
           const { data: aus } = await supa.from('aus_findings')
-            .select('loan_id, recommendation, run_at, loans!inner(loan_number)')
-            .in('loan_id', myProcLoans).order('run_at', { ascending: false }).limit(20);
+            .select('loan_id, result, submitted_at, submission_number, loans!inner(loan_number)')
+            .in('loan_id', myProcLoans).order('submitted_at', { ascending: false }).limit(20);
           const latestPerLoan = new Map();
           for (const r of (aus || [])) if (!latestPerLoan.has(r.loan_id)) latestPerLoan.set(r.loan_id, r);
+          const RESULT_LABEL = { approve_eligible:'Approve/Eligible', approve_ineligible:'Approve/Ineligible', refer_eligible:'Refer/Eligible', refer_with_caution:'Refer w/ Caution', out_of_scope:'Out of Scope', error:'Error' };
           for (const r of latestPerLoan.values()) {
-            const rec = String(r.recommendation || '').toLowerCase();
-            if (rec.includes('refer') || rec.includes('caution') || rec.includes('ineligible')) {
+            const res = String(r.result || '').toLowerCase();
+            if (res.includes('refer') || res.includes('ineligible') || res === 'error') {
               items.push({
-                icon: '⚠', urgency: rec.includes('caution') ? 'urgent' : '',
-                text: `<strong>${escapeHtml(r.loans.loan_number)}</strong> · AUS finding: ${escapeHtml(r.recommendation)}`,
+                icon: '⚠', urgency: res.includes('caution') ? 'urgent' : '',
+                text: `<strong>${escapeHtml(r.loans.loan_number)}</strong> · AUS: ${escapeHtml(RESULT_LABEL[r.result] || r.result)}`,
                 href: `/loan.html?id=${r.loan_id}#tab=findings`,
               });
             }
@@ -2111,6 +2127,9 @@ function renderCmdkNavShortcuts() {
     { icon:'▦', title:'Open Pipeline',  sub:'all stages',          href:'/dashboard.html', tag:'GO' },
     { icon:'⚐', title:'Conditions',     sub:'branch-wide · PTD · PTC · ATC', href:'/conditions.html', tag:'GO' },
     { icon:'✍', title:'Intent to Proceed', sub:'TRID intent capture · per loan', href:'/itp.html', tag:'GO' },
+    { icon:'⚖', title:'Fee Tolerance', sub:'TRID buckets · cure calc', href:'/fee-tolerance.html', tag:'GO' },
+    { icon:'⟳', title:'Change of Circumstance', sub:'COC log · revised-LE clock', href:'/coc-log.html', tag:'GO' },
+    { icon:'◎', title:'AUS Findings', sub:'DU · LPA · GUS submissions', href:'/aus-findings.html', tag:'GO' },
     { icon:'▤', title:'Documents',      sub:'branch library',      href:'/documents.html', tag:'GO' },
     { icon:'∷', title:'Reports',        sub:'pipeline · funded',   href:'/reports.html',   tag:'GO' },
     { icon:'⇆', title:'Investor Delivery', sub:'sell funded loans', href:'/investor-delivery.html', tag:'GO' },
