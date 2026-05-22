@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AUS Findings · OriginFlow LOS</title>
+<meta name="description" content="OriginFlow LOS — AUS findings log (DU / LPA / GUS).">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-crumb{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--border);padding-left:1rem;margin-left:.25rem;}
+.nav-crumb b{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
+.nav-back,.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:.3rem .75rem;cursor:pointer;background:none;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
+main{flex:1;padding:2rem;display:flex;flex-direction:column;align-items:center;}
+.wrap{width:100%;max-width:900px;}
+.page-head{margin-bottom:1.25rem;}
+.page-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem;}
+.page-title{font-family:var(--serif);font-size:1.9rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:.4rem;font-size:.92rem;max-width:700px;}
+.loan-picker{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;background:var(--surface);border:1px solid var(--border);padding:.75rem 1rem;}
+.loan-picker label{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.loan-picker select{flex:1;background:var(--deep);border:1px solid var(--border);color:var(--white);font-family:var(--sans);font-size:.85rem;padding:.5rem .7rem;outline:none;}
+.loan-picker select:focus{border-color:var(--accent);}
+.state{text-align:center;padding:4rem 2rem;}
+.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem;}
+.state-heading{font-family:var(--serif);font-size:1.5rem;color:var(--white);margin-bottom:.6rem;}
+.state-text{color:var(--muted);max-width:460px;margin:0 auto 1.25rem;}
+.btn{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.25rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn.small{padding:.45rem .8rem;font-size:.6rem;}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.panel{background:var(--surface);border:1px solid var(--border);margin-bottom:1.25rem;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.panel-title{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--text);}
+.panel-body{padding:1.1rem 1.2rem 1.3rem;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem 1rem;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.85rem 1rem;}
+.field{display:flex;flex-direction:column;gap:.4rem;}
+.field.full{grid-column:1/-1;}
+.lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);}
+.lbl .req{color:var(--accent);}
+.inp,.sel,.ta{font-family:var(--sans);font-size:.88rem;color:var(--white);background:var(--deep);border:1px solid var(--border);padding:.6rem .7rem;width:100%;transition:border-color .15s,box-shadow .15s;}
+.ta{resize:vertical;min-height:54px;font-size:.85rem;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.14);}
+.subhead{font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:1.3rem 0 .6rem;border-top:1px solid var(--border);padding-top:1rem;}
+.actions{display:flex;align-items:center;gap:1rem;margin-top:1.2rem;}
+.hint{font-family:var(--mono);font-size:.62rem;color:var(--muted);}
+/* staged findings chips */
+.findings-stage{display:flex;flex-direction:column;gap:.4rem;margin-top:.7rem;}
+.fchip{display:grid;grid-template-columns:auto 1fr auto;gap:.6rem;align-items:center;padding:.5rem .7rem;background:var(--panel);border:1px solid var(--border);font-size:.78rem;}
+.fchip .sev{font-family:var(--mono);font-size:.5rem;letter-spacing:.06em;text-transform:uppercase;padding:.05rem .35rem;border-radius:2px;}
+.sev.error,.sev.required{color:var(--red);border:1px solid rgba(255,68,68,.4);}
+.sev.warning{color:var(--amber);border:1px solid rgba(245,166,35,.4);}
+.sev.info{color:var(--muted);border:1px solid var(--border);}
+.fchip .cat{font-family:var(--mono);font-size:.55rem;color:var(--muted);}
+.fchip .x{font-family:var(--mono);color:var(--red);cursor:pointer;border:none;background:none;font-size:.9rem;}
+/* run history */
+.run{border:1px solid var(--border);border-left:3px solid var(--border);background:var(--panel);margin:.5rem .6rem;padding:.85rem 1rem;}
+.run.approve{border-left-color:var(--accent2);}
+.run.refer{border-left-color:var(--amber);}
+.run.caution,.run.err{border-left-color:var(--red);}
+.run-top{display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+.run-eng{font-family:var(--mono);font-size:.7rem;color:var(--white);letter-spacing:.06em;}
+.run-res{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.15rem .5rem;border:1px solid var(--border);}
+.run-res.approve{color:var(--accent2);border-color:rgba(0,255,157,.4);}
+.run-res.refer{color:var(--amber);border-color:rgba(245,166,35,.4);}
+.run-res.caution,.run-res.err{color:var(--red);border-color:rgba(255,68,68,.4);}
+.run-res.scope{color:var(--muted);}
+.run-meta{font-family:var(--mono);font-size:.58rem;color:var(--muted);letter-spacing:.04em;margin-top:.35rem;}
+.run-ratios{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.5rem;}
+.ratio{font-family:var(--mono);font-size:.62rem;}
+.ratio .k{color:var(--muted);} .ratio .v{color:var(--white);}
+.run-findings{margin-top:.6rem;display:flex;flex-direction:column;gap:.3rem;}
+.run-finding{font-size:.76rem;color:var(--text);padding-left:.6rem;border-left:1px solid var(--border);}
+.run-finding .fc{font-family:var(--mono);font-size:.55rem;color:var(--muted);}
+.empty{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center;padding:2rem;}
+.log{border:1px dashed var(--border);background:rgba(4,13,26,.5);display:none;margin-bottom:2rem;}
+.log.show{display:block;}
+.log-row{display:flex;gap:.6rem;padding:.6rem .8rem;font-family:var(--mono);font-size:.66rem;border-bottom:1px solid rgba(26,58,92,.5);}
+.log-row:last-child{border-bottom:none;}
+.log-row .ts{color:var(--muted);flex:none;}
+.log-row .ok{color:var(--accent2);} .log-row .warn{color:var(--amber);} .log-row .err{color:var(--red);}
+@media(max-width:680px){nav{padding:.85rem 1rem;}.nav-crumb,.nav-branch{display:none;}main{padding:1rem;}.grid,.grid2{grid-template-columns:1fr;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <span class="nav-crumb">Lifecycle · <b>AUS Findings</b></span>
+  <div class="nav-right">
+    <a href="/home.html" class="nav-back">← Home</a>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span class="nav-user-name" id="nav-user-name">…</span>
+    <button class="nav-signout" id="nav-signout">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    <div class="state" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.2rem;">Loading…</div></div>
+    <div class="state" id="state-signed-out" style="display:none;">
+      <div class="state-eyebrow">Sign in required</div><h1 class="state-heading">You're not signed in.</h1>
+      <p class="state-text">Sign in to log AUS findings.</p><a href="/login.html" class="btn primary">Sign in →</a>
+    </div>
+    <div class="state" id="state-empty" style="display:none;">
+      <div class="state-eyebrow">No loans</div><h1 class="state-heading">No active loans in this branch yet.</h1>
+      <a href="/loans-new.html" class="btn primary">+ New Loan</a>
+    </div>
+
+    <div id="app" style="display:none;">
+      <header class="page-head">
+        <div class="page-eyebrow">Loan Lifecycle · 12.5.6</div>
+        <h1 class="page-title">AUS Findings</h1>
+        <p class="page-sub">Log a DU / LPA / GUS submission — recommendation, qualifying ratios, and individual findings. Until the PDF parser ships, this is manual entry; the structure matches what the parser will populate.</p>
+      </header>
+      <div class="loan-picker"><label for="loan-select">Loan</label><select id="loan-select"></select></div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Log AUS submission</span><span class="panel-title" id="sub-num-tag" style="color:var(--muted);"></span></div>
+        <div class="panel-body">
+          <div class="grid">
+            <div class="field">
+              <label class="lbl" for="aus-engine">Engine <span class="req">*</span></label>
+              <select class="sel" id="aus-engine">
+                <option value="du">DU · Desktop Underwriter (Fannie)</option>
+                <option value="lp">LPA · Loan Product Advisor (Freddie)</option>
+                <option value="gus">GUS · USDA Guaranteed UW System</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="aus-result">Recommendation <span class="req">*</span></label>
+              <select class="sel" id="aus-result">
+                <option value="approve_eligible">Approve / Eligible</option>
+                <option value="approve_ineligible">Approve / Ineligible</option>
+                <option value="refer_eligible">Refer / Eligible</option>
+                <option value="refer_with_caution">Refer with Caution</option>
+                <option value="out_of_scope">Out of Scope</option>
+                <option value="error">Error</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="aus-sub">Submission #</label>
+              <input class="inp" type="number" id="aus-sub" min="1" step="1" value="1">
+            </div>
+            <div class="field">
+              <label class="lbl" for="aus-casefile">Casefile / key #</label>
+              <input class="inp" type="text" id="aus-casefile" placeholder="DU casefile ID or LPA key">
+            </div>
+            <div class="field">
+              <label class="lbl" for="aus-when">Submitted at <span class="req">*</span></label>
+              <input class="inp" type="datetime-local" id="aus-when">
+            </div>
+            <div class="field">
+              <label class="lbl" for="aus-score">Decision credit score</label>
+              <input class="inp" type="number" id="aus-score" min="300" max="850" step="1" placeholder="e.g. 742">
+            </div>
+          </div>
+
+          <div class="subhead">Qualifying numbers</div>
+          <div class="grid">
+            <div class="field"><label class="lbl" for="aus-housing">Housing ratio %</label><input class="inp" type="number" id="aus-housing" step="0.01" placeholder="28.50"></div>
+            <div class="field"><label class="lbl" for="aus-total">Total / back ratio %</label><input class="inp" type="number" id="aus-total" step="0.01" placeholder="36.40"></div>
+            <div class="field"><label class="lbl" for="aus-rate">Qualifying rate %</label><input class="inp" type="number" id="aus-rate" step="0.001" placeholder="6.750"></div>
+            <div class="field"><label class="lbl" for="aus-ltv">LTV %</label><input class="inp" type="number" id="aus-ltv" step="0.01" placeholder="80.00"></div>
+            <div class="field"><label class="lbl" for="aus-cltv">CLTV %</label><input class="inp" type="number" id="aus-cltv" step="0.01" placeholder="80.00"></div>
+            <div class="field"><label class="lbl" for="aus-hcltv">HCLTV %</label><input class="inp" type="number" id="aus-hcltv" step="0.01" placeholder="80.00"></div>
+          </div>
+          <div class="grid2" style="margin-top:.85rem;">
+            <div class="field"><label class="lbl" for="aus-reserves">Reserves (months)</label><input class="inp" type="number" id="aus-reserves" step="0.1" placeholder="6.0"></div>
+          </div>
+
+          <div class="subhead">Findings <span style="color:var(--muted);text-transform:none;letter-spacing:0;">— added to findings_summary; count drives conditions_generated_count</span></div>
+          <div class="grid">
+            <div class="field">
+              <label class="lbl" for="fcat">Category</label>
+              <select class="sel" id="fcat">
+                <option value="aus_general">AUS general</option>
+                <option value="income">Income</option>
+                <option value="assets">Assets</option>
+                <option value="credit">Credit</option>
+                <option value="property">Property</option>
+                <option value="documentation">Documentation</option>
+                <option value="identity">Identity</option>
+                <option value="title">Title</option>
+                <option value="insurance">Insurance</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="lbl" for="fsev">Severity</label>
+              <select class="sel" id="fsev">
+                <option value="required">Required</option>
+                <option value="error">Error</option>
+                <option value="warning">Warning</option>
+                <option value="info">Info</option>
+              </select>
+            </div>
+            <div class="field"><label class="lbl" for="fcode">Finding code</label><input class="inp" type="text" id="fcode" placeholder="e.g. 0123"></div>
+            <div class="field full"><label class="lbl" for="ftitle">Title</label><input class="inp" type="text" id="ftitle" placeholder="e.g. Verify 2 years employment"></div>
+            <div class="field full"><label class="lbl" for="fdesc">Description</label><textarea class="ta" id="fdesc" placeholder="Finding text as it appears in the AUS report."></textarea></div>
+          </div>
+          <div class="actions"><button class="btn small" id="add-finding" type="button">+ Add finding</button><span class="hint" id="stage-count">0 staged</span></div>
+          <div class="findings-stage" id="findings-stage"></div>
+
+          <div class="actions" style="margin-top:1.3rem;border-top:1px solid var(--border);padding-top:1.1rem;">
+            <button class="btn primary" id="aus-save">Log AUS submission</button>
+            <span class="hint" id="aus-hint">writes 1 row → aus_findings</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="log" id="aus-logbox"></div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">AUS history</span><span class="panel-title" id="aus-count" style="color:var(--muted);"></span></div>
+        <div id="aus-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// aus-findings.html — wiring  (Phase 12.5.6, manual-entry layer)
+// ---------------------------------------------------------------------------
+// DATA MODEL (matches the real seed, NOT the handoff's "self-referencing"
+// guess): each public.aus_findings row = ONE AUS submission summary.
+//   * Run-level cols live on the row: engine, result, submission_number,
+//     casefile_id, ratios, decision_credit_score, reserves_months,
+//     conditions_generated_count.
+//   * Individual findings go into the findings_summary jsonb array
+//     [{code, category, severity, title, description}] — NOT separate rows,
+//     because every aus_findings row carries NOT NULL engine/result and the
+//     normalized aus_runs table (aus_run_id FK target) is unpopulated in prod
+//     (every seeded row has aus_run_id=null). conditions_generated_count =
+//     number of findings entered.
+//   * aus_run_id left null (matches seed). condition_id left null — linking
+//     findings → spawned conditions is the moat-era wiring (12.0.10 / 12.5.9).
+//
+// CHECK values VERIFIED against pg_constraint 2026-05-22:
+//   engine ∈ {du, lp, gus}
+//   result ∈ {approve_eligible, approve_ineligible, refer_eligible,
+//             refer_with_caution, out_of_scope, error}
+//   severity ∈ {error, required, warning, info}   (per finding, in jsonb)
+//   category ∈ {income, assets, credit, property, documentation, identity,
+//               title, insurance, aus_general}     (per finding, in jsonb)
+//
+// ⚠ NOTE for the wire-up step: home.html's processor/underwriter queue queries
+//    select aus_findings.recommendation / .run_at — those columns DON'T EXIST
+//    (real cols are result / submitted_at). Those queries silently no-op inside
+//    try/catch today. Fix when wiring: recommendation→result, run_at→submitted_at.
+// ═══════════════════════════════════════════════════════════════════════════
+const $ = (s)=>document.querySelector(s);
+let supa=null, me=null, branch=null, loans=[], currentLoanId=null, staged=[];
+
+const ENGINE_LABEL={du:'DU',lp:'LPA',gus:'GUS'};
+const RESULT_LABEL={approve_eligible:'Approve / Eligible',approve_ineligible:'Approve / Ineligible',refer_eligible:'Refer / Eligible',refer_with_caution:'Refer w/ Caution',out_of_scope:'Out of Scope',error:'Error'};
+function resultClass(r){ if(r==='approve_eligible')return'approve'; if(r==='refer_with_caution'||r==='error')return'caution'; if(r==='approve_ineligible'||r==='refer_eligible')return'refer'; return'scope'; }
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function logTs(){return new Date().toLocaleTimeString('en-US',{hour12:false});}
+function nowLocalInput(d){ d=d||new Date(); const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); }
+function fmtDate(iso){ return iso?new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}):'—'; }
+function pctOrDash(v){ return v==null?'—':Number(v).toFixed(2)+'%'; }
+function showState(id){ ['state-loading','state-signed-out','state-empty'].forEach(s=>{$('#'+s).style.display=(s===id)?'block':'none';}); $('#app').style.display=(id==='app')?'block':'none'; }
+
+async function bootstrap(){
+  $('#nav-signout').addEventListener('click',()=>{ if(typeof ofSignOut==='function') ofSignOut(); else location.href='/login.html'; });
+  supa=(typeof getSupabase==='function')?getSupabase():null;
+  if(!supa){ console.error('[AUS] Supabase unavailable'); showState('state-signed-out'); return; }
+  let session=null;
+  try{ session=(typeof ofGetSession==='function')? await ofGetSession():null; }catch(e){ console.warn('[AUS] session:',e); }
+  if(!session){ showState('state-signed-out'); return; }
+
+  const { data:profile, error } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id(id,name)')
+    .eq('id', session.user.id).maybeSingle();
+  if(error || !profile || !profile.branch_id){ showState('state-signed-out'); return; }
+  me={ id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch=profile.branches||{id:profile.branch_id,name:'Your Branch'};
+  $('#nav-user-name').textContent=me.full_name; $('#nav-branch-name').textContent=branch.name; $('#nav-branch-pill').style.display='inline-flex';
+
+  $('#aus-when').value=nowLocalInput();
+
+  const { data:loanRows } = await supa.from('loans')
+    .select('id, loan_number, status, updated_at, borrowers:loan_borrowers(position, borrower:borrower_id(id,first_name,last_name))')
+    .eq('branch_id', me.branch_id).is('archived_at', null).order('updated_at',{ascending:false}).limit(50);
+  loans=loanRows||[];
+  if(loans.length===0){ showState('state-empty'); return; }
+
+  const want=new URLSearchParams(location.search).get('loan');
+  currentLoanId=(want && loans.some(l=>l.id===want))?want:loans[0].id;
+  $('#loan-select').innerHTML=loans.map(l=>{
+    const b=(l.borrowers||[]).sort((a,c)=>(a.position||0)-(c.position||0))[0]?.borrower;
+    const nm=b?`${b.last_name}, ${b.first_name}`:'Borrower TBD';
+    return `<option value="${esc(l.id)}" ${l.id===currentLoanId?'selected':''}>${esc(l.loan_number)} · ${esc(nm)} · ${esc((l.status||'').toUpperCase())}</option>`;
+  }).join('');
+  $('#loan-select').addEventListener('change',e=>{ currentLoanId=e.target.value; history.replaceState({},'',`/aus-findings.html?loan=${currentLoanId}`); staged=[]; renderStage(); loadHistory(); });
+
+  $('#add-finding').addEventListener('click', addFinding);
+  $('#aus-save').addEventListener('click', saveRun);
+  showState('app');
+  await loadHistory();
+}
+
+function renderStage(){
+  $('#stage-count').textContent=staged.length+' staged';
+  $('#findings-stage').innerHTML=staged.map((f,i)=>`
+    <div class="fchip">
+      <span class="sev ${esc(f.severity)}">${esc(f.severity)}</span>
+      <span>${esc(f.title||'(untitled)')} <span class="cat">· ${esc(f.category)}${f.code?' · '+esc(f.code):''}</span></span>
+      <button class="x" title="remove" onclick="window.__rmFinding(${i})">✕</button>
+    </div>`).join('');
+}
+function addFinding(){
+  const f={ category:$('#fcat').value, severity:$('#fsev').value, code:$('#fcode').value.trim()||null, title:$('#ftitle').value.trim(), description:$('#fdesc').value.trim()||null };
+  if(!f.title){ pushLog('warn',logTs(),'finding needs a title'); return; }
+  staged.push(f); renderStage();
+  $('#fcode').value=''; $('#ftitle').value=''; $('#fdesc').value='';
+}
+window.__rmFinding=(i)=>{ staged.splice(i,1); renderStage(); };
+
+function pushLog(cls,ts,msg){ const box=$('#aus-logbox'); box.classList.add('show'); const r=document.createElement('div'); r.className='log-row'; r.innerHTML=`<span class="ts">${esc(ts)}</span><span class="${cls}">${esc(msg)}</span>`; box.appendChild(r); }
+function numOrNull(id){ const v=parseFloat($('#'+id).value); return isNaN(v)?null:v; }
+function intOrNull(id){ const v=parseInt($('#'+id).value,10); return isNaN(v)?null:v; }
+
+async function saveRun(){
+  const btn=$('#aus-save');
+  const whenLocal=$('#aus-when').value;
+  if(!whenLocal){ pushLog('err',logTs(),'submitted-at is required'); return; }
+  const rateP=numOrNull('aus-rate'); // store as bps
+  btn.disabled=true; btn.textContent='Logging…';
+  pushLog('warn',logTs(),'→ writing aus_findings ('+ENGINE_LABEL[$('#aus-engine').value]+' · '+RESULT_LABEL[$('#aus-result').value]+')');
+  try{
+    const { data, error } = await supa.from('aus_findings').insert({
+      branch_id: me.branch_id, loan_id: currentLoanId,
+      engine: $('#aus-engine').value,
+      result: $('#aus-result').value,
+      submission_number: intOrNull('aus-sub') || 1,
+      casefile_id: $('#aus-casefile').value.trim() || null,
+      submitted_at: new Date(whenLocal).toISOString(),
+      submitted_by: me.id,
+      qualifying_rate_bps: rateP==null?null:Math.round(rateP*100),
+      housing_ratio_pct: numOrNull('aus-housing'),
+      total_ratio_pct: numOrNull('aus-total'),
+      ltv_pct: numOrNull('aus-ltv'),
+      cltv_pct: numOrNull('aus-cltv'),
+      hcltv_pct: numOrNull('aus-hcltv'),
+      decision_credit_score: intOrNull('aus-score'),
+      reserves_months: numOrNull('aus-reserves'),
+      findings_summary: staged.length ? staged : null,
+      conditions_generated_count: staged.length,
+      aus_run_id: null   // see header — aus_runs layer unpopulated
+    }).select('id, submission_number').single();
+    if(error){ pushLog('err',logTs(),'✗ insert failed: '+error.message); btn.disabled=false; btn.textContent='Log AUS submission'; return; }
+    pushLog('ok',logTs(),'✓ AUS submission #'+data.submission_number+' logged · id '+data.id);
+    if(staged.length) pushLog('ok',logTs(),'• '+staged.length+' finding'+(staged.length===1?'':'s')+' in findings_summary');
+    staged=[]; renderStage();
+    btn.disabled=false; btn.textContent='Log AUS submission';
+    await loadHistory();
+  }catch(e){ pushLog('err',logTs(),'✗ unexpected: '+(e&&e.message||e)); btn.disabled=false; btn.textContent='Log AUS submission'; }
+}
+
+async function loadHistory(){
+  const list=$('#aus-list');
+  list.innerHTML='<div class="empty">Loading…</div>';
+  const { data, error } = await supa.from('aus_findings')
+    .select('id, engine, result, submission_number, casefile_id, submitted_at, qualifying_rate_bps, housing_ratio_pct, total_ratio_pct, ltv_pct, cltv_pct, hcltv_pct, decision_credit_score, reserves_months, findings_summary, conditions_generated_count')
+    .eq('loan_id', currentLoanId).is('archived_at', null)
+    .order('submission_number',{ascending:false}).order('submitted_at',{ascending:false});
+  if(error){ list.innerHTML=`<div class="empty" style="color:var(--red);">${esc(error.message)}</div>`; return; }
+  // next submission # suggestion
+  const maxSub=(data||[]).reduce((m,r)=>Math.max(m,r.submission_number||0),0);
+  $('#aus-sub').value=maxSub+1; $('#sub-num-tag').textContent='next: submission #'+(maxSub+1);
+  $('#aus-count').textContent=(data||[]).length+' submission'+((data||[]).length===1?'':'s');
+  if(!data || data.length===0){ list.innerHTML='<div class="empty">No AUS submissions logged for this loan.</div>'; return; }
+
+  list.innerHTML=data.map(r=>{
+    const rc=resultClass(r.result);
+    const fcls = rc==='approve'?'approve':rc==='refer'?'refer':rc==='caution'?'caution':'';
+    const ratios=[['Housing',pctOrDash(r.housing_ratio_pct)],['Total',pctOrDash(r.total_ratio_pct)],['LTV',pctOrDash(r.ltv_pct)],['CLTV',pctOrDash(r.cltv_pct)],['HCLTV',pctOrDash(r.hcltv_pct)]]
+      .filter(x=>x[1]!=='—').map(x=>`<span class="ratio"><span class="k">${x[0]}</span> <span class="v">${x[1]}</span></span>`).join('');
+    const score = r.decision_credit_score?`<span class="ratio"><span class="k">FICO</span> <span class="v">${r.decision_credit_score}</span></span>`:'';
+    const rate = r.qualifying_rate_bps!=null?`<span class="ratio"><span class="k">Rate</span> <span class="v">${(r.qualifying_rate_bps/100).toFixed(3)}%</span></span>`:'';
+    const res = r.reserves_months!=null?`<span class="ratio"><span class="k">Reserves</span> <span class="v">${r.reserves_months} mo</span></span>`:'';
+    const fs=Array.isArray(r.findings_summary)?r.findings_summary:[];
+    const findings = fs.length?`<div class="run-findings">${fs.map(f=>`<div class="run-finding"><span class="sev ${esc(f.severity||'info')}">${esc(f.severity||'info')}</span> ${esc(f.title||'')} <span class="fc">${esc(f.category||'')}${f.code?' · '+esc(f.code):''}</span></div>`).join('')}</div>`:'';
+    // adverse / non-clean recommendation → offer a COC handoff (eligibility change)
+    const adverse = ['refer_eligible','refer_with_caution','approve_ineligible','error'].includes(r.result);
+    const cocLink = adverse
+      ? `<div style="margin-top:.5rem;"><a href="/coc-log.html?loan=${esc(currentLoanId)}&coc_type=eligibility_change&source=aus_finding&desc=${encodeURIComponent(ENGINE_LABEL[r.engine]+' submission #'+r.submission_number+' returned '+(RESULT_LABEL[r.result]||r.result))}" style="font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);">→ log COC from this finding</a></div>`
+      : '';
+    return `<div class="run ${fcls}">
+      <div class="run-top">
+        <span class="run-eng">${esc(ENGINE_LABEL[r.engine]||r.engine)} · submission #${r.submission_number}${r.casefile_id?' · '+esc(r.casefile_id):''}</span>
+        <span class="run-res ${rc}">${esc(RESULT_LABEL[r.result]||r.result)}</span>
+      </div>
+      <div class="run-meta">${fmtDate(r.submitted_at)} · ${r.conditions_generated_count||0} condition${(r.conditions_generated_count===1)?'':'s'} generated</div>
+      <div class="run-ratios">${ratios}${score}${rate}${res}</div>
+      ${findings}
+      ${cocLink}
+    </div>`;
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
+</script>
+</body>
+</html>

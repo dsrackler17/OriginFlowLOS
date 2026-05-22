@@ -310,6 +310,18 @@ async function bootstrap(){
   $('#loan-select').addEventListener('change',e=>{ currentLoanId=e.target.value; history.replaceState({},'',`/coc-log.html?loan=${currentLoanId}`); loadHistory(); });
 
   $('#coc-save').addEventListener('click', saveCoc);
+
+  // ── deep-link prefill (fee-tolerance / AUS hand off into here) ──
+  // e.g. /coc-log.html?loan=<id>&coc_type=tolerance_bust&source=manual&section=C&prior=1250.00&new=1480.00&desc=...
+  const qp=new URLSearchParams(location.search);
+  const setIfValid=(sel,val)=>{ if(!val) return; const el=$(sel); if([...el.options].some(o=>o.value===val)){ el.value=val; } };
+  setIfValid('#coc-type', qp.get('coc_type')); setCite();
+  setIfValid('#coc-source', qp.get('source'));
+  setIfValid('#coc-section', qp.get('section'));
+  if(qp.get('prior')) $('#coc-prior').value=qp.get('prior');
+  if(qp.get('new'))   $('#coc-new').value=qp.get('new');
+  if(qp.get('desc'))  $('#coc-desc').value=qp.get('desc').slice(0,500);
+
   showState('app');
   await loadHistory();
 }

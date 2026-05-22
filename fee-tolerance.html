@@ -255,12 +255,15 @@ async function loadAndRender(){
   mount.innerHTML='<div class="state"><div class="spinner"></div><div class="state-eyebrow">Loading fees</div></div>';
   const loan=loans.find(l=>l.id===currentLoanId);
 
-  const [{ data:fees, error:fErr }, { data:discs }] = await Promise.all([
+  const [{ data:fees, error:fErr }, { data:discs }, { data:cocs }] = await Promise.all([
     supa.from('fees').select('id, section, name, hud_line, amount_cents, paid_by, poc, apr_flag, source, payee')
         .eq('loan_id', currentLoanId).is('archived_at', null).order('sort_order',{ascending:true}),
     supa.from('disclosures').select('id, kind, version, created_at, archived_at')
         .eq('loan_id', currentLoanId).is('archived_at', null)
-        .in('kind',['initial_le','revised_le','cd','revised_cd']).order('created_at',{ascending:false})
+        .in('kind',['initial_le','revised_le','cd','revised_cd']).order('created_at',{ascending:false}),
+    supa.from('change_of_circumstance').select('id, coc_type, status, detected_at, detail')
+        .eq('loan_id', currentLoanId).is('archived_at', null)
+        .neq('status','voided').order('detected_at',{ascending:false})
   ]);
   if(fErr){ mount.innerHTML=`<div class="state"><div class="state-heading" style="color:var(--red);font-size:1.1rem;">fees query failed</div><p class="state-text">${esc(fErr.message)}</p></div>`; return; }
 
@@ -277,7 +280,7 @@ async function loadAndRender(){
   const results={}; let totalCure=0;
   for(const cat of Object.keys(tot)){ results[cat]=cureFor(cat,tot[cat].le,tot[cat].cd); totalCure+=results[cat].cure; }
 
-  renderFT(mount, {loan, fees:fees||[], tot, results, totalCure, leDisc, cdDisc});
+  renderFT(mount, {loan, fees:fees||[], tot, results, totalCure, leDisc, cdDisc, cocs:cocs||[]});
 }
 
 function renderFT(root, M){
@@ -288,9 +291,12 @@ function renderFT(root, M){
     const t=M.tot[cat], r=M.results[cat], c=CATS[cat];
     const allowedLine = cat==='no_tolerance' ? '' :
       `<div class="bucket-line"><span class="k">Allowed</span><span class="v">${usd(r.allowed)}</span></div>`;
+    const cocLink = (cat!=='no_tolerance' && r.req)
+      ? ` <a href="/coc-log.html?loan=${esc(M.loan.id)}&coc_type=tolerance_bust&source=manual&prior=${(t.le/100).toFixed(2)}&new=${(t.cd/100).toFixed(2)}&desc=${encodeURIComponent('Tolerance bust in '+c.label+' bucket')}" style="color:var(--accent);text-decoration:underline;font-size:.62rem;">log COC →</a>`
+      : '';
     const cureLine = cat==='no_tolerance'
       ? `<div class="bucket-cure ok">no limit · informational</div>`
-      : (r.req ? `<div class="bucket-cure bad">⚠ cure ${usd(r.cure)}</div>` : `<div class="bucket-cure ok">✓ within tolerance</div>`);
+      : (r.req ? `<div class="bucket-cure bad">⚠ cure ${usd(r.cure)}${cocLink}</div>` : `<div class="bucket-cure ok">✓ within tolerance</div>`);
     return `<div class="bucket ${c.cls}">
       <div class="bucket-head">${c.label}</div>
       <div class="bucket-rule">${c.rule}</div>
@@ -313,10 +319,14 @@ function renderFT(root, M){
     </tr>`;
   }).join('');
 
+  const cocCount = (M.cocs||[]).length;
+  const cocNote = cocCount
+    ? `<a href="/coc-log.html?loan=${esc(M.loan.id)}" style="color:var(--accent);text-decoration:underline;">${cocCount} COC on file →</a>`
+    : `<a href="/coc-log.html?loan=${esc(M.loan.id)}" style="color:var(--muted);text-decoration:underline;">no COC logged · log one →</a>`;
   root.innerHTML = `
     <div class="cure-banner ${cureCls}">
       <div><div class="lbl">Total cure owed to borrower</div><div class="val">${usd(M.totalCure)}</div></div>
-      <div class="hint">${M.totalCure>0?'Re-disclose &amp; cure before consummation':'No tolerance violation detected'}</div>
+      <div class="hint">${M.totalCure>0?'Re-disclose &amp; cure before consummation':'No tolerance violation detected'}<br>${cocNote}</div>
     </div>
     ${!hasLe?`<div class="cure-banner" style="border-color:rgba(245,166,35,.4);background:rgba(245,166,35,.06);"><div class="hint" style="color:var(--amber);">⚠ No LE-source fees on this loan — baselines read $0, so every CD charge shows as an increase. Expected on the …0007 test loan; load a loan with a populated LE for a true compare.</div></div>`:''}
     <div class="buckets">${bucketCards}</div>
