@@ -3073,7 +3073,7 @@ function renderDocExpandedBody(doc, fields, fieldsError) {
       </span>
       <div style="display:flex; gap:0.4rem;">
         <button class="btn sm" onclick="openDocFile('${escapeHtml(doc.id)}')">Open file ↗</button>
-        <button class="btn sm" onclick="alert('Re-extract dispatches to the extraction worker once 12.0.x deploys')">Re-extract</button>
+        <button class="btn sm" onclick="reprocessLoanDoc('${escapeHtml(doc.id)}', this)">⟳ Reprocess</button>
       </div>
     </div>
   `;
@@ -3177,6 +3177,36 @@ async function openDocFile(docId, page) {
 // chat-style toast widget that home.html has. Stub for now.
 function showToast(msg) {
   console.log('[toast]', msg);
+}
+
+// 12.0.12 — Reprocess: fire reprocess_document as the authenticated staff
+// user. The RPC nulls extracted_fields + sets status='uploaded', which trips
+// of_fire_process_document -> pg_net -> process-document (live classify+extract
+// -> G2 write_income -> G3 enrich -> presence match -> clear w/ attribution).
+// pg_net is async, so we poll loan_documents a few times then re-render.
+async function reprocessLoanDoc(docId, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Dispatching...'; }
+  try {
+    const { error } = await supa.rpc('reprocess_document', { p_document_id: docId });
+    if (error) throw error;
+    showToast('Reprocess dispatched - extraction running...');
+    let tries = 0;
+    const poll = setInterval(async () => {
+      tries++;
+      const { data } = await supa.from('loan_documents')
+        .select('status').eq('id', docId).maybeSingle();
+      const done = data && ['extracted','classified','extraction_failed','classification_failed','accepted','rejected'].includes(data.status);
+      if (done || tries >= 8) {
+        clearInterval(poll);
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = '\u27F3 Reprocess'; }
+        loadAndRenderDocuments();
+      }
+    }, 2500);
+  } catch (err) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = '\u27F3 Reprocess'; }
+    alert('Reprocess failed: ' + err.message +
+      '\n\nIf this says "unauthorized" or mentions auth.uid(), the RPC requires a staff profile with a branch_id - confirm you are signed in as staff.');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
