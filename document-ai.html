@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document AI · OriginFlow LOS</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem;}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid var(--border);padding-bottom:1rem;margin-bottom:1.5rem;}
+.brand{font-family:var(--mono);font-size:0.78rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--white);}
+.brand span{color:var(--accent);}
+.who{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);}
+.who strong{color:var(--accent2);}
+
+.eyebrow{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem;}
+h1{font-family:var(--serif);font-size:1.9rem;color:var(--white);line-height:1.15;margin-bottom:0.3rem;}
+.sub{color:var(--muted);max-width:680px;margin-bottom:1.5rem;}
+
+.loadrow{display:flex;gap:0.5rem;align-items:flex-end;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);padding:1rem;margin-bottom:1.5rem;}
+.field{display:flex;flex-direction:column;gap:0.3rem;}
+.field label{font-family:var(--mono);font-size:0.56rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+.field input{background:var(--deep);border:1px solid var(--border);color:var(--white);font-family:var(--mono);font-size:0.78rem;padding:0.5rem 0.65rem;outline:none;min-width:360px;}
+.field input:focus{border-color:var(--accent);}
+.btn{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.55rem 1rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.notice{font-family:var(--mono);font-size:0.68rem;padding:0.7rem 0.9rem;border:1px solid var(--border);border-left:3px solid var(--accent);background:rgba(0,212,255,0.04);margin-bottom:1rem;letter-spacing:0.03em;}
+.notice.err{border-left-color:var(--red);background:rgba(255,68,68,0.06);color:var(--red);}
+.notice.ok{border-left-color:var(--accent2);background:rgba(0,255,157,0.05);color:var(--accent2);}
+.notice.warn{border-left-color:var(--amber);background:rgba(245,166,35,0.05);color:var(--amber);}
+.notice.hidden{display:none;}
+
+.doc{background:var(--surface);border:1px solid var(--border);margin-bottom:1rem;}
+.doc-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.85rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);flex-wrap:wrap;}
+.doc-name{font-family:var(--sans);font-size:0.9rem;color:var(--white);font-weight:500;}
+.doc-id{font-family:var(--mono);font-size:0.55rem;color:var(--muted);letter-spacing:0.05em;}
+.pill{font-family:var(--mono);font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.15rem 0.5rem;border:1px solid var(--border);color:var(--muted);}
+.pill.uploaded{color:var(--accent);border-color:rgba(0,212,255,.4);}
+.pill.classifying,.pill.extracting{color:var(--amber);border-color:rgba(245,166,35,.4);}
+.pill.extracted,.pill.classified{color:var(--accent2);border-color:rgba(0,255,157,.4);}
+.pill.extraction_failed,.pill.classification_failed,.pill.scan_failed,.pill.rejected{color:var(--red);border-color:rgba(255,68,68,.4);}
+.doc-body{padding:0.9rem 1.1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;}
+.kv{display:flex;flex-direction:column;gap:0.15rem;}
+.kv .k{font-family:var(--mono);font-size:0.54rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+.kv .v{font-family:var(--mono);font-size:0.78rem;color:var(--white);word-break:break-word;}
+.kv .v.dim{color:var(--muted);}
+.doc-actions{grid-column:1/-1;display:flex;gap:0.6rem;flex-wrap:wrap;padding-top:0.4rem;border-top:1px solid var(--border);margin-top:0.3rem;}
+.fields-block{grid-column:1/-1;background:var(--deep);border:1px solid var(--border);padding:0.7rem 0.85rem;font-family:var(--mono);font-size:0.66rem;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;}
+.clears{grid-column:1/-1;display:flex;flex-direction:column;gap:0.4rem;}
+.clear-row{display:flex;align-items:center;gap:0.6rem;font-family:var(--mono);font-size:0.66rem;padding:0.45rem 0.6rem;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent2);}
+.clear-row .ttl{color:var(--white);flex:1;}
+.clear-row .tag{color:var(--accent2);letter-spacing:0.08em;}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{font-family:var(--mono);font-size:0.72rem;color:var(--muted);text-align:center;padding:2.5rem 1rem;letter-spacing:0.04em;}
+@media(max-width:640px){.doc-body{grid-template-columns:1fr;}.field input{min-width:0;width:100%;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="brand">ORIGIN<span>FLOW</span> · DOCUMENT AI</span>
+    <span class="who" id="who">checking session…</span>
+  </div>
+
+  <div class="eyebrow">Staff · AI Extraction Console</div>
+  <h1>Document AI</h1>
+  <p class="sub">View a loan's documents, their AI classification + extracted fields + cost, and re-run the extraction pipeline. Reprocessing re-downloads the file, re-classifies, re-extracts, writes income, and re-evaluates conditions — recording which document cleared each one.</p>
+
+  <div id="auth-notice" class="notice warn hidden"></div>
+
+  <div class="loadrow">
+    <div class="field">
+      <label>Loan ID (uuid)</label>
+      <input id="loan-id" type="text" placeholder="10000000-0000-0000-0000-000000000003" autocomplete="off">
+    </div>
+    <button class="btn primary" id="load-btn">Load Documents</button>
+    <button class="btn" id="reload-btn" title="Refresh current loan">↻ Refresh</button>
+  </div>
+
+  <div id="status" class="notice hidden"></div>
+  <div id="docs"></div>
+
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let supa = null, me = null, currentLoanId = null;
+
+function esc(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function money(c){if(c==null)return '—';return '$'+(Number(c)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function ago(iso){if(!iso)return '—';const d=(Date.now()-new Date(iso).getTime())/1000;if(d<60)return Math.floor(d)+'s ago';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return new Date(iso).toLocaleString();}
+function setStatus(msg,kind){const el=$('#status');el.className='notice '+(kind||'');el.innerHTML=msg;el.classList.remove('hidden');}
+function clearStatus(){$('#status').classList.add('hidden');}
+
+async function boot(){
+  supa = (typeof getSupabase==='function') ? getSupabase() : null;
+  if(!supa){ $('#auth-notice').textContent='Supabase client unavailable — check /js/config.js load order.'; $('#auth-notice').classList.remove('hidden'); return; }
+
+  const { data:{ session } } = await supa.auth.getSession();
+  if(!session){
+    $('#who').innerHTML = 'not signed in';
+    $('#auth-notice').className='notice err';
+    $('#auth-notice').innerHTML = 'You are not signed in. Reprocessing requires an authenticated <strong>staff</strong> session (the RPC checks auth.uid() + profiles.branch_id). Sign in at <a href="/login.html" style="color:var(--accent);">/login.html</a>, then reload this page.';
+    $('#auth-notice').classList.remove('hidden');
+    return;
+  }
+  // load profile to confirm staff + branch
+  const { data:profile } = await supa.from('profiles')
+    .select('id, role, branch_id, full_name, email').eq('id', session.user.id).maybeSingle();
+  me = profile || { id: session.user.id, email: session.user.email };
+  $('#who').innerHTML = `<strong>${esc(me.full_name||me.email||'staff')}</strong> · ${esc((me.role||'?').toUpperCase())} · branch ${esc(me.branch_id ? me.branch_id.slice(0,8) : '—')}`;
+
+  if(!me.branch_id){
+    $('#auth-notice').className='notice warn';
+    $('#auth-notice').innerHTML = 'Signed in, but your profile has no branch_id — the reprocess RPC will reject. You need a staff profile attached to a branch.';
+    $('#auth-notice').classList.remove('hidden');
+  }
+
+  // prefill from ?loan= if present
+  const qLoan = new URLSearchParams(location.search).get('loan');
+  if(qLoan){ $('#loan-id').value = qLoan; loadDocs(qLoan); }
+}
+
+$('#load-btn').addEventListener('click', ()=>{ const id=$('#loan-id').value.trim(); if(id) loadDocs(id); });
+$('#reload-btn').addEventListener('click', ()=>{ if(currentLoanId) loadDocs(currentLoanId); });
+$('#loan-id').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const id=$('#loan-id').value.trim(); if(id) loadDocs(id); }});
+
+async function loadDocs(loanId){
+  currentLoanId = loanId;
+  clearStatus();
+  const wrap = $('#docs');
+  wrap.innerHTML = `<div class="empty"><span class="spinner"></span> loading documents…</div>`;
+
+  const { data:docs, error } = await supa.from('loan_documents')
+    .select('id, loan_id, borrower_id, filename, mime_type, file_size_bytes, storage_path, status, ai_classified_doc_type, ai_classification_confidence, extracted_fields, extraction_error, classified_at, extracted_at, updated_at')
+    .eq('loan_id', loanId)
+    .order('updated_at',{ascending:false});
+
+  if(error){ wrap.innerHTML=''; setStatus('Could not load documents: '+esc(error.message),'err'); return; }
+  if(!docs || docs.length===0){ wrap.innerHTML = `<div class="empty">No loan_documents rows for this loan.</div>`; return; }
+
+  // pull latest extraction runs + conditions cleared by these docs, in parallel
+  const docIds = docs.map(d=>d.id);
+  const [runsRes, condRes] = await Promise.all([
+    supa.from('ai_extraction_runs').select('loan_document_id, call_type, status, model, cost_cents, created_at').in('loan_document_id', docIds).order('created_at',{ascending:false}),
+    supa.from('conditions').select('id, title, status, auto_cleared, cleared_by_document_id, cleared_confidence, cleared_at').in('cleared_by_document_id', docIds),
+  ]);
+  const runsByDoc = {}; (runsRes.data||[]).forEach(r=>{ (runsByDoc[r.loan_document_id] ||= []).push(r); });
+  const clearsByDoc = {}; (condRes.data||[]).forEach(c=>{ (clearsByDoc[c.cleared_by_document_id] ||= []).push(c); });
+
+  wrap.innerHTML = docs.map(d=>renderDoc(d, runsByDoc[d.id]||[], clearsByDoc[d.id]||[])).join('');
+  wrap.querySelectorAll('[data-reprocess]').forEach(btn=>{
+    btn.addEventListener('click', ()=>reprocess(btn.dataset.reprocess, btn));
+  });
+}
+
+function renderDoc(d, runs, clears){
+  const cls = (d.ai_classified_doc_type||'—');
+  const conf = d.ai_classification_confidence!=null ? (Number(d.ai_classification_confidence)*100).toFixed(0)+'%' : '—';
+  const ef = d.extracted_fields;
+  const efStr = ef ? JSON.stringify(ef, null, 2) : null;
+  const cost = runs.reduce((s,r)=>s+(r.cost_cents||0),0);
+  const runSummary = runs.length
+    ? runs.map(r=>`${r.call_type}:${r.status}`).join(' · ')
+    : 'no runs yet';
+
+  const clearsHtml = clears.length
+    ? `<div class="clears">${clears.map(c=>`
+        <div class="clear-row">
+          <span class="tag">✓ ${esc((c.status||'').toUpperCase())}</span>
+          <span class="ttl">${esc(c.title)}</span>
+          <span style="color:var(--muted);">${c.cleared_confidence!=null?(Number(c.cleared_confidence)*100).toFixed(0)+'%':''} ${c.auto_cleared?'· auto':''} · ${ago(c.cleared_at)}</span>
+        </div>`).join('')}</div>`
+    : '';
+
+  return `
+    <div class="doc" id="doc-${esc(d.id)}">
+      <div class="doc-head">
+        <div>
+          <div class="doc-name">${esc(d.filename||'(unnamed)')}</div>
+          <div class="doc-id">${esc(d.id)}</div>
+        </div>
+        <span class="pill ${esc(d.status)}">${esc(d.status)}</span>
+      </div>
+      <div class="doc-body">
+        <div class="kv"><span class="k">Classified As</span><span class="v">${esc(cls)} <span class="dim">(${conf})</span></span></div>
+        <div class="kv"><span class="k">MIME · Size</span><span class="v">${esc(d.mime_type||'—')} · ${d.file_size_bytes?Math.round(d.file_size_bytes/1024)+' KB':'—'}</span></div>
+        <div class="kv"><span class="k">Storage Path</span><span class="v dim">${esc(d.storage_path||'—')}</span></div>
+        <div class="kv"><span class="k">AI Runs · Cost</span><span class="v">${esc(runSummary)} <span class="dim">· ${money(cost)}</span></span></div>
+        <div class="kv"><span class="k">Extracted</span><span class="v">${d.extracted_at?ago(d.extracted_at):'—'}</span></div>
+        <div class="kv"><span class="k">Updated</span><span class="v">${ago(d.updated_at)}</span></div>
+        ${d.extraction_error?`<div class="kv" style="grid-column:1/-1;"><span class="k" style="color:var(--red);">Error</span><span class="v" style="color:var(--red);">${esc(d.extraction_error)}</span></div>`:''}
+        ${efStr?`<div class="fields-block">${esc(efStr)}</div>`:''}
+        ${clearsHtml}
+        <div class="doc-actions">
+          <button class="btn primary" data-reprocess="${esc(d.id)}">⟳ Reprocess (re-run AI)</button>
+          <span class="reprocess-status" id="rs-${esc(d.id)}" style="font-family:var(--mono);font-size:0.66rem;color:var(--muted);align-self:center;"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function reprocess(docId, btn){
+  const statusEl = $('#rs-'+docId);
+  btn.disabled = true;
+  statusEl.innerHTML = `<span class="spinner"></span> dispatching reprocess…`;
+  statusEl.style.color = 'var(--accent)';
+
+  try{
+    const { data, error } = await supa.rpc('reprocess_document', { p_document_id: docId });
+    if(error){
+      statusEl.style.color='var(--red)';
+      statusEl.textContent = 'RPC error: '+error.message;
+      btn.disabled=false;
+      return;
+    }
+    statusEl.style.color='var(--accent2)';
+    statusEl.textContent = 'dispatched ✓ — pipeline running async, refreshing in ~15s…';
+    // pg_net is async; poll the doc a couple times then full reload
+    setTimeout(async ()=>{ statusEl.textContent='checking…'; }, 8000);
+    setTimeout(async ()=>{ btn.disabled=false; loadDocs(currentLoanId); }, 15000);
+  }catch(err){
+    statusEl.style.color='var(--red)';
+    statusEl.textContent = 'threw: '+(err?.message||err);
+    btn.disabled=false;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
