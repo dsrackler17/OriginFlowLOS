@@ -9,9 +9,10 @@
      window.OF_signOut()         — clears session + redirects to /portal_signin.html
      window.OF_submitApplication(payload)  — public /apply.html submit hook
      window.OF_signInWithEmail(email)      — magic-link for returning users
-     window.OF_uploadBorrowerDocument(file, requestId)  — borrower doc upload +
-                                   process-document trigger  (ADDED 2026-05-24,
-                                   Phase 11.5.11 → 12.5.9 chain link)
+     window.OF_uploadBorrowerDocument(file, requestId)  — borrower doc upload
+                                   (ADDED 2026-05-24; REVISED same day against
+                                   the real process-document/index.ts — see the
+                                   block above the function for what changed)
 
    Inclusion pattern in each portal HTML:
      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -43,9 +44,9 @@
 (function () {
   'use strict';
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // CONFIG
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   const CONFIG = Object.assign({
     // Override these on window.OF_CONFIG before this script loads. The
     // defaults here match the Submarine Catalyst production project so the
@@ -60,14 +61,9 @@
     // Portal home — flat filename to match repo layout.
     PORTAL_HOME_URL: '/portal_index.html',
 
-    // ── ADDED 2026-05-24 — document-upload config ───────────────────────────
-    // ASSUMPTION (CONFIRM): the Storage bucket that holds borrower uploads.
-    // Guessing 'loan-documents'. Verify the real bucket id in the Supabase
-    // dashboard → Storage. If it differs, override on window.OF_CONFIG.
+    // Storage bucket for borrower uploads. CONFIRMED against
+    // process-document/index.ts (const STORAGE_BUCKET = 'loan-documents').
     UPLOAD_BUCKET: 'loan-documents',
-    // The edge function that runs extraction + the DSL matcher. Confirmed
-    // deployed on prod per handoff (process-document, rewritten this cycle).
-    PROCESS_DOCUMENT_FN: 'process-document',
   }, window.OF_CONFIG || {});
 
   if (!CONFIG.SUBMIT_APPLICATION_URL) {
@@ -76,9 +72,9 @@
       '/submit-application';
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // SUPABASE CLIENT SINGLETON
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   let _client = null;
   function getClient() {
     if (_client) return _client;
@@ -101,17 +97,17 @@
   }
   window.OF_supabase = getClient;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // OF_bootstrap()
   //   Resolves the current borrower + their active loan. Three outcomes:
-  //   1. No session                → redirect to sign-in, return null
-  //   2. Session, no linked borrower → call link_auth_user_to_borrower RPC
+  //   1. No session                -> redirect to sign-in, return null
+  //   2. Session, no linked borrower -> call link_auth_user_to_borrower RPC
   //                                    using borrower_id from user_metadata
   //                                    (this is the first-sign-in case)
-  //   3. Session + linked borrower  → fetch borrower + most recent active loan
+  //   3. Session + linked borrower  -> fetch borrower + most recent active loan
   //
   //   Returns: { session, borrower, loan }
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   async function bootstrap() {
     const sb = getClient();
     if (!sb) return null;
@@ -228,10 +224,10 @@
   }
   window.OF_bootstrap = bootstrap;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // OF_touchLastSeen() — convenience for portal pages that want to ping
   // last_seen_at without going through full bootstrap. Fire-and-forget.
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   async function touchLastSeen() {
     const sb = getClient();
     if (!sb) return;
@@ -243,9 +239,9 @@
   }
   window.OF_touchLastSeen = touchLastSeen;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // OF_signOut()
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   async function signOut() {
     const sb = getClient();
     if (sb) await sb.auth.signOut();
@@ -253,13 +249,13 @@
   }
   window.OF_signOut = signOut;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // OF_submitApplication(payload)
   //   The /apply.html form posts here. Called UNAUTHENTICATED — this is
   //   the only hook that doesn't require a session.
   //
   //   Returns: { success, masked_email, loan_number, is_new_borrower }
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   async function submitApplication(payload) {
     const res = await fetch(CONFIG.SUBMIT_APPLICATION_URL, {
       method:  'POST',
@@ -285,7 +281,7 @@
   }
   window.OF_submitApplication = submitApplication;
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   // OF_signInWithEmail(email)
   //   Sends a magic link to an existing borrower (returning-user flow).
   //   The portal_signin.html page calls this.
@@ -293,7 +289,7 @@
   //   The emailRedirectTo lands on PORTAL_HOME_URL (flat-path
   //   /portal_index.html by default). portal_index then runs OF_bootstrap
   //   which handles the post-magic-link session pickup.
-  // ─────────────────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
   async function signInWithEmail(email) {
     const sb = getClient();
     if (!sb) throw new Error('Supabase client unavailable');
@@ -309,106 +305,100 @@
   window.OF_signInWithEmail = signInWithEmail;
 
   /* ===========================================================================
-     OF_uploadBorrowerDocument(file, requestId)        [ADDED 2026-05-24]
-     -------------------------------------------------------------------------
-     THE THESIS LINK. portal_docs.html → uploadFiles() already calls this hook;
-     until now it was never defined, so every borrower upload silently took the
-     in-memory stub path (600ms fake delay, no persistence, matcher never fired).
-     This is the real implementation: store the file, persist the row, and kick
-     the extraction+DSL-matcher (process-document) so the borrower upload can
-     auto-clear its condition — "95% in OriginFlow, never open Encompass."
+     OF_uploadBorrowerDocument(file, requestId)
+       ADDED 2026-05-24. REVISED same day against the REAL
+       process-document/index.ts (Rev 3). What the function actually told us:
 
-     CONTRACT (matches the call site):
-       file:      a File from <input>/DataTransfer
-       requestId: the CONDITION row id (uuid) the borrower is satisfying, or
-                  null for the "Something else?" extra-upload (LO triage).
-       returns:   { documentId, documentType, conditionId }   (throws on failure)
+         CONFIRMED
+           - Matcher reads `loan_documents` (NOT a separate `documents` table).
+           - Storage bucket is 'loan-documents'; storage column is `storage_path`.
+           - Processing is gated on status = 'uploaded'.
 
-     ───────────────────────────────────────────────────────────────────────
-     THREE UNVERIFIED ASSUMPTIONS baked in — confirm against prod, then prune:
+         FIXED vs the first cut
+           - mime_type is now set. process-document does
+             buildContentBlock(doc.mime_type, ...); with no mime_type the doc is
+             rejected as "unsupported MIME" before any AI runs. This was fatal.
+           - Dropped the bogus `document_type` column write + the
+             required_doc_type lookup. There is NO document_type column; routing
+             is by `ai_classified_doc_type`, which process-document sets itself
+             via its Haiku classify step. We must not pre-set it.
+           - branch_id + borrower_id are now populated (process-document types
+             them non-null; used for ai_extraction_runs logging + the income
+             discrepancy condition insert).
+           - REMOVED the client-side process-document invoke. The function
+             authenticates by matching Authorization: Bearer <WEBHOOK_SECRET> —
+             a server-only secret. A borrower client must never hold it, so the
+             client cannot and must not call process-document directly.
 
-       [A1] INSERT TARGET TABLE.  This page READS `loan_documents`
-            (filename/file_size_bytes/status), so we WRITE there too, so the UI
-            reflects the upload. BUT the first verified auto-clear used a
-            `documents` row (…07000001, populated `extraction_data`, col
-            `file_name`). If `documents` and `loan_documents` are DISTINCT
-            tables and the matcher reads `documents`, this insert feeds the UI
-            but NOT the matcher → chain stays broken. CONFIRM whether
-            loan_documents and documents are the same table / a view / distinct.
-            If the matcher consumes `documents`, repoint INSERT_TABLE below.
+     HOW PROCESSING IS FIRED
+       Server-side only: a DB trigger / database webhook on loan_documents
+       INSERT (status='uploaded') calls process-document with the WEBHOOK_SECRET
+       it reads from Vault. See migration `021_fire_process_document_on_upload`.
+       >>> If that trigger is not installed, this row persists + shows in the UI
+           but NOTHING processes it and no condition auto-clears. That trigger is
+           the thesis link. <<<
 
-       [A2] PROCESSING TRIGGER MECHANISM.  Either (a) an AFTER INSERT trigger on
-            the docs table fires process-document via pg_net (then the insert
-            alone is enough and the explicit invoke below is redundant/harmless),
-            or (b) no trigger and the client must invoke process-document. Per
-            handoff §4, edge fns needing service_role CANNOT be called with this
-            publishable/anon key — so if process-document requires service_role,
-            path (b) will 401 and path (a) is mandatory. We do BOTH and fail the
-            invoke soft. CONFIRM which is real and delete the dead one.
-
-       [A3] COLUMN + BUCKET NAMES.  Storage bucket = CONFIG.UPLOAD_BUCKET
-            ('loan-documents', guessed). Storage-path column = `storage_path`
-            (guessed). We assume `document_type` lives on the docs table. The
-            process-document body shape ({document_id, loan_id, document_type,
-            condition_id}) is a guess — match it to process-document/index.ts.
+     CONTRACT (matches portal_docs.html -> uploadFiles()):
+       file:      File from <input>/DataTransfer
+       requestId: the CONDITION row id (uuid) being satisfied, or null for the
+                  "Something else?" extra upload (LO triage).
+       returns:   { documentId, conditionId }   (throws on failure)
      ========================================================================= */
 
-  // [A1] Repoint this if the matcher consumes a different table than the UI reads.
+  // CONFIRMED: matcher consumes loan_documents (process-document SELECT).
   const INSERT_TABLE = 'loan_documents';
 
   function _safeName(name) {
     return String(name || 'upload').replace(/[^\w.\-]+/g, '_').slice(-120);
   }
 
-  async function _resolveDocType(sb, conditionId) {
-    // The matcher's routing key. `required_doc_type` was backfilled onto
-    // conditions this session from match_criteria->any_of->0->doc_type, aliased
-    // to the document_type enum. Read it so process-document routes the doc to
-    // the right extractor/rules. Null is fine for extra (unclassified) uploads.
-    if (!conditionId) return null;
-    const { data, error } = await sb
-      .from('conditions')
-      .select('id, required_doc_type')
-      .eq('id', conditionId)
-      .maybeSingle();
-    if (error) {
-      console.warn('[portal-auth] required_doc_type lookup failed (doc will be unrouted):', error.message);
-      return null;
+  // Resolve + cache branch_id (from the loan) and the uploader's borrower_id.
+  // process-document needs both on the row. Cached on OF_DOCS_CTX so repeat
+  // uploads in the same session don't re-query.
+  async function _resolveOwnership(sb, loanId) {
+    const ctx = window.OF_DOCS_CTX || (window.OF_DOCS_CTX = {});
+    if (ctx._branchId !== undefined && ctx._borrowerId !== undefined) {
+      return { branchId: ctx._branchId, borrowerId: ctx._borrowerId };
     }
-    return (data && data.required_doc_type) || null;
-  }
 
-  async function _triggerProcessing(sb, payload) {
-    // [A2] path (b): explicit invoke. Fails SOFT — a non-2xx (e.g. 401 from an
-    // insufficient anon key) just means path (a)'s DB trigger is the real
-    // mechanism and already did the work on INSERT.
+    let branchId = (ctx.loan && ctx.loan.branch_id) || null;
+    if (!branchId) {
+      const { data: loan, error } = await sb
+        .from('loans').select('branch_id').eq('id', loanId).maybeSingle();
+      if (error) console.warn('[portal-auth] branch_id lookup failed:', error.message);
+      branchId = (loan && loan.branch_id) || null;
+    }
+
+    let borrowerId = null;
     try {
-      const { error } = await sb.functions.invoke(CONFIG.PROCESS_DOCUMENT_FN, {
-        body: payload,  // [A3] confirm shape vs process-document/index.ts
-      });
-      if (error) {
-        console.warn('[portal-auth] process-document invoke non-OK ' +
-          '(fine if a DB trigger handles processing on insert):', error.message || error);
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data: b, error } = await sb
+          .from('borrowers').select('id').eq('auth_user_id', user.id).maybeSingle();
+        if (error) console.warn('[portal-auth] borrower_id lookup failed:', error.message);
+        borrowerId = (b && b.id) || null;
       }
     } catch (e) {
-      console.warn('[portal-auth] process-document invoke threw ' +
-        '(fine if trigger-driven):', e && e.message);
+      console.warn('[portal-auth] getUser failed during upload ownership resolve:', e && e.message);
     }
+
+    ctx._branchId = branchId;
+    ctx._borrowerId = borrowerId;
+    return { branchId, borrowerId };
   }
 
   async function uploadBorrowerDocument(file, requestId) {
     const sb = getClient();
     if (!sb) throw new Error('Supabase client unavailable');
 
-    // Loan context — prefer the page-stashed ctx so we don't re-bootstrap.
     const docsCtx = window.OF_DOCS_CTX;
     const loanId = docsCtx && docsCtx.loan && docsCtx.loan.id;
     if (!loanId) throw new Error('No loan context — cannot attach upload');
 
-    const conditionId  = requestId || null;            // null = extra upload
-    const documentType = await _resolveDocType(sb, conditionId);
+    const conditionId = requestId || null;   // null = extra (unclassified) upload
+    const { branchId, borrowerId } = await _resolveOwnership(sb, loanId);
 
-    // 1) STORE the bytes. [A3] bucket name is an assumption.
+    // 1) STORE the bytes (bucket confirmed = 'loan-documents').
     const objectPath = `${loanId}/${conditionId || 'misc'}/${Date.now()}_${_safeName(file.name)}`;
     const { error: upErr } = await sb.storage
       .from(CONFIG.UPLOAD_BUCKET)
@@ -418,17 +408,20 @@
       });
     if (upErr) throw new Error('Storage upload failed: ' + upErr.message);
 
-    // 2) PERSIST the row. [A1] target table / [A3] column names are assumptions.
-    //    Column set matches what portal_docs.html's SELECT already reads back
-    //    (filename, file_size_bytes, status) plus the routing key + storage path.
+    // 2) PERSIST the row. Columns chosen to match process-document's SELECT.
+    //    CRITICAL: mime_type drives the server-side content block; status MUST
+    //    be 'uploaded' (the gate process-document checks). We deliberately do
+    //    NOT set a doc_type — process-document classifies it itself.
     const row = {
       loan_id:         loanId,
-      condition_id:    conditionId,     // null for extra uploads
+      branch_id:       branchId,           // ai_extraction_runs + discrepancy inserts
+      borrower_id:     borrowerId,         // uploader
+      condition_id:    conditionId,        // UI linkage only; matcher routes by template_key
       filename:        file.name,
       file_size_bytes: file.size,
-      document_type:   documentType,    // [A3] routing key; null when unclassified
-      storage_path:    objectPath,      // [A3] confirm column name
-      status:          'uploaded',
+      mime_type:       file.type || null,  // CRITICAL: buildContentBlock() needs this
+      storage_path:    objectPath,
+      status:          'uploaded',         // the processing gate
     };
     const { data: inserted, error: insErr } = await sb
       .from(INSERT_TABLE)
@@ -436,22 +429,15 @@
       .select('id')
       .single();
     if (insErr) {
-      // Surface the real Postgres message — under the act+flag philosophy we let
-      // the runtime correct our schema guesses (missing column / bad enum / etc.).
+      // Surface the raw Postgres message — act+flag: let a wrong column/enum
+      // guess fail loudly at runtime rather than pre-validating every column.
       throw new Error(`Document insert into ${INSERT_TABLE} failed: ` + insErr.message);
     }
-    const documentId = inserted && inserted.id;
 
-    // 3) TRIGGER extraction + DSL matcher. [A2] redundant-but-harmless if a DB
-    //    trigger already fired on the INSERT above.
-    await _triggerProcessing(sb, {
-      document_id:   documentId,
-      loan_id:       loanId,
-      document_type: documentType,
-      condition_id:  conditionId,
-    });
-
-    return { documentId, documentType, conditionId };
+    // 3) NO client-side process-document call by design (WEBHOOK_SECRET is
+    //    server-only). The INSERT above is the trigger surface; the DB
+    //    trigger / database webhook fires process-document server-side.
+    return { documentId: inserted && inserted.id, conditionId };
   }
   window.OF_uploadBorrowerDocument = uploadBorrowerDocument;
 
