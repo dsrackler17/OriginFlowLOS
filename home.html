@@ -819,6 +819,10 @@ footer a:hover { color: var(--accent); }
           <span class="dropdown-item-title">Reports</span>
           <span class="dropdown-item-sub">Pipeline · funded · LO performance</span>
         </a>
+        <a class="dropdown-item" href="/audit-log.html" role="menuitem">
+          <span class="dropdown-item-title">Audit Log</span>
+          <span class="dropdown-item-sub">Every create · update · delete · branch-wide</span>
+        </a>
       </div>
     </li>
 
@@ -866,6 +870,10 @@ footer a:hover { color: var(--accent); }
         <a class="dropdown-item" href="/integrations.html" role="menuitem">
           <span class="dropdown-item-title">Integrations</span>
           <span class="dropdown-item-sub">CRM · Encompass · Arive sync</span>
+        </a>
+        <a class="dropdown-item" href="/billing.html" role="menuitem">
+          <span class="dropdown-item-title">Billing &amp; Invoices</span>
+          <span class="dropdown-item-sub">Subscription · invoices · Stripe portal</span>
         </a>
       </div>
     </li>
@@ -1318,7 +1326,7 @@ async function bootstrap() {
     }
     pill.style.display = 'inline-flex';
     pill.style.cursor = 'pointer';
-    pill.addEventListener('click', openCustomerPortal);
+    pill.addEventListener('click', () => { window.location.href = '/billing.html'; });
   }
 
   if (me.role === 'admin') {
