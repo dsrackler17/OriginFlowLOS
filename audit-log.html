@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Audit Log · OriginFlow LOS</title>
-<meta name="description" content="OriginFlow LOS — branch audit trail of data changes.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,114 +13,89 @@
   --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
   --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
   --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
-  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-nav,.metric-strip,.page-head,.filter-bar,.audit-grid,footer,.state{position:relative;z-index:1;}
-nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
-.nav-logo{display:flex;align-items:center;gap:.65rem;text-decoration:none;}
+html,body{height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main,footer{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:0.65rem;text-decoration:none;flex-shrink:0;}
 .sonar-icon{width:26px;height:26px;}
-.nav-wordmark{font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--white);letter-spacing:.12em;text-transform:uppercase;}
+.nav-wordmark{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase;}
 .nav-wordmark span{color:var(--accent);}
 .nav-center{display:flex;align-items:center;gap:1.5rem;list-style:none;}
-.nav-center a{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.nav-center a{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
 .nav-center a:hover,.nav-center a.active{color:var(--accent);}
 .nav-right{display:flex;align-items:center;gap:1rem;}
-.nav-branch{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;}
+.nav-branch{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);border:1px solid var(--border);padding:0.3rem 0.75rem;}
 .nav-branch strong{color:var(--accent2);}
-.nav-user-name{font-family:var(--sans);font-size:.78rem;color:var(--white);}
-.nav-signout{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);padding:.3rem .75rem;transition:all .2s;cursor:pointer;background:none;}
-.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,.4);}
-.state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5rem 2rem;min-height:60vh;text-align:center;}
-.state-eyebrow{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem;}
-.state-heading{font-family:var(--serif);font-size:1.6rem;color:var(--white);margin-bottom:.7rem;}
-.state-text{color:var(--muted);max-width:480px;margin:0 auto 1.3rem;}
-.btn{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:.6rem 1.1rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.nav-user-name{font-family:var(--sans);font-size:0.78rem;color:var(--white);}
+.nav-user-role{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:var(--accent);border:1px solid rgba(0,212,255,0.3);padding:0.15rem 0.5rem;background:rgba(0,212,255,0.06);margin-left:0.5rem;}
+.nav-signout{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);padding:0.3rem 0.75rem;transition:all .2s;cursor:pointer;background:none;}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,0.4);}
+
+.page-head{padding:1.75rem 2rem 1.25rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.page-eyebrow{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem;}
+.page-title{font-family:var(--serif);font-size:1.85rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:0.35rem;max-width:720px;font-size:0.92rem;}
+
+main{flex:1;display:flex;flex-direction:column;}
+
+.filter-bar{padding:0.75rem 2rem;border-bottom:1px solid var(--border);background:var(--deep);display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;}
+.filter-input,.filter-select{font-family:var(--mono);font-size:0.65rem;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.45rem 0.7rem;outline:none;transition:border-color .15s;}
+.filter-input{min-width:240px;flex:1;max-width:340px;}
+.filter-input:focus,.filter-select:focus{border-color:var(--accent);}
+.filter-input::placeholder{color:var(--muted);}
+.filter-spacer{flex:1;}
+.btn{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.45rem 0.85rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
 .btn:hover{border-color:var(--accent);color:var(--accent);}
 .btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
-.btn:disabled{opacity:.5;cursor:not-allowed;}
-.spinner{width:30px;height:30px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.25rem;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+
+.audit-wrap{flex:1;padding:1.5rem 2rem 3rem;overflow-y:auto;}
+
+.log-row{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:0.85rem;align-items:center;padding:0.65rem 0.9rem;background:var(--surface);border:1px solid var(--border);margin-bottom:0.4rem;font-size:0.82rem;transition:border-color .15s;}
+.log-row:hover{border-color:rgba(0,212,255,0.3);}
+.log-op{font-family:var(--mono);font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.55rem;border:1px solid var(--border);min-width:4.5rem;text-align:center;}
+.log-op.insert{color:var(--accent2);border-color:rgba(0,255,157,0.4);background:rgba(0,255,157,0.06);}
+.log-op.update{color:var(--accent);border-color:rgba(0,212,255,0.4);background:rgba(0,212,255,0.06);}
+.log-op.delete{color:var(--red);border-color:rgba(255,68,68,0.4);background:rgba(255,68,68,0.06);}
+.log-table{font-family:var(--mono);font-size:0.6rem;color:var(--accent);letter-spacing:0.04em;padding:0.2rem 0.5rem;border:1px solid rgba(0,212,255,0.2);min-width:7rem;text-align:center;}
+.log-body{min-width:0;}
+.log-actor{font-family:var(--sans);font-size:0.85rem;color:var(--white);font-weight:500;}
+.log-actor .role{font-family:var(--mono);font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-left:0.45rem;}
+.log-detail{font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:0.04em;margin-top:0.12rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-loan{font-family:var(--mono);font-size:0.6rem;color:var(--accent);text-decoration:none;}
+.log-loan:hover{text-decoration:underline;}
+.log-time{font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.04em;white-space:nowrap;text-align:right;}
+
+.log-group-head{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);padding:0.6rem 0 0.4rem;border-bottom:1px solid var(--border);margin:1rem 0 0.6rem;}
+.log-group-head:first-child{margin-top:0;}
+
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1.25rem;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.metric-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);}
-.metric-cell{background:var(--surface);padding:1rem 1.2rem;}
-.metric-label{font-family:var(--mono);font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;}
-.metric-value{font-family:var(--serif);font-size:1.5rem;line-height:1.1;color:var(--white);}
-.metric-value.cyan{color:var(--accent);} .metric-value.green{color:var(--accent2);} .metric-value.amber{color:var(--amber);} .metric-value.red{color:var(--red);}
-.metric-sub{font-family:var(--mono);font-size:.58rem;letter-spacing:.04em;color:var(--muted);margin-top:.2rem;}
-.page-head{padding:1.4rem 2rem 1rem;border-bottom:1px solid var(--border);background:var(--navy);}
-.crumb{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:.45rem;}
-.crumb a{color:var(--muted);text-decoration:none;} .crumb a:hover{color:var(--accent);} .crumb span{color:var(--accent);}
-.page-title-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
-.page-title{font-family:var(--serif);font-size:1.7rem;color:var(--white);}
-.page-meta{font-family:var(--mono);font-size:.62rem;color:var(--muted);letter-spacing:.06em;}
-.page-meta .pulse-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent2);margin-right:.4rem;animation:dot 1.4s ease infinite;vertical-align:middle;}
-@keyframes dot{0%,100%{opacity:1;}50%{opacity:.4;}}
-.page-desc{color:var(--muted);font-size:.84rem;margin-top:.5rem;max-width:760px;}
-.page-desc strong{color:var(--accent2);font-weight:500;}
-.filter-bar{background:var(--deep);border-bottom:1px solid var(--border);padding:.8rem 2rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;}
-.filter-bar select,.filter-bar input{font-family:var(--mono);font-size:.68rem;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.45rem .7rem;outline:none;transition:border-color .15s;}
-.filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent);}
-.filter-bar .spacer{flex:1;}
-.filter-bar .btn{font-size:.62rem;}
-.audit-grid{display:grid;grid-template-columns:1fr 320px;gap:1px;background:var(--border);min-height:calc(100vh - 360px);}
-.event-stream{background:var(--navy);padding:1.25rem 1.5rem 2rem;}
-.bucket{display:grid;grid-template-columns:120px 1fr;gap:1.5rem;padding:1.1rem 0;border-bottom:1px solid var(--border);}
-.bucket-time{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);position:sticky;top:96px;align-self:start;}
-.bucket-time strong{display:block;color:var(--accent);font-size:.75rem;margin-bottom:.2rem;}
-.bucket-events{display:flex;flex-direction:column;gap:.5rem;min-width:0;}
-.event{display:grid;grid-template-columns:88px 1fr auto;gap:1rem;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--border);padding:.7rem 1rem;font-size:.82rem;align-items:start;transition:border-color .2s;}
-.event:hover{border-color:rgba(0,212,255,.3);}
-.event.insert{border-left-color:var(--accent2);} .event.update{border-left-color:var(--accent);} .event.delete{border-left-color:var(--red);background:rgba(255,68,68,.04);}
-.event-time{font-family:var(--mono);font-size:.66rem;color:var(--muted);letter-spacing:.04em;padding-top:.1rem;}
-.event-time strong{display:block;color:var(--white);font-size:.72rem;margin-bottom:.1rem;}
-.event-body{color:var(--text);line-height:1.5;min-width:0;}
-.event-actor{font-family:var(--sans);color:var(--white);font-weight:500;}
-.event-role-badge{font-family:var(--mono);font-size:.52rem;letter-spacing:.1em;padding:.08rem .35rem;border:1px solid var(--border);margin-left:.35rem;text-transform:uppercase;vertical-align:middle;color:var(--muted);}
-.event-role-badge.lo{color:var(--accent);border-color:rgba(0,212,255,.4);} .event-role-badge.processor{color:var(--accent2);border-color:rgba(0,255,157,.4);}
-.event-role-badge.underwriter{color:var(--amber);border-color:rgba(245,166,35,.4);} .event-role-badge.admin,.event-role-badge.owner{color:var(--white);}
-.event-target{font-family:var(--mono);font-size:.74rem;color:var(--white);background:var(--deep);padding:.05rem .4rem;border:1px solid var(--border);}
-.event-loan{font-family:var(--mono);color:var(--accent);font-size:.78rem;font-weight:700;text-decoration:none;} .event-loan:hover{text-decoration:underline;}
-.event-diff{display:flex;flex-direction:column;gap:.25rem;margin-top:.45rem;}
-.diff-line{display:flex;gap:.45rem;align-items:baseline;flex-wrap:wrap;font-family:var(--mono);font-size:.66rem;}
-.diff-field{color:var(--muted);min-width:120px;}
-.diff-old{color:#e8899a;text-decoration:line-through;background:rgba(255,68,68,.06);padding:.05rem .35rem;border:1px solid rgba(255,68,68,.2);word-break:break-word;}
-.diff-arrow{color:var(--muted);} .diff-new{color:var(--accent2);background:rgba(0,255,157,.06);padding:.05rem .35rem;border:1px solid rgba(0,255,157,.3);word-break:break-word;}
-.event-extra{font-family:var(--mono);font-size:.6rem;color:var(--muted);margin-top:.3rem;letter-spacing:.03em;word-break:break-all;}
-.event-tag{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;padding:.15rem .45rem;border:1px solid var(--border);text-transform:uppercase;align-self:start;white-space:nowrap;color:var(--muted);}
-.event-tag.insert{color:var(--accent2);border-color:rgba(0,255,157,.4);} .event-tag.update{color:var(--accent);border-color:rgba(0,212,255,.4);} .event-tag.delete{color:var(--red);border-color:rgba(255,68,68,.5);}
-.right-rail{background:var(--deep);display:flex;flex-direction:column;}
-.rail-block{border-bottom:1px solid var(--border);padding:1.05rem 1.2rem;}
-.rail-head{font-family:var(--mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem;}
-.bd-row{display:grid;grid-template-columns:90px 1fr auto;gap:.7rem;align-items:center;padding:.35rem 0;font-size:.74rem;}
-.bd-name{font-family:var(--mono);font-size:.6rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.bd-bar{height:4px;background:var(--surface);border:1px solid var(--border);position:relative;overflow:hidden;}
-.bd-bar>span{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.bd-count{font-family:var(--mono);font-size:.72rem;color:var(--white);min-width:1.6rem;text-align:right;}
-.actor-row{display:grid;grid-template-columns:1.6rem 1fr auto;gap:.6rem;align-items:center;padding:.45rem 0;border-bottom:1px dashed var(--border);font-size:.76rem;}
-.actor-row:last-child{border-bottom:none;}
-.actor-init{font-family:var(--mono);font-size:.56rem;font-weight:700;width:1.6rem;height:1.6rem;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:var(--navy);}
-.actor-name{color:var(--white);font-size:.74rem;} .actor-name small{color:var(--muted);font-size:.58rem;display:block;}
-.actor-count{font-family:var(--mono);font-size:.74rem;color:var(--accent);}
-.integrity{font-family:var(--mono);font-size:.64rem;color:var(--text);line-height:1.6;}
-.integrity .ret-row{display:flex;justify-content:space-between;gap:.6rem;padding:.28rem 0;border-bottom:1px dashed var(--border);}
-.integrity .ret-row:last-child{border-bottom:none;}
-.integrity .ret-label{color:var(--muted);letter-spacing:.03em;} .integrity .ret-val{color:var(--white);text-align:right;}
-.integrity .ret-val.green{color:var(--accent2);}
-.coverage-note{font-family:var(--sans);font-size:.68rem;color:var(--muted);line-height:1.5;margin-top:.7rem;padding-top:.6rem;border-top:1px solid var(--border);}
-.coverage-note b{color:var(--amber);}
-.empty{font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center;padding:3rem 1rem;}
-.foot-load{display:flex;justify-content:center;padding:1.3rem;}
-footer{border-top:1px solid var(--border);padding:1.1rem 2rem;display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;color:var(--muted);background:var(--deep);flex-wrap:wrap;gap:1rem;}
-@media(max-width:1280px){.metric-strip{grid-template-columns:repeat(3,1fr);}}
-@media(max-width:1024px){.nav-center{display:none;}.audit-grid{grid-template-columns:1fr;}.metric-strip{grid-template-columns:repeat(2,1fr);}.bucket{grid-template-columns:1fr;gap:.5rem;}.bucket-time{position:static;}.event{grid-template-columns:1fr;}.event-tag{justify-self:start;}}
+.state-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;min-height:60vh;text-align:center;}
+.state-eyebrow{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.state-heading{font-family:var(--serif);font-size:2rem;color:var(--white);margin-bottom:0.85rem;max-width:640px;}
+.state-text{max-width:540px;color:var(--muted);margin-bottom:1.5rem;}
+.empty{font-family:var(--mono);font-size:0.72rem;color:var(--muted);text-align:center;padding:3rem 1rem;letter-spacing:0.04em;border:1px dashed var(--border);background:var(--surface);}
+.notice{font-family:var(--mono);font-size:0.68rem;padding:0.7rem 0.9rem;border:1px solid var(--border);border-left:3px solid var(--accent);background:rgba(0,212,255,0.04);margin-bottom:1rem;letter-spacing:0.03em;}
+.notice.err{border-left-color:var(--red);background:rgba(255,68,68,0.06);color:var(--red);}
+
+footer{border-top:1px solid var(--border);padding:0.85rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);background:var(--deep);}
+footer a{color:var(--muted);text-decoration:none;}
+footer a:hover{color:var(--accent);}
+
+@media(max-width:1024px){.nav-center{display:none;}.log-row{grid-template-columns:auto 1fr auto;}.log-table,.log-loan{display:none;}}
+@media(max-width:540px){nav{padding:0.85rem 1rem;}.nav-branch,.nav-user-role{display:none;}.page-head{padding:1.25rem 1rem 1rem;}.audit-wrap{padding:1rem;}.filter-bar{padding:0.6rem 1rem;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 </head>
 <body>
-
 <nav>
   <a href="/home.html" class="nav-logo">
     <div class="sonar-icon">
@@ -131,350 +105,200 @@ footer{border-top:1px solid var(--border);padding:1.1rem 2rem;display:flex;align
         <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
         <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
         <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="24" cy="4" r="1.5" fill="#00ff9d"><animate attributeName="opacity" values="1;0;1" dur="1.8s" repeatCount="indefinite"/></circle>
       </svg>
     </div>
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
+    <li><a href="/home.html">Home</a></li>
     <li><a href="/dashboard.html">Pipeline</a></li>
     <li><a href="/documents.html">Documents</a></li>
-    <li><a href="/conditions.html">Conditions</a></li>
     <li><a href="/audit-log.html" class="active">Audit Log</a></li>
+    <li><a href="/reports.html">Reports</a></li>
   </ul>
   <div class="nav-right">
     <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
-    <span class="nav-user-name" id="nav-user-name">…</span>
-    <button class="nav-signout" id="nav-signout">Sign Out</button>
+    <span><span class="nav-user-name" id="nav-user-name">…</span><span class="nav-user-role" id="nav-user-role" style="display:none;">—</span></span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
 
-<div class="state" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.2rem;">Loading audit trail…</div></div>
-<div class="state" id="state-signed-out" style="display:none;">
-  <div class="state-eyebrow">Sign in required</div><h1 class="state-heading">You're not signed in.</h1>
-  <p class="state-text">The audit log is branch-scoped and requires authentication.</p><a href="/login.html" class="btn primary">Sign in →</a>
-</div>
+<main>
+  <div class="state-screen" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.4rem;">Loading audit log…</div></div>
+  <div class="state-screen" id="state-signed-out" style="display:none;"><div class="state-eyebrow">Sign in required</div><h1 class="state-heading">The audit log is branch-scoped.</h1><p class="state-text">Sign in to view your branch's activity log.</p><a href="/login.html" class="btn primary">Sign in →</a></div>
 
-<div id="app" style="display:none;">
-  <section class="metric-strip" id="metric-strip"></section>
+  <div id="audit-active" style="display:none; flex:1; display:flex; flex-direction:column;">
+    <header class="page-head">
+      <div class="page-eyebrow">Compliance · Activity Log</div>
+      <h1 class="page-title">Audit Log</h1>
+      <p class="page-sub">Every recorded create, update, and delete across the branch — who did what, to which record, and when. Read-only. Backed by the universal audit log tables (migration 020).</p>
+    </header>
 
-  <section class="page-head">
-    <div class="crumb"><a href="/home.html">Home</a> &nbsp;›&nbsp; <span>Audit Log</span></div>
-    <div class="page-title-row">
-      <div>
-        <h1 class="page-title">Audit Log</h1>
-        <p class="page-desc">Every data change on every loan in this branch — inserts, updates with full before/after, and deletes — written by database triggers as each change happens. Branch-scoped and queryable for examiner review.</p>
-      </div>
-      <div class="page-meta"><span class="pulse-dot"></span>Live · branch-scoped</div>
+    <div class="filter-bar">
+      <input type="text" class="filter-input" id="filter-search" placeholder="Search by table, actor, or operation…">
+      <select class="filter-select" id="filter-table"><option value="all">All tables</option></select>
+      <select class="filter-select" id="filter-op">
+        <option value="all">All operations</option>
+        <option value="INSERT">Insert</option>
+        <option value="UPDATE">Update</option>
+        <option value="DELETE">Delete</option>
+      </select>
+      <div class="filter-spacer"></div>
+      <button class="btn" id="refresh-btn">↻ Refresh</button>
     </div>
-  </section>
 
-  <section class="filter-bar">
-    <select id="f-table"><option value="">All tables</option></select>
-    <select id="f-op">
-      <option value="">All operations</option>
-      <option value="insert">Insert</option>
-      <option value="update">Update</option>
-      <option value="delete">Delete</option>
-    </select>
-    <select id="f-loan"><option value="">All loans</option></select>
-    <select id="f-range">
-      <option value="1">Last 24 hours</option>
-      <option value="7" selected>Last 7 days</option>
-      <option value="30">Last 30 days</option>
-      <option value="90">Last 90 days</option>
-      <option value="0">All time</option>
-    </select>
-    <select id="f-actor"><option value="">All actors</option></select>
-    <span class="spacer"></span>
-    <button class="btn" id="f-apply">Apply</button>
-    <button class="btn primary" id="f-export">↓ Export CSV</button>
-  </section>
-
-  <div class="audit-grid">
-    <section class="event-stream" id="event-stream"><div class="empty">Loading…</div></section>
-    <aside class="right-rail" id="right-rail"></aside>
+    <div class="audit-wrap">
+      <div id="audit-notice"></div>
+      <div id="log-list"><div class="empty">Loading…</div></div>
+    </div>
   </div>
+</main>
 
-  <div class="foot-load" id="foot-load" style="display:none;"><button class="btn" id="load-more">Load older events</button></div>
-
-  <footer>
-    <span style="font-family:var(--mono);font-size:.65rem;font-weight:700;letter-spacing:.12em;">ORIGINFLOW LOS</span>
-    <span id="foot-summary">—</span>
-    <div style="display:flex;gap:1.25rem;"><a href="/dashboard.html" style="color:var(--muted);text-decoration:none;">← Pipeline</a><a href="/home.html" style="color:var(--muted);text-decoration:none;">Home</a></div>
-  </footer>
-</div>
+<footer>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · audit log · branch-scoped · read-only</span>
+  <div style="display:flex;gap:1.25rem;"><a href="/home.html">Home</a><a href="/dashboard.html">Pipeline</a><a href="/reports.html">Reports</a><a href="/privacy.html">Privacy</a></div>
+</footer>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-// audit-log.html — wiring  (Phase 13.5.2)  [LIVE DATA]
-// ---------------------------------------------------------------------------
-// Reads public.audit_logs (written by tg_audit_log, now attached to the
-// compliance/lifecycle tables by migration 020). Branch-scoped via RLS +
-// explicit .eq('branch_id'). Every value rendered is real — no fabricated
-// metrics, hashes, or compliance badges. The integrity panel states only the
-// actual mechanism. THIS IS DELIBERATE: an examiner-facing screen that claims
-// hash-chaining/SOC2/immutability the table can't back is a liability, not a
-// feature. We show exactly what is true and name what this log does NOT cover.
-//
-// ⚠ FLAGGED ASSUMPTIONS (defensive — select('*') so unknown columns never 500):
-//   [A1] audit_logs columns confirmed from home.html: id, table_name,
-//        operation, actor_role, created_at, loan_id, branch_id. record_id +
-//        actor_id + before/after data are read defensively across candidate
-//        names (the diff panel simply shows nothing if none are present).
-//   [A2] operation values assumed lowercase ('insert'/'update'/'delete' from
-//        lower(TG_OP)); filter uses ilike so case doesn't matter.
-//   [A3] before/after payload column name unknown — probed across
-//        {old_data/new_data, before_data/after_data, old_record/new_record,
-//        old_values/new_values, changed_fields}. If your trigger uses other
-//        names, add them to DIFF_KEYS and diffs light up; nothing breaks meanwhile.
-// ═══════════════════════════════════════════════════════════════════════════
-const $=(s)=>document.querySelector(s);
-const PAGE=120;
-let supa=null, me=null, branch=null;
-let loansById={}, profilesById={};
-let rows=[];           // accumulated loaded rows (current filter)
-let offset=0, exhausted=false;
-let actorFilter='';    // client-side narrow on the loaded window
+const $ = (s) => document.querySelector(s);
+let supa=null, me=null, branch=null, allLogs=[];
+let filters={ search:'', table:'all', op:'all' };
 
-const KNOWN_TABLES=['conditions','intent_to_proceed','fee_tolerance','change_of_circumstance','fcra_authorizations','aus_findings','disclosures','fees','uw_decisions','hmda_demographics','hmda_lar','loans','borrowers'];
-const DIFF_OLD=['old_data','before_data','old_record','old_values','previous_data','old'];
-const DIFF_NEW=['new_data','after_data','new_record','new_values','data','new'];
+function esc(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function ago(iso){if(!iso)return '';const d=(Date.now()-new Date(iso).getTime())/1000;if(d<60)return Math.floor(d)+'s ago';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';if(d<604800)return Math.floor(d/86400)+'d ago';return new Date(iso).toLocaleDateString();}
+function daysAgo(iso){if(!iso)return 9999;return Math.floor((Date.now()-new Date(iso).getTime())/86400000);}
 
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-function showState(id){ ['state-loading','state-signed-out'].forEach(s=>{$('#'+s).style.display=(s===id)?'flex':'none';}); $('#app').style.display=(id==='app')?'block':'none'; }
-function tbl(n){ return String(n||'').replace(/_/g,' '); }
-function initials(name){ const p=String(name||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p[1]||'')[0]||'')).toUpperCase(); }
+function handleSignOut(){ if(typeof ofSignOut==='function') ofSignOut(); else window.location.href='/login.html'; }
+function showState(id){['state-loading','state-signed-out'].forEach(s=>{document.getElementById(s).style.display=(s===id)?'flex':'none';});$('#audit-active').style.display='none';}
+function showActive(){['state-loading','state-signed-out'].forEach(s=>{document.getElementById(s).style.display='none';});$('#audit-active').style.display='flex';}
 
-async function bootstrap(){
-  $('#nav-signout').addEventListener('click',()=>{ if(typeof ofSignOut==='function') ofSignOut(); else location.href='/login.html'; });
-  supa=(typeof getSupabase==='function')?getSupabase():null;
+async function boot(){
+  supa = (typeof getSupabase==='function') ? getSupabase() : null;
   if(!supa){ showState('state-signed-out'); return; }
   let session=null;
-  try{ session=(typeof ofGetSession==='function')? await ofGetSession():null; }catch(e){}
+  try{ session = (typeof ofGetSession==='function') ? await ofGetSession() : null; }catch(_){}
   if(!session){ showState('state-signed-out'); return; }
-  const { data:profile, error } = await supa.from('profiles')
-    .select('id, branch_id, role, full_name, email, branches:branch_id(id,name)')
+
+  const { data:profile } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, email, branches:branch_id ( id, name )')
     .eq('id', session.user.id).maybeSingle();
-  if(error||!profile||!profile.branch_id){ showState('state-signed-out'); return; }
-  me={ id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
-  branch=profile.branches||{id:profile.branch_id,name:'Your Branch'};
-  $('#nav-user-name').textContent=me.full_name; $('#nav-branch-name').textContent=branch.name; $('#nav-branch-pill').style.display='inline-flex';
+  if(!profile || !profile.branch_id){ showState('state-signed-out'); return; }
+  me = { id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch = profile.branches || { id:profile.branch_id, name:'Your Branch' };
 
-  // loan filter options
-  const { data:loanRows } = await supa.from('loans')
-    .select('id, loan_number, borrowers:loan_borrowers(position, borrower:borrower_id(last_name))')
-    .eq('branch_id', me.branch_id).is('archived_at', null).order('updated_at',{ascending:false}).limit(100);
-  (loanRows||[]).forEach(l=>{ const b=(l.borrowers||[]).sort((a,c)=>(a.position||0)-(c.position||0))[0]?.borrower; loansById[l.id]={ number:l.loan_number, name:b?b.last_name:'' }; });
-  $('#f-loan').innerHTML='<option value="">All loans</option>'+(loanRows||[]).map(l=>`<option value="${esc(l.id)}">${esc(l.loan_number)}${loansById[l.id].name?' · '+esc(loansById[l.id].name):''}</option>`).join('');
-  $('#f-table').innerHTML='<option value="">All tables</option>'+KNOWN_TABLES.map(t=>`<option value="${t}">${esc(tbl(t))}</option>`).join('');
+  $('#nav-user-name').textContent = me.full_name;
+  $('#nav-user-role').textContent = (me.role||'').toUpperCase();
+  $('#nav-user-role').style.display='inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display='inline-flex';
 
-  $('#f-apply').addEventListener('click',()=>reload());
-  $('#f-export').addEventListener('click',exportCsv);
-  $('#load-more').addEventListener('click',()=>loadPage(false));
-  ['f-table','f-op','f-loan','f-range'].forEach(id=>$('#'+id).addEventListener('change',()=>reload()));
-
-  showState('app');
-  await loadMetrics();
-  await reload();
+  showActive();
+  $('#filter-search').addEventListener('input', e=>{ filters.search=e.target.value.trim().toLowerCase(); render(); });
+  $('#filter-table').addEventListener('change', e=>{ filters.table=e.target.value; render(); });
+  $('#filter-op').addEventListener('change', e=>{ filters.op=e.target.value; render(); });
+  $('#refresh-btn').addEventListener('click', loadLogs);
+  await loadLogs();
 }
 
-function rangeGteISO(){ const d=parseInt($('#f-range').value,10); if(!d) return null; return new Date(Date.now()-d*86400000).toISOString(); }
+async function loadLogs(){
+  $('#log-list').innerHTML = `<div class="empty">Loading…</div>`;
+  // Try audit_logs first, then audit_log as a fallback name.
+  let rows=null, err=null;
+  for(const tbl of ['audit_logs','audit_log']){
+    try{
+      const { data, error } = await supa.from(tbl)
+        .select('id, table_name, operation, actor_role, actor_user_id, loan_id, created_at')
+        .eq('branch_id', me.branch_id)
+        .order('created_at',{ascending:false})
+        .limit(500);
+      if(error) throw error;
+      rows = data || [];
+      break;
+    }catch(e){ err = e; }
+  }
+  if(rows===null){
+    $('#audit-notice').innerHTML = `<div class="notice err">Couldn't load the audit log: ${esc(err?.message||'unknown error')}. The universal audit log tables ship with migration 020 (checklist 13.5.1). If they don't exist yet, this is expected.</div>`;
+    $('#log-list').innerHTML = '';
+    return;
+  }
+  $('#audit-notice').innerHTML = '';
+  allLogs = rows;
 
-function baseQuery(){
-  let q=supa.from('audit_logs').select('*').eq('branch_id', me.branch_id);
-  const t=$('#f-table').value; if(t) q=q.eq('table_name', t);
-  const op=$('#f-op').value; if(op) q=q.ilike('operation', op);
-  const loan=$('#f-loan').value; if(loan) q=q.eq('loan_id', loan);
-  const gte=rangeGteISO(); if(gte) q=q.gte('created_at', gte);
-  return q;
-}
+  // resolve actor names
+  const ids = [...new Set(rows.map(r=>r.actor_user_id).filter(Boolean))];
+  if(ids.length){
+    try{
+      const { data } = await supa.from('profiles').select('id, full_name, role').in('id', ids);
+      const map = Object.fromEntries((data||[]).map(p=>[p.id,p]));
+      allLogs.forEach(r=>{ r._actor = map[r.actor_user_id]; });
+    }catch(_){}
+  }
 
-async function reload(){ rows=[]; offset=0; exhausted=false; $('#event-stream').innerHTML='<div class="empty">Loading…</div>'; await loadPage(true); }
-
-async function loadPage(first){
-  const { data, error } = await baseQuery().order('created_at',{ascending:false}).range(offset, offset+PAGE-1);
-  if(error){ $('#event-stream').innerHTML=`<div class="empty" style="color:var(--red);">${esc(error.message)}</div>`; return; }
-  const batch=data||[];
-  if(batch.length<PAGE) exhausted=true;
-  offset+=batch.length;
-  rows=rows.concat(batch);
-  await resolveRefs(batch);
+  // populate table filter
+  const tables = [...new Set(rows.map(r=>r.table_name).filter(Boolean))].sort();
+  $('#filter-table').innerHTML = `<option value="all">All tables</option>` + tables.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
   render();
-  applyActorOptions();
-  $('#foot-load').style.display=exhausted?'none':'flex';
 }
 
-async function resolveRefs(batch){
-  // actor ids (defensive across likely column names)
-  const actorIds=new Set(); const loanIds=new Set();
-  for(const r of batch){
-    const aid=r.actor_id||r.user_id||r.changed_by||r.actor;
-    if(aid && typeof aid==='string' && !profilesById[aid]) actorIds.add(aid);
-    if(r.loan_id && !loansById[r.loan_id]) loanIds.add(r.loan_id);
-  }
-  if(actorIds.size){
-    const { data } = await supa.from('profiles').select('id, full_name, role, email').in('id',[...actorIds]);
-    (data||[]).forEach(p=>{ profilesById[p.id]={ name:p.full_name||p.email||'User', role:p.role }; });
-  }
-  if(loanIds.size){
-    const { data } = await supa.from('loans').select('id, loan_number').in('id',[...loanIds]);
-    (data||[]).forEach(l=>{ loansById[l.id]=loansById[l.id]||{ number:l.loan_number, name:'' }; });
-  }
-}
-
-function pick(row, keys){ for(const k of keys){ if(row[k]!=null) return row[k]; } return null; }
-function asObj(v){ if(v==null) return null; if(typeof v==='object') return v; try{ return JSON.parse(v); }catch(_){ return null; } }
-
-// Build a field-level diff defensively. [A3]
-function diffOf(row){
-  const oldD=asObj(pick(row,DIFF_OLD)); const newD=asObj(pick(row,DIFF_NEW));
-  const changed=asObj(row.changed_fields)||row.changed_fields;
-  const out=[];
-  if(oldD || newD){
-    const keys=new Set([...(oldD?Object.keys(oldD):[]),...(newD?Object.keys(newD):[])]);
-    // if changed_fields is an array, narrow to it
-    const narrow = Array.isArray(changed)?new Set(changed):null;
-    for(const k of keys){
-      if(['updated_at','created_at','id','branch_id'].includes(k)) continue;
-      const ov=oldD?oldD[k]:undefined, nv=newD?newD[k]:undefined;
-      if(narrow && !narrow.has(k)) continue;
-      if(JSON.stringify(ov)!==JSON.stringify(nv)){
-        out.push({ field:k, old:ov, new:nv });
-      }
+function applyFilters(rows){
+  return rows.filter(r=>{
+    if(filters.table!=='all' && r.table_name!==filters.table) return false;
+    if(filters.op!=='all' && r.operation!==filters.op) return false;
+    if(filters.search){
+      const hay = [r.table_name, r.operation, r.actor_role, r._actor?.full_name].join(' ').toLowerCase();
+      if(!hay.includes(filters.search)) return false;
     }
-  }
-  return out.slice(0,8);
+    return true;
+  });
 }
-
-function actorOf(row){
-  const aid=row.actor_id||row.user_id||row.changed_by||row.actor;
-  const p = (aid && profilesById[aid]) ? profilesById[aid] : null;
-  return { name: p?p.name : (row.actor_name || (row.actor_role?('A '+row.actor_role):'System')), role: (p?p.role:row.actor_role)||'' };
-}
-
-function fmtVal(v){ if(v==null) return '∅'; if(typeof v==='object') return esc(JSON.stringify(v)).slice(0,80); const s=String(v); return esc(s.length>80?s.slice(0,80)+'…':s); }
-function dayKey(iso){ const d=new Date(iso); const t=new Date(); const y=new Date(Date.now()-86400000);
-  if(d.toDateString()===t.toDateString()) return 'Today';
-  if(d.toDateString()===y.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
-function hhmmss(iso){ return new Date(iso).toLocaleTimeString('en-US',{hour12:false}); }
 
 function render(){
-  const stream=$('#event-stream');
-  const view = actorFilter ? rows.filter(r=>actorOf(r).name===actorFilter) : rows;
-  if(view.length===0){ stream.innerHTML='<div class="empty">No audit events match these filters. Once migrations 018–020 are live and you write to a covered table, events appear here.</div>'; renderRail(); $('#foot-summary').textContent='0 events'; return; }
-  // group by day, preserve desc order
-  const groups=[]; let cur=null;
-  for(const r of view){ const k=dayKey(r.created_at); if(!cur||cur.key!==k){ cur={key:k, items:[]}; groups.push(cur);} cur.items.push(r); }
-  stream.innerHTML=groups.map(g=>`
-    <div class="bucket">
-      <div class="bucket-time"><strong>${esc(g.key)}</strong>${g.items.length} event${g.items.length===1?'':'s'}</div>
-      <div class="bucket-events">${g.items.map(eventHtml).join('')}</div>
-    </div>`).join('');
-  renderRail();
-  $('#foot-summary').textContent=view.length+' event'+(view.length===1?'':'s')+(actorFilter?' · '+esc(actorFilter):' loaded')+(exhausted?' · complete':'');
-}
-
-function eventHtml(r){
-  const op=String(r.operation||'').toLowerCase();
-  const a=actorOf(r);
-  const loan=r.loan_id&&loansById[r.loan_id]?loansById[r.loan_id]:null;
-  const loanHtml=loan?`<a class="event-loan" href="/loan.html?id=${esc(r.loan_id)}">${esc(loan.number)}</a>`:'';
-  const rec=r.record_id||pick(r,DIFF_NEW)&&asObj(pick(r,DIFF_NEW))?.id||'';
-  const verb = op==='insert'?'created':op==='delete'?'deleted':'updated';
-  const diffs=op==='update'?diffOf(r):[];
-  const diffHtml=diffs.length?`<div class="event-diff">${diffs.map(d=>`<div class="diff-line"><span class="diff-field">${esc(tbl(d.field))}</span><span class="diff-old">${fmtVal(d.old)}</span><span class="diff-arrow">→</span><span class="diff-new">${fmtVal(d.new)}</span></div>`).join('')}</div>`:'';
-  const roleClass=String(a.role||'').toLowerCase();
-  return `<div class="event ${op}">
-    <div class="event-time"><strong>${esc(hhmmss(r.created_at))}</strong>${esc(new Date(r.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}))}</div>
-    <div class="event-body">
-      <span class="event-actor">${esc(a.name)}</span>${a.role?`<span class="event-role-badge ${esc(roleClass)}">${esc(a.role)}</span>`:''}
-      ${esc(verb)} <span class="event-target">${esc(tbl(r.table_name))}</span>${loanHtml?' on '+loanHtml:''}
-      ${diffHtml}
-      ${rec?`<div class="event-extra">record ${esc(String(rec).slice(0,18))}</div>`:''}
-    </div>
-    <span class="event-tag ${op}">${esc(op||'event')}</span>
-  </div>`;
-}
-
-function renderRail(){
-  // breakdown by table + by operation, top actors — all from loaded rows (labeled)
-  const byTable={}, byOp={}, byActor={};
-  for(const r of rows){
-    byTable[r.table_name]=(byTable[r.table_name]||0)+1;
-    const op=String(r.operation||'').toLowerCase(); byOp[op]=(byOp[op]||0)+1;
-    const a=actorOf(r); const key=a.name+'|'+(a.role||''); byActor[key]=(byActor[key]||0)+1;
+  const list = $('#log-list');
+  const rows = applyFilters(allLogs);
+  if(rows.length===0){
+    list.innerHTML = allLogs.length===0
+      ? `<div class="empty">No audit entries recorded yet. Entries appear as staff create, edit, and delete records.</div>`
+      : `<div class="empty">No entries match your filters.</div>`;
+    return;
   }
-  const maxT=Math.max(1,...Object.values(byTable));
-  const tableRows=Object.entries(byTable).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t,n])=>`
-    <div class="bd-row"><span class="bd-name">${esc(tbl(t))}</span><div class="bd-bar"><span style="width:${Math.round(n/maxT*100)}%"></span></div><span class="bd-count">${n}</span></div>`).join('');
-  const opRows=['insert','update','delete'].filter(o=>byOp[o]).map(o=>`
-    <div class="bd-row"><span class="bd-name">${o}</span><div class="bd-bar"><span style="width:${Math.round((byOp[o]||0)/rows.length*100)}%"></span></div><span class="bd-count">${byOp[o]}</span></div>`).join('');
-  const actors=Object.entries(byActor).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,n])=>{ const [name,role]=k.split('|'); return `
-    <div class="actor-row"><span class="actor-init">${esc(initials(name))}</span><div class="actor-name">${esc(name)}<small>${esc((role||'system').toUpperCase())}</small></div><span class="actor-count">${n}</span></div>`; }).join('');
+  const buckets={ today:[], yesterday:[], week:[], earlier:[] };
+  for(const r of rows){
+    const d = daysAgo(r.created_at);
+    if(d===0) buckets.today.push(r);
+    else if(d===1) buckets.yesterday.push(r);
+    else if(d<7) buckets.week.push(r);
+    else buckets.earlier.push(r);
+  }
+  const labels={ today:'Today', yesterday:'Yesterday', week:'Earlier this week', earlier:'Earlier' };
+  let html='';
+  for(const k of ['today','yesterday','week','earlier']){
+    if(buckets[k].length===0) continue;
+    html += `<div class="log-group-head">${labels[k]} · ${buckets[k].length}</div>`;
+    html += buckets[k].map(renderRow).join('');
+  }
+  list.innerHTML = html;
+}
 
-  $('#right-rail').innerHTML=`
-    <div class="rail-block"><div class="rail-head">By Table · loaded</div>${tableRows||'<div class="empty">—</div>'}</div>
-    <div class="rail-block"><div class="rail-head">By Operation · loaded</div>${opRows||'<div class="empty">—</div>'}</div>
-    <div class="rail-block"><div class="rail-head">Top Actors · loaded</div>${actors||'<div class="empty">—</div>'}</div>
-    <div class="rail-block">
-      <div class="rail-head">Integrity &amp; Coverage</div>
-      <div class="integrity">
-        <div class="ret-row"><span class="ret-label">Scope</span><span class="ret-val">Branch only (RLS)</span></div>
-        <div class="ret-row"><span class="ret-label">Written by</span><span class="ret-val">DB triggers</span></div>
-        <div class="ret-row"><span class="ret-label">Captures</span><span class="ret-val">insert · update · delete</span></div>
-        <div class="ret-row"><span class="ret-label">Update detail</span><span class="ret-val green">before / after</span></div>
-        <div class="ret-row"><span class="ret-label">Covered tables</span><span class="ret-val">${KNOWN_TABLES.length}+ lifecycle</span></div>
+function renderRow(r){
+  const op = String(r.operation||'').toLowerCase();
+  const actor = r._actor?.full_name || (r.actor_role ? r.actor_role : 'system');
+  const role = (r._actor?.role || r.actor_role || '').toUpperCase();
+  return `
+    <div class="log-row">
+      <span class="log-op ${esc(op)}">${esc(r.operation||'?')}</span>
+      <span class="log-table">${esc(r.table_name||'—')}</span>
+      <div class="log-body">
+        <div class="log-actor">${esc(actor)}${role?`<span class="role">${esc(role)}</span>`:''}</div>
+        <div class="log-detail">${esc(r.operation||'')} on ${esc(r.table_name||'record')}</div>
       </div>
-      <div class="coverage-note"><b>What this records:</b> changes to loan &amp; compliance data inside OriginFlow, captured by database triggers at write time. <b>Not recorded here:</b> sign-in / authentication events (held in the identity provider's own logs) and outbound third-party API calls. This page is a record of data changes, not a security-event monitor.</div>
-    </div>`;
+      ${r.loan_id ? `<a class="log-loan" href="/loan.html?id=${esc(r.loan_id)}">View loan →</a>` : `<span></span>`}
+      <span class="log-time">${esc(ago(r.created_at))}</span>
+    </div>
+  `;
 }
 
-function applyActorOptions(){
-  const sel=$('#f-actor'); const have=new Set([...sel.options].map(o=>o.value));
-  const names=new Set(); for(const r of rows){ const a=actorOf(r); if(a.name) names.add(a.name); }
-  [...names].sort().forEach(n=>{ if(!have.has(n)){ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); } });
-  sel.onchange=()=>{ actorFilter=sel.value||''; render(); };
-}
-
-async function loadMetrics(){
-  const todayISO=new Date(new Date().setHours(0,0,0,0)).toISOString();
-  const weekISO=new Date(Date.now()-7*86400000).toISOString();
-  async function cnt(mut){ let q=supa.from('audit_logs').select('id',{count:'exact',head:true}).eq('branch_id',me.branch_id); q=mut(q); const {count}=await q; return count||0; }
-  const [today, week, upd, del] = await Promise.all([
-    cnt(q=>q.gte('created_at',todayISO)),
-    cnt(q=>q.gte('created_at',weekISO)),
-    cnt(q=>q.gte('created_at',weekISO).ilike('operation','update')),
-    cnt(q=>q.gte('created_at',weekISO).ilike('operation','delete')),
-  ]);
-  $('#metric-strip').innerHTML=`
-    <div class="metric-cell"><div class="metric-label">Events · Today</div><div class="metric-value white">${today}</div><div class="metric-sub">since midnight ${esc(Intl.DateTimeFormat().resolvedOptions().timeZone||'')}</div></div>
-    <div class="metric-cell"><div class="metric-label">Events · 7 days</div><div class="metric-value cyan">${week}</div><div class="metric-sub">branch-wide</div></div>
-    <div class="metric-cell"><div class="metric-label">Edits · 7 days</div><div class="metric-value amber">${upd}</div><div class="metric-sub">updates w/ before/after</div></div>
-    <div class="metric-cell"><div class="metric-label">Deletes · 7 days</div><div class="metric-value ${del?'red':''}">${del}</div><div class="metric-sub">${del?'review recommended':'none'}</div></div>
-    <div class="metric-cell"><div class="metric-label">Scope</div><div class="metric-value white" style="font-size:1rem;">${esc(branch.name)}</div><div class="metric-sub">RLS branch-scoped</div></div>
-    <div class="metric-cell"><div class="metric-label">Source</div><div class="metric-value white" style="font-size:1rem;">audit_logs</div><div class="metric-sub">trigger-written</div></div>`;
-}
-
-function exportCsv(){
-  if(rows.length===0){ alert('No events to export for the current filter.'); return; }
-  const cols=['created_at','operation','table_name','actor','actor_role','loan_number','record_id','changed_fields'];
-  const lines=[cols.join(',')];
-  for(const r of rows){
-    const a=actorOf(r); const loan=r.loan_id&&loansById[r.loan_id]?loansById[r.loan_id].number:'';
-    const diffs=String(r.operation||'').toLowerCase()==='update'?diffOf(r).map(d=>d.field).join(';'):'';
-    const rec=r.record_id||'';
-    const cell=(v)=>{ const s=String(v==null?'':v).replace(/"/g,'""'); return /[",\n]/.test(s)?`"${s}"`:s; };
-    lines.push([r.created_at, String(r.operation||'').toLowerCase(), r.table_name, a.name, a.role||'', loan, rec, diffs].map(cell).join(','));
-  }
-  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download='audit_'+branch.name.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);
-}
-
-document.addEventListener('DOMContentLoaded', bootstrap);
+document.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>
 </html>

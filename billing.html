@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Billing & Invoices · OriginFlow LOS</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#040d1a; --deep:#07152b; --surface:#0b1f3a; --panel:#0f2647;
+  --border:#1a3a5c; --accent:#00d4ff; --accent2:#00ff9d; --amber:#f5a623;
+  --red:#ff4444; --text:#c8dff0; --muted:#5a7a99; --white:#eaf4ff;
+  --mono:'Space Mono',ui-monospace,monospace; --serif:'DM Serif Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--navy);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+nav,main,footer{position:relative;z-index:1;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(4,13,26,0.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;gap:1rem;}
+.nav-logo{display:flex;align-items:center;gap:0.65rem;text-decoration:none;flex-shrink:0;}
+.sonar-icon{width:26px;height:26px;}
+.nav-wordmark{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--white);letter-spacing:0.12em;text-transform:uppercase;}
+.nav-wordmark span{color:var(--accent);}
+.nav-center{display:flex;align-items:center;gap:1.5rem;list-style:none;}
+.nav-center a{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;}
+.nav-center a:hover,.nav-center a.active{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-branch{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;color:var(--muted);border:1px solid var(--border);padding:0.3rem 0.75rem;}
+.nav-branch strong{color:var(--accent2);}
+.nav-user-name{font-family:var(--sans);font-size:0.78rem;color:var(--white);}
+.nav-user-role{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;color:var(--accent);border:1px solid rgba(0,212,255,0.3);padding:0.15rem 0.5rem;background:rgba(0,212,255,0.06);margin-left:0.5rem;}
+.nav-signout{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);padding:0.3rem 0.75rem;transition:all .2s;cursor:pointer;background:none;}
+.nav-signout:hover{color:var(--red);border-color:rgba(255,68,68,0.4);}
+
+.page-head{padding:1.75rem 2rem 1.25rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.page-eyebrow{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem;}
+.page-title{font-family:var(--serif);font-size:1.85rem;color:var(--white);line-height:1.15;}
+.page-sub{color:var(--muted);margin-top:0.35rem;max-width:720px;font-size:0.92rem;}
+
+main{flex:1;display:flex;flex-direction:column;}
+.wrap{flex:1;padding:1.5rem 2rem 3rem;max-width:1000px;width:100%;margin:0 auto;}
+
+.sub-card{background:var(--surface);border:1px solid var(--border);margin-bottom:1.5rem;}
+.sub-card-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1.1rem 1.3rem;border-bottom:1px solid var(--border);background:var(--deep);}
+.sub-plan{font-family:var(--serif);font-size:1.4rem;color:var(--white);line-height:1.1;}
+.sub-plan .founder{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;color:var(--accent2);border:1px solid rgba(0,255,157,0.4);padding:0.15rem 0.5rem;margin-left:0.6rem;vertical-align:middle;}
+.sub-status-pill{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.25rem 0.65rem;border:1px solid;}
+.sub-status-pill.active,.sub-status-pill.trialing{color:var(--accent2);border-color:rgba(0,255,157,0.4);background:rgba(0,255,157,0.06);}
+.sub-status-pill.past_due,.sub-status-pill.unpaid{color:var(--amber);border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06);}
+.sub-status-pill.canceled{color:var(--red);border-color:rgba(255,68,68,0.4);background:rgba(255,68,68,0.06);}
+.sub-card-body{padding:1.1rem 1.3rem;}
+.kv-grid{display:grid;grid-template-columns:180px 1fr;gap:0.55rem 1rem;}
+.kv-key{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;align-self:center;}
+.kv-val{font-family:var(--sans);font-size:0.9rem;color:var(--white);}
+.kv-val .sub{display:block;font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:0.04em;margin-top:0.1rem;}
+.kv-val .amber{color:var(--amber);}
+.kv-val .green{color:var(--accent2);}
+.sub-actions{display:flex;gap:0.5rem;margin-top:1.1rem;flex-wrap:wrap;padding-top:1rem;border-top:1px dashed var(--border);}
+
+.btn{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.55rem 1rem;border:1px solid var(--border);color:var(--text);background:var(--surface);cursor:pointer;text-decoration:none;transition:all .2s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);color:var(--navy);border-color:var(--accent);font-weight:700;}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2);}
+.btn.sm{padding:0.4rem 0.7rem;font-size:0.6rem;}
+
+.section-title{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--text);margin:0 0 0.75rem;}
+
+.inv-table{background:var(--surface);border:1px solid var(--border);}
+.inv-head{display:grid;grid-template-columns:1fr auto auto auto auto;gap:0.85rem;padding:0.7rem 1.1rem;border-bottom:1px solid var(--border);background:var(--deep);font-family:var(--mono);font-size:0.55rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);}
+.inv-row{display:grid;grid-template-columns:1fr auto auto auto auto;gap:0.85rem;align-items:center;padding:0.7rem 1.1rem;border-bottom:1px solid var(--border);font-size:0.82rem;}
+.inv-row:last-child{border-bottom:none;}
+.inv-row:hover{background:var(--panel);}
+.inv-num{font-family:var(--mono);font-size:0.78rem;color:var(--white);}
+.inv-date{font-family:var(--mono);font-size:0.65rem;color:var(--muted);}
+.inv-amt{font-family:var(--mono);font-size:0.82rem;color:var(--white);text-align:right;}
+.inv-status{font-family:var(--mono);font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.18rem 0.5rem;border:1px solid;text-align:center;white-space:nowrap;}
+.inv-status.paid{color:var(--accent2);border-color:rgba(0,255,157,0.4);background:rgba(0,255,157,0.06);}
+.inv-status.open{color:var(--amber);border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06);}
+.inv-status.void,.inv-status.uncollectible{color:var(--muted);border-color:var(--border);}
+.inv-dl{font-family:var(--mono);font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);text-decoration:none;border:1px solid rgba(0,212,255,0.3);padding:0.2rem 0.5rem;}
+.inv-dl:hover{background:var(--accent);color:var(--navy);}
+
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1.25rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.state-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;min-height:60vh;text-align:center;}
+.state-eyebrow{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.state-heading{font-family:var(--serif);font-size:2rem;color:var(--white);margin-bottom:0.85rem;max-width:640px;}
+.state-text{max-width:540px;color:var(--muted);margin-bottom:1.5rem;}
+.empty{font-family:var(--mono);font-size:0.72rem;color:var(--muted);text-align:center;padding:2.5rem 1rem;letter-spacing:0.04em;}
+.notice{font-family:var(--mono);font-size:0.68rem;padding:0.7rem 0.9rem;border:1px solid var(--border);border-left:3px solid var(--accent);background:rgba(0,212,255,0.04);margin-bottom:1rem;letter-spacing:0.03em;line-height:1.5;}
+.notice strong{color:var(--accent);}
+.notice.warn{border-left-color:var(--amber);background:rgba(245,166,35,0.05);}
+.notice.warn strong{color:var(--amber);}
+
+footer{border-top:1px solid var(--border);padding:0.85rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-family:var(--mono);font-size:0.58rem;letter-spacing:0.08em;color:var(--muted);background:var(--deep);}
+footer a{color:var(--muted);text-decoration:none;}
+footer a:hover{color:var(--accent);}
+
+@media(max-width:1024px){.nav-center{display:none;}}
+@media(max-width:640px){.kv-grid{grid-template-columns:1fr;gap:0.25rem;}.kv-key{margin-top:0.4rem;}.inv-head{display:none;}.inv-row{grid-template-columns:1fr auto;gap:0.4rem 0.85rem;}.inv-date,.inv-status{grid-column:1;}.inv-amt,.inv-dl{grid-column:2;text-align:right;}}
+@media(max-width:540px){nav{padding:0.85rem 1rem;}.nav-branch,.nav-user-role{display:none;}.page-head{padding:1.25rem 1rem 1rem;}.wrap{padding:1rem;}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+</head>
+<body>
+<nav>
+  <a href="/home.html" class="nav-logo">
+    <div class="sonar-icon">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
+        <circle cx="16" cy="16" r="10" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="5" stroke="#1a3a5c" stroke-width="0.75"/>
+        <circle cx="16" cy="16" r="2" fill="#00d4ff"/>
+        <line x1="16" y1="16" x2="24" y2="4" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
+  </a>
+  <ul class="nav-center">
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/billing.html" class="active">Billing</a></li>
+  </ul>
+  <div class="nav-right">
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
+    <span><span class="nav-user-name" id="nav-user-name">…</span><span class="nav-user-role" id="nav-user-role" style="display:none;">—</span></span>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</nav>
+
+<main>
+  <div class="state-screen" id="state-loading"><div class="spinner"></div><div class="state-eyebrow">Authenticating</div><div class="state-heading" style="font-size:1.4rem;">Loading billing…</div></div>
+  <div class="state-screen" id="state-signed-out" style="display:none;"><div class="state-eyebrow">Sign in required</div><h1 class="state-heading">Billing is admin-only.</h1><p class="state-text">Sign in as a branch admin or owner to view billing and invoices.</p><a href="/login.html" class="btn primary">Sign in →</a></div>
+  <div class="state-screen" id="state-denied" style="display:none;"><div class="state-eyebrow">Admins only</div><h1 class="state-heading">Billing is restricted to admins.</h1><p class="state-text">Your role doesn't have access to branch billing. Ask your branch owner if you need access.</p><a href="/home.html" class="btn">← Back to Home</a></div>
+
+  <div id="billing-active" style="display:none; flex:1; display:flex; flex-direction:column;">
+    <header class="page-head">
+      <div class="page-eyebrow">Branch · Billing & Invoices</div>
+      <h1 class="page-title">Billing</h1>
+      <p class="page-sub">Your subscription, payment method, and invoice history. Payments and card changes are handled securely in the Stripe Customer Portal — OriginFlow never stores your card.</p>
+    </header>
+
+    <div class="wrap">
+      <div id="billing-notice"></div>
+
+      <!-- Subscription -->
+      <div class="sub-card" id="sub-card"><div class="sub-card-body"><div class="empty">Loading subscription…</div></div></div>
+
+      <!-- Invoices -->
+      <div class="section-title">Invoice History</div>
+      <div class="inv-table" id="inv-table"><div class="empty">Loading invoices…</div></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span>v0.2 · billing · Stripe-backed</span>
+  <div style="display:flex;gap:1.25rem;"><a href="/home.html">Home</a><a href="/dashboard.html">Pipeline</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></div>
+</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let supa=null, me=null, branch=null;
+
+function esc(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function money(c){if(c==null)return '—';return '$'+(Number(c)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fdate(iso){if(!iso)return '—';return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function titleCase(s){return String(s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+
+function handleSignOut(){ if(typeof ofSignOut==='function') ofSignOut(); else window.location.href='/login.html'; }
+function showState(id){['state-loading','state-signed-out','state-denied'].forEach(s=>{document.getElementById(s).style.display=(s===id)?'flex':'none';});$('#billing-active').style.display='none';}
+function showActive(){['state-loading','state-signed-out','state-denied'].forEach(s=>{document.getElementById(s).style.display='none';});$('#billing-active').style.display='flex';}
+
+async function boot(){
+  supa = (typeof getSupabase==='function') ? getSupabase() : null;
+  if(!supa){ showState('state-signed-out'); return; }
+  let session=null;
+  try{ session = (typeof ofGetSession==='function') ? await ofGetSession() : null; }catch(_){}
+  if(!session){ showState('state-signed-out'); return; }
+
+  const { data:profile } = await supa.from('profiles')
+    .select(`id, branch_id, role, full_name, email,
+      branches:branch_id ( id, name, subscription_status, subscription_plan, founders_number, cancel_at_period_end, current_period_end, stripe_customer_id )`)
+    .eq('id', session.user.id).maybeSingle();
+  if(!profile || !profile.branch_id){ showState('state-signed-out'); return; }
+
+  me = { id:profile.id, branch_id:profile.branch_id, role:profile.role, full_name:profile.full_name||session.user.email };
+  branch = profile.branches || { id:profile.branch_id, name:'Your Branch' };
+
+  $('#nav-user-name').textContent = me.full_name;
+  $('#nav-user-role').textContent = (me.role||'').toUpperCase();
+  $('#nav-user-role').style.display='inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display='inline-flex';
+
+  if(me.role!=='admin' && me.role!=='owner'){ showState('state-denied'); return; }
+
+  showActive();
+  renderSubscription();
+  await loadInvoices();
+}
+
+function renderSubscription(){
+  const b = branch;
+  const status = b.subscription_status || 'inactive';
+  const plan = b.subscription_plan || 'standard';
+  const isFounder = plan==='founders' && b.founders_number;
+  const endLabel = b.current_period_end ? fdate(b.current_period_end) : '—';
+
+  let renewalLine;
+  if(b.cancel_at_period_end) renewalLine = `<span class="amber">Cancels on ${esc(endLabel)}</span><span class="sub">Reactivate any time before this date to keep your branch active.</span>`;
+  else if(status==='active'||status==='trialing') renewalLine = `Renews ${esc(endLabel)}<span class="sub">Auto-renews monthly. Cancel any time.</span>`;
+  else if(status==='past_due'||status==='unpaid') renewalLine = `<span class="amber">Payment failed</span><span class="sub">Update your card to keep the pipeline live.</span>`;
+  else renewalLine = '—';
+
+  $('#sub-card').innerHTML = `
+    <div class="sub-card-head">
+      <div class="sub-plan">${esc(titleCase(plan))} Plan ${isFounder?`<span class="founder">★ FOUNDER #${esc(b.founders_number)}</span>`:''}</div>
+      <span class="sub-status-pill ${esc(status)}">${esc(status.replace(/_/g,' '))}</span>
+    </div>
+    <div class="sub-card-body">
+      <div class="kv-grid">
+        <span class="kv-key">Branch</span><span class="kv-val">${esc(b.name)}</span>
+        <span class="kv-key">Plan</span><span class="kv-val">${esc(titleCase(plan))}${isFounder?' · Founder pricing locked':''}</span>
+        <span class="kv-key">Status</span><span class="kv-val">${esc(titleCase(status))}</span>
+        <span class="kv-key">Billing Period</span><span class="kv-val">${renewalLine}</span>
+        <span class="kv-key">Customer ID</span><span class="kv-val"><span class="sub" style="margin-top:0;">${esc(b.stripe_customer_id||'not yet linked')}</span></span>
+      </div>
+      <div class="sub-actions">
+        <button class="btn primary" id="portal-btn">Manage in Stripe Portal →</button>
+        <a class="btn" href="mailto:davis@originflowlos.com">Email support</a>
+      </div>
+    </div>
+  `;
+  $('#portal-btn').addEventListener('click', openCustomerPortal);
+
+  if(status==='past_due'||status==='unpaid'){
+    $('#billing-notice').innerHTML = `<div class="notice warn"><strong>Payment problem.</strong> Your last payment didn't go through. Update your card in the Stripe Portal to keep your branch active — it takes about 30 seconds.</div>`;
+  } else if(b.cancel_at_period_end){
+    $('#billing-notice').innerHTML = `<div class="notice warn"><strong>Subscription ending.</strong> Your branch is set to cancel on ${esc(endLabel)}. Reactivate in the Stripe Portal to keep your data and pipeline.</div>`;
+  }
+}
+
+async function openCustomerPortal(){
+  try{
+    const { data:{ session } } = await supa.auth.getSession();
+    if(!session){ window.location.href='/login.html'; return; }
+    const SUPABASE_URL = window.OF_SUPABASE_URL || window.SUPABASE_URL || '';
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-portal-session`,{
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${session.access_token}` },
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Could not open portal');
+    if(!data.url) throw new Error('No portal URL returned');
+    window.location.href = data.url;
+  }catch(err){
+    alert('Could not open the Stripe billing portal: ' + err.message +
+      '\n\nThe create-portal-session edge function ships with checklist 15.0.6. If it is not deployed yet, this is expected.');
+  }
+}
+
+async function loadInvoices(){
+  const el = $('#inv-table');
+  // Try an `invoices` table scoped by branch. Fails open to a friendly empty state.
+  let rows=null, err=null;
+  try{
+    const { data, error } = await supa.from('invoices')
+      .select('id, invoice_number, amount_cents, currency, status, period_start, period_end, issued_at, paid_at, hosted_invoice_url, pdf_url')
+      .eq('branch_id', me.branch_id)
+      .order('issued_at',{ascending:false})
+      .limit(100);
+    if(error) throw error;
+    rows = data || [];
+  }catch(e){ err = e; }
+
+  if(rows===null){
+    el.innerHTML = `<div class="empty">Invoice history isn't available yet.<br><br>The invoices table + Stripe webhook sync ship with checklist 15.0.1 (webhook) and 15.0.5 (invoice UI backing data). Once the webhook writes invoices, they'll appear here. In the meantime, your full invoice history is always available in the <a href="javascript:void(0)" onclick="openCustomerPortal()" style="color:var(--accent);">Stripe Portal</a>.</div>`;
+    return;
+  }
+  if(rows.length===0){
+    el.innerHTML = `<div class="empty">No invoices yet. Your first invoice appears here after your first billing cycle.</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="inv-head"><span>Invoice</span><span>Period</span><span>Amount</span><span>Status</span><span>PDF</span></div>
+    ${rows.map(renderInvoiceRow).join('')}
+  `;
+}
+
+function renderInvoiceRow(inv){
+  const status = String(inv.status||'open').toLowerCase();
+  const period = (inv.period_start && inv.period_end)
+    ? `${fdate(inv.period_start)} – ${fdate(inv.period_end)}`
+    : fdate(inv.issued_at);
+  const pdf = inv.pdf_url || inv.hosted_invoice_url;
+  return `
+    <div class="inv-row">
+      <div>
+        <div class="inv-num">${esc(inv.invoice_number || inv.id?.slice(0,10) || '—')}</div>
+        <div class="inv-date">Issued ${esc(fdate(inv.issued_at))}${inv.paid_at?` · paid ${esc(fdate(inv.paid_at))}`:''}</div>
+      </div>
+      <span class="inv-date">${esc(period)}</span>
+      <span class="inv-amt">${esc(money(inv.amount_cents))}</span>
+      <span class="inv-status ${esc(status)}">${esc(status)}</span>
+      ${pdf ? `<a class="inv-dl" href="${esc(pdf)}" target="_blank" rel="noopener">PDF ↗</a>` : `<span style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);">—</span>`}
+    </div>
+  `;
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
