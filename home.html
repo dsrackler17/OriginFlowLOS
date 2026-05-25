@@ -49,7 +49,7 @@ body::before {
   background-size: 40px 40px;
   pointer-events: none; z-index: 0;
 }
-nav, main, footer { position: relative; z-index: 1; }
+nav, main, footer, .app-shell { position: relative; z-index: 1; }
 
 /* ─── NAV ──────────────────────────────────────────────────────────── */
 nav {
@@ -69,95 +69,6 @@ nav {
   color: var(--white); letter-spacing: 0.12em; text-transform: uppercase;
 }
 .nav-wordmark span { color: var(--accent); }
-.nav-center { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
-.nav-center > li > a {
-  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--muted); text-decoration: none;
-  transition: color 0.2s;
-}
-.nav-center > li > a:hover, .nav-center > li > a.active { color: var(--accent); }
-
-/* ─── NAV DROPDOWNS ──────────────────────────────────────────────────── */
-.nav-center .dropdown { position: relative; }
-.nav-center .dropdown-trigger {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--muted);
-  background: none; border: none; padding: 0;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.nav-center .dropdown:hover .dropdown-trigger,
-.nav-center .dropdown:focus-within .dropdown-trigger,
-.nav-center .dropdown-trigger:hover { color: var(--accent); }
-.nav-center .dropdown-trigger::after {
-  content: '▾';
-  font-size: 0.55rem;
-  opacity: 0.7;
-  margin-top: 0.05rem;
-}
-.nav-center .dropdown-menu {
-  position: absolute;
-  top: calc(100% + 0.6rem);
-  left: -0.85rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,212,255,0.06);
-  min-width: 260px;
-  padding: 0.4rem;
-  display: none;
-  z-index: 200;
-}
-.nav-center .dropdown-menu::before {
-  content: '';
-  position: absolute;
-  top: -0.6rem; left: 0; right: 0; height: 0.6rem;
-}
-.nav-center .dropdown:hover .dropdown-menu,
-.nav-center .dropdown:focus-within .dropdown-menu {
-  display: block;
-  animation: dropdownIn 0.12s ease both;
-}
-@keyframes dropdownIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.nav-center .dropdown-item {
-  display: flex; flex-direction: column;
-  padding: 0.55rem 0.75rem;
-  text-decoration: none;
-  color: var(--text);
-  font-family: var(--sans);
-  transition: background 0.12s, color 0.12s;
-  border-left: 2px solid transparent;
-}
-.nav-center .dropdown-item:hover,
-.nav-center .dropdown-item:focus {
-  background: var(--panel);
-  color: var(--white);
-  border-left-color: var(--accent);
-  outline: none;
-}
-.dropdown-item-title {
-  font-size: 0.82rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  text-transform: none;
-}
-.dropdown-item-sub {
-  font-family: var(--mono);
-  font-size: 0.55rem;
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  margin-top: 0.2rem;
-  text-transform: uppercase;
-}
-.dropdown-item.is-external .dropdown-item-title::after {
-  content: ' ↗';
-  color: var(--accent);
-  font-size: 0.72rem;
-  opacity: 0.85;
-}
 
 .nav-right { display: flex; align-items: center; gap: 1rem; }
 
@@ -168,7 +79,7 @@ nav {
   background: var(--surface); border: 1px solid var(--border);
   padding: 0.4rem 0.7rem; cursor: pointer;
   transition: all 0.15s;
-  min-width: 220px;
+  min-width: 240px;
 }
 .nav-search:hover { border-color: var(--accent); color: var(--text); }
 .nav-search-icon { color: var(--accent); }
@@ -209,12 +120,62 @@ nav {
 }
 .nav-signout:hover { color: var(--red); border-color: rgba(255,68,68,0.4); }
 
+/* ─── APP SHELL + SIDEBAR (global nav) ───────────────────────────────── */
+.app-shell { flex: 1; display: flex; min-height: 0; }
+
+.sidebar {
+  width: 238px; flex-shrink: 0;
+  background: var(--deep);
+  border-right: 1px solid var(--border);
+  display: none;                 /* shown via body.signed-in */
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 1.1rem 0.55rem 1.5rem;
+}
+body.signed-in .sidebar { display: flex; }
+
+.sidebar-group { margin-bottom: 1.05rem; }
+.sidebar-group-label {
+  font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0.3rem 0.8rem 0.45rem;
+}
+.side-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.5rem 0.8rem;
+  font-family: var(--sans); font-size: 0.84rem; font-weight: 500;
+  color: var(--text); text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.side-item:hover { background: var(--surface); color: var(--white); }
+.side-item.active {
+  background: var(--panel); color: var(--white);
+  border-left-color: var(--accent);
+}
+.side-item .si-ico {
+  font-family: var(--mono); font-size: 0.9rem; color: var(--accent);
+  width: 1.15rem; text-align: center; flex-shrink: 0;
+}
+.side-item.is-ext .si-label::after {
+  content: ' ↗'; color: var(--accent); font-size: 0.7rem; opacity: 0.85;
+}
+.side-hint {
+  margin: 0.1rem 0.5rem 0.9rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px dashed var(--border);
+  font-family: var(--mono); font-size: 0.57rem; line-height: 1.55;
+  color: var(--muted); letter-spacing: 0.02em;
+}
+.side-hint b { color: var(--accent); font-weight: 400; }
+
 main {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 360px;
   gap: 1px;
   background: var(--border);
+  min-width: 0;
 }
 .home-content { background: var(--navy); padding: 2rem; overflow-y: auto; }
 .chat-rail    { background: var(--deep); display: flex; flex-direction: column; min-height: 0; }
@@ -426,8 +387,6 @@ main {
   text-decoration: none; padding: 0.25rem 0.55rem;
   border: 1px solid rgba(0,212,255,0.3);
 }
-
-.cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; padding-top: 0.5rem; }
 
 .chat-rail-head {
   padding: 0.85rem 1.1rem;
@@ -715,11 +674,10 @@ footer a:hover { color: var(--accent); }
 @media (max-width: 1180px) {
   .nav-search { min-width: 160px; }
   .nav-search-text { display: none; }
-  .nav-center { gap: 1.2rem; }
 }
 @media (max-width: 1024px) {
-  .nav-center { display: none; }
   .nav-search { display: none; }
+  body.signed-in .sidebar { display: none; }   /* search + top bar carry mobile */
   main { grid-template-columns: 1fr; }
   .chat-rail { max-height: 480px; border-top: 1px solid var(--border); }
   .content-grid { grid-template-columns: 1fr; }
@@ -785,107 +743,6 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
 
-  <ul class="nav-center">
-    <li><a href="/home.html" class="active">Home</a></li>
-    <li><a href="/dashboard.html">Pipeline</a></li>
-
-    <li class="dropdown">
-      <button class="dropdown-trigger" type="button" aria-haspopup="true">Workspace</button>
-      <div class="dropdown-menu" role="menu">
-        <a class="dropdown-item" href="/itp.html" role="menuitem">
-          <span class="dropdown-item-title">Intent to Proceed</span>
-          <span class="dropdown-item-sub">TRID intent capture · per loan</span>
-        </a>
-        <a class="dropdown-item" href="/fee-tolerance.html" role="menuitem">
-          <span class="dropdown-item-title">Fee Tolerance</span>
-          <span class="dropdown-item-sub">TRID buckets · cure calc</span>
-        </a>
-        <a class="dropdown-item" href="/coc-log.html" role="menuitem">
-          <span class="dropdown-item-title">Change of Circumstance</span>
-          <span class="dropdown-item-sub">COC log · revised-LE clock</span>
-        </a>
-        <a class="dropdown-item" href="/aus-findings.html" role="menuitem">
-          <span class="dropdown-item-title">AUS Findings</span>
-          <span class="dropdown-item-sub">DU · LPA · GUS submissions</span>
-        </a>
-        <a class="dropdown-item" href="/documents.html" role="menuitem">
-          <span class="dropdown-item-title">Documents</span>
-          <span class="dropdown-item-sub">Branch document library</span>
-        </a>
-        <a class="dropdown-item" href="/branch-library.html" role="menuitem">
-          <span class="dropdown-item-title">Library</span>
-          <span class="dropdown-item-sub">Templates · checklists · resources</span>
-        </a>
-        <a class="dropdown-item" href="/reports.html" role="menuitem">
-          <span class="dropdown-item-title">Reports</span>
-          <span class="dropdown-item-sub">Pipeline · funded · LO performance</span>
-        </a>
-        <a class="dropdown-item" href="/audit-log.html" role="menuitem">
-          <span class="dropdown-item-title">Audit Log</span>
-          <span class="dropdown-item-sub">Every create · update · delete · branch-wide</span>
-        </a>
-        <a class="dropdown-item" href="/sessions.html" role="menuitem">
-          <span class="dropdown-item-title">Active Sessions</span>
-          <span class="dropdown-item-sub">Devices signed in · revoke access</span>
-        </a>
-      </div>
-    </li>
-
-    <!-- Borrower-facing surfaces, all opened in a new tab so the LO
-         can preview them without losing their place. EDIT 11.5.8/.11/.7:
-         added Loan Timeline, Document Upload, and Borrower Messages
-         previews so every surface we built is one click from home. -->
-    <li class="dropdown">
-      <button class="dropdown-trigger" type="button" aria-haspopup="true">Borrower</button>
-      <div class="dropdown-menu" role="menu">
-        <a class="dropdown-item is-external" href="/portal_index.html" target="_blank" rel="noopener" role="menuitem">
-          <span class="dropdown-item-title">Borrower Portal</span>
-          <span class="dropdown-item-sub">What your borrowers see when signed in</span>
-        </a>
-        <a class="dropdown-item is-external" href="/apply.html" target="_blank" rel="noopener" role="menuitem">
-          <span class="dropdown-item-title">Apply Now Page</span>
-          <span class="dropdown-item-sub">Public application landing · share this link</span>
-        </a>
-        <a class="dropdown-item is-external" href="/portal_signin.html" target="_blank" rel="noopener" role="menuitem">
-          <span class="dropdown-item-title">Borrower Sign-in</span>
-          <span class="dropdown-item-sub">Magic-link entry for returning borrowers</span>
-        </a>
-        <a class="dropdown-item is-external" href="/portal_status.html" target="_blank" rel="noopener" role="menuitem">
-          <span class="dropdown-item-title">Loan Timeline (preview)</span>
-          <span class="dropdown-item-sub">Borrower milestone view · requires borrower auth</span>
-        </a>
-        <a class="dropdown-item is-external" href="/portal_docs.html" target="_blank" rel="noopener" role="menuitem">
-          <span class="dropdown-item-title">Document Upload (preview)</span>
-          <span class="dropdown-item-sub">Borrower checklist + uploader · requires borrower auth</span>
-        </a>
-        <a class="dropdown-item is-external" href="/portal_messages.html" target="_blank" rel="noopener" role="menuitem">
-          <span class="dropdown-item-title">Borrower Messages (preview)</span>
-          <span class="dropdown-item-sub">Borrower side of team chat · requires borrower auth</span>
-        </a>
-      </div>
-    </li>
-
-    <li class="dropdown">
-      <button class="dropdown-trigger" type="button" aria-haspopup="true">Tools</button>
-      <div class="dropdown-menu" role="menu">
-        <a class="dropdown-item" href="/investor-delivery.html" role="menuitem">
-          <span class="dropdown-item-title">Investor Delivery</span>
-          <span class="dropdown-item-sub">Sell funded loans · MISMO export</span>
-        </a>
-        <a class="dropdown-item" href="/integrations.html" role="menuitem">
-          <span class="dropdown-item-title">Integrations</span>
-          <span class="dropdown-item-sub">CRM · Encompass · Arive sync</span>
-        </a>
-        <a class="dropdown-item" href="/billing.html" role="menuitem">
-          <span class="dropdown-item-title">Billing &amp; Invoices</span>
-          <span class="dropdown-item-sub">Subscription · invoices · Stripe portal</span>
-        </a>
-      </div>
-    </li>
-
-    <li id="nav-team-li" style="display:none;"><a href="/team.html">Team</a></li>
-  </ul>
-
   <div class="nav-right">
     <button class="nav-search" id="nav-search-btn" type="button" aria-label="Search loans (Cmd+K)">
       <span class="nav-search-icon">⌕</span>
@@ -904,6 +761,57 @@ footer a:hover { color: var(--accent); }
     <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
+
+<div class="app-shell">
+
+<aside id="app-sidebar" class="sidebar">
+
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Pipeline</div>
+    <a class="side-item active" href="/home.html"><span class="si-ico">⌂</span><span class="si-label">Home</span></a>
+    <a class="side-item" href="/dashboard.html"><span class="si-ico">▦</span><span class="si-label">Pipeline</span></a>
+    <a class="side-item" href="/conditions.html"><span class="si-ico">⚐</span><span class="si-label">Conditions</span></a>
+    <a class="side-item" href="/documents.html"><span class="si-ico">▤</span><span class="si-label">Documents</span></a>
+    <a class="side-item" href="/reports.html"><span class="si-ico">∷</span><span class="si-label">Reports</span></a>
+  </div>
+
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Closing</div>
+    <a class="side-item" href="/closing.html"><span class="si-ico">✓</span><span class="si-label">Closing Desk</span></a>
+    <a class="side-item" href="/investor-delivery.html"><span class="si-ico">⇆</span><span class="si-label">Investor Delivery</span></a>
+  </div>
+
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Borrower</div>
+    <a class="side-item is-ext" href="/portal_index.html" target="_blank" rel="noopener"><span class="si-ico">◐</span><span class="si-label">Borrower Portal</span></a>
+    <a class="side-item is-ext" href="/apply.html" target="_blank" rel="noopener"><span class="si-ico">◑</span><span class="si-label">Apply Now Page</span></a>
+  </div>
+
+  <div class="sidebar-group">
+    <div class="sidebar-group-label">Branch</div>
+    <a class="side-item" href="/integrations.html"><span class="si-ico">⇌</span><span class="si-label">Integrations</span></a>
+    <a class="side-item" href="/billing.html"><span class="si-ico">▢</span><span class="si-label">Billing</span></a>
+    <a class="side-item" href="/audit-log.html"><span class="si-ico">▦</span><span class="si-label">Audit Log</span></a>
+    <a class="side-item" href="/sessions.html"><span class="si-ico">◉</span><span class="si-label">Active Sessions</span></a>
+  </div>
+
+  <!-- Admin-only. bootstrap() sets #nav-team-li to visible for role==='admin'. -->
+  <div class="sidebar-group" id="nav-team-li" style="display:none;">
+    <div class="sidebar-group-label">Admin</div>
+    <a class="side-item" href="/team.html"><span class="si-ico">⚙</span><span class="si-label">Team &amp; Branch</span></a>
+    <a class="side-item" href="/branch-settings.html"><span class="si-ico">⚒</span><span class="si-label">Branch Settings</span></a>
+  </div>
+
+  <div class="side-hint">
+    Working a specific loan? <b>Open the file</b> — Intent to Proceed, Fee
+    Tolerance, Change of Circumstance, AUS, Disclosures &amp; Closing all live
+    as tabs inside the loan, so you never lose your place.
+  </div>
+
+  <!-- shim: preserves #cta-team so the admin branch in bootstrap() never null-refs -->
+  <span id="cta-team" style="display:none;"></span>
+
+</aside>
 
 <main id="main-grid">
 
@@ -992,21 +900,6 @@ footer a:hover { color: var(--accent); }
       </div>
     </div>
 
-    <div class="cta-row">
-      <a href="/dashboard.html" class="btn primary">Open Full Pipeline →</a>
-      <a href="/itp.html" class="btn">Intent to Proceed</a>
-      <a href="/fee-tolerance.html" class="btn">Fee Tolerance</a>
-      <a href="/coc-log.html" class="btn">Change of Circ.</a>
-      <a href="/aus-findings.html" class="btn">AUS Findings</a>
-      <a href="/documents.html" class="btn">Documents</a>
-      <a href="/reports.html" class="btn">Reports</a>
-      <a href="/investor-delivery.html" class="btn">Delivery</a>
-      <a href="/integrations.html" class="btn">Integrations</a>
-      <a href="/portal_index.html" class="btn" target="_blank" rel="noopener">Borrower Portal ↗</a>
-      <a href="/sessions.html" class="btn">Sessions</a>
-      <a href="/team.html" class="btn" id="cta-team" style="display:none;">Team & Branch</a>
-    </div>
-
   </section>
 
   <aside class="chat-rail" id="chat-rail" style="display:none;">
@@ -1026,6 +919,8 @@ footer a:hover { color: var(--accent); }
   </aside>
 
 </main>
+
+</div><!-- /.app-shell -->
 
 <div class="cmdk-overlay" id="cmdk-overlay" role="dialog" aria-modal="true" aria-label="Search loans">
   <div class="cmdk-modal">
@@ -1178,6 +1073,7 @@ let me    = null;
 let branch = null;
 
 function showState(id) {
+  document.body.classList.remove('signed-in');
   document.getElementById('main-grid').style.gridTemplateColumns = '1fr';
   ['state-loading','state-signed-out','state-pending','state-billing'].forEach(s => {
     document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
@@ -1212,6 +1108,7 @@ async function openCustomerPortal() {
 }
 
 function showHome() {
+  document.body.classList.add('signed-in');
   ['state-loading','state-signed-out','state-pending'].forEach(s => {
     document.getElementById(s).style.display = 'none';
   });
@@ -1336,7 +1233,7 @@ async function bootstrap() {
   }
 
   if (me.role === 'admin') {
-    $('#nav-team-li').style.display = 'list-item';
+    $('#nav-team-li').style.display = 'block';
     $('#cta-team').style.display    = 'inline-flex';
   }
   if (me.role === 'viewer') {
@@ -2140,6 +2037,7 @@ function renderCmdkNavShortcuts() {
   const shortcuts = [
     { icon:'▦', title:'Open Pipeline',  sub:'all stages',          href:'/dashboard.html', tag:'GO' },
     { icon:'⚐', title:'Conditions',     sub:'branch-wide · PTD · PTC · ATC', href:'/conditions.html', tag:'GO' },
+    { icon:'✓', title:'Closing Desk',   sub:'CTC files · fund', href:'/closing.html', tag:'GO' },
     { icon:'✍', title:'Intent to Proceed', sub:'TRID intent capture · per loan', href:'/itp.html', tag:'GO' },
     { icon:'⚖', title:'Fee Tolerance', sub:'TRID buckets · cure calc', href:'/fee-tolerance.html', tag:'GO' },
     { icon:'⟳', title:'Change of Circumstance', sub:'COC log · revised-LE clock', href:'/coc-log.html', tag:'GO' },
