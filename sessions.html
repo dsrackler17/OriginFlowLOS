@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sessions · OriginFlow LOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Serif+Display&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- of-hooks pattern: config.js exposes window.getSupabase() -->
+<script src="/js/config.js"></script>
+<style>
+  :root{
+    --navy:#0a1226; --deep:#0d1730; --surface:#121d3a; --panel:#16224a;
+    --line:#22305c; --ink:#e8eefc; --dim:#8aa0d0; --faint:#5d7099;
+    --cyan:#33d6ff; --green:#37e0a6; --amber:#ffc24d; --red:#ff6b7d;
+    --mono:'Space Mono',monospace; --serif:'DM Serif Display',serif; --sans:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(900px 500px at 85% -10%, rgba(51,214,255,.06), transparent 60%),
+      var(--navy);
+    color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--cyan);text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* nav */
+  nav{border-bottom:1px solid var(--line);background:rgba(10,18,38,.85);backdrop-filter:blur(8px);
+    position:sticky;top:0;z-index:20}
+  .nav-in{display:flex;align-items:center;gap:28px;height:60px}
+  .brand{font-family:var(--serif);font-size:20px;letter-spacing:.3px}
+  .brand b{color:var(--cyan)}
+  .nav-links{display:flex;gap:20px;margin-left:8px}
+  .nav-links a{color:var(--dim);font-size:14px;font-weight:500;padding:6px 0;border-bottom:2px solid transparent}
+  .nav-links a.active{color:var(--ink);border-bottom-color:var(--cyan)}
+  .who{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--faint);text-align:right}
+  .who b{color:var(--dim);display:block;font-size:13px}
+
+  /* header */
+  header.page{padding:34px 0 18px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan)}
+  h1{font-family:var(--serif);font-size:34px;margin:6px 0 4px;font-weight:400}
+  .sub{color:var(--dim);max-width:680px;font-size:15px}
+
+  /* mode toggle */
+  .modes{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:22px 0 8px}
+  .modes button{background:transparent;border:0;color:var(--dim);font-family:var(--mono);font-size:12px;
+    letter-spacing:1px;text-transform:uppercase;padding:10px 18px;cursor:pointer;transition:.15s}
+  .modes button.on{background:var(--panel);color:var(--ink)}
+  .modes button:disabled{opacity:.35;cursor:not-allowed}
+
+  /* honest-lag notice */
+  .lag{display:flex;gap:12px;align-items:flex-start;background:rgba(255,194,77,.07);
+    border:1px solid rgba(255,194,77,.25);border-radius:10px;padding:13px 16px;margin:16px 0 24px;font-size:13.5px;color:#f3d79a}
+  .lag svg{flex:0 0 auto;margin-top:1px}
+  .lag b{color:var(--amber)}
+
+  /* toolbar */
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .count{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .btn{font-family:var(--mono);font-size:12px;letter-spacing:.6px;border-radius:9px;padding:9px 15px;
+    cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);transition:.15s}
+  .btn:hover{border-color:var(--cyan)}
+  .btn.danger{border-color:rgba(255,107,125,.4);color:var(--red);background:rgba(255,107,125,.06)}
+  .btn.danger:hover{background:rgba(255,107,125,.13)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.ghost{background:transparent}
+
+  /* table */
+  .card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:
+      linear-gradient(180deg, var(--deep), var(--navy))}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--faint);padding:14px 16px;border-bottom:1px solid var(--line);font-weight:400;white-space:nowrap}
+  tbody td{padding:13px 16px;border-bottom:1px solid rgba(34,48,92,.5);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:rgba(22,34,74,.4)}
+  .usr{font-weight:500}
+  .usr small{display:block;color:var(--faint);font-family:var(--mono);font-size:11px;font-weight:400;margin-top:2px}
+  .role{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--dim)}
+  .role.admin{color:var(--cyan);border-color:rgba(51,214,255,.4)}
+  .mono{font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .ua{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--faint);font-size:12px}
+  .current{display:inline-block;margin-left:7px;font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;
+    color:var(--green);border:1px solid rgba(55,224,166,.4);border-radius:5px;padding:2px 6px}
+  td.act{text-align:right;white-space:nowrap}
+
+  .empty{padding:46px 20px;text-align:center;color:var(--faint)}
+  .empty .big{font-family:var(--serif);font-size:22px;color:var(--dim);margin-bottom:6px}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--cyan);
+    border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .toast{position:fixed;right:22px;bottom:22px;z-index:50;display:flex;flex-direction:column;gap:8px}
+  .toast div{background:var(--panel);border:1px solid var(--line);border-left-width:3px;border-radius:9px;
+    padding:11px 16px;font-size:13.5px;min-width:240px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:slide .2s ease}
+  .toast .ok{border-left-color:var(--green)} .toast .err{border-left-color:var(--red)}
+  @keyframes slide{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+  footer{color:var(--faint);font-family:var(--mono);font-size:11px;text-align:center;padding:40px 0 30px}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap nav-in">
+  <div class="brand">Origin<b>Flow</b></div>
+  <div class="nav-links">
+    <a href="/dashboard.html">Pipeline</a>
+    <a href="/documents.html">Documents</a>
+    <a href="/conditions.html">Conditions</a>
+    <a href="/audit.html">Audit</a>
+    <a href="/sessions.html" class="active">Sessions</a>
+  </div>
+  <div class="who" id="who"><b id="whoName">—</b><span id="whoRole"></span></div>
+</div></nav>
+
+<div class="wrap">
+  <header class="page">
+    <div class="eyebrow">Security · 14.0.6</div>
+    <h1>Active Sessions</h1>
+    <div class="sub">Review where accounts are signed in and revoke access. Revoking stops a session from
+      refreshing — see the note below on when it takes full effect.</div>
+
+    <div class="modes" id="modes">
+      <button id="mMine" class="on" data-mode="mine">My Sessions</button>
+      <button id="mBranch" data-mode="branch">Branch Sessions</button>
+    </div>
+  </header>
+
+  <div class="lag">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffc24d" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <div><b>Revocation is not instant.</b> Signing out a session immediately blocks it from refreshing, but any
+      access token it already holds stays valid until it expires (typically up to the JWT expiry window set in
+      Auth settings). Plan for a short lag before a revoked device is fully locked out.</div>
+  </div>
+
+  <div class="toolbar">
+    <span class="count" id="count">—</span>
+    <span style="flex:1"></span>
+    <button class="btn ghost" id="refresh">↻ Refresh</button>
+    <button class="btn danger" id="bulk" disabled>Sign out everywhere</button>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="rows"><tr><td class="empty" colspan="6"><span class="spin"></span> Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <footer>OriginFlow LOS · session surface reads auth.* via SECURITY DEFINER RPCs (migration 028) · revocations are audited</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+  var supa = (typeof window.getSupabase==='function') ? window.getSupabase() : null;
+  var state = { mode:'mine', isAdmin:false, me:null, currentSessionId:null, rows:[] };
+
+  function toast(msg, ok){
+    var t=document.getElementById('toast'); var d=document.createElement('div');
+    d.className = ok?'ok':'err'; d.textContent=msg; t.appendChild(d);
+    setTimeout(function(){ d.style.opacity='0'; setTimeout(function(){d.remove();},250); }, 3800);
+  }
+  function fmt(ts){ if(!ts) return '—'; var d=new Date(ts);
+    return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+  function rel(ts){ if(!ts) return ''; var s=(Date.now()-new Date(ts).getTime())/1000;
+    if(s<60)return 'just now'; if(s<3600)return Math.floor(s/60)+'m ago';
+    if(s<86400)return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+
+  async function boot(){
+    if(!supa){ toast('Supabase not initialized — check config.js loads first.',false); return; }
+    var u = await supa.auth.getUser();
+    if(u.error || !u.data || !u.data.user){ location.href='/portal_signin.html'; return; }
+    state.me = u.data.user;
+    // current session id (to badge "this device")
+    try{ var sess = await supa.auth.getSession();
+      state.currentSessionId = sess && sess.data && sess.data.session && sess.data.session.session_id || null; }catch(e){}
+    // role
+    var prof = await supa.from('profiles').select('full_name, role').eq('id', state.me.id).maybeSingle();
+    var name = (prof.data && prof.data.full_name) || state.me.email;
+    var role = (prof.data && prof.data.role) || '';
+    state.isAdmin = (role==='admin');
+    document.getElementById('whoName').textContent = name;
+    document.getElementById('whoRole').textContent = role ? role.toUpperCase() : '';
+    if(!state.isAdmin){ document.getElementById('mBranch').disabled = true; }
+    wire();
+    load();
+  }
+
+  function wire(){
+    document.querySelectorAll('#modes button').forEach(function(b){
+      b.addEventListener('click', function(){
+        if(b.disabled) return;
+        state.mode = b.dataset.mode;
+        document.querySelectorAll('#modes button').forEach(function(x){x.classList.toggle('on', x===b);});
+        load();
+      });
+    });
+    document.getElementById('refresh').addEventListener('click', load);
+    document.getElementById('bulk').addEventListener('click', bulkRevoke);
+  }
+
+  function head(){
+    var h=document.getElementById('head');
+    if(state.mode==='branch'){
+      h.innerHTML='<th>User</th><th>Role</th><th>Last seen</th><th>IP</th><th>Device</th><th style="text-align:right">Action</th>';
+    } else {
+      h.innerHTML='<th>Started</th><th>Last seen</th><th>Expires</th><th>IP</th><th>Device</th><th style="text-align:right">Action</th>';
+    }
+  }
+
+  async function load(){
+    head();
+    var rows=document.getElementById('rows');
+    rows.innerHTML='<tr><td class="empty" colspan="6"><span class="spin"></span> Loading…</td></tr>';
+    document.getElementById('bulk').disabled = true;
+
+    var fn = state.mode==='branch' ? 'branch_sessions' : 'my_sessions';
+    var res = await supa.rpc(fn);
+    if(res.error){ rows.innerHTML='<tr><td class="empty" colspan="6">Could not load sessions: '+res.error.message+'</td></tr>';
+      document.getElementById('count').textContent=''; return; }
+    state.rows = res.data || [];
+    render();
+  }
+
+  function render(){
+    var rows=document.getElementById('rows');
+    document.getElementById('count').textContent = state.rows.length + (state.rows.length===1?' session':' sessions');
+    if(!state.rows.length){
+      rows.innerHTML='<tr><td class="empty" colspan="6"><div class="big">No active sessions</div>Nothing to revoke right now.</td></tr>';
+      return;
+    }
+    rows.innerHTML='';
+    state.rows.forEach(function(r){
+      var tr=document.createElement('tr');
+      var isCurrent = state.currentSessionId && r.session_id===state.currentSessionId;
+      if(state.mode==='branch'){
+        tr.innerHTML =
+          '<td class="usr">'+esc(r.user_name)+'<small>'+esc(r.user_email||'')+'</small></td>'+
+          '<td><span class="role '+(r.user_role==='admin'?'admin':'')+'">'+esc(r.user_role||'')+'</span></td>'+
+          '<td class="mono">'+fmt(r.last_seen)+'<br><span style="color:var(--faint)">'+rel(r.last_seen)+'</span></td>'+
+          '<td class="mono">'+esc(r.ip||'—')+'</td>'+
+          '<td class="ua" title="'+esc(r.user_agent||'')+'">'+esc(shortUA(r.user_agent))+'</td>'+
+          '<td class="act"></td>';
+      } else {
+        tr.innerHTML =
+          '<td class="mono">'+fmt(r.created_at)+'</td>'+
+          '<td class="mono">'+fmt(r.last_seen)+(isCurrent?'<span class="current">THIS DEVICE</span>':'')+'</td>'+
+          '<td class="mono">'+fmt(r.not_after)+'</td>'+
+          '<td class="mono">'+esc(r.ip||'—')+'</td>'+
+          '<td class="ua" title="'+esc(r.user_agent||'')+'">'+esc(shortUA(r.user_agent))+'</td>'+
+          '<td class="act"></td>';
+      }
+      var btn=document.createElement('button');
+      btn.className='btn danger'; btn.textContent = isCurrent ? 'Revoke (this)' : 'Revoke';
+      btn.addEventListener('click', function(){ revokeOne(r.session_id, btn, isCurrent); });
+      tr.querySelector('.act').appendChild(btn);
+      rows.appendChild(tr);
+    });
+    // bulk enabled in branch mode only when exactly one user is shown? No — bulk = sign out everywhere for ME.
+    document.getElementById('bulk').disabled = (state.mode!=='mine') || state.rows.length===0;
+  }
+
+  function shortUA(ua){ if(!ua) return '—';
+    var m = ua.match(/(Chrome|Firefox|Safari|Edge|Edg|OPR)\/[\d.]+/);
+    var os = ua.match(/\((.*?)\)/); var b = m?m[0].replace('Edg','Edge').replace('OPR','Opera'):'Browser';
+    return b + (os? ' · '+os[1].split(';')[0] : ''); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  async function revokeOne(id, btn, isCurrent){
+    if(isCurrent && !confirm('This is the device you are using now. Revoking it will sign YOU out shortly. Continue?')) return;
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+    var res = await supa.rpc('revoke_session',{ p_session_id:id });
+    if(res.error){ toast('Revoke failed: '+res.error.message,false); btn.disabled=false; btn.textContent='Revoke'; return; }
+    toast('Session revoked. Full lockout at next token expiry.',true);
+    if(isCurrent){ setTimeout(function(){ supa.auth.signOut(); location.href='/portal_signin.html'; }, 1500); return; }
+    load();
+  }
+
+  async function bulkRevoke(){
+    if(!confirm('Sign out ALL of your sessions, including this one? You will be signed out here shortly.')) return;
+    var btn=document.getElementById('bulk'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+    var res = await supa.rpc('revoke_user_sessions',{ p_user_id: state.me.id });
+    if(res.error){ toast('Bulk revoke failed: '+res.error.message,false); btn.disabled=false; btn.textContent='Sign out everywhere'; return; }
+    toast('Signed out of '+res.data+' session(s). Redirecting…',true);
+    setTimeout(function(){ supa.auth.signOut(); location.href='/portal_signin.html'; }, 1600);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
+</body>
+</html>
