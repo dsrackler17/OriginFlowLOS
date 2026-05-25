@@ -2142,6 +2142,7 @@ footer a:hover { color: var(--accent); }
       <a class="tab" data-tab="timeline"    href="#tab=timeline">Timeline</a>
       <a class="tab" data-tab="hmda"        href="#tab=hmda">HMDA</a>
       <a class="tab" data-tab="decision"    href="#tab=decision">Decision</a>
+      <a class="tab" data-tab="closing"     href="#tab=closing">Closing</a>
     </nav>
 
     <div class="tab-content" id="tab-content">
@@ -2256,7 +2257,7 @@ function getCurrentTab() {
   const hash = window.location.hash || '';
   const match = hash.match(/#tab=([\w-]+)/);
   const tab = match ? match[1] : 'overview';
-  const valid = ['overview','documents','conditions','disclosures','findings','credit','messages','timeline','hmda','decision'];
+  const valid = ['overview','documents','conditions','disclosures','findings','credit','messages','timeline','hmda','decision','closing'];
   return valid.includes(tab) ? tab : 'overview';
 }
 
@@ -6454,6 +6455,8 @@ async function submitDecision() {
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', bootstrap);
 </script>
+
+<script src="/js/tabs/closing.js"></script>
 
 </body>
 </html>
