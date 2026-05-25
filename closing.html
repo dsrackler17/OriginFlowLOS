@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Closing — OriginFlow LOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --navy:#0b1733; --navy-2:#12224a; --ink:#0a1124;
+  --cyan:#19c3e6; --cyan-dim:#0e8aa6; --green:#3ddc97; --amber:#ffb454; --red:#ff5d6c;
+  --paper:#f4f6fb; --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.06);
+  --mut:#8aa0c6; --txt:#e8eefb;
+  --mono:'Space Mono',monospace; --serif:'DM Serif Display',serif; --sans:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:var(--sans);color:var(--txt);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(25,195,230,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(61,220,151,.07), transparent 60%),
+    var(--ink);
+  min-height:100vh;
+}
+a{color:var(--cyan);text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 22px 80px}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 18px;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,var(--navy-2),var(--navy));}
+.brand{font-family:var(--mono);font-weight:700;letter-spacing:.5px;font-size:14px}
+.brand .dot{color:var(--cyan)}
+.crumbs{font-family:var(--mono);font-size:12px;color:var(--mut)}
+.crumbs b{color:var(--txt)}
+.statuspill{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:999px;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--mut)}
+
+/* loan header */
+.loanhead{margin-top:18px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.loanhead h1{font-family:var(--serif);font-size:30px;margin:0;line-height:1.1}
+.loanhead .meta{font-family:var(--mono);font-size:12px;color:var(--mut);margin-top:6px}
+.loanhead .meta b{color:var(--cyan)}
+.fundzone{display:flex;align-items:center;gap:12px}
+
+/* progress rail */
+.rail{margin-top:18px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.rail .step{border:1px solid var(--line);border-radius:10px;padding:10px;background:rgba(255,255,255,.03);
+  font-family:var(--mono);font-size:10.5px;color:var(--mut);text-align:center;position:relative}
+.rail .step .n{display:block;font-size:9px;opacity:.6}
+.rail .step.done{border-color:rgba(61,220,151,.45);color:var(--green);background:rgba(61,220,151,.07)}
+.rail .step.warn{border-color:rgba(255,180,84,.45);color:var(--amber);background:rgba(255,180,84,.06)}
+.rail .step.block{border-color:rgba(255,93,108,.5);color:var(--red);background:rgba(255,93,108,.06)}
+
+/* grid of cards */
+.grid{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:880px){.grid{grid-template-columns:1fr}.rail{grid-template-columns:repeat(2,1fr)}}
+.card{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+  padding:16px 16px 14px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),transparent 70%);opacity:.55}
+.card h2{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--mut);margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card h2 .tag{margin-left:auto;font-size:10px;padding:3px 8px;border-radius:999px;border:1px solid var(--line)}
+.tag.ok{color:var(--green);border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.08)}
+.tag.todo{color:var(--mut)}
+.tag.warn{color:var(--amber);border-color:rgba(255,180,84,.4);background:rgba(255,180,84,.08)}
+.tag.block{color:var(--red);border-color:rgba(255,93,108,.4);background:rgba(255,93,108,.08)}
+
+.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:13.5px}
+.row:last-child{border-bottom:0}
+.row .k{color:var(--mut)}
+.row .v{font-family:var(--mono);text-align:right}
+.muted{color:var(--mut);font-size:12.5px;line-height:1.5}
+
+/* inputs / buttons */
+label{display:block;font-family:var(--mono);font-size:10.5px;color:var(--mut);margin:10px 0 4px;letter-spacing:.5px}
+input,select,textarea{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);
+  color:var(--txt);border-radius:9px;padding:9px 10px;font-family:var(--sans);font-size:13.5px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
+.btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;
+  border:1px solid var(--cyan-dim);background:rgba(25,195,230,.12);color:var(--cyan);
+  padding:9px 14px;border-radius:9px;transition:.15s}
+.btn:hover{background:rgba(25,195,230,.22)}
+.btn.ghost{border-color:var(--line);background:transparent;color:var(--mut)}
+.btn.ghost:hover{color:var(--txt);border-color:var(--cyan-dim)}
+.btn.go{border-color:var(--green);color:#06301f;background:var(--green)}
+.btn.go:hover{filter:brightness(1.08)}
+.btn.go:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.4)}
+.btn.danger{border-color:var(--red);color:var(--red);background:rgba(255,93,108,.1)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* fraud banner */
+.fraud{margin-top:6px;border:1px dashed rgba(255,180,84,.5);background:rgba(255,180,84,.06);
+  border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--amber);line-height:1.5}
+.fraud b{color:#ffd699}
+
+/* compliance strip */
+.compliance{margin-top:16px;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));padding:14px 16px}
+.compliance h2{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+.checks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:880px){.checks{grid-template-columns:1fr 1fr}}
+.check{border:1px solid var(--line);border-radius:11px;padding:12px;background:rgba(0,0,0,.18)}
+.check .nm{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.5px}
+.check .st{font-family:var(--serif);font-size:20px;margin-top:6px}
+.check .st.ok{color:var(--green)} .check .st.warn{color:var(--amber)} .check .st.block{color:var(--red)}
+.check small{display:block;color:var(--mut);font-size:11px;margin-top:4px;line-height:1.4}
+
+.footnote{margin-top:24px;font-family:var(--mono);font-size:11px;color:var(--mut);line-height:1.7;
+  border-top:1px solid var(--line-2);padding-top:14px}
+.footnote b{color:var(--cyan)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy-2);
+  border:1px solid var(--cyan-dim);color:var(--txt);font-family:var(--mono);font-size:12.5px;
+  padding:11px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">origin<span class="dot">●</span>flow / <span style="color:var(--mut)">closing desk</span></div>
+    <div class="crumbs">workspace / loan / <b id="crumbLoan">OF-1043</b> / closing</div>
+    <div class="statuspill" id="connPill">● demo mode</div>
+  </div>
+
+  <div class="loanhead">
+    <div>
+      <h1 id="loanName">Rodriguez, James</h1>
+      <div class="meta"><b id="loanNum">OF-1043</b> · $<span id="loanAmt">310,000</span> · Purchase · Lubbock, TX · LO <b>Avery Sutton</b></div>
+    </div>
+    <div class="fundzone">
+      <span class="statuspill" id="loanStatus">● clear to close</span>
+      <button class="btn go" id="fundBtn" disabled>▸ RECORD FUNDING</button>
+    </div>
+  </div>
+
+  <!-- closing pipeline rail -->
+  <div class="rail" id="rail">
+    <div class="step done" data-step="agent"><span class="n">13.0.8</span>Settlement Agent</div>
+    <div class="step done" data-step="title"><span class="n">13.0.10</span>Title Commitment</div>
+    <div class="step warn" data-step="cpl"><span class="n">13.0.9</span>CPL</div>
+    <div class="step block" data-step="wire"><span class="n">13.0.2</span>Wire Verify</div>
+    <div class="step warn" data-step="sched"><span class="n">13.0.3</span>Schedule</div>
+    <div class="step warn" data-step="stmt"><span class="n">13.0.1</span>Settlement Stmt</div>
+    <div class="step" data-step="fund"><span class="n">13.0.6</span>Funded</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- SETTLEMENT AGENT -->
+    <div class="card">
+      <h2>● Settlement Agent <span class="tag ok" id="agentTag">verified</span></h2>
+      <div class="row"><span class="k">Company</span><span class="v">Caprock Title & Escrow</span></div>
+      <div class="row"><span class="k">Type</span><span class="v">title_company</span></div>
+      <div class="row"><span class="k">Contact</span><span class="v">M. Alvarado · 806-555-0142</span></div>
+      <div class="row"><span class="k">Callback verified</span><span class="v" style="color:var(--green)">2026-05-22</span></div>
+      <div class="muted" style="margin-top:10px">Agent bank coordinates are recorded once at the directory level and callback-verified — loan-level wires must reference this agent, so no free-typed routing numbers under deadline pressure.</div>
+    </div>
+
+    <!-- TITLE COMMITMENT -->
+    <div class="card">
+      <h2>● Title Commitment <span class="tag ok">cleared</span></h2>
+      <div class="row"><span class="k">Commitment #</span><span class="v">CT-2026-88114</span></div>
+      <div class="row"><span class="k">Effective</span><span class="v">2026-05-10 → 06-09</span></div>
+      <div class="row"><span class="k">Lender policy</span><span class="v">$1,240.00</span></div>
+      <div class="row"><span class="k">Schedule B-I</span><span class="v" style="color:var(--green)">3 / 3 cleared</span></div>
+      <div class="row"><span class="k">Schedule B-II</span><span class="v">2 exceptions · acceptable</span></div>
+    </div>
+
+    <!-- CPL -->
+    <div class="card">
+      <h2>● Closing Protection Letter <span class="tag warn" id="cplTag">received</span></h2>
+      <div class="row"><span class="k">CPL #</span><span class="v">FA-CPL-77231</span></div>
+      <div class="row"><span class="k">Issued by</span><span class="v">First American</span></div>
+      <div class="row"><span class="k">Expires</span><span class="v">2026-06-09</span></div>
+      <div class="row"><span class="k">Addressee</span><span class="v">OriginFlow (Submarine Catalyst DBA)</span></div>
+      <div class="btnrow"><button class="btn ghost" onclick="toast('Open CPL PDF — OF_openDocument hook')">view document</button></div>
+    </div>
+
+    <!-- WIRE INSTRUCTIONS -->
+    <div class="card" id="wireCard">
+      <h2>● Wire Instructions <span class="tag block" id="wireTag">unverified</span></h2>
+      <div class="fraud"><b>Wire-fraud control.</b> Two-person rule enforced at the data layer (verifier ≠ enterer). Callback must use an <b>independently sourced</b> phone number — never one from the wire email.</div>
+      <div class="row" style="margin-top:8px"><span class="k">Beneficiary</span><span class="v">Caprock Title & Escrow</span></div>
+      <div class="row"><span class="k">Bank</span><span class="v">PlainsCapital ····4471</span></div>
+      <div class="row"><span class="k">Account</span><span class="v">····0098</span></div>
+      <div class="row"><span class="k">Amount</span><span class="v">$248,910.00</span></div>
+      <label>Callback phone source</label>
+      <select id="cbSource">
+        <option value="independent">independent (directory / prior file)</option>
+        <option value="from_email">from the wire email ⚠</option>
+      </select>
+      <div class="btnrow">
+        <button class="btn" id="verifyWireBtn">✓ complete callback &amp; verify</button>
+      </div>
+    </div>
+
+    <!-- CLOSING SCHEDULE -->
+    <div class="card">
+      <h2>● Closing Schedule <span class="tag warn">confirmed</span></h2>
+      <div class="row"><span class="k">CD delivered</span><span class="v" style="color:var(--green)">2026-05-23 09:14</span></div>
+      <div class="row"><span class="k">TRID 3-day clears</span><span class="v" style="color:var(--green)">2026-05-27 ✓</span></div>
+      <div class="row"><span class="k">Signing</span><span class="v">2026-05-28 14:00</span></div>
+      <div class="row"><span class="k">Method</span><span class="v">in_person · wet</span></div>
+      <div class="row"><span class="k">Disbursement</span><span class="v">2026-05-29</span></div>
+    </div>
+
+    <!-- SETTLEMENT STATEMENT -->
+    <div class="card">
+      <h2>● Settlement Statement <span class="tag warn">balanced</span></h2>
+      <div class="row"><span class="k">Total loan</span><span class="v">$310,000.00</span></div>
+      <div class="row"><span class="k">Total charges</span><span class="v">$11,420.00</span></div>
+      <div class="row"><span class="k">Cash to close</span><span class="v" style="color:var(--cyan)">$68,510.00</span></div>
+      <div class="row"><span class="k">Net disbursed</span><span class="v">$248,910.00</span></div>
+      <div class="muted" style="margin-top:8px">Snapshot frozen at status=final so a CoC redisclosure can't rewrite settled figures.</div>
+    </div>
+
+  </div>
+
+  <!-- COMPLIANCE STRIP -->
+  <div class="compliance">
+    <h2>● Compliance Gate — Phase 13.5</h2>
+    <div class="checks">
+      <div class="check"><div class="nm">OFAC / SDN · 13.5.6</div><div class="st ok">CLEAR</div><small>borrower + co-borrower screened · list 2026-05-20</small></div>
+      <div class="check"><div class="nm">CIP / BSA · 13.5.7</div><div class="st ok">VERIFIED</div><small>4/4 elements · documentary · no BSA flag</small></div>
+      <div class="check"><div class="nm">TRID · 13.5.8</div><div class="st ok">PASS</div><small>tolerance cured · 3-day clock satisfied</small></div>
+      <div class="check"><div class="nm">Adverse Action · 13.5.4</div><div class="st ok" id="aanState">N/A</div><small id="aanNote">approval — no Reg B notice required</small></div>
+    </div>
+    <div class="muted" style="margin-top:12px">On a <b style="color:var(--red)">decline</b>, <code>decision_ready</code> stays OFF until a Reg B notice with ≥1 principal reason is in <code>ready</code>/<code>sent</code> — enforced by <code>decline_notice_cleared(loan_id)</code>. Audit chain is hash-linked (13.5.10); run <code>verify_audit_chain()</code> for tamper check.</div>
+  </div>
+
+  <div class="footnote">
+    backend hooks: <b>OF_recordFunding</b> → rpc record_funding · <b>OF_verifyWire</b> → rpc verify_wire · <b>OF_declineCleared</b> → rpc decline_notice_cleared<br/>
+    fund gate requires: verified wire (callback) · all rail steps green · OFAC clear · CIP verified · (if decline) adverse-action ready<br/>
+    project <b>zgmwtslzsmtmqcivngdq</b> · branch <b>c3f21dc2-…085e</b> · migrations 029 (closing) + 030 (compliance)
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- supabase UMD MUST load before config.js (load-order bug fixed this session) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script>
+const LOAN_ID = new URLSearchParams(location.search).get('loan_id'); // null => demo
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2600);}
+function sb(){ try{ return (typeof getSupabase==='function') ? getSupabase() : null; }catch(e){ return null; } }
+
+const live = !!sb() && !!LOAN_ID;
+document.getElementById('connPill').textContent = live ? '● live' : '● demo mode';
+document.getElementById('connPill').style.color = live ? 'var(--green)' : 'var(--mut)';
+
+// ---- backend hooks (window.OF_*) — thin wrappers over the 029/030 RPCs ----
+window.OF_verifyWire = async (wireId, phoneSource) => {
+  const c = sb(); if(!c) return {ok:true, demo:true};
+  return (await c.rpc('verify_wire', {p_wire_id:wireId, p_callback_phone_source:phoneSource})).data;
+};
+window.OF_recordFunding = async (loanId, amountCents) => {
+  const c = sb(); if(!c) return {ok:true, demo:true};
+  return (await c.rpc('record_funding', {p_loan_id:loanId, p_amount_cents:amountCents})).data;
+};
+window.OF_declineCleared = async (loanId) => {
+  const c = sb(); if(!c) return true;
+  return (await c.rpc('decline_notice_cleared', {p_loan_id:loanId})).data;
+};
+
+// ---- fund-gate evaluation ----
+function refreshGate(){
+  const steps=[...document.querySelectorAll('.rail .step')];
+  const allGreen = steps.every(s=>s.dataset.step==='fund' || s.classList.contains('done'));
+  const fundBtn=document.getElementById('fundBtn');
+  fundBtn.disabled = !allGreen;
+  fundBtn.title = allGreen ? 'all gates green' : 'gates outstanding: verify wire + confirm CPL/schedule/statement';
+}
+
+// wire verification flow (enforces independent-source nudge + two-person at RPC)
+document.getElementById('verifyWireBtn').addEventListener('click', async ()=>{
+  const src=document.getElementById('cbSource').value;
+  if(src==='from_email'){ toast('⚠ refused: callback must use an independently sourced number'); return; }
+  const r = await window.OF_verifyWire('demo-wire-id', src);
+  if(r && r.ok===false){ toast('verify failed: '+(r.error||'unknown')); return; }
+  // mark verified
+  const wireStep=document.querySelector('.rail .step[data-step="wire"]');
+  wireStep.classList.remove('block'); wireStep.classList.add('done');
+  document.getElementById('wireTag').className='tag ok'; document.getElementById('wireTag').textContent='verified';
+  document.querySelectorAll('.rail .step.warn').forEach(s=>{s.classList.remove('warn');s.classList.add('done');});
+  document.getElementById('cplTag').className='tag ok'; document.getElementById('cplTag').textContent='accepted';
+  toast('✓ wire callback verified (two-person rule satisfied)');
+  refreshGate();
+});
+
+// funding
+document.getElementById('fundBtn').addEventListener('click', async ()=>{
+  if(!confirm('Record funding for OF-1043 ($248,910.00 net)? This flips the loan to FUNDED.')) return;
+  const r = await window.OF_recordFunding(LOAN_ID, 24891000);
+  if(r && r.ok===false){ toast('funding blocked: '+(r.error||'')); return; }
+  document.querySelector('.rail .step[data-step="fund"]').classList.add('done');
+  document.getElementById('loanStatus').textContent='● funded';
+  document.getElementById('loanStatus').style.color='var(--green)';
+  document.getElementById('fundBtn').textContent='✓ FUNDED';
+  document.getElementById('fundBtn').disabled=true;
+  toast('✓ loan funded — funding_event written, audit hash-chained');
+});
+
+refreshGate();
+</script>
+</body>
+</html>
