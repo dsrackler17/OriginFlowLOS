@@ -2008,6 +2008,8 @@ footer a:hover { color: var(--accent); }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/of-helpers.js"></script>
+<!-- [11.5.9 NOTIFY PATCH] OF_notify transport. getSupabase() comes from config.js above. -->
+<script src="/js/of-notify.js"></script>
 </head>
 <body>
 
@@ -2199,6 +2201,55 @@ let loan   = null;  // populated by loadLoan()
 function getLoanIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return params.get('id') || null;
+}
+// [11.5.9 NOTIFY PATCH] Resolve primary borrower (lowest position) for
+// borrower-facing notifications. loadLoan() embeds borrower email via
+// loan_borrowers → borrowers(email), so no extra query is needed.
+function ofPrimaryBorrower() {
+  const bs = (loan?.borrowers || [])
+    .slice()
+    .sort((a, b) => (a.position || 0) - (b.position || 0))
+    .map(x => x.borrower)
+    .filter(Boolean);
+  const p = bs[0];
+  if (!p) return null;
+  return { email: p.email || null, firstName: p.first_name || '' };
+}
+
+// [11.5.9 NOTIFY PATCH] document_request — nudge the borrower about EXISTING
+// outstanding requests (this is a reminder, not the request-creation flow).
+// items = the outstanding request titles. Never sends internal notes/desc.
+async function sendDocumentRequestNotice(requests) {
+  const btn = document.getElementById('docreq-notify-btn');
+  const primary = ofPrimaryBorrower();
+  if (!primary || !primary.email) {
+    alert('No borrower email on file for this loan — can’t send the request notice.');
+    return;
+  }
+  const items = (requests || [])
+    .map(r => r.title || titleCase(r.category || 'Document'))
+    .filter(Boolean);
+  if (items.length === 0) { alert('No outstanding requests to send.'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  let res = { ok: false, error: 'OF_notify unavailable' };
+  if (typeof window.OF_notify === 'function') {
+    try {
+      res = await window.OF_notify('document_request', primary.email, {
+        branchName: branch?.name || 'OriginFlow',
+        firstName:  primary.firstName,
+        loanNumber: loan.loan_number || '',
+        path:       '/portal_docs.html',
+        items,
+      });
+    } catch (e) { res = { ok: false, error: (e && e.message) || String(e) }; }
+  }
+  if (res && res.ok === false) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Notify borrower ↗'; }
+    alert('Couldn’t send the request notice: ' + res.error);
+  } else {
+    if (btn) { btn.textContent = 'Sent ✓'; setTimeout(() => { btn.disabled = false; btn.textContent = 'Notify borrower ↗'; }, 2500); }
+  }
 }
 
 function getCurrentTab() {
@@ -2898,7 +2949,10 @@ async function loadAndRenderDocuments() {
       <div class="docs-requests">
         <div class="docs-section-head">
           <span class="docs-section-title">⚠ Outstanding requests</span>
-          <span class="docs-section-count amber">${requests.length} awaiting</span>
+          <span style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="docs-section-count amber">${requests.length} awaiting</span>
+            <button class="docs-row-action" id="docreq-notify-btn" style="border-color:rgba(245,166,35,0.4); color:var(--amber);">Notify borrower ↗</button>
+          </span>
         </div>
         <div class="docs-section-body">
           ${requests.map(renderRequestRow).join('')}
@@ -2947,8 +3001,12 @@ async function loadAndRenderDocuments() {
   }
 
   paneEl.innerHTML = html;
-
-  // ─── Wire row click handlers (expand/collapse) ────────────────────────
+   
+// [11.5.9 NOTIFY PATCH] wire the "Notify borrower" button (requests is in scope)
+  const docreqNotifyBtn = document.getElementById('docreq-notify-btn');
+  if (docreqNotifyBtn) docreqNotifyBtn.addEventListener('click', () => sendDocumentRequestNotice(requests));
+   
+// ─── Wire row click handlers (expand/collapse) ────────────────────────
   paneEl.querySelectorAll('[data-doc-id]').forEach(row => {
     row.addEventListener('click', (e) => {
       // Don't toggle if user clicked a button or anchor inside the row
@@ -6348,6 +6406,33 @@ async function submitDecision() {
   try {
     const { data, error } = await supa.from('uw_decisions').insert(patch).select().single();
     if (error) throw error;
+
+    // [11.5.9 NOTIFY PATCH] decision_ready — tell the borrower a decision is
+    // ready to VIEW (sign in), never the decision or Reg B reasons by email.
+    // Gated to approve / approve_with_conditions ON PURPOSE: declines must go
+    // out as a compliant adverse-action notice (13.5.4, not built), and a
+    // premature "your decision is ready" email on a decline risks confusion /
+    // Reg-B-timing optics; suspend is an internal pause, not borrower-facing.
+    // Flip the gate to include 'decline' once 13.5.4 ships. Fire-and-forget:
+    // a notify failure must NOT roll back a recorded UW decision.
+    if (['approve', 'approve_with_conditions'].includes(sel)) {
+      try {
+        const primary = ofPrimaryBorrower();
+        if (primary && primary.email && typeof window.OF_notify === 'function') {
+          const r = await window.OF_notify('decision_ready', primary.email, {
+            branchName: branch?.name || 'OriginFlow',
+            firstName:  primary.firstName,
+            loanNumber: loan.loan_number || '',
+            path:       '/portal_status.html',
+            // intentionally NO decision / denial_reasons — never email these
+          });
+          if (r && r.ok === false) console.warn('[Loan] decision_ready notify failed:', r.error);
+        }
+      } catch (notifyErr) {
+        console.warn('[Loan] decision_ready notify threw:', notifyErr);
+      }
+    }
+
     // Reset form, reload, re-render
     _decState.selectedDecision = null;
     _decState.selectedDenialReasons = new Set();
