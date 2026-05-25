@@ -92,6 +92,33 @@
     border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
   @keyframes sp{to{transform:rotate(360deg)}}
 
+  /* MFA section */
+  .mfa-wrap{margin-top:42px}
+  .mfa-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .mfa-head h2{font-family:var(--serif);font-size:24px;font-weight:400;margin:0}
+  .mfa-head .eyebrow{margin:0}
+  .mfa-sub{color:var(--dim);font-size:14px;max-width:680px;margin-bottom:18px}
+  .mfa-enforce{display:flex;gap:12px;align-items:flex-start;background:rgba(51,214,255,.06);
+    border:1px solid rgba(51,214,255,.22);border-radius:10px;padding:12px 15px;margin-bottom:20px;font-size:13px;color:#bfe6f5}
+  .mfa-enforce b{color:var(--cyan)}
+  .factor-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;
+    padding:13px 16px;border-bottom:1px solid rgba(34,48,92,.5)}
+  .factor-row:last-child{border-bottom:0}
+  .factor-ico{font-family:var(--mono);font-size:18px;color:var(--cyan)}
+  .factor-mid .nm{font-weight:500;color:var(--ink)}
+  .factor-mid small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:2px}
+  .badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;
+    padding:3px 8px;border-radius:6px;border:1px solid var(--line)}
+  .badge.verified{color:var(--green);border-color:rgba(55,224,166,.4)}
+  .badge.unverified{color:var(--amber);border-color:rgba(255,194,77,.4)}
+  .enroll-box{padding:20px;text-align:center}
+  .enroll-box img{width:188px;height:188px;background:#fff;padding:10px;border-radius:10px;margin:6px auto 14px}
+  .enroll-secret{font-family:var(--mono);font-size:12px;color:var(--dim);word-break:break-all;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:16px}
+  .enroll-box input{font-family:var(--mono);font-size:20px;letter-spacing:6px;text-align:center;width:180px;
+    background:var(--deep);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:10px;outline:none}
+  .enroll-box input:focus{border-color:var(--cyan)}
+  .enroll-actions{display:flex;gap:10px;justify-content:center;margin-top:16px}
   .toast{position:fixed;right:22px;bottom:22px;z-index:50;display:flex;flex-direction:column;gap:8px}
   .toast div{background:var(--panel);border:1px solid var(--line);border-left-width:3px;border-radius:9px;
     padding:11px 16px;font-size:13.5px;min-width:240px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:slide .2s ease}
@@ -148,6 +175,45 @@
     </table>
   </div>
 
+  <div class="mfa-wrap">
+    <div class="mfa-head">
+      <span class="eyebrow">Two-factor · 14.0.2</span>
+    </div>
+    <div class="mfa-head"><h2>Authenticator App (2FA)</h2></div>
+    <div class="mfa-sub">Add a time-based one-time password from an app like Google Authenticator, Authy, or 1Password.
+      Enrolling a second app as backup is wise — there are no printed recovery codes.</div>
+
+    <div class="mfa-enforce">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#33d6ff" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg>
+      <div><b>Enrolling here adds 2FA to your account; it does not yet force it at login.</b>
+        Requiring the second factor at sign-in is a separate change in the login flow (AAL2 challenge) plus an
+        Auth policy. Until that ships, 2FA protects you on re-authentication prompts but isn't mandatory.</div>
+    </div>
+
+    <div class="card">
+      <div id="mfa-list"><div class="empty"><span class="spin"></span> Loading factors…</div></div>
+    </div>
+    <div class="toolbar" style="margin-top:14px">
+      <span style="flex:1"></span>
+      <button class="btn" id="mfa-add">+ Add authenticator app</button>
+    </div>
+
+    <div class="card" id="mfa-enroll" style="display:none;margin-top:14px">
+      <div class="enroll-box">
+        <div class="mono" style="color:var(--faint);margin-bottom:8px">Scan this QR in your authenticator app</div>
+        <img id="mfa-qr" alt="TOTP QR code" />
+        <div class="mono" style="color:var(--faint);margin-bottom:6px">…or enter this secret manually</div>
+        <div class="enroll-secret" id="mfa-secret">—</div>
+        <div class="mono" style="color:var(--faint);margin-bottom:8px">Then enter the 6-digit code it shows</div>
+        <input id="mfa-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code" />
+        <div class="enroll-actions">
+          <button class="btn ghost" id="mfa-cancel">Cancel</button>
+          <button class="btn" id="mfa-verify" style="border-color:var(--cyan);color:var(--cyan)">Verify &amp; enable</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer>OriginFlow LOS · session surface reads auth.* via SECURITY DEFINER RPCs (migration 028) · revocations are audited</footer>
 </div>
 
@@ -187,7 +253,9 @@
     document.getElementById('whoRole').textContent = role ? role.toUpperCase() : '';
     if(!state.isAdmin){ document.getElementById('mBranch').disabled = true; }
     wire();
+    wireMfa();
     load();
+    loadFactors();
   }
 
   function wire(){
@@ -287,6 +355,98 @@
     if(res.error){ toast('Bulk revoke failed: '+res.error.message,false); btn.disabled=false; btn.textContent='Sign out everywhere'; return; }
     toast('Signed out of '+res.data+' session(s). Redirecting…',true);
     setTimeout(function(){ supa.auth.signOut(); location.href='/portal_signin.html'; }, 1600);
+  }
+
+  // ── MFA (Phase 14.0.2) ──────────────────────────────────────────────────
+  // Pure client-side via supabase.auth.mfa.* — no migration, TOTP enabled by
+  // default on all projects. enroll() returns a QR (SVG) + secret; verify()
+  // activates the factor. Enrollment only; login-time AAL2 enforcement is a
+  // separate change in the login flow.
+  var mfaEnrollFactorId = null;
+
+  function wireMfa(){
+    document.getElementById('mfa-add').addEventListener('click', startEnroll);
+    document.getElementById('mfa-cancel').addEventListener('click', cancelEnroll);
+    document.getElementById('mfa-verify').addEventListener('click', verifyEnroll);
+    document.getElementById('mfa-code').addEventListener('keydown', function(e){ if(e.key==='Enter') verifyEnroll(); });
+  }
+
+  async function loadFactors(){
+    var box=document.getElementById('mfa-list');
+    var res = await supa.auth.mfa.listFactors();
+    if(res.error){ box.innerHTML='<div class="empty">Could not load 2FA factors: '+esc(res.error.message)+'</div>'; return; }
+    var totp = (res.data && res.data.totp) || [];
+    var all  = (res.data && res.data.all) || totp;
+    if(!all.length){
+      box.innerHTML='<div class="empty"><div class="big">No authenticator yet</div>Add one to protect your account with a second factor.</div>';
+      return;
+    }
+    box.innerHTML='';
+    all.forEach(function(f){
+      var row=document.createElement('div'); row.className='factor-row';
+      var verified = f.status==='verified';
+      row.innerHTML =
+        '<span class="factor-ico">▦</span>'+
+        '<div class="factor-mid"><span class="nm">'+esc(f.friendly_name||'Authenticator app')+'</span>'+
+        '<small>'+esc((f.factor_type||'totp').toUpperCase())+' · added '+fmt(f.created_at)+'</small></div>'+
+        '<span class="badge '+(verified?'verified':'unverified')+'">'+(verified?'Active':'Unverified')+'</span>';
+      var rm=document.createElement('button'); rm.className='btn danger'; rm.style.marginLeft='12px'; rm.textContent='Remove';
+      rm.addEventListener('click', function(){ removeFactor(f.id, rm); });
+      row.appendChild(rm);
+      box.appendChild(row);
+    });
+  }
+
+  async function startEnroll(){
+    var btn=document.getElementById('mfa-add'); btn.disabled=true;
+    // Clean up any prior unverified factor so repeated "Add" clicks don't pile up.
+    try{
+      var list = await supa.auth.mfa.listFactors();
+      var stale = ((list.data && list.data.all)||[]).filter(function(f){return f.status==='unverified';});
+      for(var i=0;i<stale.length;i++){ try{ await supa.auth.mfa.unenroll({factorId:stale[i].id}); }catch(e){} }
+    }catch(e){}
+    var res = await supa.auth.mfa.enroll({ factorType:'totp', friendlyName:'Authenticator · '+fmt(new Date().toISOString()) });
+    btn.disabled=false;
+    if(res.error){ toast('Could not start enrollment: '+res.error.message,false); return; }
+    mfaEnrollFactorId = res.data.id;
+    var qr = res.data.totp && res.data.totp.qr_code;     // SVG data URL
+    var secret = res.data.totp && res.data.totp.secret;
+    document.getElementById('mfa-qr').src = qr || '';
+    document.getElementById('mfa-secret').textContent = secret || '—';
+    document.getElementById('mfa-enroll').style.display='block';
+    document.getElementById('mfa-code').value='';
+    document.getElementById('mfa-code').focus();
+  }
+
+  async function cancelEnroll(){
+    if(mfaEnrollFactorId){ try{ await supa.auth.mfa.unenroll({factorId:mfaEnrollFactorId}); }catch(e){} }
+    mfaEnrollFactorId=null;
+    document.getElementById('mfa-enroll').style.display='none';
+    loadFactors();
+  }
+
+  async function verifyEnroll(){
+    var code=(document.getElementById('mfa-code').value||'').trim();
+    if(!/^\d{6}$/.test(code)){ toast('Enter the 6-digit code from your app.',false); return; }
+    if(!mfaEnrollFactorId){ toast('No enrollment in progress.',false); return; }
+    var btn=document.getElementById('mfa-verify'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+    // challengeAndVerify does challenge + verify in one step for TOTP.
+    var res = await supa.auth.mfa.challengeAndVerify({ factorId:mfaEnrollFactorId, code:code });
+    btn.disabled=false; btn.textContent='Verify & enable';
+    if(res.error){ toast('Verification failed: '+res.error.message+' — codes rotate every 30s, try the current one.',false); return; }
+    toast('Two-factor enabled. Keep your authenticator app safe.',true);
+    mfaEnrollFactorId=null;
+    document.getElementById('mfa-enroll').style.display='none';
+    loadFactors();
+  }
+
+  async function removeFactor(id, btn){
+    if(!confirm('Remove this authenticator? If it is your only 2FA factor, your account drops back to password-only.')) return;
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+    var res = await supa.auth.mfa.unenroll({ factorId:id });
+    if(res.error){ toast('Could not remove: '+res.error.message,false); btn.disabled=false; btn.textContent='Remove'; return; }
+    toast('Authenticator removed.',true);
+    loadFactors();
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
