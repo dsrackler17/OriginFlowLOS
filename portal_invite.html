@@ -19,6 +19,17 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal-auth.js"></script>
+  <!-- [2026-05-25] OF_notify transport (send-notification edge fn). Loaded
+       after portal-auth.js so OF_supabase() exists for the shim below. -->
+  <script src="/js/of-notify.js"></script>
+  <script>
+    /* of-notify.js resolves its client via a global getSupabase(); this portal
+       exposes OF_supabase() instead. Without this alias OF_notify would return
+       {ok:false,error:"supabase unavailable"} and the invite email would
+       silently never send. Set unconditionally — harmless if getSupabase
+       already exists (config.js pages), required where only OF_supabase does. */
+    window.getSupabase = window.getSupabase || window.OF_supabase;
+  </script>
 
   <style>
     /* =========================================================================
@@ -626,6 +637,10 @@ let ctx     = null;   // { session, borrower, loan } from OF_bootstrap
 let joined  = [];     // loan_borrowers (other parties already on the loan)
 let pending = [];     // borrower_invites filtered to actually-pending
 
+// Borrower-facing brand used in the invite email when branches.name can't be
+// resolved. Matches the branch record set 2026-05-25 (branch c3f21dc2... = 'OriginFlow').
+const OF_NOTIFY_BRAND_FALLBACK = 'OriginFlow';
+
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
 
 function escapeHtml(s) {
@@ -769,6 +784,36 @@ async function refetchPendingInvites() {
   render();
 }
 
+/**
+ * Resolve the borrower-facing lender brand from branches.name. This is what
+ * the invitee sees as the sender ("OriginFlow" today; a real lender's DBA
+ * once multi-tenant). Passed to OF_notify as `branchName`.
+ *
+ * ASSUMPTION (flagged): borrowers may not have RLS read on `branches`. If this
+ * returns null we fall back to OF_NOTIFY_BRAND_FALLBACK so the email is never
+ * blank/"undefined". The robust long-term fix is for send-notification to
+ * resolve branchName server-side from branch_id (service role, RLS-proof,
+ * authoritative per-tenant) and treat any client-passed value as a hint only.
+ */
+async function fetchBranchName(supabase, branchId) {
+  if (!branchId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('branches')
+      .select('name')
+      .eq('id', branchId)
+      .single();
+    if (error) {
+      console.warn('[portal/invite] branch name fetch failed:', error.message);
+      return null;
+    }
+    return (data && data.name) ? data.name : null;
+  } catch (e) {
+    console.warn('[portal/invite] branch name exception:', e.message);
+    return null;
+  }
+}
+
 /* ─── Init ─────────────────────────────────────────────────────────────── */
 
 async function init() {
@@ -798,13 +843,19 @@ async function init() {
 
   const supabase = window.OF_supabase();
 
-  // Two queries in parallel — both small, both single-loan-scoped.
-  const [joinedRes, pendingRes] = await Promise.allSettled([
+  const branchId = ctx.loan.branch_id || ctx.borrower.branch_id || null;
+
+  // Three queries in parallel — all small, all single-loan-scoped.
+  const [joinedRes, pendingRes, branchRes] = await Promise.allSettled([
     fetchJoinedBorrowers(supabase, ctx.loan.id, ctx.borrower.id),
     fetchPendingInvites(supabase, ctx.loan.id),
+    fetchBranchName(supabase, branchId),
   ]);
   joined  = joinedRes.status  === 'fulfilled' ? joinedRes.value  : [];
   pending = pendingRes.status === 'fulfilled' ? pendingRes.value : [];
+  ctx.branchName = (branchRes.status === 'fulfilled' && branchRes.value)
+    ? branchRes.value
+    : null;
 
   render();
   enableForm(true);
@@ -989,12 +1040,51 @@ async function handleSubmit(e) {
 
     await sendInvite(payload);
 
+    // ── Send the borrower_invite notice via OF_notify (send-notification) ──
+    // This is the PROVEN invite-email path (11.5.9). The link points at the
+    // sign-in page, NOT a secret token: per the 11.5.x decision, auth is
+    // Supabase magic-link from portal_signin.html and borrower_invites is
+    // audit-only — so the invite email carries no secret and is safe to fire
+    // from the client.
+    //
+    // ⚠️ DOUBLE-SEND RISK (flagged, not yet resolved): sendInvite()'s preferred
+    //    path is window.OF_inviteCoBorrower, whose docstring claims it "triggers
+    //    the email send" server-side. If that hook is ever implemented to send
+    //    its own email, this OF_notify call will DOUBLE-SEND the invite. The
+    //    proven/intended single path is send-notification (this call), so the
+    //    hook should create the row ONLY. Reconcile before shipping the hook:
+    //    either drop the email from OF_inviteCoBorrower, or gate this call on
+    //    the fallback-insert branch.
+    let notifyRes = { ok: false, error: 'OF_notify unavailable' };
+    if (typeof window.OF_notify === 'function') {
+      try {
+        notifyRes = await window.OF_notify('borrower_invite', email, {
+          branchName: ctx.branchName || OF_NOTIFY_BRAND_FALLBACK,
+          firstName:  firstName,                 // the INVITEE's first name
+          loanNumber: ctx.loan.loan_no || '',
+          path:       '/portal_signin.html',     // edge fn expands via APP_BASE_URL
+        });
+      } catch (notifyErr) {
+        console.warn('[portal/invite] OF_notify threw:', notifyErr);
+        notifyRes = { ok: false, error: (notifyErr && notifyErr.message) || String(notifyErr) };
+      }
+    } else {
+      console.warn('[portal/invite] OF_notify unavailable — invite email not sent');
+    }
+
     // Refetch authoritative pending list so the row renders with the
     // server-canonical sent_at / expires_at / id values rather than
     // anything we'd have synthesized client-side.
     await refetchPendingInvites();
 
-    showToast('Invite sent to ' + email);
+    // The invite ROW persisted regardless; distinguish "email sent" from
+    // "saved but email failed" so the borrower knows whether to follow up.
+    if (notifyRes && notifyRes.ok === false) {
+      console.warn('[portal/invite] invite saved but email failed:', notifyRes.error);
+      showToast("Invite saved — but the email didn't send. Your loan officer can resend.", true);
+    } else {
+      showToast('Invite sent to ' + email);
+    }
     document.getElementById('invite-form').reset();
     document.querySelector('input[name="role"][value="co_borrower"]').checked = true;
   } catch (err) {
