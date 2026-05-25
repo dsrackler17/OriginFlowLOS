@@ -7,7 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700&family=DM+Serif+Display&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<!-- of-hooks pattern: config.js exposes window.getSupabase() -->
+<!-- of-hooks pattern: supabase-js UMD MUST load before config.js (config.js
+     reads the global `supabase`); then config.js exposes window.getSupabase(). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 <style>
   :root{
@@ -239,11 +241,19 @@
   async function boot(){
     if(!supa){ toast('Supabase not initialized — check config.js loads first.',false); return; }
     var u = await supa.auth.getUser();
-    if(u.error || !u.data || !u.data.user){ location.href='/portal_signin.html'; return; }
+    if(u.error || !u.data || !u.data.user){ location.href='/login.html'; return; }
     state.me = u.data.user;
-    // current session id (to badge "this device")
-    try{ var sess = await supa.auth.getSession();
-      state.currentSessionId = sess && sess.data && sess.data.session && sess.data.session.session_id || null; }catch(e){}
+    // current session id — decode the access-token JWT's session_id claim, the
+    // dependable source across supabase-js versions (getSession() doesn't always
+    // surface it). Used only to badge "THIS DEVICE"; failure is non-fatal.
+    try{
+      var sess = await supa.auth.getSession();
+      var at = sess && sess.data && sess.data.session && sess.data.session.access_token;
+      if(at){
+        var payload = JSON.parse(decodeURIComponent(escape(atob(at.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))));
+        state.currentSessionId = payload.session_id || null;
+      }
+    }catch(e){ state.currentSessionId = null; }
     // role
     var prof = await supa.from('profiles').select('full_name, role').eq('id', state.me.id).maybeSingle();
     var name = (prof.data && prof.data.full_name) || state.me.email;
@@ -344,7 +354,7 @@
     var res = await supa.rpc('revoke_session',{ p_session_id:id });
     if(res.error){ toast('Revoke failed: '+res.error.message,false); btn.disabled=false; btn.textContent='Revoke'; return; }
     toast('Session revoked. Full lockout at next token expiry.',true);
-    if(isCurrent){ setTimeout(function(){ supa.auth.signOut(); location.href='/portal_signin.html'; }, 1500); return; }
+    if(isCurrent){ setTimeout(function(){ supa.auth.signOut(); location.href='/login.html'; }, 1500); return; }
     load();
   }
 
@@ -354,7 +364,7 @@
     var res = await supa.rpc('revoke_user_sessions',{ p_user_id: state.me.id });
     if(res.error){ toast('Bulk revoke failed: '+res.error.message,false); btn.disabled=false; btn.textContent='Sign out everywhere'; return; }
     toast('Signed out of '+res.data+' session(s). Redirecting…',true);
-    setTimeout(function(){ supa.auth.signOut(); location.href='/portal_signin.html'; }, 1600);
+    setTimeout(function(){ supa.auth.signOut(); location.href='/login.html'; }, 1600);
   }
 
   // ── MFA (Phase 14.0.2) ──────────────────────────────────────────────────
