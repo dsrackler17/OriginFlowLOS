@@ -2,6 +2,17 @@
 // OriginFlow LOS — Patch 9.9b · documents pipeline hooks
 // File: /js/of-hooks-documents.js
 //
+// REV 9.9c (Phase 14.0.14): storage quota reserve/release wired into OF_uploadFile.
+//   ⚠ ADVISORY enforcement only. Uploads go client-direct to Storage
+//     (supa.storage.upload), so this JS gate stops the UI and good-faith clients
+//     from exceeding quota and gives live usage numbers — it is NOT a hard boundary
+//     against a hostile client that skips the JS. For true enforcement, add a
+//     storage.objects INSERT trigger or route uploads through an edge function.
+//   Reserve fires AFTER local validation, BEFORE the Storage upload. On any upload
+//     failure the reservation is RELEASED so a failed upload never permanently
+//     consumes quota. DB dep: migrations 026 + 026b (client calls reserve_my_storage /
+//     release_my_storage — JWT-scoped, cannot target another branch).
+//
 // Implements the four hooks that /documents.html expects:
 //
 //   window.OF_uploadFile(file, onProgress)
@@ -109,6 +120,49 @@
       throw new Error('No branch on profile — contact your admin.');
     }
 
+    // ─── STORAGE QUOTA RESERVE (Phase 14.0.14) ────────────────────────────
+    // Advisory gate (see REV 9.9c header). Reserve the file's bytes against the
+    // branch quota BEFORE uploading. If it doesn't fit, refuse with a clear
+    // message. If the RPC itself errors (DB hiccup / missing migration), FAIL
+    // OPEN — do not let the quota check block a legitimate upload at this stage.
+    let quotaReserved = false;
+    try {
+      // Client-safe RPC: branch resolved from JWT server-side (cannot target another branch).
+      const { data: q, error: qErr } = await supa.rpc('reserve_my_storage', {
+        p_bytes: file.size,
+      });
+      if (qErr) {
+        console.warn('[OF Docs hooks] storage quota RPC error, FAILING OPEN:', qErr.message);
+      } else if (q && q.allowed === false) {
+        const usedGb = (Number(q.bytes_used) / 1073741824).toFixed(2);
+        const maxGb  = (Number(q.max_bytes)  / 1073741824).toFixed(2);
+        if (q.reason === 'over_files') {
+          throw new Error('Storage file-count limit reached for your branch (' +
+            q.file_count + '/' + q.max_files + '). Remove files or contact your admin.');
+        }
+        throw new Error('Branch storage quota exceeded — this file would put you over ' +
+          maxGb + 'GB (currently ' + usedGb + 'GB used). Remove files or contact your admin.');
+      } else {
+        quotaReserved = true;  // bytes are now reserved; must release if upload fails
+      }
+    } catch (rpcThrow) {
+      // A thrown Error here is the intentional quota-exceeded refusal above —
+      // re-throw it. Anything else (network) we already handled via qErr/fail-open.
+      if (rpcThrow instanceof Error && /quota|limit/i.test(rpcThrow.message)) throw rpcThrow;
+      console.warn('[OF Docs hooks] storage quota check threw, FAILING OPEN:', rpcThrow);
+    }
+
+    // Helper: give back a reservation if the upload doesn't complete.
+    async function releaseReservation() {
+      if (!quotaReserved) return;
+      try {
+        await supa.rpc('release_my_storage', { p_bytes: file.size });
+      } catch (relErr) {
+        console.warn('[OF Docs hooks] storage release failed (usage may overcount):', relErr);
+      }
+      quotaReserved = false;
+    }
+
     // Path convention: <branch_id>/<uuid>.<ext>
     // Loan ID isn't in the path because uploads can target the branch
     // library (no loan), and we don't want to move files around when a
@@ -134,9 +188,11 @@
         upsert: false,
       });
     } catch (err) {
+      await releaseReservation();  // upload threw — give the bytes back
       throw new Error('Upload failed: ' + (err && err.message ? err.message : String(err)));
     }
     if (uploadResult.error) {
+      await releaseReservation();  // upload errored — give the bytes back
       // Surface the most useful message we can. Common cases:
       //   - "new row violates row-level security policy" → bucket RLS missing
       //   - "Duplicate" → uuid collision (astronomically rare; just retry)
@@ -235,7 +291,7 @@
 
 
   // Version stamps — useful for "is the right hook loaded?" debugging.
-  window.OF_uploadFile.version             = '9.9b';
+  window.OF_uploadFile.version             = '9.9c';
   window.OF_getSignedUrl.version           = '9.9b';
   window.OF_extractDocument.version        = '9.9b';
   window.OF_applyExtractionAction.version  = '9.9b';
@@ -285,7 +341,15 @@
 //      supabase functions deploy extract-document
 //      supabase functions deploy apply-extraction-action
 //
-// 4. Verify end-to-end. Upload a PDF paystub via /documents.html. You
+// 4. Storage quota (Phase 14.0.14). Run migration 026_storage_quota.sql.
+//    Advisory only at this layer — see REV 9.9c header. For HARD enforcement,
+//    add a storage.objects INSERT trigger that calls check_and_reserve_storage
+//    and raises on a false verdict, OR route uploads through an edge function.
+//    NOTE: usage is reserve-on-upload going forward; it does NOT backfill bytes
+//    already in the bucket. To seed current usage, sum existing storage.objects
+//    sizes per branch prefix into storage_usage once.
+//
+// 5. Verify end-to-end. Upload a PDF paystub via /documents.html. You
 //    should see:
 //    a. file appear in the list within ~1s with status='uploaded'
 //    b. status flip to 'extracting' immediately after upload
