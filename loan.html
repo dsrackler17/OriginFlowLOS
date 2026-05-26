@@ -2007,6 +2007,7 @@ footer a:hover { color: var(--accent); }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
+<script src="/js/of-mismo.js"></script>  <!-- MISMO 3.4 import/export — defines window.OF_exportMismo34 -->
 <script src="/js/of-helpers.js"></script>
 <!-- [11.5.9 NOTIFY PATCH] OF_notify transport. getSupabase() comes from config.js above. -->
 <script src="/js/of-notify.js"></script>
@@ -2117,7 +2118,14 @@ footer a:hover { color: var(--accent); }
           <span class="loan-num" id="loan-num">—</span>
           <h1 class="loan-title" id="loan-title">—</h1>
         </div>
-        <span class="loan-status-pill" id="loan-status-pill">—</span>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+          <button type="button" id="export-mismo-btn"
+            title="Export this loan as a MISMO 3.4 XML file to import into your system of record"
+            style="font-family:var(--mono);font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);background:transparent;border:1px solid var(--accent);padding:0.5rem 0.85rem;cursor:pointer;white-space:nowrap;transition:background 0.15s,color 0.15s;"
+            onmouseover="this.style.background='var(--accent)';this.style.color='var(--navy)';"
+            onmouseout="this.style.background='transparent';this.style.color='var(--accent)';">↪ Export MISMO 3.4</button>
+          <span class="loan-status-pill" id="loan-status-pill">—</span>
+        </div>
       </div>
 
       <div class="loan-meta" id="loan-meta">—</div>
@@ -2484,6 +2492,26 @@ function renderLoanHeader() {
   if (loan.underwriter) teamParts.push(`UW <strong>${escapeHtml(loan.underwriter.full_name || '—')}</strong>`);
   else if (loan.underwriter_id) teamParts.push(`UW <strong>—</strong>`);
   $('#loan-team').innerHTML = teamParts.length ? teamParts.join('<span class="sep">·</span>') : '<span class="info-val muted">Unassigned</span>';
+
+  // ─── MISMO 3.4 export ──────────────────────────────────────────────────
+  // Bound here because this scope holds the live `loan` (with application_data,
+  // the rich wizard snapshot) and runs after loadLoan(). OF_exportMismo34 prefers
+  // application_data and overlays the authoritative columns. Honest scope: terms,
+  // property, borrower(s), employment, income — the LO tidies up on the far side.
+  const exBtn = $('#export-mismo-btn');
+  if (exBtn) exBtn.onclick = () => {
+    if (typeof window.OF_exportMismo34 !== 'function') {
+      showToast('MISMO module not loaded — check /js/of-mismo.js is deployed.');
+      return;
+    }
+    try {
+      const { filename } = window.OF_exportMismo34(loan, { download: true });
+      showToast('Exported ' + filename + ' — import into your system of record and tidy up.');
+    } catch (e) {
+      console.error('MISMO export failed:', e);
+      showToast('Export failed: ' + e.message);
+    }
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
