@@ -2478,7 +2478,14 @@ function buildLoanRow(status) {
     purpose: formData.purpose || null,
     loan_amount_cents: dollarsToCents(formData.loan_amount),
     program: formData.loan_program || null,
-    amortization_type: formData.amortization_type || null,
+    // NOTE: amortization_type is NOT a real column on `loans` — it lives only in
+    // application_data (jsonb). Writing it top-level 400s with a schema-cache miss.
+    // Same story for property_value_cents below. Both are fully preserved in
+    // application_data, and nothing (dashboard/loan.html) reads the top-level
+    // projection, so dropping the write is lossless. If a future save 400s on
+    // another column here, it's the identical issue — move that field into
+    // application_data-only, or confirm with:
+    //   select column_name from information_schema.columns where table_name='loans';
     term_months: formData.loan_term_months ? parseInt(formData.loan_term_months, 10) : null,
     // Convert percent → basis points. 3.625% → 363 bps. Eliminates the
     // float-precision footgun every LOS hits eventually.
@@ -2486,7 +2493,6 @@ function buildLoanRow(status) {
     occupancy: formData.occupancy || null,
     property_type: formData.property_type || null,
     estimated_closing_date: formData.estimated_closing_date || null,
-    property_value_cents: dollarsToCents(formData.property_value),
     property_address: {
       street: formData.property_address_street || null,
       unit:   formData.property_address_unit || null,
