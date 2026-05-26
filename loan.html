@@ -5757,7 +5757,30 @@ const PROGRAM_THRESHOLDS = {
   USDA:  { dti: 41, dti_max: 44, ltv: 100, ltv_max: 100,   min_score: 640 },
   JUMBO: { dti: 43, dti_max: 45, ltv: 80,  ltv_max: 90,    min_score: 700 },
 };
-
+// Program label map — turns a raw program enum + term into an LO-readable
+// label (e.g. "Conventional 30-Yr Fixed"). Was referenced by
+// renderDecStatsStrip but never defined — its absence threw a ReferenceError
+// that rejected loadAndRenderDecision()'s promise, leaving the tab stuck on
+// "Loading decision workspace…". The loan schema column is `program`
+// (not `loan_program`) and the term column is `term_months` (not `term`),
+// so callers pass loan.program / loan.term_months.
+function loanProgramLabel(program, termMonths) {
+  if (!program && !termMonths) return null;
+  const progMap = {
+    conv: 'Conventional', conventional: 'Conventional',
+    fha: 'FHA', va: 'VA', usda: 'USDA', jumbo: 'Jumbo',
+    heloc: 'HELOC', heloan: 'HELOAN',
+  };
+  const prog = program
+    ? (progMap[String(program).toLowerCase()] || titleCase(String(program).replace(/_/g, ' ')))
+    : '';
+  let termPart = '';
+  if (termMonths) {
+    const yrs = Math.round(Number(termMonths) / 12);
+    if (yrs > 0) termPart = `${yrs}-Yr Fixed`;
+  }
+  return [prog, termPart].filter(Boolean).join(' ') || null;
+}
 function renderDecision() {
   setTimeout(() => loadAndRenderDecision(), 0);
   return `
@@ -5779,13 +5802,14 @@ async function loadAndRenderDecision() {
     fetchDecCredits(),
   ]);
   _decState.decisions = decisions;
-  _decState.current   = decisions.find(d => !d.superseded) || decisions[0] || null;
+  // uw_decisions has no `superseded` column — latest by decided_at is current.
+  _decState.current   = decisions[0] || null;
   _decState.conditions = conditions;
   _decState.findings   = findings;
   _decState.creditReports = credits;
 
   // Profile lookup for deciders
-  const userIds = [...new Set(decisions.map(d => d.decided_by_user_id).filter(Boolean))];
+  const userIds = [...new Set(decisions.map(d => d.decided_by).filter(Boolean))];
   if (userIds.length) {
     try {
       const { data } = await supa.from('profiles').select('id, full_name').in('id', userIds);
@@ -5800,7 +5824,7 @@ async function fetchDecDecisions() {
   try {
     const { data, error } = await supa
       .from('uw_decisions')
-      .select('id, decided_at, decided_by_user_id, decision, denial_reasons, notes, conditions_seeded, superseded, superseded_by_decision_id, created_at')
+      .select('id, decided_at, decided_by, decision, denial_reason_codes, decision_notes, created_at')
       .eq('loan_id', loan.id)
       .order('decided_at', { ascending: false });
     if (error) throw error;
@@ -5904,10 +5928,10 @@ function renderDecStatsStrip() {
   const decScore = _decState.creditReports.length > 0
     ? Math.min(..._decState.creditReports.map(r => r.decision_score).filter(x => x != null))
     : null;
-  const dti = loan.dti != null ? Number(loan.dti).toFixed(2) + '%' : '—';
-  const ltv = loan.ltv != null ? Number(loan.ltv).toFixed(2) + '%' : '—';
-  const amt = loan.loan_amount != null ? '$' + Math.round(loan.loan_amount / 1000) + 'K' : '—';
-  const prog = loanProgramLabel(loan.loan_program, loan.term) || '—';
+  const dti = loan.dti_back_pct != null ? Number(loan.dti_back_pct).toFixed(2) + '%' : '—';
+  const ltv = loan.ltv_pct != null ? Number(loan.ltv_pct).toFixed(2) + '%' : '—';
+  const amt = loan.loan_amount_cents != null ? '$' + Math.round(loan.loan_amount_cents / 100000) + 'K' : '—';
+  const prog = loanProgramLabel(loan.program, loan.term_months) || '—';
   const aus = _decState.findings?.recommendation
     ? String(_decState.findings.recommendation).toUpperCase().replace(/_/g, '/')
     : 'NOT RUN';
@@ -5957,7 +5981,7 @@ function renderDecCurrentBanner(d) {
     decline: 'Declined',
   }[decKey] || decKey.toUpperCase();
   const iconMap = { approve: '✓', approve_with_conditions: '✓', suspend: '⏸', decline: '✗' };
-  const deciderName = _decState.profiles[d.decided_by_user_id]?.full_name || 'UW';
+  const deciderName = _decState.profiles[d.decided_by]?.full_name || 'UW';
 
   return `
     <div class="dec-current-banner ${decKey}">
@@ -5966,8 +5990,8 @@ function renderDecCurrentBanner(d) {
         <div class="dec-current-label">Current Decision</div>
         <div class="dec-current-decision">${escapeHtml(decLabel)}</div>
         <div class="dec-current-meta">
-          by ${escapeHtml(deciderName)} · ${escapeHtml(timeAgo(d.decided_at))}${d.conditions_seeded ? ' · conditions seeded' : ''}
-          ${d.notes ? '<br>Note: ' + escapeHtml(d.notes.slice(0, 200)) + (d.notes.length > 200 ? '…' : '') : ''}
+          by ${escapeHtml(deciderName)} · ${escapeHtml(timeAgo(d.decided_at))}
+          ${d.decision_notes ? '<br>Note: ' + escapeHtml(d.decision_notes.slice(0, 200)) + (d.decision_notes.length > 200 ? '…' : '') : ''}
         </div>
       </div>
       <button class="btn" onclick="alert('Override decision: select a new action below and confirm. The current decision will be marked superseded, with audit trail preserved.')">Override</button>
@@ -6315,8 +6339,8 @@ function renderDecSubmitWarning(sel) {
     }
     return `<span class="dec-submit-warning" style="color: var(--muted);">${_decState.selectedDenialReasons.size} reason${_decState.selectedDenialReasons.size === 1 ? '' : 's'} selected · ready to submit</span>`;
   }
-  if (_decState.current && !_decState.current.superseded) {
-    return `<span class="dec-submit-warning" style="color: var(--muted);">Submitting will supersede the current decision and create an audit entry.</span>`;
+  if (_decState.current) {
+    return `<span class="dec-submit-warning" style="color: var(--muted);">Submitting will supersede the current decision (latest wins) and create an audit entry.</span>`;
   }
   return '<span style="flex: 1;"></span>';
 }
@@ -6346,13 +6370,13 @@ function renderDecHistoryPanel() {
             suspend: 'Suspended',
             decline: 'Declined',
           }[decKey] || decKey.toUpperCase();
-          const decider = _decState.profiles[d.decided_by_user_id]?.full_name || 'UW';
+          const decider = _decState.profiles[d.decided_by]?.full_name || 'UW';
           return `
-            <div class="dec-history-row ${d.superseded ? 'superseded' : ''}">
+            <div class="dec-history-row">
               <span class="dec-history-pill ${decKey}">${escapeHtml(label)}</span>
               <div class="dec-history-body">
-                ${escapeHtml(decider)}${d.superseded ? ' · superseded' : ''}
-                ${d.notes ? `<small>${escapeHtml(d.notes.slice(0, 160))}${d.notes.length > 160 ? '…' : ''}</small>` : ''}
+                ${escapeHtml(decider)}
+                ${d.decision_notes ? `<small>${escapeHtml(d.decision_notes.slice(0, 160))}${d.decision_notes.length > 160 ? '…' : ''}</small>` : ''}
               </div>
               <span class="dec-history-when">${escapeHtml(timeAgo(d.decided_at))}</span>
             </div>
@@ -6403,14 +6427,9 @@ async function submitDecision() {
     patch.denial_reason_codes = [..._decState.selectedDenialReasons];
   }
 
-  // If there's a current non-superseded decision, mark it superseded
-  if (_decState.current && !_decState.current.superseded) {
-    try {
-      await supa.from('uw_decisions')
-        .update({ superseded: true })
-        .eq('id', _decState.current.id);
-    } catch (_) { /* not fatal */ }
-  }
+  // uw_decisions has no `superseded` column — supersession is implicit
+  // (latest decided_at wins). Nothing to update here. Backlog #7 closed:
+  // the old { superseded: true } write targeted a nonexistent column.
 
   try {
     const { data, error } = await supa.from('uw_decisions').insert(patch).select().single();
