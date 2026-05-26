@@ -806,7 +806,7 @@ footer a:hover { color: var(--accent); }
         <div><span class="t-dim"> processor pulsed an update 12s ago</span><span class="t-grn"> ◉</span></div>
         <div class="t-dim">──────────────────────────────────────────────────</div>
         <div><span class="t-dim"> 📊 Pipeline live · branch-scoped · synced</span></div>
-        <div><span class="t-dim"> ↪ export clean to Encompass or any LOS</span></div>
+        <div><span class="t-dim"> ↪ MISMO 3.4 export · round-trip proven</span><span class="t-grn"> ✓</span></div>
         <div class="t-dim">══════════════════════════════════════════════════</div>
         <div class="cursor t-dim"> </div>
       </div>
@@ -855,8 +855,8 @@ footer a:hover { color: var(--accent); }
           <li><span class="bullet" style="color:var(--accent);">↪</span><span><strong>System of record.</strong> The official, investor-facing file stays where your secondary desk and your investors already expect it.</span></li>
           <li><span class="bullet" style="color:var(--accent);">↪</span><span><strong>Investor delivery.</strong> ULDD / MISMO loan-sale mechanics your system has spent years on. No reason to rebuild that.</span></li>
           <li><span class="bullet" style="color:var(--accent);">↪</span><span><strong>The vendor ecosystem you've already wired.</strong> Whatever integrations your shop depends on keep working, untouched.</span></li>
-          <li><span class="bullet" style="color:var(--accent);">↪</span><span><strong>The handoff.</strong> When the file's done, OriginFlow exports a clean <strong>MISMO 3.4</strong> file — the industry-standard loan XML that Encompass and other systems import — bundled with the documents. Universal, not locked to any one vendor's API.</span></li>
-          <li><span class="bullet" style="color:var(--muted);">·</span><span style="color:var(--muted);">Honest status: the MISMO export is the build in progress — it's the current priority, not a finished one-click button yet. See the FAQ for exactly where that line sits.</span></li>
+          <li><span class="bullet" style="color:var(--accent);">↪</span><span><strong>The handoff.</strong> When the file's done, OriginFlow exports a clean <strong>MISMO 3.4</strong> file — the industry-standard loan XML that Encompass and other systems import. And it reads MISMO too: drop in a vendor export and a loan opens pre-filled. Universal, not locked to any one vendor's API.</span></li>
+          <li><span class="bullet" style="color:var(--accent2);">▸</span><span style="color:var(--text);"><strong>Honest status:</strong> MISMO 3.4 import <em>and</em> export are <span style="color:var(--accent2);">live and round-trip proven</span> against the real backend — borrowers, employment, income, and property survive the trip. v1 maps loan terms, subject property, borrower(s), employment, and income; declarations, HMDA, and assets/liabilities aren't mapped yet, and the export is XML today with the document bundle as the next piece. See the FAQ for exactly where that line sits.</span></li>
         </ul>
       </div>
 
@@ -891,7 +891,7 @@ footer a:hover { color: var(--accent); }
           <tr><td class="feature">Talking to your processor about a file</td><td class="muted">External email / sticky notes</td><td class="col-of"><span class="compare-check">✓</span> threaded chat on the file</td></tr>
           <tr><td class="feature">Working from an iPad at a kitchen table</td><td class="muted">Painful</td><td class="col-of"><span class="compare-check">✓</span> browser-first, any device</td></tr>
           <tr><td class="feature">"Where's my file?" from a borrower</td><td class="muted">Go dig</td><td class="col-of"><span class="compare-check">✓</span> answer in seconds from the pipeline</td></tr>
-          <tr><td class="feature">The official investor-facing file</td><td><span class="compare-check">✓</span> system of record</td><td class="col-of">↪ clean export to Encompass or any LOS</td></tr>
+          <tr><td class="feature">The official investor-facing file</td><td><span class="compare-check">✓</span> system of record</td><td class="col-of">↪ clean MISMO 3.4 export to Encompass or any LOS</td></tr>
           <tr><td class="feature">Pricing</td><td class="muted">Per-user + per-click, sales cycle</td><td class="col-of"><strong>$400/branch + $25/closed loan</strong></td></tr>
           <tr><td class="feature">Dedicated LOS admin</td><td class="muted">Often a headcount</td><td class="col-of"><strong>Not required</strong></td></tr>
         </tbody>
@@ -921,6 +921,7 @@ footer a:hover { color: var(--accent); }
           <li>Real-time pipeline · drag-to-move with audit log</li>
           <li>Claude Vision paystub extraction · numbers written to the file</li>
           <li>Conditions auto-clear when a matching doc lands</li>
+          <li>MISMO 3.4 import &amp; export · round-trip proven (XML)</li>
           <li>Per-loan chat · @mentions · live collaboration</li>
           <li>Underwriting decision + Reg B adverse-action notice</li>
           <li>Tamper-evident audit log · hash-chained</li>
@@ -933,7 +934,8 @@ footer a:hover { color: var(--accent); }
         <h3 class="bucket-title">Next on the bench.</h3>
         <p class="bucket-desc">Started, partially built, or staged with a working empty state in the app. Not claiming these as done — they're the active work.</p>
         <ul class="bucket-list">
-          <li>MISMO 3.4 export &mdash; the universal handoff (current build)</li>
+          <li>MISMO export: document bundle alongside the XML</li>
+          <li>Wider MISMO mapping (declarations, HMDA, assets)</li>
           <li>W-2 &amp; bank-statement extractors (paystub already live)</li>
           <li>Large-deposit discrepancy flagging</li>
           <li>Loan Estimate / CD generation + TRID timer</li>
@@ -1120,7 +1122,7 @@ footer a:hover { color: var(--accent); }
           <span>How does the handoff back to my system of record work?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">Straight answer, because this is the question that matters most: the handoff is a <strong>MISMO 3.4 export</strong> — the industry-standard loan XML that Encompass and other systems are built to import — bundled with a tidy, labeled package of the loan's documents. Because it's an open standard, it doesn't depend on any one vendor granting us API access, which means it works the same whether you run Encompass, a broker platform, or a wholesale lender's portal. Honest status: this is the build I'm working on <em>right now</em>. It is not a finished one-click button yet, and the realistic claim even when it ships is "import the finished file and tidy up," not "one click, done." I'd rather tell you exactly where that line sits than imply a button works that doesn't. If a clean handoff into your specific system is the dealbreaker for your shop, tell me — you'll directly shape how that last step lands.</div>
+        <div class="faq-a">Straight answer, because this is the question that matters most: the handoff is a <strong>MISMO 3.4 export</strong> — the industry-standard loan XML that Encompass and other systems are built to import. Because it's an open standard, it doesn't depend on any one vendor granting us API access, which means it works the same whether you run Encompass, a broker platform, or a wholesale lender's portal. Honest status: import <em>and</em> export are <strong>live and round-trip proven</strong> against the real backend right now — a finished file exports, re-imports, and survives with borrowers, employment, income, and property intact. Two caveats I'd rather state than hide: v1 maps the core (loan terms, subject property, borrowers, employment, income) and not yet declarations, HMDA, or assets/liabilities; and the export is XML today, with a labeled document bundle alongside it as the next piece. Even at its best the realistic claim is "import the finished file and tidy up," not "one click, done" — because the receiving system always wants a human to confirm. If a clean handoff into your specific system is the dealbreaker for your shop, tell me — you'll directly shape how that last step lands.</div>
       </div>
 
       <div class="faq-item">
@@ -1128,7 +1130,7 @@ footer a:hover { color: var(--accent); }
           <span>What actually works right now, today?</span>
           <span class="faq-arrow">+</span>
         </button>
-        <div class="faq-a">Running live on real loan files: the real-time pipeline board with drag-to-move and audit logging; Claude Vision paystub extraction that writes the numbers back to the file and auto-clears the matching condition; per-loan chat with @mentions; the underwriting decision flow with Reg B adverse-action notices; a hash-chained tamper-evident audit log; and the closing workspace (title, CPL, wire, funding with CIP/OFAC gates). Being wired next: the MISMO 3.4 export, W-2 and bank-statement extractors, LE/CD generation, AUS and credit parsing. The live demo shows all of it — every tab either shows real data or says plainly that it's not built yet.</div>
+        <div class="faq-a">Running live on real loan files: the real-time pipeline board with drag-to-move and audit logging; Claude Vision paystub extraction that writes the numbers back to the file and auto-clears the matching condition; MISMO 3.4 import and export, round-trip proven against the real backend; per-loan chat with @mentions; the underwriting decision flow with Reg B adverse-action notices; a hash-chained tamper-evident audit log; and the closing workspace (title, CPL, wire, funding with CIP/OFAC gates). Being wired next: the MISMO document bundle and wider field mapping, W-2 and bank-statement extractors, LE/CD generation, AUS and credit parsing. The live demo shows all of it — every tab either shows real data or says plainly that it's not built yet.</div>
       </div>
 
       <div class="faq-item">
