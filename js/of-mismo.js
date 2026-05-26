@@ -84,7 +84,7 @@
     purpose: {            // LoanPurposeType
       purchase: 'Purchase',
       refinance: 'Refinance',
-      cash_out_refi: 'Refinance',        // + cash-out flag, see below
+      cashout_refi: 'Refinance',         // DB enum value; + cash-out flag, see below
       construction: 'Other'              // MISMO has no LoanPurposeType=Construction
     },
     amortization_type: {  // AmortizationType
@@ -308,7 +308,7 @@
       el('BaseLoanAmount', num(d.loan_amount)) +
       el('LoanPurposeType', mapOF2MISMO('purpose', d.purpose)) +
       el('NoteRatePercent', d.interest_rate) +
-      (String(d.purpose).toLowerCase() === 'cash_out_refi'
+      (String(d.purpose).toLowerCase() === 'cashout_refi'
         ? el('RefinanceCashOutDeterminationType', 'CashOut') : '')
     );
     var amortMonths = d.loan_term_months;
@@ -412,10 +412,10 @@
     if (terms) {
       set('loan_amount', text(terms, 'BaseLoanAmount'));
       var purpose = mapMISMO2OF('purpose', text(terms, 'LoanPurposeType'));
-      // promote Refinance → cash_out_refi if the cash-out flag says so
+      // promote Refinance → cashout_refi if the cash-out flag says so
       if (purpose === 'refinance') {
         var co = text(terms, 'RefinanceCashOutDeterminationType');
-        if (/cashout/i.test(co)) purpose = 'cash_out_refi';
+        if (/cashout/i.test(co)) purpose = 'cashout_refi';
       }
       set('purpose', purpose);
       set('interest_rate', text(terms, 'NoteRatePercent'));
