@@ -4626,9 +4626,9 @@ function renderFindingsLoaded(r) {
 
   // Ratios panel — compare AUS ratios against loan record's ratios from 1003
   const ratios = [
-    { label: 'DTI',   aus: r.ratios_dti,   los: loan.dti,   suffix: '%' },
-    { label: 'LTV',   aus: r.ratios_ltv,   los: loan.ltv,   suffix: '%' },
-    { label: 'HCLTV', aus: r.ratios_hcltv, los: loan.hcltv, suffix: '%' },
+    { label: 'DTI',   aus: r.ratios_dti,   los: loan.dti_back_pct, suffix: '%' },
+    { label: 'LTV',   aus: r.ratios_ltv,   los: loan.ltv_pct,      suffix: '%' },
+    { label: 'HCLTV', aus: r.ratios_hcltv, los: loan.ltv_pct,      suffix: '%' },
   ].filter(x => x.aus != null || x.los != null);
 
   if (ratios.length > 0) {
@@ -4940,11 +4940,7 @@ function renderCreditEmpty() {
         tradeline, public record, and inquiry, and feeds the monthly debt total into DTI calculation.
         FCRA-compliant authorization must be captured before any pull.
       </div>
-      <div class="upload-hero-actions">
-        <button class="btn primary" onclick="alert('Credit report PDF upload + parser lands with checklist 12.5.7.\\n\\nFCRA pull authorization belongs to 13.5.5 — borrower must explicitly authorize the pull before it happens (60-day scope, revocable).')">⤴ Upload Credit Report PDF</button>
-        <button class="btn" onclick="alert('Direct bureau API pull (Experian/Equifax/TransUnion) is Phase 4 work. For now, lender pulls in their existing tool and uploads the PDF.')">Connect Bureau API</button>
-      </div>
-      <div class="upload-hero-ref">Gated by 12.5.7 (parser) · 13.5.5 (FCRA auth capture)</div>
+      <div class="upload-hero-ref">Credit report parsing is on the roadmap (12.5.7). For now, pull credit in your existing bureau tool.</div>
     </div>
   `;
 }
@@ -5665,17 +5661,17 @@ function renderHmdaPane() {
 
   // LAR core fields (12 key fields tracked for completeness)
   const larChecks = [
-    ['Loan Amount',          loan.loan_amount != null],
+    ['Loan Amount',          loan.loan_amount_cents != null],
     ['Loan Purpose',         !!loan.purpose],
     ['Occupancy',            !!loan.occupancy],
     ['Property Type',        !!loan.property_type],
     ['Lien Status',          !!(lar?.lien_status)],
-    ['Loan Type / Program',  !!loan.loan_program],
+    ['Loan Type / Program',  !!loan.program],
     ['Action Taken',         !!(lar?.action_taken)],
     ['Action Date',          !!(lar?.action_date) || !!loan.updated_at],
     ['Census Tract',         !!(lar?.census_tract)],
-    ['Subject State',        !!loan.subject_state],
-    ['Income (Gross)',       loan.gross_income != null || loan.borrower_income != null],
+    ['Subject State',        !!(lar?.property_state)],
+    ['Income (Gross)',       loan.total_monthly_income_cents != null],
     ['HOEPA Status',         !!(lar?.hoepa_status)],
   ];
   const larComplete = larChecks.filter(([_, ok]) => ok).length;
@@ -5824,20 +5820,23 @@ function renderHmdaActionPanel(lar) {
 
 function renderHmdaLarPreview(lar, checks) {
   // Pull values from loan + lar with fallbacks
-  const incomeStr = loan.gross_income != null ? dollars(loan.gross_income)
-                  : loan.borrower_income != null ? dollars(loan.borrower_income)
-                  : null;
+  // [SCHEMA PASS] loans uses *_cents, dti_back_pct, ltv_pct, program. There is
+  // NO gross_income / subject_state / loan_program / hcltv on loans. Monthly
+  // income is total_monthly_income_cents; property state comes from the LAR row.
+  const incomeStr = loan.total_monthly_income_cents != null
+    ? dollars(loan.total_monthly_income_cents) + '/mo'
+    : null;
   const rows = [
-    ['Loan Amount',         loan.loan_amount != null ? dollars(loan.loan_amount) : null],
+    ['Loan Amount',         loan.loan_amount_cents != null ? dollars(loan.loan_amount_cents) : null],
     ['Loan Purpose',        loan.purpose ? titleCase(String(loan.purpose).replace(/_/g, ' ')) : null],
-    ['Loan Type',           loan.loan_program ? String(loan.loan_program).toUpperCase() : null],
+    ['Loan Type',           loan.program ? String(loan.program).toUpperCase() : null],
     ['Occupancy',           loan.occupancy ? titleCase(String(loan.occupancy).replace(/_/g, ' ')) : null],
     ['Property Type',       loan.property_type ? titleCase(String(loan.property_type).replace(/_/g, ' ')) : null],
-    ['Property State',      loan.subject_state || null],
+    ['Property State',      lar?.property_state || null],
     ['Census Tract',        lar?.census_tract || null],
     ['Income (Gross)',      incomeStr],
-    ['DTI',                 loan.dti != null ? Number(loan.dti).toFixed(2) + '%' : null],
-    ['CLTV',                loan.hcltv != null ? Number(loan.hcltv).toFixed(2) + '%' : loan.ltv != null ? Number(loan.ltv).toFixed(2) + '%' : null],
+    ['DTI',                 loan.dti_back_pct != null ? Number(loan.dti_back_pct).toFixed(2) + '%' : null],
+    ['CLTV',                loan.ltv_pct != null ? Number(loan.ltv_pct).toFixed(2) + '%' : null],
     ['Lien Status',         lar?.lien_status ? titleCase(lar.lien_status) : null],
     ['HOEPA Status',        lar?.hoepa_status ? titleCase(lar.hoepa_status) : null],
     ['Rate Spread',         lar?.rate_spread != null ? Number(lar.rate_spread).toFixed(3) + '%' : null],
@@ -6330,7 +6329,7 @@ function renderDecCreditPanel() {
 
 function renderDecRatiosPanel() {
   // Determine threshold by program
-  const programKey = String(loan.loan_program || 'CONV').toUpperCase();
+  const programKey = String(loan.program || 'CONV').toUpperCase();
   const t = PROGRAM_THRESHOLDS[programKey] || PROGRAM_THRESHOLDS.CONV;
 
   const lowScore = _decState.creditReports.length > 0
@@ -6400,9 +6399,9 @@ function renderDecRatiosPanel() {
         </div>
       </div>
       <div class="disc-panel-body">
-        ${ratioBar('DTI', loan.dti, t.dti, t.dti_max)}
-        ${ratioBar('LTV', loan.ltv, t.ltv, t.ltv_max)}
-        ${ratioBar('CLTV', loan.hcltv, t.ltv, t.ltv_max)}
+        ${ratioBar('DTI', loan.dti_back_pct, t.dti, t.dti_max)}
+        ${ratioBar('LTV', loan.ltv_pct, t.ltv, t.ltv_max)}
+        ${ratioBar('CLTV', loan.ltv_pct, t.ltv, t.ltv_max)}
         ${scoreBar('Score', lowScore, t.min_score)}
       </div>
     </div>
