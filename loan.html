@@ -2545,6 +2545,7 @@ async function renderActiveTabAsync() {
       case 'timeline':    el.innerHTML = renderTimeline();    break;
       case 'hmda':        el.innerHTML = renderHmda();        break;
       case 'decision':    el.innerHTML = renderDecision();    break;
+      case 'closing':     el.innerHTML = renderClosingFallback(); break;
       default:            el.innerHTML = renderOverview();
     }
   } catch (err) {
@@ -2713,6 +2714,23 @@ function renderMessages() {
 // each checklist item, replace the corresponding render function body
 // with the real UI.
 // ═══════════════════════════════════════════════════════════════════════════
+// Closing-tab fallback: only shown if /js/tabs/closing.js failed to load
+// (the dispatcher prefers window.OF.tabs.closing when it's registered). This
+// keeps a missing/404'd module from silently rendering Overview content under
+// the Closing tab.
+function renderClosingFallback() {
+  return emptyTab({
+    icon: '⚓',
+    eyebrow: 'Closing',
+    title: 'Closing workspace is loading separately',
+    sub: 'The closing module (<code>/js/tabs/closing.js</code>) didn\'t load. ' +
+         'If you just deployed, hard-refresh. Settlement statement, wire ' +
+         'instructions, title, CPL, appointment, and funding all live here.',
+    checklistRef: '13.0.x (closing tab integration)',
+    actions: [{ label: 'Reload', href: 'javascript:location.reload()' }],
+  });
+}
+
 function emptyTab({ icon, eyebrow, title, sub, checklistRef, actions }) {
   const actionsHtml = (actions || []).map(a =>
     `<a class="btn ${a.primary ? 'primary' : ''}" href="${escapeHtml(a.href)}"${a.target ? ` target="${a.target}" rel="noopener"` : ''}>${escapeHtml(a.label)}</a>`
