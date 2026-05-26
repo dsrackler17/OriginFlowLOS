@@ -6383,16 +6383,24 @@ async function submitDecision() {
   if (submitEl) { submitEl.disabled = true; submitEl.textContent = 'Submitting…'; }
 
   // Build the patch + insert
+  // [035 PATCH] Column names corrected to match the live uw_decisions schema:
+  //   decided_by_user_id → decided_by   (table column is decided_by, NOT NULL —
+  //                                       the old key was silently dropped by
+  //                                       PostgREST, failing every insert)
+  //   denial_reasons     → denial_reason_codes  (so codes actually persist and
+  //                                       the 035 decline→AAN trigger reads them)
+  // branch_id is NOT a column on uw_decisions (confirmed via information_schema)
+  // — it's derived from loan_id where needed — so it's removed to avoid a
+  // PGRST204 "column not found" rejection on insert.
   const patch = {
     loan_id: loan.id,
-    branch_id: loan.branch_id || branch?.id,
     decided_at: new Date().toISOString(),
-    decided_by_user_id: me.id,
+    decided_by: me.id,
     decision: sel,
-    notes: _decState.formNotes || null,
+    decision_notes: _decState.formNotes || null,
   };
   if (sel === 'decline') {
-    patch.denial_reasons = [..._decState.selectedDenialReasons];
+    patch.denial_reason_codes = [..._decState.selectedDenialReasons];
   }
 
   // If there's a current non-superseded decision, mark it superseded
