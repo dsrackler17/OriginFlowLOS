@@ -2549,20 +2549,24 @@ async function saveBorrowers(loanId) {
 
 function extractBorrower(idx) {
   const p = `b${idx}_`;
+  // Columns verified against information_schema for `borrowers` (2026-05-26).
+  // Divergences fixed: `middle`→middle_name, `marital`→marital_status. There is
+  // NO plain `dob` column (DOB is encrypted into dob_enc elsewhere; we keep the
+  // non-sensitive dob_year here and the full DOB stays in the loan's
+  // application_data). There is NO `dependents` column either — also preserved
+  // in application_data. Full SSN is encrypted via the borrowers_set_ssn() RPC
+  // in saveBorrowers() after insert; only ssn_last4 is written directly here.
   return {
-    first_name: formData[p+'first_name'] || null,
-    middle:     formData[p+'middle'] || null,
-    last_name:  formData[p+'last_name'] || null,
-    suffix:     formData[p+'suffix'] || null,
-    ssn_last4:  digits(formData[p+'ssn']).slice(-4) || null,
-    // ssn_full removed — encrypted server-side via borrowers_set_ssn() RPC,
-    // called from saveBorrowers() after the borrower row is inserted.
-    dob:        formData[p+'dob'] || null,
-    email:      formData[p+'email'] || null,
-    phone:      formData[p+'phone'] || null,
-    marital:    formData[p+'marital'] || null,
-    citizenship: formData[p+'citizenship'] || null,
-    dependents: formData[p+'dependents'] ? parseInt(formData[p+'dependents'], 10) : 0,
+    first_name:     formData[p+'first_name'] || null,
+    middle_name:    formData[p+'middle'] || null,
+    last_name:      formData[p+'last_name'] || null,
+    suffix:         formData[p+'suffix'] || null,
+    ssn_last4:      digits(formData[p+'ssn']).slice(-4) || null,
+    dob_year:       formData[p+'dob'] ? (parseInt(String(formData[p+'dob']).slice(0, 4), 10) || null) : null,
+    email:          formData[p+'email'] || null,
+    phone:          formData[p+'phone'] || null,
+    marital_status: formData[p+'marital'] || null,
+    citizenship:    formData[p+'citizenship'] || null,
   };
 }
 
