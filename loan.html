@@ -3915,7 +3915,10 @@ async function fetchFeeTolerance() {
     // not cured state, until a cure-tracking column exists).
     return (data || []).map(f => ({
       ...f,
-      bucket: f.tolerance_category,
+      // [SCHEMA PASS] CONFIRMED via check constraint: tolerance_category is
+      // one of 'zero' | 'ten_percent' | 'no_tolerance'. The render layer keys
+      // buckets as 'zero' | 'ten' | 'unlimited', so translate here.
+      bucket: ({ zero: 'zero', ten_percent: 'ten', no_tolerance: 'unlimited' })[f.tolerance_category] || f.tolerance_category,
       le_total: f.baseline_amount_cents != null ? f.baseline_amount_cents / 100 : null,
       cd_total: f.final_amount_cents != null ? f.final_amount_cents / 100 : null,
       delta: f.variance_cents != null ? f.variance_cents / 100 : null,
