@@ -2831,24 +2831,56 @@ async function loadAndRenderDocuments() {
   let docs = [];
   let docsError = null;
   try {
+    // [SCHEMA PASS] loan_documents real cols: filename, file_size_bytes,
+    // mime_type, ai_classified_doc_type, status, storage_path, uploaded_at,
+    // ai_classification_confidence. NO file_name / doc_type / uploaded_by /
+    // extraction_confidence / archived_at / created_at. We normalize into the
+    // shape renderDocRow expects so the render layer stays untouched.
     const { data, error } = await supa
       .from('loan_documents')
-      .select('id, file_name, file_size_bytes, mime_type, doc_type, status, storage_path, uploaded_by, uploaded_at, extraction_confidence, created_at, updated_at')
+      .select('id, filename, file_size_bytes, mime_type, ai_classified_doc_type, status, storage_path, uploaded_at, ai_classification_confidence, extracted_fields, created_at, updated_at')
       .eq('loan_id', loan.id)
-      .is('archived_at', null)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    docs = data || [];
+    docs = (data || []).map(d => ({
+      id: d.id,
+      file_name: d.filename,
+      file_size_bytes: d.file_size_bytes,
+      mime_type: d.mime_type,
+      doc_type: d.ai_classified_doc_type,
+      status: d.status,
+      storage_path: d.storage_path,
+      uploaded_by: null,
+      uploaded_at: d.uploaded_at,
+      extraction_confidence: d.ai_classification_confidence,
+      created_at: d.created_at,
+      updated_at: d.updated_at,
+    }));
   } catch (err) {
-    // Fallback to `documents` table name
+    // Fallback to `documents` table (alt schema). Real cols differ again:
+    // file_name, file_size_bytes, doc_type, status, storage_path,
+    // uploaded_at, extraction_confidence. NO created_at -> order by uploaded_at.
     try {
       const { data, error } = await supa
         .from('documents')
-        .select('*')
+        .select('id, file_name, filename, file_size_bytes, size_bytes, mime_type, doc_type, status, storage_path, uploaded_by, uploaded_at, extraction_confidence, ai_confidence')
         .eq('loan_id', loan.id)
-        .order('created_at', { ascending: false });
+        .order('uploaded_at', { ascending: false });
       if (error) throw error;
-      docs = data || [];
+      docs = (data || []).map(d => ({
+        id: d.id,
+        file_name: d.file_name || d.filename,
+        file_size_bytes: d.file_size_bytes != null ? d.file_size_bytes : d.size_bytes,
+        mime_type: d.mime_type,
+        doc_type: d.doc_type,
+        status: d.status,
+        storage_path: d.storage_path,
+        uploaded_by: d.uploaded_by,
+        uploaded_at: d.uploaded_at,
+        extraction_confidence: d.extraction_confidence != null ? d.extraction_confidence : d.ai_confidence,
+        created_at: d.uploaded_at,
+        updated_at: null,
+      }));
     } catch (err2) {
       docsError = err2.message;
     }
@@ -2870,13 +2902,16 @@ async function loadAndRenderDocuments() {
   _docsCache = { docs, requests };
 
   if (docsError) {
+    // [SCHEMA PASS] Never surface a raw Postgres error to the user. Log it for
+    // the developer; show a calm, branded empty state.
+    console.error('[Loan] documents load failed:', docsError);
     paneEl.innerHTML = `
       <div class="docs-overall-empty">
-        <div class="docs-overall-empty-icon">!</div>
-        <div class="docs-overall-empty-title">Couldn't load documents</div>
-        <div class="docs-overall-empty-sub">${escapeHtml(docsError)}<br><br>
-          If the loan_documents table doesn't exist in your schema yet,
-          this is expected — it lands with checklist 11.5.12 (storage backend).
+        <div class="docs-overall-empty-icon">▤</div>
+        <div class="docs-overall-empty-title">Documents are temporarily unavailable</div>
+        <div class="docs-overall-empty-sub">
+          We couldn't load this loan's documents right now. This has been logged.
+          Try refreshing in a moment — your files are safe.
         </div>
       </div>
     `;
@@ -3315,35 +3350,54 @@ async function loadAndRenderConditions() {
 
   // ─── Load conditions ────────────────────────────────────────────────
   let conds = [];
+  // [SCHEMA PASS] conditions real cols: owner_role (not assigned_to_role),
+  // assignee_id (not assigned_to_user_id), cleared_confidence (not
+  // ai_confidence), source_document_id (not evidence_document_id), and
+  // auto_cleared bool (there is NO cleared_method column — AI-clear is
+  // derived from auto_cleared). We select reals then normalize to the shape
+  // the render layer already expects (assigned_to_user_id, cleared_method,
+  // ai_confidence, evidence_document_id).
   const cols = `id, loan_id, branch_id, title, description, category, status,
-                template_key, kind, assigned_to_role, assigned_to_user_id,
-                cleared_at, cleared_by_user_id, cleared_method,
-                ai_confidence, evidence_document_id,
-                created_at, updated_at`;
+                template_key, kind, owner_role, assignee_id,
+                cleared_at, cleared_by_user_id, auto_cleared, cleared_reason,
+                cleared_confidence, source_document_id,
+                created_by, created_at, updated_at`;
+  const _normCond = (c) => ({
+    ...c,
+    // DB condition_status enum has no 'open'; UI filters on 'open'. Map it.
+    status: c.status === 'outstanding' ? 'open' : c.status,
+    assigned_to_role: c.owner_role,
+    assigned_to_user_id: c.assignee_id,
+    cleared_method: c.auto_cleared ? 'ai' : (c.cleared_by_user_id ? 'manual' : null),
+    ai_confidence: c.cleared_confidence,
+    evidence_document_id: c.source_document_id,
+    created_by_user_id: c.created_by,
+  });
   try {
     const { data, error } = await supa
       .from('conditions')
       .select(cols)
       .eq('loan_id', loan.id);
     if (error) throw error;
-    conds = data || [];
+    conds = (data || []).map(_normCond);
   } catch (err) {
-    // Fallback to select(*) if a column doesn't exist
+    // Fallback to select(*) then normalize.
     try {
       const { data, error } = await supa
         .from('conditions')
         .select('*')
         .eq('loan_id', loan.id);
       if (error) throw error;
-      conds = data || [];
+      conds = (data || []).map(_normCond);
     } catch (err2) {
+      // [SCHEMA PASS] log raw, show calm empty state — no raw error to user.
+      console.error('[Loan] conditions load failed:', err2);
       paneEl.innerHTML = `
         <div class="cond-empty">
-          <div class="cond-empty-title">Couldn't load conditions</div>
+          <div class="cond-empty-title">Conditions temporarily unavailable</div>
           <div class="cond-empty-sub">
-            ${escapeHtml(err2.message)}<br><br>
-            If the conditions table doesn't exist yet, this is expected — it lands
-            with checklist 12.5.9 (conditions clearing workflow).
+            We couldn't load conditions for this loan right now. This has been
+            logged — try refreshing in a moment.
           </div>
         </div>
       `;
@@ -3386,14 +3440,28 @@ function handleCondRealtime(payload) {
   // Don't bother updating if the user has switched tabs away from conditions
   if (!document.getElementById('cond-pane')) return;
 
+  // [SCHEMA PASS] realtime rows arrive in RAW schema shape — normalize them
+  // the same way the loader does, or they'd reintroduce owner_role/assignee_id/
+  // cleared_confidence/auto_cleared mismatches into the cache.
+  const _norm = (c) => ({
+    ...c,
+    // DB condition_status enum has no 'open'; UI filters on 'open'. Map it.
+    status: c.status === 'outstanding' ? 'open' : c.status,
+    assigned_to_role: c.owner_role,
+    assigned_to_user_id: c.assignee_id,
+    cleared_method: c.auto_cleared ? 'ai' : (c.cleared_by_user_id ? 'manual' : null),
+    ai_confidence: c.cleared_confidence,
+    evidence_document_id: c.source_document_id,
+    created_by_user_id: c.created_by,
+  });
   if (payload.eventType === 'INSERT') {
     if (!_condState.conditions.find(c => c.id === payload.new.id)) {
-      _condState.conditions.push(payload.new);
+      _condState.conditions.push(_norm(payload.new));
     }
   } else if (payload.eventType === 'UPDATE') {
     const idx = _condState.conditions.findIndex(c => c.id === payload.new.id);
-    if (idx >= 0) _condState.conditions[idx] = payload.new;
-    else _condState.conditions.push(payload.new);
+    if (idx >= 0) _condState.conditions[idx] = _norm(payload.new);
+    else _condState.conditions.push(_norm(payload.new));
   } else if (payload.eventType === 'DELETE') {
     _condState.conditions = _condState.conditions.filter(c => c.id !== payload.old.id);
   }
@@ -3620,23 +3688,31 @@ async function toggleCondClear(condId) {
     cleared_method: c.cleared_method,
   };
 
+  // [SCHEMA PASS] reopen status is 'outstanding' (the condition_status enum is
+  // outstanding|submitted|cleared|waived — there is NO 'open'). The local
+  // model uses 'open' for filtering UX, so map: DB 'outstanding' <-> local
+  // 'open' on read (see _normCond note) but WRITE the real enum value here.
+  // There is no cleared_method column; manual clear = auto_cleared:false +
+  // cleared_by_user_id set. The local-mirror fields keep the UI consistent.
   const goingToCleared = c.status !== 'cleared';
   if (goingToCleared) {
     c.status = 'cleared';
     c.cleared_at = new Date().toISOString();
     c.cleared_by_user_id = me.id;
     c.cleared_method = 'manual';
+    c.auto_cleared = false;
   } else {
-    c.status = 'open';
+    c.status = 'open';   // local-model value; DB write uses 'outstanding'
     c.cleared_at = null;
     c.cleared_by_user_id = null;
     c.cleared_method = null;
+    c.auto_cleared = false;
   }
   renderCondPane();
 
   const patch = goingToCleared
-    ? { status: 'cleared', cleared_at: c.cleared_at, cleared_by_user_id: me.id, cleared_method: 'manual' }
-    : { status: 'open',    cleared_at: null,         cleared_by_user_id: null,    cleared_method: null    };
+    ? { status: 'cleared',     cleared_at: c.cleared_at, cleared_by_user_id: me.id, auto_cleared: false }
+    : { status: 'outstanding', cleared_at: null,         cleared_by_user_id: null,  auto_cleared: false };
 
   try {
     const { error } = await supa.from('conditions').update(patch).eq('id', condId);
@@ -3647,7 +3723,7 @@ async function toggleCondClear(condId) {
     renderCondPane();
     alert(
       'Failed to update condition: ' + err.message +
-      '\n\nIf this is a column-missing error, check your conditions schema for: status, cleared_at, cleared_by_user_id, cleared_method.'
+      '\n\nIf this is a column-missing error, check your conditions schema for: status, cleared_at, cleared_by_user_id, auto_cleared.'
     );
   }
 }
@@ -3655,9 +3731,9 @@ async function toggleCondClear(condId) {
 // ─── Helpers (prefixed `cond` to avoid colliding with other tab helpers) ──
 function condIsAiCleared(c) {
   if (c.status !== 'cleared') return false;
+  if (c.auto_cleared === true) return true;
   if (c.cleared_method === 'ai') return true;
-  // Fallback if cleared_method column doesn't exist
-  if (!c.cleared_by_user_id) return true;
+  if (!c.cleared_by_user_id) return true;  // no human clearer => AI
   return false;
 }
 
@@ -3770,11 +3846,20 @@ async function fetchDisclosures() {
   try {
     const { data, error } = await supa
       .from('disclosures')
-      .select('id, kind, version, delivered_at, delivered_by_user_id, delivery_method, apr_disclosed, reason_for_revision, document_id, created_at')
+      .select('id, kind, version, sent_at, delivered_at, method, reason_for_revision, doc_url, created_by, created_at')
       .eq('loan_id', loan.id)
-      .order('delivered_at', { ascending: false });
+      .order('delivered_at', { ascending: false, nullsFirst: false });
     if (error) throw error;
-    return data || [];
+    // [SCHEMA PASS] normalize: delivery_method<-method, delivered_by_user_id
+    // <-created_by, document_id<-doc_url. apr_disclosed has no column -> null.
+    return (data || []).map(d => ({
+      ...d,
+      delivery_method: d.method,
+      delivered_by_user_id: d.created_by,
+      document_id: d.doc_url,
+      apr_disclosed: null,
+      delivered_at: d.delivered_at || d.sent_at,
+    }));
   } catch (_) { return []; }
 }
 
@@ -3782,13 +3867,15 @@ async function fetchIntentToProceed() {
   try {
     const { data, error } = await supa
       .from('intent_to_proceed')
-      .select('id, captured_at, captured_by_user_id, method, notes')
+      .select('id, received_at, created_by, method, notes')
       .eq('loan_id', loan.id)
-      .order('captured_at', { ascending: false })
+      .order('received_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) throw error;
-    return data || null;
+    if (!data) return null;
+    // [SCHEMA PASS] captured_at<-received_at, captured_by_user_id<-created_by
+    return { ...data, captured_at: data.received_at, captured_by_user_id: data.created_by };
   } catch (_) { return null; }
 }
 
@@ -3796,11 +3883,21 @@ async function fetchCocs() {
   try {
     const { data, error } = await supa
       .from('change_of_circumstance')
-      .select('id, occurred_at, reason, description, triggers_redisclosure, redisclosed_at, created_by_user_id, created_at')
+      .select('id, coc_type, detection_source, description, detected_at, revised_le_due_at, status, resolved_at, created_by, created_at')
       .eq('loan_id', loan.id)
-      .order('occurred_at', { ascending: false });
+      .order('detected_at', { ascending: false });
     if (error) throw error;
-    return data || [];
+    // [SCHEMA PASS] reason<-coc_type, occurred_at<-detected_at,
+    // created_by_user_id<-created_by. triggers_redisclosure derived from
+    // revised_le_due_at present; redisclosed_at<-resolved_at when status done.
+    return (data || []).map(c => ({
+      ...c,
+      reason: c.coc_type,
+      occurred_at: c.detected_at,
+      created_by_user_id: c.created_by,
+      triggers_redisclosure: c.revised_le_due_at != null,
+      redisclosed_at: (c.status === 'resolved' || c.status === 'redisclosed') ? c.resolved_at : null,
+    }));
   } catch (_) { return []; }
 }
 
@@ -3808,10 +3905,23 @@ async function fetchFeeTolerance() {
   try {
     const { data, error } = await supa
       .from('fee_tolerance')
-      .select('id, bucket, le_total, cd_total, delta, breached, cured_at')
+      .select('id, tolerance_category, baseline_amount_cents, final_amount_cents, variance_cents, cure_required, cure_amount_cents')
       .eq('loan_id', loan.id);
     if (error) throw error;
-    return data || [];
+    // [SCHEMA PASS] bucket<-tolerance_category; le_total/cd_total/delta are
+    // cents-native columns. The render layer treats le_total/cd_total/delta as
+    // DOLLARS (passes them through dollars()), so convert cents->dollars here.
+    // breached<-cure_required. No cured_at column -> null (UI shows breach,
+    // not cured state, until a cure-tracking column exists).
+    return (data || []).map(f => ({
+      ...f,
+      bucket: f.tolerance_category,
+      le_total: f.baseline_amount_cents != null ? f.baseline_amount_cents / 100 : null,
+      cd_total: f.final_amount_cents != null ? f.final_amount_cents / 100 : null,
+      delta: f.variance_cents != null ? f.variance_cents / 100 : null,
+      breached: f.cure_required,
+      cured_at: null,
+    }));
   } catch (_) { return []; }
 }
 
@@ -4389,13 +4499,49 @@ async function loadAndRenderFindings() {
   try {
     const { data, error } = await supa
       .from('aus_findings')
-      .select('id, engine, casefile_id, recommendation, risk_class, recommendation_summary, ratios_dti, ratios_ltv, ratios_hcltv, findings, llpas, discrepancies, run_at, run_by_user_id, document_id, ai_parsed, ai_confidence, created_at')
+      .select('id, engine, casefile_id, result, total_ratio_pct, housing_ratio_pct, ltv_pct, cltv_pct, hcltv_pct, decision_credit_score, findings_summary, reserves_months, submitted_at, submitted_by, created_at')
       .eq('loan_id', loan.id)
-      .order('run_at', { ascending: false })
+      .order('submitted_at', { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
     if (error) throw error;
-    record = data;
+    // [SCHEMA PASS] AUS schema diverges heavily from the render layer's
+    // assumptions. Map real cols onto the expected shape:
+    //   recommendation       <- result            (ASSUMPTION: result holds
+    //                           approve_eligible / refer / ineligible-style
+    //                           values; render styles by substring match so
+    //                           any casing/spelling of approve|refer|ineligible
+    //                           still themes correctly. FLAG: confirm the
+    //                           actual enum values in aus_findings.result.)
+    //   recommendation_summary <- null (no column; banner falls back to a
+    //                           generated line)
+    //   ratios_dti           <- total_ratio_pct   (back-end / total DTI)
+    //   ratios_ltv           <- ltv_pct
+    //   ratios_hcltv         <- hcltv_pct
+    //   run_at               <- submitted_at
+    //   run_by_user_id       <- submitted_by
+    //   findings             <- findings_summary (if it's an array; else [])
+    //   llpas / discrepancies-> [] (no columns in this schema; net-new work)
+    //   document_id          -> null (no column)
+    if (data) {
+      const fs = data.findings_summary;
+      record = {
+        ...data,
+        recommendation: data.result,
+        recommendation_summary: null,
+        ratios_dti: data.total_ratio_pct,
+        ratios_ltv: data.ltv_pct,
+        ratios_hcltv: data.hcltv_pct,
+        run_at: data.submitted_at,
+        run_by_user_id: data.submitted_by,
+        findings: Array.isArray(fs) ? fs : (fs && Array.isArray(fs.findings) ? fs.findings : []),
+        llpas: [],
+        discrepancies: [],
+        document_id: null,
+      };
+    } else {
+      record = null;
+    }
   } catch (_) { /* table absent — empty state */ }
 
   if (record?.run_by_user_id) {
@@ -4634,15 +4780,19 @@ async function loadAndRenderCredit() {
   const paneEl = document.getElementById('credit-pane');
   if (!paneEl) return;
 
-  // Load borrowers for this loan (needed even if no credit report exists)
-  let borrowers = [];
-  try {
-    const { data } = await supa.from('borrowers')
-      .select('id, first_name, last_name, is_primary')
-      .eq('loan_id', loan.id)
-      .order('is_primary', { ascending: false });
-    borrowers = data || [];
-  } catch (_) {}
+  // [SCHEMA PASS] borrowers has no loan_id / is_primary — the link is via
+  // loan_borrowers, already loaded into loan.borrowers by loadLoan(). Reuse it
+  // and shape to {id, first_name, last_name, is_primary} the render expects.
+  const borrowers = (loan.borrowers || [])
+    .slice()
+    .sort((a, b) => (a.position || 0) - (b.position || 0))
+    .map((lb, i) => ({
+      id: lb.borrower?.id,
+      first_name: lb.borrower?.first_name,
+      last_name: lb.borrower?.last_name,
+      is_primary: (lb.position === 1) || (lb.role === 'primary') || i === 0,
+    }))
+    .filter(b => b.id);
   _creditState.borrowers = borrowers;
 
   // Load credit reports (one per borrower, latest only)
@@ -5171,63 +5321,102 @@ async function loadAndRenderTimeline() {
 }
 
 async function fetchTlDocs() {
+  // [SCHEMA PASS] loan_documents: filename / ai_classified_doc_type / no
+  // uploaded_by / no archived_at. documents: file_name / doc_type / no created_at.
   try {
     const { data } = await supa.from('loan_documents')
-      .select('id, file_name, doc_type, uploaded_at, uploaded_by, created_at')
-      .eq('loan_id', loan.id).is('archived_at', null);
-    return data || [];
+      .select('id, filename, ai_classified_doc_type, uploaded_at, created_at')
+      .eq('loan_id', loan.id);
+    return (data || []).map(d => ({
+      id: d.id, file_name: d.filename, doc_type: d.ai_classified_doc_type,
+      uploaded_at: d.uploaded_at, uploaded_by: null, created_at: d.created_at,
+    }));
   } catch (_) {
     try {
       const { data } = await supa.from('documents')
-        .select('id, file_name, doc_type, uploaded_at, uploaded_by, created_at')
+        .select('id, file_name, doc_type, uploaded_at, uploaded_by')
         .eq('loan_id', loan.id);
-      return data || [];
+      return (data || []).map(d => ({
+        id: d.id, file_name: d.file_name, doc_type: d.doc_type,
+        uploaded_at: d.uploaded_at, uploaded_by: d.uploaded_by, created_at: d.uploaded_at,
+      }));
     } catch (_) { return []; }
   }
 }
 
 async function fetchTlConditions() {
+  // [SCHEMA PASS] created_by (not created_by_user_id), owner_role (not
+  // assigned_to_role), auto_cleared/cleared_confidence (no cleared_method/
+  // ai_confidence).
   try {
     const { data } = await supa.from('conditions')
-      .select('id, title, category, created_at, created_by_user_id, cleared_at, cleared_by_user_id, cleared_method, ai_confidence, assigned_to_role')
+      .select('id, title, category, created_at, created_by, cleared_at, cleared_by_user_id, auto_cleared, cleared_confidence, owner_role')
       .eq('loan_id', loan.id);
-    return data || [];
+    return (data || []).map(c => ({
+      ...c,
+      created_by_user_id: c.created_by,
+      assigned_to_role: c.owner_role,
+      cleared_method: c.auto_cleared ? 'ai' : (c.cleared_by_user_id ? 'manual' : null),
+      ai_confidence: c.cleared_confidence,
+    }));
   } catch (_) { return []; }
 }
 
 async function fetchTlDisclosures() {
+  // [SCHEMA PASS] method (not delivery_method), created_by (not delivered_by_user_id).
   try {
     const { data } = await supa.from('disclosures')
-      .select('id, kind, version, delivered_at, delivered_by_user_id, delivery_method, reason_for_revision, created_at')
+      .select('id, kind, version, sent_at, delivered_at, method, reason_for_revision, created_by, created_at')
       .eq('loan_id', loan.id);
-    return data || [];
+    return (data || []).map(d => ({
+      ...d,
+      delivered_at: d.delivered_at || d.sent_at,
+      delivery_method: d.method,
+      delivered_by_user_id: d.created_by,
+    }));
   } catch (_) { return []; }
 }
 
 async function fetchTlItp() {
+  // [SCHEMA PASS] received_at (not captured_at), created_by (not captured_by_user_id).
   try {
     const { data } = await supa.from('intent_to_proceed')
-      .select('captured_at, captured_by_user_id, method')
-      .eq('loan_id', loan.id).order('captured_at', { ascending: false }).limit(1).maybeSingle();
-    return data || null;
+      .select('received_at, created_by, method')
+      .eq('loan_id', loan.id).order('received_at', { ascending: false }).limit(1).maybeSingle();
+    if (!data) return null;
+    return { ...data, captured_at: data.received_at, captured_by_user_id: data.created_by };
   } catch (_) { return null; }
 }
 
 async function fetchTlCocs() {
   try {
+    // [SCHEMA PASS] coc_type/detected_at/created_by; derive redisclosure flags.
     const { data } = await supa.from('change_of_circumstance')
-      .select('id, occurred_at, reason, triggers_redisclosure, redisclosed_at, created_by_user_id, created_at')
+      .select('id, coc_type, detected_at, revised_le_due_at, status, resolved_at, created_by, created_at')
       .eq('loan_id', loan.id);
-    return data || [];
+    return (data || []).map(c => ({
+      ...c,
+      occurred_at: c.detected_at,
+      reason: c.coc_type,
+      created_by_user_id: c.created_by,
+      triggers_redisclosure: c.revised_le_due_at != null,
+      redisclosed_at: (c.status === 'resolved' || c.status === 'redisclosed') ? c.resolved_at : null,
+    }));
   } catch (_) { return []; }
 }
 
 async function fetchTlFindings() {
+  // [SCHEMA PASS] result (not recommendation), submitted_at/by (not run_at/by).
   try {
     const { data } = await supa.from('aus_findings')
-      .select('id, engine, recommendation, casefile_id, run_at, run_by_user_id, created_at')
+      .select('id, engine, result, casefile_id, submitted_at, submitted_by, created_at')
       .eq('loan_id', loan.id);
-    return data || [];
+    return (data || []).map(f => ({
+      ...f,
+      recommendation: f.result,
+      run_at: f.submitted_at,
+      run_by_user_id: f.submitted_by,
+    }));
   } catch (_) { return []; }
 }
 
@@ -5397,15 +5586,17 @@ async function loadAndRenderHmda() {
   const paneEl = document.getElementById('hmda-pane');
   if (!paneEl) return;
 
-  // Borrowers
-  let borrowers = [];
-  try {
-    const { data } = await supa.from('borrowers')
-      .select('id, first_name, last_name, is_primary')
-      .eq('loan_id', loan.id)
-      .order('is_primary', { ascending: false });
-    borrowers = data || [];
-  } catch (_) {}
+  // [SCHEMA PASS] borrowers link via loan_borrowers; reuse loan.borrowers.
+  const borrowers = (loan.borrowers || [])
+    .slice()
+    .sort((a, b) => (a.position || 0) - (b.position || 0))
+    .map((lb, i) => ({
+      id: lb.borrower?.id,
+      first_name: lb.borrower?.first_name,
+      last_name: lb.borrower?.last_name,
+      is_primary: (lb.position === 1) || (lb.role === 'primary') || i === 0,
+    }))
+    .filter(b => b.id);
   _hmdaState.borrowers = borrowers;
 
   // Demographics
@@ -5833,20 +6024,39 @@ async function fetchDecDecisions() {
 }
 
 async function fetchDecConditions() {
+  // [SCHEMA PASS] no ai_confidence/cleared_method; status enum uses
+  // 'outstanding' not 'open'. The Decision panel filters on status==='open',
+  // so map outstanding->open and derive cleared_method from auto_cleared.
   try {
     const { data } = await supa.from('conditions')
-      .select('id, category, status, title, ai_confidence, cleared_method, cleared_at, cleared_by_user_id')
+      .select('id, category, status, title, cleared_confidence, auto_cleared, cleared_at, cleared_by_user_id')
       .eq('loan_id', loan.id);
-    return data || [];
+    return (data || []).map(c => ({
+      ...c,
+      status: c.status === 'outstanding' ? 'open' : c.status,
+      ai_confidence: c.cleared_confidence,
+      cleared_method: c.auto_cleared ? 'ai' : (c.cleared_by_user_id ? 'manual' : null),
+    }));
   } catch (_) { return []; }
 }
 
 async function fetchDecFindings() {
+  // [SCHEMA PASS] result (not recommendation), *_pct cols, submitted_at.
+  // No recommendation_summary column -> null.
   try {
     const { data } = await supa.from('aus_findings')
-      .select('engine, recommendation, recommendation_summary, ratios_dti, ratios_ltv, ratios_hcltv, run_at')
-      .eq('loan_id', loan.id).order('run_at', { ascending: false }).limit(1).maybeSingle();
-    return data || null;
+      .select('engine, result, total_ratio_pct, ltv_pct, hcltv_pct, submitted_at')
+      .eq('loan_id', loan.id).order('submitted_at', { ascending: false, nullsFirst: false }).limit(1).maybeSingle();
+    if (!data) return null;
+    return {
+      ...data,
+      recommendation: data.result,
+      recommendation_summary: null,
+      ratios_dti: data.total_ratio_pct,
+      ratios_ltv: data.ltv_pct,
+      ratios_hcltv: data.hcltv_pct,
+      run_at: data.submitted_at,
+    };
   } catch (_) { return null; }
 }
 
