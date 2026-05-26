@@ -603,16 +603,23 @@ function showError(title, message, detail) {
 /* ─── Data fetching ───────────────────────────────────────────────────── */
 
 async function loadProfile() {
-  // Try to fetch the calling user's row from public.users. The own-row
-  // RLS policy should allow this.
+  // [SCHEMA FIX] The profile table is `profiles`, NOT `users` (there is no
+  // public.users table — this was the "Could not find the table public.users"
+  // hard error). profiles has full_name (not first_name/last_name), so we
+  // split it into first/last to keep downstream render code unchanged.
   const { data, error } = await state.supabase
-    .from("users")
-    .select("id, branch_id, first_name, last_name, role, email")
+    .from("profiles")
+    .select("id, branch_id, full_name, role, email")
     .eq("id", state.authUser.id)
     .maybeSingle();
   if (error) throw new Error("could not load your profile: " + error.message);
   if (!data) throw new Error("no profile row exists for your account");
-  return data;
+  const parts = String(data.full_name || "").trim().split(/\s+/);
+  return {
+    ...data,
+    first_name: parts[0] || "",
+    last_name:  parts.length > 1 ? parts.slice(1).join(" ") : "",
+  };
 }
 
 async function loadLoan() {
@@ -631,14 +638,18 @@ async function loadBorrowers(loanId) {
   // display names so the projection is minimal.
   const { data, error } = await state.supabase
     .from("loan_borrowers")
-    .select("borrower_id, role, is_primary, borrowers(id, first_name, last_name, email)")
+    .select("borrower_id, role, position, borrowers(id, first_name, last_name, email)")
     .eq("loan_id", loanId);
   if (error) {
     console.warn("[lo-messages] borrowers fetch failed:", error.message);
     return [];
   }
+  // [SCHEMA FIX] loan_borrowers has no is_primary — derive it from
+  // position===1 or role==='primary' so downstream (find(b => b.is_primary)) works.
   return (data || [])
-    .map(row => row.borrowers)
+    .map(row => row.borrowers
+      ? { ...row.borrowers, is_primary: (row.position === 1) || (row.role === "primary") }
+      : null)
     .filter(Boolean);
 }
 
