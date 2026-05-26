@@ -2478,21 +2478,23 @@ function buildLoanRow(status) {
     purpose: formData.purpose || null,
     loan_amount_cents: dollarsToCents(formData.loan_amount),
     program: formData.loan_program || null,
-    // NOTE: amortization_type is NOT a real column on `loans` — it lives only in
-    // application_data (jsonb). Writing it top-level 400s with a schema-cache miss.
-    // Same story for property_value_cents below. Both are fully preserved in
-    // application_data, and nothing (dashboard/loan.html) reads the top-level
-    // projection, so dropping the write is lossless. If a future save 400s on
-    // another column here, it's the identical issue — move that field into
-    // application_data-only, or confirm with:
-    //   select column_name from information_schema.columns where table_name='loans';
+    // SCHEMA NOTE — verified against information_schema.columns for `loans`
+    // (2026-05-26). Five fields the wizard collects are NOT columns on `loans`
+    // and were 400'ing the save with schema-cache misses:
+    //   amortization_type, property_value_cents, estimated_closing_date,
+    //   property_year_built, property_units
+    // All five are preserved in the application_data jsonb below, and nothing
+    // (dashboard / loan.html) reads a top-level projection of them, so they're
+    // intentionally omitted here — lossless. Every key still written below is a
+    // confirmed real column. (appraised_value_cents / purchase_price_cents exist
+    // if we ever want to project a value column; left to application_data for now
+    // to avoid guessing purchase-price-vs-appraised semantics at intake.)
     term_months: formData.loan_term_months ? parseInt(formData.loan_term_months, 10) : null,
     // Convert percent → basis points. 3.625% → 363 bps. Eliminates the
     // float-precision footgun every LOS hits eventually.
     rate_bps: formData.interest_rate ? Math.round(Number(formData.interest_rate) * 100) : null,
     occupancy: formData.occupancy || null,
     property_type: formData.property_type || null,
-    estimated_closing_date: formData.estimated_closing_date || null,
     property_address: {
       street: formData.property_address_street || null,
       unit:   formData.property_address_unit || null,
@@ -2501,8 +2503,6 @@ function buildLoanRow(status) {
       zip:    formData.property_address_zip || null,
       county: formData.property_address_county || null,
     },
-    property_year_built: formData.property_year_built ? parseInt(formData.property_year_built, 10) : null,
-    property_units: formData.property_units ? parseInt(formData.property_units, 10) : 1,
     application_data: { ...formData, hasCoborrower },
   };
 }
