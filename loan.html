@@ -3901,18 +3901,20 @@ async function fetchCocs() {
   try {
     const { data, error } = await supa
       .from('change_of_circumstance')
-      .select('id, coc_type, detection_source, description, detected_at, revised_le_due_at, status, resolved_at, created_by, created_at')
+      .select('id, coc_type, detection_source, description, detected_at, revised_le_due_at, status, resolved_at, detected_by, created_at')
       .eq('loan_id', loan.id)
       .order('detected_at', { ascending: false });
     if (error) throw error;
-    // [SCHEMA PASS] reason<-coc_type, occurred_at<-detected_at,
-    // created_by_user_id<-created_by. triggers_redisclosure derived from
+    // [SCHEMA FIX] live table has detected_by (the actor), NOT created_by — an
+    // earlier schema dump listed created_by but prod doesn't have it; that was
+    // the 400. reason<-coc_type, occurred_at<-detected_at,
+    // created_by_user_id<-detected_by. triggers_redisclosure derived from
     // revised_le_due_at present; redisclosed_at<-resolved_at when status done.
     return (data || []).map(c => ({
       ...c,
       reason: c.coc_type,
       occurred_at: c.detected_at,
-      created_by_user_id: c.created_by,
+      created_by_user_id: c.detected_by,
       triggers_redisclosure: c.revised_le_due_at != null,
       redisclosed_at: (c.status === 'resolved' || c.status === 'redisclosed') ? c.resolved_at : null,
     }));
@@ -5409,13 +5411,14 @@ async function fetchTlCocs() {
   try {
     // [SCHEMA PASS] coc_type/detected_at/created_by; derive redisclosure flags.
     const { data } = await supa.from('change_of_circumstance')
-      .select('id, coc_type, detected_at, revised_le_due_at, status, resolved_at, created_by, created_at')
+      .select('id, coc_type, detected_at, revised_le_due_at, status, resolved_at, detected_by, created_at')
       .eq('loan_id', loan.id);
+    // [SCHEMA FIX] detected_by, not created_by (see Disclosures loader note).
     return (data || []).map(c => ({
       ...c,
       occurred_at: c.detected_at,
       reason: c.coc_type,
-      created_by_user_id: c.created_by,
+      created_by_user_id: c.detected_by,
       triggers_redisclosure: c.revised_le_due_at != null,
       redisclosed_at: (c.status === 'resolved' || c.status === 'redisclosed') ? c.resolved_at : null,
     }));
