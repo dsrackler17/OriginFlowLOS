@@ -725,18 +725,35 @@ function showState(id) {
 async function loadConditions() {
   // Try the comprehensive query first; on failure (e.g., column missing),
   // fall back to select(*). Both filter by branch_id.
+  // [SCHEMA FIX] real cols: owner_role (not assigned_to_role), assignee_id
+  // (not assigned_to_user_id), cleared_confidence (not ai_confidence),
+  // source_document_id (not evidence_document_id), auto_cleared bool (there is
+  // NO cleared_method). condition_status enum = outstanding|submitted|cleared|
+  // waived (NO 'open') — the render filters on 'open', so map it. Normalize so
+  // all existing render code (status==='open', cleared_method, ai_confidence,
+  // assigned_to_*) keeps working unchanged.
   const cols = `id, loan_id, branch_id, title, description, category, status,
-                template_key, kind, assigned_to_role, assigned_to_user_id,
-                cleared_at, cleared_by_user_id, cleared_method,
-                ai_confidence, evidence_document_id,
-                created_at, updated_at`;
+                template_key, kind, owner_role, assignee_id,
+                cleared_at, cleared_by_user_id, auto_cleared, cleared_reason,
+                cleared_confidence, source_document_id,
+                created_by, created_at, updated_at`;
+  const _normCond = (c) => ({
+    ...c,
+    status: c.status === 'outstanding' ? 'open' : c.status,
+    assigned_to_role: c.owner_role,
+    assigned_to_user_id: c.assignee_id,
+    cleared_method: c.auto_cleared ? 'ai' : (c.cleared_by_user_id ? 'manual' : null),
+    ai_confidence: c.cleared_confidence,
+    evidence_document_id: c.source_document_id,
+    created_by_user_id: c.created_by,
+  });
   try {
     const { data, error } = await supa
       .from('conditions')
       .select(cols)
       .eq('branch_id', state.branch.id);
     if (error) throw error;
-    state.conditions = data || [];
+    state.conditions = (data || []).map(_normCond);
   } catch (err) {
     console.warn('[Conditions] comprehensive query failed, trying *:', err.message);
     const { data, error } = await supa
@@ -744,7 +761,7 @@ async function loadConditions() {
       .select('*')
       .eq('branch_id', state.branch.id);
     if (error) throw new Error('conditions table not accessible: ' + error.message);
-    state.conditions = data || [];
+    state.conditions = (data || []).map(_normCond);
   }
 }
 
@@ -753,14 +770,34 @@ async function loadLoans() {
   if (!loanIds.length) { state.loans = {}; return; }
   try {
     const { data, error } = await supa
+      // [SCHEMA FIX] loans real cols: loan_amount_cents, purchase_price_cents,
+      // program, term_months, dti_back_pct, ltv_pct, property_address(jsonb).
+      // There is NO loan_amount / sales_price / subject_city / subject_state /
+      // loan_program / term / dti / ltv. We select reals + normalize aliases
+      // so the render layer (loan.loan_amount, .subject_city, .loan_program,
+      // .term, .dti) stays untouched. loan_amount alias kept in CENTS — the
+      // render divides by 1000; corrected to /100000 there.
       .from('loans')
-      .select(`id, loan_number, status, borrower_id, loan_amount, sales_price,
-               subject_city, subject_state, loan_program, term, purpose,
-               occupancy, dti, ltv, lock_expires_at,
+      .select(`id, loan_number, status, loan_amount_cents, purchase_price_cents,
+               property_address, program, term_months, purpose,
+               occupancy, dti_back_pct, ltv_pct, lock_expires_at,
                lo_id, processor_id, underwriter_id`)
       .in('id', loanIds);
     if (error) throw error;
-    state.loans = Object.fromEntries((data || []).map(l => [l.id, l]));
+    state.loans = Object.fromEntries((data || []).map(l => {
+      const addr = l.property_address || {};
+      return [l.id, {
+        ...l,
+        loan_amount:  l.loan_amount_cents,      // CENTS (render /100000)
+        sales_price:  l.purchase_price_cents,
+        subject_city: addr.city || '',
+        subject_state: addr.state || '',
+        loan_program: l.program,
+        term:         l.term_months,
+        dti:          l.dti_back_pct,
+        ltv:          l.ltv_pct,
+      }];
+    }));
   } catch (err) {
     console.warn('[Conditions] loans full query failed, trying *:', err.message);
     const { data } = await supa.from('loans').select('*').in('id', loanIds);
@@ -772,13 +809,21 @@ async function loadBorrowers() {
   const loanIds = Object.keys(state.loans);
   if (!loanIds.length) { state.borrowers = {}; return; }
   try {
+    // [SCHEMA FIX] borrowers has no loan_id/is_primary — the link is
+    // loan_borrowers(loan_id, borrower_id, position, role). Join through it and
+    // keep the primary (position 1 / role 'primary'), else first seen.
     const { data } = await supa
-      .from('borrowers')
-      .select('id, loan_id, first_name, last_name, is_primary')
+      .from('loan_borrowers')
+      .select('loan_id, position, role, borrowers(id, first_name, last_name)')
       .in('loan_id', loanIds);
     const map = {};
-    for (const b of data || []) {
-      if (!map[b.loan_id] || b.is_primary) map[b.loan_id] = b;
+    for (const row of data || []) {
+      const b = row.borrowers;
+      if (!b) continue;
+      const isPrimary = row.position === 1 || row.role === 'primary';
+      if (!map[row.loan_id] || isPrimary) {
+        map[row.loan_id] = { ...b, loan_id: row.loan_id, is_primary: isPrimary };
+      }
     }
     state.borrowers = map;
   } catch (err) {
@@ -1075,7 +1120,7 @@ function renderLoanBlock(loanId, conds) {
     return new Date(a.created_at || 0) - new Date(b.created_at || 0);
   });
 
-  const amt = loan.loan_amount ? `$${Math.round(loan.loan_amount / 1000)}K` : '';
+  const amt = loan.loan_amount ? `$${Math.round(loan.loan_amount / 100000)}K` : '';
   const city = loan.subject_city ? loan.subject_city.toUpperCase() : '';
   const prog = loanProgramLabel(loan.loan_program, loan.term);
   const small = [amt, city, prog].filter(Boolean).join(' · ');
@@ -1295,18 +1340,21 @@ async function toggleConditionClear(condId) {
     c.cleared_at = new Date().toISOString();
     c.cleared_by_user_id = state.user.id;
     c.cleared_method = 'manual';
+    c.auto_cleared = false;
   } else {
-    c.status = 'open';
+    c.status = 'open';   // local-model value; DB write uses 'outstanding'
     c.cleared_at = null;
     c.cleared_by_user_id = null;
     c.cleared_method = null;
+    c.auto_cleared = false;
   }
   rerender();
 
-  // Commit to DB
+  // [SCHEMA FIX] reopen writes 'outstanding' (enum has no 'open'); no
+  // cleared_method column — manual clear = auto_cleared:false + clearer set.
   const patch = isNowClearing
-    ? { status: 'cleared', cleared_at: c.cleared_at, cleared_by_user_id: state.user.id, cleared_method: 'manual' }
-    : { status: 'open',    cleared_at: null,         cleared_by_user_id: null,           cleared_method: null    };
+    ? { status: 'cleared',     cleared_at: c.cleared_at, cleared_by_user_id: state.user.id, auto_cleared: false }
+    : { status: 'outstanding', cleared_at: null,         cleared_by_user_id: null,           auto_cleared: false };
   try {
     const { error } = await supa.from('conditions').update(patch).eq('id', condId);
     if (error) throw error;

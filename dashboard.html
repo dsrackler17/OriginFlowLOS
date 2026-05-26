@@ -1515,10 +1515,12 @@ async function loadAllLoans() {
   // 9.4 addition: `created_at` is now in the select so renderCard can
   // split the open-condition flag into "X open, Y aging (>7d)".
   {
+    // [SCHEMA FIX] conditions has no archived_at column — the .is('archived_at')
+    // filter 400'd this query, silently dropping open-condition flags across
+    // the whole pipeline. Removed.
     const { data: conds, error: condErr } = await supa.from('conditions')
       .select('id, loan_id, status, category, created_at')
-      .in('loan_id', loanIds)
-      .is('archived_at', null);
+      .in('loan_id', loanIds);
     if (condErr) {
       console.warn('conditions load failed (non-fatal — open-condition flags will be hidden):', condErr);
     } else {
