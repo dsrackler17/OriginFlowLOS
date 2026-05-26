@@ -2510,40 +2510,72 @@ function buildLoanRow(status) {
 }
 
 async function saveBorrowers(loanId) {
-  await supa.from('loan_borrowers').delete().eq('loan_id', loanId);
-  const borrowers = [];
+  // Idempotent borrower save. Reuses the borrower row already linked at each
+  // position (via loan_borrowers) and UPDATEs it in place, rather than the old
+  // "delete all links + insert fresh borrower rows" approach — that left
+  // orphaned, SSN-encrypted PII rows accumulating in `borrowers` on every
+  // re-save. This version is safe to call repeatedly within a session and
+  // across sessions (draft restore), because it reads the live links each call.
+  const desired = [];
   if (formData.b1_first_name && formData.b1_last_name) {
-    borrowers.push({ pos: 1, data: extractBorrower('1') });
+    desired.push({ pos: 1, data: extractBorrower('1') });
   }
   if (hasCoborrower && formData.b2_first_name && formData.b2_last_name) {
-    borrowers.push({ pos: 2, data: extractBorrower('2') });
+    desired.push({ pos: 2, data: extractBorrower('2') });
   }
-  for (const b of borrowers) {
-    const { data: bRow, error: bErr } = await supa.from('borrowers')
-      .insert({ branch_id: me.branch_id, ...b.data })
-      .select('id').single();   // only need the id back — avoid reading PII/_enc cols
-    if (bErr) throw bErr;
 
-    // Encrypt the SSN server-side. The ssn_encrypted column is REVOKE'd
-    // from authenticated, so the only way SSNs get into the DB is via
-    // this RPC. If it fails, we keep the borrower row anyway and show
-    // a non-blocking warning — processor will see the missing-SSN flag.
+  // Existing position → borrower_id links for this loan.
+  const { data: links, error: linkErr } = await supa.from('loan_borrowers')
+    .select('borrower_id, position').eq('loan_id', loanId);
+  if (linkErr) throw linkErr;
+  const byPos = new Map((links || []).map(l => [l.position, l.borrower_id]));
+
+  for (const b of desired) {
+    let borrowerId = byPos.get(b.pos) || null;
+    if (borrowerId) {
+      // Update the borrower already at this position (non-encrypted columns only).
+      const { error } = await supa.from('borrowers').update(b.data).eq('id', borrowerId);
+      if (error) throw error;
+    } else {
+      // First save at this position: insert the row + create the link.
+      const { data: bRow, error } = await supa.from('borrowers')
+        .insert({ branch_id: me.branch_id, ...b.data })
+        .select('id').single();   // only the id — never read back PII/_enc cols
+      if (error) throw error;
+      borrowerId = bRow.id;
+      const { error: lbErr } = await supa.from('loan_borrowers')
+        .insert({ loan_id: loanId, borrower_id: borrowerId, position: b.pos });
+      if (lbErr) throw lbErr;
+    }
+
+    // SSN → encrypted server-side via the SECURITY DEFINER borrowers_set_ssn()
+    // RPC. ssn_enc / ssn_encrypted are REVOKE'd from authenticated, so this RPC
+    // is the ONLY write path for SSNs. It's idempotent — re-running on each save
+    // just re-sets the same value.
     const ssnDigits = String(formData[`b${b.pos}_ssn`] || '').replace(/\D/g, '');
     if (ssnDigits.length === 9) {
       const { error: ssnErr } = await supa.rpc('borrowers_set_ssn', {
-        p_borrower_id: bRow.id,
+        p_borrower_id: borrowerId,
         p_ssn_plain: ssnDigits,
       });
       if (ssnErr) {
-        console.error('SSN encrypt failed for borrower', bRow.id, ssnErr);
+        console.error('SSN encrypt failed for borrower', borrowerId, ssnErr);
         showToast('Borrower saved, but SSN encryption failed: ' + ssnErr.message, true);
       }
     }
+  }
 
-    const { error: lbErr } = await supa.from('loan_borrowers').insert({
-      loan_id: loanId, borrower_id: bRow.id, position: b.pos,
-    });
-    if (lbErr) throw lbErr;
+  // Co-borrower removed? Drop the stale LINK for any position no longer present.
+  // We delete only the link, never the borrower row — a borrower can be shared
+  // across loans, so deleting the row could break another file. A rare orphaned
+  // row (only on actual co-borrower removal) is acceptable; runaway accumulation
+  // on every save was the bug.
+  for (const [pos, bid] of byPos) {
+    if (!desired.some(b => b.pos === pos)) {
+      const { error } = await supa.from('loan_borrowers')
+        .delete().eq('loan_id', loanId).eq('position', pos);
+      if (error) console.warn('stale borrower-link cleanup failed (non-fatal):', error);
+    }
   }
 }
 
