@@ -2472,6 +2472,8 @@ async function submitApplication() {
 function buildLoanRow(status) {
   return {
     branch_id: me.branch_id,
+    created_by: me.id,   // real column; = auth.uid() in this schema. Set proactively
+                         // in case it's NOT NULL (audited tables usually require it).
     lo_id: me.role === 'lo' || me.role === 'loa' ? me.id : null,
     intake_source: intakeMode === 'mismo' ? 'mismo_import' : 'manual',
     status,
