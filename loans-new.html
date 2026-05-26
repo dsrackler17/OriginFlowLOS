@@ -2521,7 +2521,7 @@ async function saveBorrowers(loanId) {
   for (const b of borrowers) {
     const { data: bRow, error: bErr } = await supa.from('borrowers')
       .insert({ branch_id: me.branch_id, ...b.data })
-      .select().single();
+      .select('id').single();   // only need the id back — avoid reading PII/_enc cols
     if (bErr) throw bErr;
 
     // Encrypt the SSN server-side. The ssn_encrypted column is REVOKE'd
