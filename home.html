@@ -1421,7 +1421,7 @@ async function loadMetrics(cfg) {
       .select('id, loans!inner(processor_id, branch_id)', { count: 'exact', head: true })
       .eq('loans.branch_id', me.branch_id)
       .eq('loans.processor_id', me.id)
-      .eq('status', 'open');
+      .eq('status', 'outstanding');  // [SCHEMA FIX] enum is 'outstanding', not 'open' — was silently counting 0
     const openConditions = condQ.count ?? 0;
     row.innerHTML = `
       <div class="metric-cell"><div class="metric-label">Files Assigned</div><div class="metric-value cyan">${assigned.count}</div><div class="metric-sub">${money(assigned.total)}</div></div>
@@ -1622,7 +1622,7 @@ async function loadQueue(cfg) {
         .select(`id, title, category, created_at,
                  loans!inner ( id, loan_number, branch_id, processor_id )`)
         .eq('loans.branch_id', me.branch_id).eq('loans.processor_id', me.id)
-        .eq('status', 'open').order('created_at', { ascending: true }).limit(5);
+        .eq('status', 'outstanding').order('created_at', { ascending: true }).limit(5);  // [SCHEMA FIX] enum 'outstanding' not 'open' — queue was silently empty
       for (const c of (conds || [])) {
         items.push({
           icon: '⚑', urgency: c.category === 'PTD' ? 'urgent' : '',
