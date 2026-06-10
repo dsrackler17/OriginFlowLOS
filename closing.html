@@ -90,6 +90,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 .btn.go:hover{filter:brightness(1.08)}
 .btn.go:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.4)}
 .btn.danger{border-color:var(--red);color:var(--red);background:rgba(255,93,108,.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
@@ -124,29 +125,29 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 
   <div class="top">
     <div class="brand">origin<span class="dot">●</span>flow / <span style="color:var(--mut)">closing desk</span></div>
-    <div class="crumbs">workspace / loan / <b id="crumbLoan">OF-1043</b> / closing</div>
-    <div class="statuspill" id="connPill">● demo mode</div>
+    <div class="crumbs"><a href="/dashboard.html">pipeline</a> / <a id="crumbLoanLink" href="#">loan</a> / <b id="crumbLoan">—</b> / closing</div>
+    <div class="statuspill" id="connPill">● connecting…</div>
   </div>
 
   <div class="loanhead">
     <div>
-      <h1 id="loanName">Rodriguez, James</h1>
-      <div class="meta"><b id="loanNum">OF-1043</b> · $<span id="loanAmt">310,000</span> · Purchase · Lubbock, TX · LO <b>Avery Sutton</b></div>
+      <h1 id="loanName">Loading…</h1>
+      <div class="meta"><b id="loanNum">—</b> · <span id="loanAmt">—</span> · <span id="loanPurpose">—</span> · <span id="loanCity">—</span> · LO <b id="loanLO">—</b></div>
     </div>
     <div class="fundzone">
-      <span class="statuspill" id="loanStatus">● clear to close</span>
+      <span class="statuspill" id="loanStatus">● —</span>
       <button class="btn go" id="fundBtn" disabled>▸ RECORD FUNDING</button>
     </div>
   </div>
 
   <!-- closing pipeline rail -->
   <div class="rail" id="rail">
-    <div class="step done" data-step="agent"><span class="n">13.0.8</span>Settlement Agent</div>
-    <div class="step done" data-step="title"><span class="n">13.0.10</span>Title Commitment</div>
-    <div class="step warn" data-step="cpl"><span class="n">13.0.9</span>CPL</div>
-    <div class="step block" data-step="wire"><span class="n">13.0.2</span>Wire Verify</div>
-    <div class="step warn" data-step="sched"><span class="n">13.0.3</span>Schedule</div>
-    <div class="step warn" data-step="stmt"><span class="n">13.0.1</span>Settlement Stmt</div>
+    <div class="step" data-step="agent"><span class="n">13.0.8</span>Settlement Agent</div>
+    <div class="step" data-step="title"><span class="n">13.0.10</span>Title Commitment</div>
+    <div class="step" data-step="cpl"><span class="n">13.0.9</span>CPL</div>
+    <div class="step" data-step="wire"><span class="n">13.0.2</span>Wire Verify</div>
+    <div class="step" data-step="sched"><span class="n">13.0.3</span>Schedule</div>
+    <div class="step" data-step="stmt"><span class="n">13.0.1</span>Settlement Stmt</div>
     <div class="step" data-step="fund"><span class="n">13.0.6</span>Funded</div>
   </div>
 
@@ -154,69 +155,50 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 
     <!-- SETTLEMENT AGENT -->
     <div class="card">
-      <h2>● Settlement Agent <span class="tag ok" id="agentTag">verified</span></h2>
-      <div class="row"><span class="k">Company</span><span class="v">Caprock Title & Escrow</span></div>
-      <div class="row"><span class="k">Type</span><span class="v">title_company</span></div>
-      <div class="row"><span class="k">Contact</span><span class="v">M. Alvarado · 806-555-0142</span></div>
-      <div class="row"><span class="k">Callback verified</span><span class="v" style="color:var(--green)">2026-05-22</span></div>
+      <h2>● Settlement Agent <span class="tag todo" id="agentTag">—</span></h2>
+      <div id="agentBody"><div class="muted">Loading…</div></div>
       <div class="muted" style="margin-top:10px">Agent bank coordinates are recorded once at the directory level and callback-verified — loan-level wires must reference this agent, so no free-typed routing numbers under deadline pressure.</div>
     </div>
 
     <!-- TITLE COMMITMENT -->
     <div class="card">
-      <h2>● Title Commitment <span class="tag ok">cleared</span></h2>
-      <div class="row"><span class="k">Commitment #</span><span class="v">CT-2026-88114</span></div>
-      <div class="row"><span class="k">Effective</span><span class="v">2026-05-10 → 06-09</span></div>
-      <div class="row"><span class="k">Lender policy</span><span class="v">$1,240.00</span></div>
-      <div class="row"><span class="k">Schedule B-I</span><span class="v" style="color:var(--green)">3 / 3 cleared</span></div>
-      <div class="row"><span class="k">Schedule B-II</span><span class="v">2 exceptions · acceptable</span></div>
+      <h2>● Title Commitment <span class="tag todo" id="titleTag">—</span></h2>
+      <div id="titleBody"><div class="muted">Loading…</div></div>
     </div>
 
     <!-- CPL -->
     <div class="card">
-      <h2>● Closing Protection Letter <span class="tag warn" id="cplTag">received</span></h2>
-      <div class="row"><span class="k">CPL #</span><span class="v">FA-CPL-77231</span></div>
-      <div class="row"><span class="k">Issued by</span><span class="v">First American</span></div>
-      <div class="row"><span class="k">Expires</span><span class="v">2026-06-09</span></div>
-      <div class="row"><span class="k">Addressee</span><span class="v">OriginFlow (Submarine Catalyst DBA)</span></div>
-      <div class="btnrow"><button class="btn ghost" onclick="toast('Open CPL PDF — OF_openDocument hook')">view document</button></div>
+      <h2>● Closing Protection Letter <span class="tag todo" id="cplTag">—</span></h2>
+      <div id="cplBody"><div class="muted">Loading…</div></div>
     </div>
 
-    <!-- WIRE INSTRUCTIONS -->
+    <!-- WIRE -->
     <div class="card" id="wireCard">
-      <h2>● Wire Instructions <span class="tag block" id="wireTag">unverified</span></h2>
+      <h2>● Wire Instructions <span class="tag todo" id="wireTag">—</span></h2>
       <div class="fraud"><b>Wire-fraud control.</b> Two-person rule enforced at the data layer (verifier ≠ enterer). Callback must use an <b>independently sourced</b> phone number — never one from the wire email.</div>
-      <div class="row" style="margin-top:8px"><span class="k">Beneficiary</span><span class="v">Caprock Title & Escrow</span></div>
-      <div class="row"><span class="k">Bank</span><span class="v">PlainsCapital ····4471</span></div>
-      <div class="row"><span class="k">Account</span><span class="v">····0098</span></div>
-      <div class="row"><span class="k">Amount</span><span class="v">$248,910.00</span></div>
-      <label>Callback phone source</label>
-      <select id="cbSource">
-        <option value="independent">independent (directory / prior file)</option>
-        <option value="from_email">from the wire email ⚠</option>
-      </select>
-      <div class="btnrow">
-        <button class="btn" id="verifyWireBtn">✓ complete callback &amp; verify</button>
+      <div id="wireBody" style="margin-top:8px"><div class="muted">Loading…</div></div>
+      <div id="wireVerifyBlock" style="display:none">
+        <label>Callback phone source</label>
+        <select id="cbSource">
+          <option value="independent">independent (directory / prior file)</option>
+          <option value="from_email">from the wire email ⚠</option>
+        </select>
+        <div class="btnrow">
+          <button class="btn" id="verifyWireBtn">✓ complete callback &amp; verify</button>
+        </div>
       </div>
     </div>
 
     <!-- CLOSING SCHEDULE -->
     <div class="card">
-      <h2>● Closing Schedule <span class="tag warn">confirmed</span></h2>
-      <div class="row"><span class="k">CD delivered</span><span class="v" style="color:var(--green)">2026-05-23 09:14</span></div>
-      <div class="row"><span class="k">TRID 3-day clears</span><span class="v" style="color:var(--green)">2026-05-27 ✓</span></div>
-      <div class="row"><span class="k">Signing</span><span class="v">2026-05-28 14:00</span></div>
-      <div class="row"><span class="k">Method</span><span class="v">in_person · wet</span></div>
-      <div class="row"><span class="k">Disbursement</span><span class="v">2026-05-29</span></div>
+      <h2>● Closing Schedule <span class="tag todo" id="schedTag">—</span></h2>
+      <div id="schedBody"><div class="muted">Loading…</div></div>
     </div>
 
     <!-- SETTLEMENT STATEMENT -->
     <div class="card">
-      <h2>● Settlement Statement <span class="tag warn">balanced</span></h2>
-      <div class="row"><span class="k">Total loan</span><span class="v">$310,000.00</span></div>
-      <div class="row"><span class="k">Total charges</span><span class="v">$11,420.00</span></div>
-      <div class="row"><span class="k">Cash to close</span><span class="v" style="color:var(--cyan)">$68,510.00</span></div>
-      <div class="row"><span class="k">Net disbursed</span><span class="v">$248,910.00</span></div>
+      <h2>● Settlement Statement <span class="tag todo" id="stmtTag">—</span></h2>
+      <div id="stmtBody"><div class="muted">Loading…</div></div>
       <div class="muted" style="margin-top:8px">Snapshot frozen at status=final so a CoC redisclosure can't rewrite settled figures.</div>
     </div>
 
@@ -226,18 +208,18 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
   <div class="compliance">
     <h2>● Compliance Gate — Phase 13.5</h2>
     <div class="checks">
-      <div class="check"><div class="nm">OFAC / SDN · 13.5.6</div><div class="st ok">CLEAR</div><small>borrower + co-borrower screened · list 2026-05-20</small></div>
-      <div class="check"><div class="nm">CIP / BSA · 13.5.7</div><div class="st ok">VERIFIED</div><small>4/4 elements · documentary · no BSA flag</small></div>
-      <div class="check"><div class="nm">TRID · 13.5.8</div><div class="st ok">PASS</div><small>tolerance cured · 3-day clock satisfied</small></div>
-      <div class="check"><div class="nm">Adverse Action · 13.5.4</div><div class="st ok" id="aanState">N/A</div><small id="aanNote">approval — no Reg B notice required</small></div>
+      <div class="check"><div class="nm">OFAC / SDN · 13.5.6</div><div class="st" id="ofacState">—</div><small id="ofacNote">loading…</small></div>
+      <div class="check"><div class="nm">CIP / BSA · 13.5.7</div><div class="st" id="cipState">—</div><small id="cipNote">loading…</small></div>
+      <div class="check"><div class="nm">TRID · 13.5.8</div><div class="st" id="tridState">—</div><small id="tridNote">loading…</small></div>
+      <div class="check"><div class="nm">Adverse Action · 13.5.4</div><div class="st" id="aanState">—</div><small id="aanNote">loading…</small></div>
     </div>
     <div class="muted" style="margin-top:12px">On a <b style="color:var(--red)">decline</b>, <code>decision_ready</code> stays OFF until a Reg B notice with ≥1 principal reason is in <code>ready</code>/<code>sent</code> — enforced by <code>decline_notice_cleared(loan_id)</code>. Audit chain is hash-linked (13.5.10); run <code>verify_audit_chain()</code> for tamper check.</div>
   </div>
 
   <div class="footnote">
     backend hooks: <b>OF_recordFunding</b> → rpc record_funding · <b>OF_verifyWire</b> → rpc verify_wire · <b>OF_declineCleared</b> → rpc decline_notice_cleared<br/>
-    fund gate requires: verified wire (callback) · all rail steps green · OFAC clear · CIP verified · (if decline) adverse-action ready<br/>
-    project <b>zgmwtslzsmtmqcivngdq</b> · branch <b>c3f21dc2-…085e</b> · migrations 029 (closing) + 030 (compliance)
+    fund gate is enforced server-side in <b>record_funding</b>: verified wire (callback) · OFAC clear · CIP verified · (if decline) adverse-action ready. The button below reflects the gate; the RPC is the law.<br/>
+    project <b>zgmwtslzsmtmqcivngdq</b> · migrations 029 (closing) + 030 (compliance)
   </div>
 </div>
 
@@ -245,69 +227,472 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 
 <!-- supabase UMD MUST load before config.js (load-order bug fixed this session) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js"></script>
+<script src="/js/config.js"></script>
 <script>
-const LOAN_ID = new URLSearchParams(location.search).get('loan_id'); // null => demo
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2600);}
+// ═══════════════════════════════════════════════════════════════════════════
+// /closing.html — LIVE CLOSING DESK (was: static OF-1043 mockup)
+//
+// Entry: /closing.html?loan_id=<uuid>   (also accepts ?id= to match
+// loan.html's convention, so links can be built either way).
+// No param → demo mode with the OF-1043 Rodriguez seed data, same as before.
+//
+// ─── SCHEMA TOLERANCE STRATEGY ────────────────────────────────────────────
+// Phase 13.0/13.5 table names below are BEST-GUESS until the introspection
+// dump is run (see closing_schema_dump.sql). Two defensive rules keep one
+// wrong guess from taking down the page:
+//
+//   1. Every closing-table query uses select('*') — column-name guesses can
+//      never 400 a query; only a wrong TABLE name fails, and that failure is
+//      caught per-section (card shows "no data / check console").
+//   2. Field reads go through alias chains (pick(row, 'a','b','c')) so the
+//      first column name that exists wins. When the schema dump comes back,
+//      collapse each chain to the single real name.
+//
+// Loan header uses the PROVEN select shape from dashboard.html — explicit
+// profiles!<fk> disambiguation (loans has 4 FKs to profiles) and the
+// borrowers!borrower_id join.
+//
+// RPC signatures come from the live 029/030 migrations:
+//   verify_wire(p_wire_id uuid, p_callback_phone_source text)
+//   record_funding(p_loan_id uuid, p_amount_cents bigint)
+//   decline_notice_cleared(p_loan_id uuid)
+// The fund gate is enforced INSIDE record_funding (OFAC + CIP + wire) — the
+// client-side gate here is advisory UX; a stale page can never skip a gate.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const params = new URLSearchParams(location.search);
+const LOAN_ID = params.get('loan_id') || params.get('id'); // null => demo
+
+const $id = (s) => document.getElementById(s);
+function toast(m){const t=$id('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2800);}
 function sb(){ try{ return (typeof getSupabase==='function') ? getSupabase() : null; }catch(e){ return null; } }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pick(row, ...keys){ if(!row) return null; for(const k of keys){ if(row[k] !== undefined && row[k] !== null) return row[k]; } return null; }
+function money(cents){ if(cents==null) return '—'; return '$' + (Number(cents)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function dateStr(v){ if(!v) return '—'; const d=new Date(v); return isNaN(d) ? String(v) : d.toLocaleString('en-US',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function dateOnly(v){ if(!v) return '—'; const d=new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString(); }
+function rows(pairs){ return pairs.map(([k,v,color]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v"${color?` style="color:${color}"`:''}>${esc(v)}</span></div>`).join(''); }
+function setTag(id, cls, text){ const el=$id(id); el.className='tag '+cls; el.textContent=text; }
+function setStep(step, cls){ const el=document.querySelector(`.rail .step[data-step="${step}"]`); if(!el) return; el.classList.remove('done','warn','block'); if(cls) el.classList.add(cls); }
+function setCheck(stateId, noteId, cls, text, note){ const s=$id(stateId); s.className='st '+(cls||''); s.textContent=text; $id(noteId).textContent=note; }
 
-const live = !!sb() && !!LOAN_ID;
-document.getElementById('connPill').textContent = live ? '● live' : '● demo mode';
-document.getElementById('connPill').style.color = live ? 'var(--green)' : 'var(--mut)';
-
-// ---- backend hooks (window.OF_*) — thin wrappers over the 029/030 RPCs ----
+// ─── Backend hooks (window.OF_*) — thin wrappers over the 029/030 RPCs ────
 window.OF_verifyWire = async (wireId, phoneSource) => {
   const c = sb(); if(!c) return {ok:true, demo:true};
-  return (await c.rpc('verify_wire', {p_wire_id:wireId, p_callback_phone_source:phoneSource})).data;
+  const {data, error} = await c.rpc('verify_wire', {p_wire_id:wireId, p_callback_phone_source:phoneSource});
+  if(error) return {ok:false, error:error.message};
+  return data ?? {ok:true};
 };
 window.OF_recordFunding = async (loanId, amountCents) => {
   const c = sb(); if(!c) return {ok:true, demo:true};
-  return (await c.rpc('record_funding', {p_loan_id:loanId, p_amount_cents:amountCents})).data;
+  const {data, error} = await c.rpc('record_funding', {p_loan_id:loanId, p_amount_cents:amountCents});
+  if(error) return {ok:false, error:error.message};
+  return data ?? {ok:true};
 };
 window.OF_declineCleared = async (loanId) => {
   const c = sb(); if(!c) return true;
-  return (await c.rpc('decline_notice_cleared', {p_loan_id:loanId})).data;
+  const {data, error} = await c.rpc('decline_notice_cleared', {p_loan_id:loanId});
+  if(error){ console.warn('decline_notice_cleared:', error.message); return null; }
+  return data;
 };
 
-// ---- fund-gate evaluation ----
-function refreshGate(){
-  const steps=[...document.querySelectorAll('.rail .step')];
-  const allGreen = steps.every(s=>s.dataset.step==='fund' || s.classList.contains('done'));
-  const fundBtn=document.getElementById('fundBtn');
-  fundBtn.disabled = !allGreen;
-  fundBtn.title = allGreen ? 'all gates green' : 'gates outstanding: verify wire + confirm CPL/schedule/statement';
+// ─── Page state ───────────────────────────────────────────────────────────
+const live = !!sb() && !!LOAN_ID;
+let loan = null;
+let wire = null;            // latest wire_instructions row
+let stmt = null;            // settlement statement row (final preferred)
+let netDisburseCents = null;
+let gates = { wire:false, ofac:false, cip:false, aan:true };  // aan true unless decline
+
+$id('connPill').textContent = live ? '● live' : '● demo mode';
+$id('connPill').style.color = live ? 'var(--green)' : 'var(--mut)';
+
+// Tolerant query helper: first table name in `names` that returns without
+// error wins. select('*') means column guesses can't 400 us — only table
+// names can, and those fall through to the next candidate.
+async function loadAny(names, loanId){
+  const c = sb();
+  for(const name of names){
+    const {data, error} = await c.from(name).select('*').eq('loan_id', loanId);
+    if(!error) return {table:name, rows:data || []};
+    console.warn(`[closing] ${name}:`, error.message);
+  }
+  return {table:null, rows:[]};
+}
+// Newest row by whatever timestamp column exists.
+function newest(rowsArr, ...tsKeys){
+  if(!rowsArr.length) return null;
+  return [...rowsArr].sort((a,b)=>{
+    const ta = new Date(pick(a, ...tsKeys, 'created_at', 'updated_at') || 0).getTime();
+    const tb = new Date(pick(b, ...tsKeys, 'created_at', 'updated_at') || 0).getTime();
+    return tb - ta;
+  })[0];
 }
 
-// wire verification flow (enforces independent-source nudge + two-person at RPC)
-document.getElementById('verifyWireBtn').addEventListener('click', async ()=>{
-  const src=document.getElementById('cbSource').value;
-  if(src==='from_email'){ toast('⚠ refused: callback must use an independently sourced number'); return; }
-  const r = await window.OF_verifyWire('demo-wire-id', src);
-  if(r && r.ok===false){ toast('verify failed: '+(r.error||'unknown')); return; }
-  // mark verified
-  const wireStep=document.querySelector('.rail .step[data-step="wire"]');
-  wireStep.classList.remove('block'); wireStep.classList.add('done');
-  document.getElementById('wireTag').className='tag ok'; document.getElementById('wireTag').textContent='verified';
-  document.querySelectorAll('.rail .step.warn').forEach(s=>{s.classList.remove('warn');s.classList.add('done');});
-  document.getElementById('cplTag').className='tag ok'; document.getElementById('cplTag').textContent='accepted';
-  toast('✓ wire callback verified (two-person rule satisfied)');
+// ═══════════════════════════════════════════════════════════════════════════
+// LIVE LOAD
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadLive(){
+  const c = sb();
+
+  // ─── Loan header (proven select shape from dashboard.html) ─────────────
+  const {data: l, error: lErr} = await c.from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, purpose, property_address,
+      cd_sent_at,
+      lo:profiles!lo_id ( full_name ),
+      borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) )
+    `)
+    .eq('id', LOAN_ID)
+    .maybeSingle();
+
+  if(lErr || !l){
+    $id('loanName').textContent = 'Loan not found';
+    $id('connPill').textContent = '● error';
+    $id('connPill').style.color = 'var(--red)';
+    toast('Couldn\'t load loan: ' + (lErr?.message || 'not found / no access'));
+    return;
+  }
+  loan = l;
+
+  const bs = (l.borrowers||[]).sort((a,b)=>(a.position||0)-(b.position||0)).map(b=>b.borrower).filter(Boolean);
+  const primary = bs[0];
+  $id('loanName').textContent = primary ? `${primary.last_name}, ${primary.first_name}` : 'Borrower TBD';
+  $id('crumbLoan').textContent = l.loan_number || '—';
+  $id('crumbLoanLink').href = '/loan.html?id=' + encodeURIComponent(l.id);
+  $id('loanNum').textContent = l.loan_number || '—';
+  $id('loanAmt').textContent = money(l.loan_amount_cents);
+  $id('loanPurpose').textContent = (l.purpose||'—').replace(/_/g,' ');
+  const addr = l.property_address || {};
+  $id('loanCity').textContent = [addr.city, addr.state].filter(Boolean).join(', ') || '—';
+  $id('loanLO').textContent = l.lo?.full_name || 'Unassigned';
+  $id('loanStatus').textContent = '● ' + String(l.status||'—').replace(/_/g,' ');
+  if(l.status === 'funded'){ $id('loanStatus').style.color = 'var(--green)'; }
+
+  // ─── Phase 13.0 sections — all tolerant, all parallel ───────────────────
+  const [wiresR, apptR, stmtR, titleR, cplR, fundR, ofacR, cipR, aanR] = await Promise.all([
+    loadAny(['wire_instructions','wires'], l.id),
+    loadAny(['closing_appointments'], l.id),
+    loadAny(['settlement_statements'], l.id),
+    loadAny(['title_commitments'], l.id),
+    loadAny(['closing_protection_letters','cpls'], l.id),
+    loadAny(['funding_events'], l.id),
+    loadAny(['ofac_screenings'], l.id),
+    loadAny(['cip_verifications'], l.id),
+    loadAny(['adverse_action_notices'], l.id),
+  ]);
+
+  // ─── Wire ───────────────────────────────────────────────────────────────
+  wire = newest(wiresR.rows, 'created_at', 'entered_at');
+  if(wire){
+    const wStatus = String(pick(wire,'status','verification_status') || 'unverified').toLowerCase();
+    const verified = wStatus === 'verified' || !!pick(wire,'verified_at','callback_verified_at');
+    gates.wire = verified;
+    const amt = pick(wire,'amount_cents','wire_amount_cents','net_amount_cents');
+    netDisburseCents = amt ?? netDisburseCents;
+    $id('wireBody').innerHTML = rows([
+      ['Beneficiary', pick(wire,'beneficiary_name','beneficiary') || '—'],
+      ['Bank', (pick(wire,'bank_name','beneficiary_bank') || '—') + (pick(wire,'routing_last4','aba_last4') ? ' ····'+pick(wire,'routing_last4','aba_last4') : '')],
+      ['Account', pick(wire,'account_last4') ? '····'+pick(wire,'account_last4') : '—'],
+      ['Amount', amt!=null ? money(amt) : '—'],
+      ['Verified', verified ? dateStr(pick(wire,'verified_at','callback_verified_at')) : 'not yet', verified?'var(--green)':'var(--red)'],
+    ]);
+    setTag('wireTag', verified?'ok':'block', verified?'verified':'unverified');
+    setStep('wire', verified?'done':'block');
+    $id('wireVerifyBlock').style.display = verified ? 'none' : 'block';
+  } else {
+    $id('wireBody').innerHTML = `<div class="muted">No wire instructions on file${wiresR.table?'':' (table mismatch — see console)'}.</div>`;
+    setTag('wireTag','todo','none');
+    setStep('wire','block');
+  }
+
+  // ─── Settlement agent (via wire's agent reference) ──────────────────────
+  const agentId = pick(wire,'settlement_agent_id','agent_id') || pick(newest(apptR.rows),'settlement_agent_id','agent_id');
+  if(agentId){
+    const {data: ag, error: agErr} = await c.from('settlement_agents').select('*').eq('id', agentId).maybeSingle();
+    if(ag && !agErr){
+      const cb = pick(ag,'callback_verified_at','verified_at');
+      $id('agentBody').innerHTML = rows([
+        ['Company', pick(ag,'company_name','name') || '—'],
+        ['Type', pick(ag,'agent_type','type') || '—'],
+        ['Contact', [pick(ag,'contact_name'), pick(ag,'contact_phone','phone')].filter(Boolean).join(' · ') || '—'],
+        ['Callback verified', cb ? dateOnly(cb) : 'not verified', cb?'var(--green)':'var(--amber)'],
+      ]);
+      setTag('agentTag', cb?'ok':'warn', cb?'verified':'pending');
+      setStep('agent', cb?'done':'warn');
+    } else {
+      $id('agentBody').innerHTML = `<div class="muted">Agent record unavailable.</div>`;
+      setTag('agentTag','warn','check'); setStep('agent','warn');
+    }
+  } else {
+    $id('agentBody').innerHTML = `<div class="muted">No settlement agent linked to this file yet.</div>`;
+    setTag('agentTag','todo','none'); setStep('agent','warn');
+  }
+
+  // ─── Title commitment ────────────────────────────────────────────────────
+  const title = newest(titleR.rows, 'effective_date');
+  if(title){
+    const cleared = ['cleared','accepted','clear'].includes(String(pick(title,'status')||'').toLowerCase());
+    $id('titleBody').innerHTML = rows([
+      ['Commitment #', pick(title,'commitment_number','commitment_no') || '—'],
+      ['Effective', dateOnly(pick(title,'effective_date'))],
+      ['Lender policy', pick(title,'lender_policy_amount_cents')!=null ? money(pick(title,'lender_policy_amount_cents')) : '—'],
+      ['Status', pick(title,'status') || '—', cleared?'var(--green)':undefined],
+    ]);
+    setTag('titleTag', cleared?'ok':'warn', pick(title,'status')||'received');
+    setStep('title', cleared?'done':'warn');
+  } else {
+    $id('titleBody').innerHTML = `<div class="muted">No title commitment on file${titleR.table?'':' (table mismatch — see console)'}.</div>`;
+    setTag('titleTag','todo','none'); setStep('title','warn');
+  }
+
+  // ─── CPL ─────────────────────────────────────────────────────────────────
+  const cpl = newest(cplR.rows);
+  if(cpl){
+    const accepted = ['accepted','verified','cleared'].includes(String(pick(cpl,'status')||'').toLowerCase());
+    $id('cplBody').innerHTML = rows([
+      ['Status', pick(cpl,'status') || 'received', accepted?'var(--green)':undefined],
+      ['Received', dateOnly(pick(cpl,'received_at','created_at'))],
+      ['Underwriter', pick(cpl,'title_underwriter','underwriter_name') || '—'],
+    ]);
+    setTag('cplTag', accepted?'ok':'warn', pick(cpl,'status')||'received');
+    setStep('cpl', accepted?'done':'warn');
+  } else {
+    $id('cplBody').innerHTML = `<div class="muted">No CPL on file${cplR.table?'':' (table mismatch — see console)'}.</div>`;
+    setTag('cplTag','todo','none'); setStep('cpl','warn');
+  }
+
+  // ─── Closing schedule ────────────────────────────────────────────────────
+  const appt = newest(apptR.rows, 'signing_at','scheduled_at');
+  if(appt){
+    const signing = pick(appt,'signing_at','scheduled_at','signing_date');
+    $id('schedBody').innerHTML = rows([
+      ['CD delivered', loan.cd_sent_at ? dateStr(loan.cd_sent_at) : '—', loan.cd_sent_at?'var(--green)':undefined],
+      ['Signing', signing ? dateStr(signing) : '—'],
+      ['Method', [pick(appt,'method','signing_method'), pick(appt,'ink','signing_type')].filter(Boolean).join(' · ') || '—'],
+      ['Disbursement', dateOnly(pick(appt,'disbursement_date','disbursement_at'))],
+      ['Status', pick(appt,'status') || '—'],
+    ]);
+    const confirmed = ['confirmed','scheduled'].includes(String(pick(appt,'status')||'').toLowerCase());
+    setTag('schedTag', confirmed?'ok':'warn', pick(appt,'status')||'set');
+    setStep('sched', confirmed?'done':'warn');
+  } else {
+    $id('schedBody').innerHTML = `<div class="muted">No closing appointment scheduled yet.</div>`;
+    setTag('schedTag','todo','none'); setStep('sched','warn');
+  }
+
+  // ─── Settlement statement ────────────────────────────────────────────────
+  stmt = stmtR.rows.find(s => String(pick(s,'status')||'').toLowerCase()==='final') || newest(stmtR.rows);
+  if(stmt){
+    const isFinal = String(pick(stmt,'status')||'').toLowerCase()==='final';
+    const net = pick(stmt,'net_disbursed_cents','net_funding_cents','net_to_disburse_cents');
+    if(net!=null) netDisburseCents = net;
+    $id('stmtBody').innerHTML = rows([
+      ['Total loan', money(loan.loan_amount_cents)],
+      ['Total charges', pick(stmt,'total_charges_cents')!=null ? money(pick(stmt,'total_charges_cents')) : '—'],
+      ['Cash to close', pick(stmt,'cash_to_close_cents')!=null ? money(pick(stmt,'cash_to_close_cents')) : '—', 'var(--cyan)'],
+      ['Net disbursed', net!=null ? money(net) : '—'],
+      ['Status', pick(stmt,'status') || '—', isFinal?'var(--green)':undefined],
+    ]);
+    setTag('stmtTag', isFinal?'ok':'warn', pick(stmt,'status')||'draft');
+    setStep('stmt', isFinal?'done':'warn');
+  } else {
+    $id('stmtBody').innerHTML = `<div class="muted">No settlement statement yet${stmtR.table?'':' (table mismatch — see console)'}.</div>`;
+    setTag('stmtTag','todo','none'); setStep('stmt','warn');
+  }
+
+  // ─── Compliance strip ────────────────────────────────────────────────────
+  const ofac = newest(ofacR.rows, 'screened_at');
+  if(ofac){
+    const res = String(pick(ofac,'result','status')||'').toLowerCase();
+    const clear = ['clear','no_match','pass'].includes(res);
+    gates.ofac = clear;
+    setCheck('ofacState','ofacNote', clear?'ok':'block', clear?'CLEAR':res.toUpperCase()||'?',
+      'screened ' + dateOnly(pick(ofac,'screened_at','created_at')));
+  } else {
+    setCheck('ofacState','ofacNote','block','MISSING','no screening on file — record_funding will refuse');
+  }
+
+  const cip = newest(cipR.rows, 'verified_at');
+  if(cip){
+    const st = String(pick(cip,'status','result')||'').toLowerCase();
+    const ok = ['verified','pass','complete'].includes(st);
+    gates.cip = ok;
+    setCheck('cipState','cipNote', ok?'ok':'block', ok?'VERIFIED':st.toUpperCase()||'?',
+      (pick(cip,'method','verification_method')||'') + ' · ' + dateOnly(pick(cip,'verified_at','created_at')));
+  } else {
+    setCheck('cipState','cipNote','block','MISSING','no CIP verification — record_funding will refuse');
+  }
+
+  // TRID — CD timing computed client-side from cd_sent_at (3 business days
+  // simplified to 3 calendar days here; the disclosure engine owns the real
+  // clock). Display-only; not a fund gate in this strip.
+  if(loan.cd_sent_at){
+    const clears = new Date(new Date(loan.cd_sent_at).getTime() + 3*86400000);
+    const passed = Date.now() >= clears.getTime();
+    setCheck('tridState','tridNote', passed?'ok':'warn', passed?'PASS':'WAITING',
+      'CD ' + dateOnly(loan.cd_sent_at) + ' · clears ' + dateOnly(clears));
+  } else {
+    setCheck('tridState','tridNote','warn','NO CD','cd_sent_at not set on loan');
+  }
+
+  if(loan.status === 'denied'){
+    const aan = newest(aanR.rows);
+    const st = String(pick(aan,'status')||'').toLowerCase();
+    const ready = ['ready','sent'].includes(st);
+    gates.aan = ready;
+    setCheck('aanState','aanNote', ready?'ok':'block', ready?st.toUpperCase():'BLOCKED',
+      ready ? 'Reg B notice ' + st : 'decline without ready/sent Reg B notice');
+  } else {
+    gates.aan = true;
+    setCheck('aanState','aanNote','ok','N/A','approval — no Reg B notice required');
+  }
+
+  // ─── Funded? ────────────────────────────────────────────────────────────
+  const funded = loan.status === 'funded' || fundR.rows.length > 0;
+  if(funded){
+    setStep('fund','done');
+    $id('fundBtn').textContent = '✓ FUNDED';
+    $id('fundBtn').disabled = true;
+    $id('loanStatus').textContent = '● funded';
+    $id('loanStatus').style.color = 'var(--green)';
+  }
+
   refreshGate();
+}
+
+// ─── Fund-gate (advisory — record_funding enforces server-side) ───────────
+function refreshGate(){
+  const fundBtn = $id('fundBtn');
+  if(loan && loan.status === 'funded'){ fundBtn.disabled = true; return; }
+  if(!live){
+    // demo: original behavior — all rail steps green unlocks the button
+    const steps=[...document.querySelectorAll('.rail .step')];
+    const allGreen = steps.every(s=>s.dataset.step==='fund' || s.classList.contains('done'));
+    fundBtn.disabled = !allGreen;
+    fundBtn.title = allGreen ? 'all gates green' : 'gates outstanding';
+    return;
+  }
+  const stageOk = ['clear_to_close','docs_out'].includes(loan?.status);
+  const ready = stageOk && gates.wire && gates.ofac && gates.cip && gates.aan;
+  fundBtn.disabled = !ready;
+  fundBtn.title = ready ? 'all gates green' :
+    'outstanding: ' + [
+      !stageOk && 'loan not at CTC/docs-out',
+      !gates.wire && 'wire unverified',
+      !gates.ofac && 'OFAC',
+      !gates.cip && 'CIP',
+      !gates.aan && 'adverse action',
+    ].filter(Boolean).join(' · ');
+}
+
+// ─── Wire verification flow ────────────────────────────────────────────────
+$id('verifyWireBtn')?.addEventListener('click', async ()=>{
+  const src = $id('cbSource').value;
+  if(src === 'from_email'){ toast('⚠ refused: callback must use an independently sourced number'); return; }
+  if(live && !wire){ toast('No wire on file to verify.'); return; }
+  const btn = $id('verifyWireBtn');
+  btn.disabled = true; btn.textContent = 'verifying…';
+  const r = await window.OF_verifyWire(live ? wire.id : 'demo-wire-id', src);
+  btn.disabled = false; btn.textContent = '✓ complete callback & verify';
+  if(r && r.ok === false){
+    // Two-person rule rejections come back here (verifier === enterer, etc.)
+    toast('verify refused: ' + (r.error || 'check console'));
+    return;
+  }
+  toast('✓ wire callback verified (two-person rule satisfied)');
+  if(live){ await loadLive(); }          // reload truth from the DB
+  else {
+    setStep('wire','done'); setTag('wireTag','ok','verified');
+    document.querySelectorAll('.rail .step.warn').forEach(s=>{s.classList.remove('warn');s.classList.add('done');});
+    setTag('cplTag','ok','accepted');
+    refreshGate();
+  }
 });
 
-// funding
-document.getElementById('fundBtn').addEventListener('click', async ()=>{
-  if(!confirm('Record funding for OF-1043 ($248,910.00 net)? This flips the loan to FUNDED.')) return;
-  const r = await window.OF_recordFunding(LOAN_ID, 24891000);
-  if(r && r.ok===false){ toast('funding blocked: '+(r.error||'')); return; }
-  document.querySelector('.rail .step[data-step="fund"]').classList.add('done');
-  document.getElementById('loanStatus').textContent='● funded';
-  document.getElementById('loanStatus').style.color='var(--green)';
-  document.getElementById('fundBtn').textContent='✓ FUNDED';
-  document.getElementById('fundBtn').disabled=true;
+// ─── Funding ───────────────────────────────────────────────────────────────
+$id('fundBtn').addEventListener('click', async ()=>{
+  const num = live ? (loan?.loan_number || 'this loan') : 'OF-1043';
+  const amt = live ? (netDisburseCents ?? loan?.loan_amount_cents) : 24891000;
+  if(amt == null){ toast('No disbursement amount available — finalize the settlement statement first.'); return; }
+  if(!confirm(`Record funding for ${num} (${money(amt)} net)? This flips the loan to FUNDED.`)) return;
+  const btn = $id('fundBtn');
+  btn.disabled = true; btn.textContent = 'funding…';
+  const r = await window.OF_recordFunding(live ? loan.id : LOAN_ID, amt);
+  if(r && r.ok === false){
+    toast('funding blocked: ' + (r.error || 'gate refused — see console'));
+    btn.disabled = false; btn.textContent = '▸ RECORD FUNDING';
+    return;
+  }
   toast('✓ loan funded — funding_event written, audit hash-chained');
+  if(live){ await loadLive(); }
+  else {
+    setStep('fund','done');
+    $id('loanStatus').textContent='● funded'; $id('loanStatus').style.color='var(--green)';
+    btn.textContent='✓ FUNDED'; btn.disabled=true;
+  }
 });
 
-refreshGate();
+// ═══════════════════════════════════════════════════════════════════════════
+// DEMO MODE — the OF-1043 Rodriguez seed, same content as the original mock
+// ═══════════════════════════════════════════════════════════════════════════
+function loadDemo(){
+  $id('loanName').textContent = 'Rodriguez, James';
+  $id('crumbLoan').textContent = 'OF-1043';
+  $id('loanNum').textContent = 'OF-1043';
+  $id('loanAmt').textContent = '$310,000';
+  $id('loanPurpose').textContent = 'Purchase';
+  $id('loanCity').textContent = 'Lubbock, TX';
+  $id('loanLO').textContent = 'Avery Sutton';
+  $id('loanStatus').textContent = '● clear to close';
+
+  $id('agentBody').innerHTML = rows([
+    ['Company','Caprock Title & Escrow'],['Type','title_company'],
+    ['Contact','M. Alvarado · 806-555-0142'],['Callback verified','2026-05-22','var(--green)'],
+  ]);
+  setTag('agentTag','ok','verified'); setStep('agent','done');
+
+  $id('titleBody').innerHTML = rows([
+    ['Commitment #','CT-2026-88114'],['Effective','2026-05-10 → 06-09'],
+    ['Lender policy','$1,240.00'],['Schedule B-I','3 / 3 cleared','var(--green)'],
+    ['Schedule B-II','2 exceptions · acceptable'],
+  ]);
+  setTag('titleTag','ok','cleared'); setStep('title','done');
+
+  $id('cplBody').innerHTML = rows([
+    ['Status','received'],['Received','2026-05-21'],['Underwriter','First American'],
+  ]);
+  setTag('cplTag','warn','received'); setStep('cpl','warn');
+
+  $id('wireBody').innerHTML = rows([
+    ['Beneficiary','Caprock Title & Escrow'],['Bank','PlainsCapital ····4471'],
+    ['Account','····0098'],['Amount','$248,910.00'],
+  ]);
+  setTag('wireTag','block','unverified'); setStep('wire','block');
+  $id('wireVerifyBlock').style.display = 'block';
+
+  $id('schedBody').innerHTML = rows([
+    ['CD delivered','2026-05-23 09:14','var(--green)'],['TRID 3-day clears','2026-05-27 ✓','var(--green)'],
+    ['Signing','2026-05-28 14:00'],['Method','in_person · wet'],['Disbursement','2026-05-29'],
+  ]);
+  setTag('schedTag','warn','confirmed'); setStep('sched','warn');
+
+  $id('stmtBody').innerHTML = rows([
+    ['Total loan','$310,000.00'],['Total charges','$11,420.00'],
+    ['Cash to close','$68,510.00','var(--cyan)'],['Net disbursed','$248,910.00'],
+  ]);
+  setTag('stmtTag','warn','balanced'); setStep('stmt','warn');
+
+  setCheck('ofacState','ofacNote','ok','CLEAR','borrower + co-borrower screened · list 2026-05-20');
+  setCheck('cipState','cipNote','ok','VERIFIED','4/4 elements · documentary · no BSA flag');
+  setCheck('tridState','tridNote','ok','PASS','tolerance cured · 3-day clock satisfied');
+  setCheck('aanState','aanNote','ok','N/A','approval — no Reg B notice required');
+
+  refreshGate();
+}
+
+// ─── Boot ──────────────────────────────────────────────────────────────────
+if(live){ loadLive(); } else { loadDemo(); }
 </script>
 </body>
 </html>
