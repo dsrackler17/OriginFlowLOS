@@ -236,17 +236,30 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 // loan.html's convention, so links can be built either way).
 // No param → demo mode with the OF-1043 Rodriguez seed data, same as before.
 //
-// ─── SCHEMA TOLERANCE STRATEGY ────────────────────────────────────────────
-// Phase 13.0/13.5 table names below are BEST-GUESS until the introspection
-// dump is run (see closing_schema_dump.sql). Two defensive rules keep one
-// wrong guess from taking down the page:
-//
-//   1. Every closing-table query uses select('*') — column-name guesses can
-//      never 400 a query; only a wrong TABLE name fails, and that failure is
-//      caught per-section (card shows "no data / check console").
-//   2. Field reads go through alias chains (pick(row, 'a','b','c')) so the
-//      first column name that exists wins. When the schema dump comes back,
-//      collapse each chain to the single real name.
+// ─── SCHEMA STATUS: CONFIRMED ─────────────────────────────────────────────
+// Table + column names below were verified against the live introspection
+// dump (information_schema, 2026-06-10). All alias chains from the first
+// pass are collapsed to real names. Confirmed map:
+//   wire_instructions       status, callback_completed_at, callback_verified_by,
+//                           entered_by, amount_cents (NOT NULL),
+//                           settlement_agent_id (NOT NULL), routing/account_last4
+//   settlement_agents       company_name, agent_type, contact_name, phone,
+//                           nmls_or_license, verified_at, is_active
+//   closing_appointments    scheduled_at, doc_signing_at, cd_delivered_at,
+//                           closing_type, signing_method, disbursement_date
+//   settlement_statements   total_loan/total_charges/cash_to_close/
+//                           total_disbursed (all _cents), statement_date
+//   title_commitments       lender_policy_cents, requirements + exceptions (jsonb)
+//   closing_protection_letters  cpl_number, issued_by, issued_date,
+//                           covered_amount_cents
+//   funding_events          event_type, amount_cents, occurred_at
+//   ofac_screenings         PER-SUBJECT: subject_name/role, result, resolution
+//   cip_verifications       PER-SUBJECT: 4 boolean elements, bsa_flag, status
+//   adverse_action_notices  status, sent_at, reason_codes (jsonb), notice_due_by
+// select('*') retained — costs nothing at this row volume and keeps the page
+// immune to additive migrations. Status-string sets (e.g. 'cleared' vs
+// 'accepted') are still permissive unions because the enum dump wasn't in
+// the paste — tighten when enum members are confirmed.
 //
 // Loan header uses the PROVEN select shape from dashboard.html — explicit
 // profiles!<fk> disambiguation (loans has 4 FKs to profiles) and the
@@ -371,11 +384,11 @@ async function loadLive(){
 
   // ─── Phase 13.0 sections — all tolerant, all parallel ───────────────────
   const [wiresR, apptR, stmtR, titleR, cplR, fundR, ofacR, cipR, aanR] = await Promise.all([
-    loadAny(['wire_instructions','wires'], l.id),
+    loadAny(['wire_instructions'], l.id),
     loadAny(['closing_appointments'], l.id),
     loadAny(['settlement_statements'], l.id),
     loadAny(['title_commitments'], l.id),
-    loadAny(['closing_protection_letters','cpls'], l.id),
+    loadAny(['closing_protection_letters'], l.id),
     loadAny(['funding_events'], l.id),
     loadAny(['ofac_screenings'], l.id),
     loadAny(['cip_verifications'], l.id),
@@ -383,39 +396,46 @@ async function loadLive(){
   ]);
 
   // ─── Wire ───────────────────────────────────────────────────────────────
-  wire = newest(wiresR.rows, 'created_at', 'entered_at');
+  // [SCHEMA-CONFIRMED] wire_instructions: status, callback_completed_at,
+  // callback_verified_by, entered_by (two-person rule fields), amount_cents
+  // NOT NULL, settlement_agent_id NOT NULL.
+  wire = newest(wiresR.rows, 'created_at');
   if(wire){
-    const wStatus = String(pick(wire,'status','verification_status') || 'unverified').toLowerCase();
-    const verified = wStatus === 'verified' || !!pick(wire,'verified_at','callback_verified_at');
+    const verified = String(wire.status||'').toLowerCase() === 'verified' || !!wire.callback_completed_at;
     gates.wire = verified;
-    const amt = pick(wire,'amount_cents','wire_amount_cents','net_amount_cents');
-    netDisburseCents = amt ?? netDisburseCents;
+    netDisburseCents = wire.amount_cents ?? netDisburseCents;
     $id('wireBody').innerHTML = rows([
-      ['Beneficiary', pick(wire,'beneficiary_name','beneficiary') || '—'],
-      ['Bank', (pick(wire,'bank_name','beneficiary_bank') || '—') + (pick(wire,'routing_last4','aba_last4') ? ' ····'+pick(wire,'routing_last4','aba_last4') : '')],
-      ['Account', pick(wire,'account_last4') ? '····'+pick(wire,'account_last4') : '—'],
-      ['Amount', amt!=null ? money(amt) : '—'],
-      ['Verified', verified ? dateStr(pick(wire,'verified_at','callback_verified_at')) : 'not yet', verified?'var(--green)':'var(--red)'],
+      ['Beneficiary', wire.beneficiary_name || '—'],
+      ['Bank', (wire.bank_name || '—') + (wire.routing_last4 ? ' ····'+wire.routing_last4 : '')],
+      ['Account', wire.account_last4 ? '····'+wire.account_last4 : '—'],
+      ['Amount', money(wire.amount_cents)],
+      ['Callback', verified ? 'completed ' + dateStr(wire.callback_completed_at) : (wire.callback_required === false ? 'not required' : 'not yet'), verified?'var(--green)':'var(--red)'],
     ]);
     setTag('wireTag', verified?'ok':'block', verified?'verified':'unverified');
     setStep('wire', verified?'done':'block');
     $id('wireVerifyBlock').style.display = verified ? 'none' : 'block';
   } else {
-    $id('wireBody').innerHTML = `<div class="muted">No wire instructions on file${wiresR.table?'':' (table mismatch — see console)'}.</div>`;
+    $id('wireBody').innerHTML = `<div class="muted">No wire instructions on file.</div>`;
     setTag('wireTag','todo','none');
     setStep('wire','block');
   }
 
-  // ─── Settlement agent (via wire's agent reference) ──────────────────────
-  const agentId = pick(wire,'settlement_agent_id','agent_id') || pick(newest(apptR.rows),'settlement_agent_id','agent_id');
+  // ─── Settlement agent ────────────────────────────────────────────────────
+  // [SCHEMA-CONFIRMED] settlement_agents: company_name, agent_type,
+  // contact_name, phone, verified_at (directory-level callback), is_active.
+  // wire_instructions.settlement_agent_id is NOT NULL, so the wire is the
+  // primary link; closing_appointments.settlement_agent_id is the fallback
+  // when no wire has been entered yet.
+  const agentId = wire?.settlement_agent_id || newest(apptR.rows)?.settlement_agent_id;
   if(agentId){
     const {data: ag, error: agErr} = await c.from('settlement_agents').select('*').eq('id', agentId).maybeSingle();
     if(ag && !agErr){
-      const cb = pick(ag,'callback_verified_at','verified_at');
+      const cb = ag.verified_at;
       $id('agentBody').innerHTML = rows([
-        ['Company', pick(ag,'company_name','name') || '—'],
-        ['Type', pick(ag,'agent_type','type') || '—'],
-        ['Contact', [pick(ag,'contact_name'), pick(ag,'contact_phone','phone')].filter(Boolean).join(' · ') || '—'],
+        ['Company', ag.company_name || '—'],
+        ['Type', ag.agent_type || '—'],
+        ['Contact', [ag.contact_name, ag.phone].filter(Boolean).join(' · ') || '—'],
+        ['License / NMLS', ag.nmls_or_license || '—'],
         ['Callback verified', cb ? dateOnly(cb) : 'not verified', cb?'var(--green)':'var(--amber)'],
       ]);
       setTag('agentTag', cb?'ok':'warn', cb?'verified':'pending');
@@ -430,51 +450,69 @@ async function loadLive(){
   }
 
   // ─── Title commitment ────────────────────────────────────────────────────
-  const title = newest(titleR.rows, 'effective_date');
+  // [SCHEMA-CONFIRMED] title_commitments: lender_policy_cents,
+  // requirements (jsonb, NOT NULL) and exceptions (jsonb, NOT NULL) — the
+  // Schedule B-I / B-II arrays the demo card faked are real now.
+  const title = newest(titleR.rows, 'received_at', 'effective_date');
   if(title){
-    const cleared = ['cleared','accepted','clear'].includes(String(pick(title,'status')||'').toLowerCase());
+    const cleared = ['cleared','accepted','clear'].includes(String(title.status||'').toLowerCase());
+    const reqs = Array.isArray(title.requirements) ? title.requirements : [];
+    const excs = Array.isArray(title.exceptions) ? title.exceptions : [];
+    const reqsCleared = reqs.filter(r => r && (r.cleared === true || String(r.status||'').toLowerCase()==='cleared')).length;
     $id('titleBody').innerHTML = rows([
-      ['Commitment #', pick(title,'commitment_number','commitment_no') || '—'],
-      ['Effective', dateOnly(pick(title,'effective_date'))],
-      ['Lender policy', pick(title,'lender_policy_amount_cents')!=null ? money(pick(title,'lender_policy_amount_cents')) : '—'],
-      ['Status', pick(title,'status') || '—', cleared?'var(--green)':undefined],
+      ['Commitment #', title.commitment_number || '—'],
+      ['Effective', title.effective_date ? `${title.effective_date} → ${title.expiration_date || '—'}` : '—'],
+      ['Lender policy', title.lender_policy_cents!=null ? money(title.lender_policy_cents) : '—'],
+      ['Schedule B-I', reqs.length ? `${reqsCleared} / ${reqs.length} cleared` : '—', reqs.length && reqsCleared===reqs.length ? 'var(--green)' : undefined],
+      ['Schedule B-II', excs.length ? `${excs.length} exception${excs.length===1?'':'s'}` : 'none'],
+      ['Status', title.status || '—', cleared?'var(--green)':undefined],
     ]);
-    setTag('titleTag', cleared?'ok':'warn', pick(title,'status')||'received');
+    setTag('titleTag', cleared?'ok':'warn', title.status||'received');
     setStep('title', cleared?'done':'warn');
   } else {
-    $id('titleBody').innerHTML = `<div class="muted">No title commitment on file${titleR.table?'':' (table mismatch — see console)'}.</div>`;
+    $id('titleBody').innerHTML = `<div class="muted">No title commitment on file.</div>`;
     setTag('titleTag','todo','none'); setStep('title','warn');
   }
 
   // ─── CPL ─────────────────────────────────────────────────────────────────
-  const cpl = newest(cplR.rows);
+  // [SCHEMA-CONFIRMED] closing_protection_letters: cpl_number, issued_by,
+  // issued_date, expiration_date, covered_amount_cents, status.
+  const cpl = newest(cplR.rows, 'issued_date');
   if(cpl){
-    const accepted = ['accepted','verified','cleared'].includes(String(pick(cpl,'status')||'').toLowerCase());
+    const accepted = ['accepted','verified','cleared'].includes(String(cpl.status||'').toLowerCase());
     $id('cplBody').innerHTML = rows([
-      ['Status', pick(cpl,'status') || 'received', accepted?'var(--green)':undefined],
-      ['Received', dateOnly(pick(cpl,'received_at','created_at'))],
-      ['Underwriter', pick(cpl,'title_underwriter','underwriter_name') || '—'],
+      ['CPL #', cpl.cpl_number || '—'],
+      ['Issued by', cpl.issued_by || '—'],
+      ['Issued', cpl.issued_date ? `${cpl.issued_date} → exp ${cpl.expiration_date || '—'}` : '—'],
+      ['Coverage', cpl.covered_amount_cents!=null ? money(cpl.covered_amount_cents) : '—'],
+      ['Status', cpl.status || 'received', accepted?'var(--green)':undefined],
     ]);
-    setTag('cplTag', accepted?'ok':'warn', pick(cpl,'status')||'received');
+    setTag('cplTag', accepted?'ok':'warn', cpl.status||'received');
     setStep('cpl', accepted?'done':'warn');
   } else {
-    $id('cplBody').innerHTML = `<div class="muted">No CPL on file${cplR.table?'':' (table mismatch — see console)'}.</div>`;
+    $id('cplBody').innerHTML = `<div class="muted">No CPL on file.</div>`;
     setTag('cplTag','todo','none'); setStep('cpl','warn');
   }
 
   // ─── Closing schedule ────────────────────────────────────────────────────
-  const appt = newest(apptR.rows, 'signing_at','scheduled_at');
+  // [SCHEMA-CONFIRMED] closing_appointments: scheduled_at, doc_signing_at,
+  // cd_delivered_at, closing_type, signing_method, disbursement_date, status.
+  // CD delivery prefers the appointment's cd_delivered_at; loans.cd_sent_at
+  // is the fallback when the appointment hasn't recorded it.
+  const appt = newest(apptR.rows, 'scheduled_at');
   if(appt){
-    const signing = pick(appt,'signing_at','scheduled_at','signing_date');
+    const cdAt = appt.cd_delivered_at || loan.cd_sent_at;
+    const signing = appt.doc_signing_at || appt.scheduled_at;
     $id('schedBody').innerHTML = rows([
-      ['CD delivered', loan.cd_sent_at ? dateStr(loan.cd_sent_at) : '—', loan.cd_sent_at?'var(--green)':undefined],
+      ['CD delivered', cdAt ? dateStr(cdAt) : '—', cdAt?'var(--green)':undefined],
       ['Signing', signing ? dateStr(signing) : '—'],
-      ['Method', [pick(appt,'method','signing_method'), pick(appt,'ink','signing_type')].filter(Boolean).join(' · ') || '—'],
-      ['Disbursement', dateOnly(pick(appt,'disbursement_date','disbursement_at'))],
-      ['Status', pick(appt,'status') || '—'],
+      ['Method', [appt.closing_type, appt.signing_method].filter(Boolean).join(' · ') || '—'],
+      ['Location', appt.location || '—'],
+      ['Disbursement', appt.disbursement_date || '—'],
+      ['Status', appt.status || '—'],
     ]);
-    const confirmed = ['confirmed','scheduled'].includes(String(pick(appt,'status')||'').toLowerCase());
-    setTag('schedTag', confirmed?'ok':'warn', pick(appt,'status')||'set');
+    const confirmed = ['confirmed','scheduled'].includes(String(appt.status||'').toLowerCase());
+    setTag('schedTag', confirmed?'ok':'warn', appt.status||'set');
     setStep('sched', confirmed?'done':'warn');
   } else {
     $id('schedBody').innerHTML = `<div class="muted">No closing appointment scheduled yet.</div>`;
@@ -482,44 +520,61 @@ async function loadLive(){
   }
 
   // ─── Settlement statement ────────────────────────────────────────────────
-  stmt = stmtR.rows.find(s => String(pick(s,'status')||'').toLowerCase()==='final') || newest(stmtR.rows);
+  // [SCHEMA-CONFIRMED] settlement_statements: total_loan_cents,
+  // total_charges_cents, cash_to_close_cents, total_disbursed_cents, status,
+  // statement_date. Final row preferred (frozen snapshot).
+  stmt = stmtR.rows.find(s => String(s.status||'').toLowerCase()==='final') || newest(stmtR.rows, 'statement_date');
   if(stmt){
-    const isFinal = String(pick(stmt,'status')||'').toLowerCase()==='final';
-    const net = pick(stmt,'net_disbursed_cents','net_funding_cents','net_to_disburse_cents');
-    if(net!=null) netDisburseCents = net;
+    const isFinal = String(stmt.status||'').toLowerCase()==='final';
+    if(stmt.total_disbursed_cents != null) netDisburseCents = stmt.total_disbursed_cents;
     $id('stmtBody').innerHTML = rows([
-      ['Total loan', money(loan.loan_amount_cents)],
-      ['Total charges', pick(stmt,'total_charges_cents')!=null ? money(pick(stmt,'total_charges_cents')) : '—'],
-      ['Cash to close', pick(stmt,'cash_to_close_cents')!=null ? money(pick(stmt,'cash_to_close_cents')) : '—', 'var(--cyan)'],
-      ['Net disbursed', net!=null ? money(net) : '—'],
-      ['Status', pick(stmt,'status') || '—', isFinal?'var(--green)':undefined],
+      ['Statement date', stmt.statement_date || '—'],
+      ['Total loan', stmt.total_loan_cents!=null ? money(stmt.total_loan_cents) : money(loan.loan_amount_cents)],
+      ['Total charges', stmt.total_charges_cents!=null ? money(stmt.total_charges_cents) : '—'],
+      ['Cash to close', stmt.cash_to_close_cents!=null ? money(stmt.cash_to_close_cents) : '—', 'var(--cyan)'],
+      ['Net disbursed', stmt.total_disbursed_cents!=null ? money(stmt.total_disbursed_cents) : '—'],
+      ['Status', stmt.status || '—', isFinal?'var(--green)':undefined],
     ]);
-    setTag('stmtTag', isFinal?'ok':'warn', pick(stmt,'status')||'draft');
+    setTag('stmtTag', isFinal?'ok':'warn', stmt.status||'draft');
     setStep('stmt', isFinal?'done':'warn');
   } else {
-    $id('stmtBody').innerHTML = `<div class="muted">No settlement statement yet${stmtR.table?'':' (table mismatch — see console)'}.</div>`;
+    $id('stmtBody').innerHTML = `<div class="muted">No settlement statement yet.</div>`;
     setTag('stmtTag','todo','none'); setStep('stmt','warn');
   }
 
   // ─── Compliance strip ────────────────────────────────────────────────────
-  const ofac = newest(ofacR.rows, 'screened_at');
-  if(ofac){
-    const res = String(pick(ofac,'result','status')||'').toLowerCase();
-    const clear = ['clear','no_match','pass'].includes(res);
-    gates.ofac = clear;
-    setCheck('ofacState','ofacNote', clear?'ok':'block', clear?'CLEAR':res.toUpperCase()||'?',
-      'screened ' + dateOnly(pick(ofac,'screened_at','created_at')));
+  // [SCHEMA-CONFIRMED + UPGRADED] ofac_screenings and cip_verifications are
+  // PER-SUBJECT (subject_name / subject_role rows for borrower AND
+  // co-borrower). The gate is ALL-subjects, not newest-row: one unresolved
+  // OFAC hit on a co-borrower must block funding even if the primary
+  // borrower's newer screening is clear. A potential match with a recorded
+  // resolution (false_positive / cleared) counts as clear.
+  if(ofacR.rows.length){
+    const subjClear = (r) =>
+      ['clear','no_match','pass'].includes(String(r.result||'').toLowerCase()) ||
+      ['cleared','false_positive','resolved'].includes(String(r.resolution||'').toLowerCase());
+    const allClear = ofacR.rows.every(subjClear);
+    gates.ofac = allClear;
+    const latest = newest(ofacR.rows, 'screened_at');
+    const blocked = ofacR.rows.filter(r => !subjClear(r)).map(r => r.subject_name);
+    setCheck('ofacState','ofacNote', allClear?'ok':'block', allClear?'CLEAR':'HIT',
+      allClear
+        ? `${ofacR.rows.length} subject${ofacR.rows.length===1?'':'s'} screened · list ${latest?.list_version || dateOnly(latest?.screened_at)}`
+        : 'unresolved: ' + blocked.join(', '));
   } else {
     setCheck('ofacState','ofacNote','block','MISSING','no screening on file — record_funding will refuse');
   }
 
-  const cip = newest(cipR.rows, 'verified_at');
-  if(cip){
-    const st = String(pick(cip,'status','result')||'').toLowerCase();
-    const ok = ['verified','pass','complete'].includes(st);
-    gates.cip = ok;
-    setCheck('cipState','cipNote', ok?'ok':'block', ok?'VERIFIED':st.toUpperCase()||'?',
-      (pick(cip,'method','verification_method')||'') + ' · ' + dateOnly(pick(cip,'verified_at','created_at')));
+  if(cipR.rows.length){
+    const subjOk = (r) => ['verified','pass','complete'].includes(String(r.status||'').toLowerCase());
+    const allOk = cipR.rows.every(subjOk);
+    gates.cip = allOk;
+    const latest = newest(cipR.rows, 'verified_at');
+    const elems = latest ? [latest.name_verified, latest.dob_verified, latest.address_verified, latest.id_number_verified].filter(Boolean).length : 0;
+    const bsa = cipR.rows.some(r => r.bsa_flag);
+    setCheck('cipState','cipNote', allOk && !bsa ?'ok':'block', allOk ? (bsa?'BSA FLAG':'VERIFIED') : 'INCOMPLETE',
+      `${elems}/4 elements · ${latest?.verification_method || '—'} · ${cipR.rows.length} subject${cipR.rows.length===1?'':'s'}${bsa?' · BSA flagged':''}`);
+    if(bsa) gates.cip = false;
   } else {
     setCheck('cipState','cipNote','block','MISSING','no CIP verification — record_funding will refuse');
   }
@@ -537,19 +592,28 @@ async function loadLive(){
   }
 
   if(loan.status === 'denied'){
-    const aan = newest(aanR.rows);
-    const st = String(pick(aan,'status')||'').toLowerCase();
+    // [SCHEMA-CONFIRMED] adverse_action_notices: status, sent_at,
+    // decision_date, notice_due_by, reason_codes (jsonb).
+    const aan = newest(aanR.rows, 'created_at');
+    const st = String(aan?.status||'').toLowerCase();
     const ready = ['ready','sent'].includes(st);
     gates.aan = ready;
+    const reasons = Array.isArray(aan?.reason_codes) ? aan.reason_codes.length : 0;
     setCheck('aanState','aanNote', ready?'ok':'block', ready?st.toUpperCase():'BLOCKED',
-      ready ? 'Reg B notice ' + st : 'decline without ready/sent Reg B notice');
+      ready
+        ? `Reg B notice ${st}${aan?.sent_at ? ' ' + dateOnly(aan.sent_at) : ''} · ${reasons} reason${reasons===1?'':'s'}`
+        : 'decline without ready/sent Reg B notice' + (aan?.notice_due_by ? ` · due ${aan.notice_due_by}` : ''));
   } else {
     gates.aan = true;
     setCheck('aanState','aanNote','ok','N/A','approval — no Reg B notice required');
   }
 
   // ─── Funded? ────────────────────────────────────────────────────────────
-  const funded = loan.status === 'funded' || fundR.rows.length > 0;
+  // [SCHEMA-CONFIRMED] funding_events has event_type — only fund-family
+  // events flip the rail (the table can also hold disbursement/return
+  // events without meaning "this loan is done").
+  const funded = loan.status === 'funded' ||
+    fundR.rows.some(e => /fund/i.test(String(e.event_type||'')));
   if(funded){
     setStep('fund','done');
     $id('fundBtn').textContent = '✓ FUNDED';
