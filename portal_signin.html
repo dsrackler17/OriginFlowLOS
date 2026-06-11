@@ -200,6 +200,17 @@
       margin-top: 6px;
     }
 
+    /* 6-digit OTP code entry — big, centered, spaced so it reads as a code */
+    .code-input {
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 28px;
+      letter-spacing: 0.5em;
+      padding-left: 0.5em; /* offset the trailing letter-spacing so it looks centered */
+      font-weight: 700;
+    }
+    .code-input::placeholder { letter-spacing: 0.35em; font-size: 20px; }
+
     .btn {
       width: 100%;
       padding: 14px 20px;
@@ -270,39 +281,6 @@
       cursor: pointer;
     }
     .helper a:hover, .helper button:hover { text-decoration: underline; }
-
-    /* Success state — replaces the form once a fallback email is sent */
-    .success {
-      display: none;
-      text-align: center;
-    }
-    .success.is-active { display: block; }
-    .success-icon {
-      width: 56px; height: 56px;
-      margin: 0 auto 16px;
-      border-radius: 50%;
-      background: rgba(134, 239, 172, 0.1);
-      border: 2px solid var(--accent-green);
-      display: grid; place-items: center;
-      color: var(--accent-green);
-      font-size: 24px;
-      font-family: var(--font-mono);
-    }
-    .success-title {
-      font-family: var(--font-serif);
-      font-size: 22px;
-      margin: 0 0 8px;
-    }
-    .success-text {
-      color: var(--text-dim);
-      font-size: 14px;
-    }
-    .success-email {
-      font-family: var(--font-mono);
-      color: var(--cyan);
-      margin-top: 12px;
-      font-size: 13px;
-    }
 
     /* Hidden-by-default panels — JS picks exactly one to show */
     .panel { display: none; }
@@ -377,11 +355,11 @@
       </form>
 
       <div class="helper">
-        First time here? Use the secure link in your invite email —
+        First time here, or no password yet? Use a one-time code &mdash;
         it signs you in and lets you create your password.
         <br><br>
         No invite yet? <a href="/apply.html">Start an application</a>
-        · <button type="button" id="magic-link-toggle">Email me a one-time sign-in link</button>
+        &middot; <button type="button" id="code-toggle">Email me a one-time code</button>
       </div>
     </div>
 
@@ -414,37 +392,53 @@
       </form>
     </div>
 
-    <!-- ═══ PANEL 3 · MAGIC-LINK FALLBACK (request a one-time link) ═══ -->
-    <div id="panel-magic" class="panel">
-      <div class="eyebrow">One-time link</div>
-      <h1 class="title">We'll email you in.</h1>
-      <p class="subtitle">Enter the email on your loan and we'll send a one-time sign-in link.</p>
+    <!-- ═══ PANEL 3 · REQUEST A ONE-TIME CODE ═══ -->
+    <div id="panel-code-request" class="panel">
+      <div class="eyebrow">One-time code</div>
+      <h1 class="title" id="code-request-title">We'll email you a code.</h1>
+      <p class="subtitle" id="code-request-sub">
+        Enter the email on your loan. We'll send a 6-digit code &mdash; it works in
+        any email app, with nothing to click.
+      </p>
 
-      <div class="error-banner" id="magic-error"></div>
+      <div class="error-banner" id="code-request-error"></div>
 
-      <form id="magic-form" autocomplete="on" novalidate>
+      <form id="code-request-form" autocomplete="on" novalidate>
         <div class="field">
-          <label class="field-label" for="magic-email">Email</label>
-          <input class="field-input" id="magic-email" type="email"
+          <label class="field-label" for="code-request-email">Email</label>
+          <input class="field-input" id="code-request-email" type="email"
                  autocomplete="email" required inputmode="email"
                  placeholder="you@example.com" maxlength="120">
         </div>
-        <button class="btn" type="submit" id="magic-btn">Email me a sign-in link →</button>
-        <button class="btn secondary" type="button" id="magic-back">← Back to password sign-in</button>
+        <button class="btn" type="submit" id="code-request-btn">Email me a code →</button>
+        <button class="btn secondary" type="button" id="code-request-back">← Back to password sign-in</button>
       </form>
     </div>
 
-    <!-- ═══ PANEL 4 · EMAIL-SENT SUCCESS ═══ -->
-    <div class="success" id="success-state">
-      <div class="success-icon">✓</div>
-      <h2 class="success-title" id="success-title">Check your email.</h2>
-      <p class="success-text" id="success-text">
-        We just sent you a link. Click it to land back here, already signed in.
+    <!-- ═══ PANEL 4 · ENTER THE CODE ═══ -->
+    <div id="panel-code-verify" class="panel">
+      <div class="eyebrow">Enter your code</div>
+      <h1 class="title">Check your email.</h1>
+      <p class="subtitle" id="code-verify-sub">
+        We sent a 6-digit code to your email. Enter it below.
       </p>
-      <p class="success-email" id="success-email">—</p>
-      <p class="success-text" style="margin-top: 20px;">
-        The link expires in an hour. If you don't see it, check your spam folder.
-      </p>
+
+      <div class="error-banner" id="code-verify-error"></div>
+      <div class="info-banner" id="code-verify-info"></div>
+
+      <form id="code-verify-form" autocomplete="one-time-code" novalidate>
+        <div class="field">
+          <label class="field-label" for="code-input">6-digit code</label>
+          <input class="field-input code-input" id="code-input" type="text"
+                 inputmode="numeric" autocomplete="one-time-code" required
+                 pattern="[0-9]*" placeholder="000000" maxlength="6">
+        </div>
+        <button class="btn" type="submit" id="code-verify-btn">Verify &amp; continue →</button>
+        <div class="helper">
+          Didn't get it? <button type="button" id="code-resend">Resend code</button>
+          &middot; <button type="button" id="code-verify-back">Use a different email</button>
+        </div>
+      </form>
     </div>
 
   </div>
@@ -465,9 +459,9 @@
 //   3. Supabase persists the session in localStorage, so on the same device
 //      most return visits skip this page entirely (portal_index's
 //      OF_bootstrap finds the live session and renders).
-//   4. Forgot password → resetPasswordForEmail(redirectTo: ?setup=1) → lands
-//      back here in SET-PASSWORD mode.
-//   5. Magic link kept as an explicit fallback (panel 3) — never the default.
+//   4. Forgot password → one-time code → verifyOtp → SET-PASSWORD (no link).
+//   5. One-time code kept as an explicit fallback (panels 3+4) for first-time
+//      sign-in and any borrower without a password — never the default.
 //
 // SUPABASE DASHBOARD PREREQS (one-time, no code):
 //   · Auth → Providers → Email: "Email + Password" enabled (default-on).
@@ -498,21 +492,20 @@
 
   var veil = document.getElementById('session-veil');
 
+  // Panels are mutually exclusive; show() flips exactly one on.
+  var PANELS = ['panel-signin', 'panel-setpass', 'panel-code-request', 'panel-code-verify'];
+
+  // Email the OTP code was sent to (needed for verifyOtp + resend).
+  var pendingEmail = '';
+  // After a successful code verify: 'recover' => let them set a new password,
+  // 'signin' => go straight to the portal.
+  var codeIntent = 'signin';
+
   function show(panelId) {
-    ['panel-signin', 'panel-setpass', 'panel-magic'].forEach(function (id) {
-      document.getElementById(id).classList.toggle('is-active', id === panelId);
+    PANELS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.toggle('is-active', id === panelId);
     });
-    document.getElementById('success-state').classList.remove('is-active');
-    dropVeil();
-  }
-  function showSuccess(title, text, emailMasked) {
-    ['panel-signin', 'panel-setpass', 'panel-magic'].forEach(function (id) {
-      document.getElementById(id).classList.remove('is-active');
-    });
-    document.getElementById('success-title').textContent = title;
-    document.getElementById('success-text').textContent = text;
-    document.getElementById('success-email').textContent = emailMasked || '';
-    document.getElementById('success-state').classList.add('is-active');
     dropVeil();
   }
   function dropVeil() {
@@ -570,7 +563,7 @@
       show('panel-signin');
       banner('error-banner',
         'That link expired or was already used. Sign in with your password, ' +
-        'or request a fresh link below.');
+        'or get a one-time code below.');
       return;
     }
 
@@ -636,29 +629,21 @@
     }
   });
 
-  // Forgot password → recovery email → lands back here with ?setup=1.
-  document.getElementById('forgot-link').addEventListener('click', async function () {
+  // Forgot password → one-time code → set a new password. No recovery link,
+  // no redirect allow-list, no email-scanner pre-click problem.
+  document.getElementById('forgot-link').addEventListener('click', function () {
     banner('error-banner', null);
+    banner('info-banner', null);
+    codeIntent = 'recover';
     var email = document.getElementById('email').value.trim().toLowerCase();
-    if (!validEmail(email)) {
-      banner('info-banner', 'Type your email above first, then tap "Forgot password?" again.');
-      document.getElementById('email').focus();
-      return;
-    }
-    try {
-      var supabase = window.OF_supabase();
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/portal_signin.html?setup=1',
-      });
-    } catch (err) {
-      console.warn('[portal/sign-in] reset request error (shown as success anyway — no enumeration):', err);
-    }
-    // Same response whether or not the account exists.
-    showSuccess(
-      'Check your email.',
-      'If that email is on a loan with us, a password-reset link is on its way. It signs you in and lets you choose a new password.',
-      maskEmail(email)
-    );
+    var dst = document.getElementById('code-request-email');
+    dst.value = validEmail(email) ? email : '';
+    document.getElementById('code-request-title').textContent = 'Reset your password.';
+    document.getElementById('code-request-sub').innerHTML =
+      'Enter your email and we\'ll send a 6-digit code. After you enter it, ' +
+      'you can choose a new password.';
+    show('panel-code-request');
+    if (!validEmail(email)) dst.focus();
   });
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -696,49 +681,131 @@
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // PANEL 3 · magic-link fallback (delegates to OF_signInWithEmail)
+  // PANEL 3 + 4 · ONE-TIME CODE FLOW (the durable email path)
+  //
+  // signInWithOtp emails a 6-digit code (the "Magic Link" email template must
+  // render {{ .Token }} — see deploy notes). verifyOtp({type:'email'}) trades
+  // the code for a real session right here on the page: no redirect_to, no
+  // Redirect-URL allow-list, no link for a mail scanner to pre-click and burn.
+  // shouldCreateUser:false because borrowers are provisioned at invite time —
+  // we never auto-create an account from this screen.
   // ──────────────────────────────────────────────────────────────────────────
-  document.getElementById('magic-link-toggle').addEventListener('click', function () {
-    var email = document.getElementById('email').value.trim();
-    if (email) document.getElementById('magic-email').value = email;
-    show('panel-magic');
+  function sendCode(email) {
+    var supabase = window.OF_supabase();
+    return supabase.auth.signInWithOtp({
+      email: email,
+      options: { shouldCreateUser: false },
+    });
+  }
+
+  // Helper "Email me a one-time code" → request panel, sign-in intent.
+  document.getElementById('code-toggle').addEventListener('click', function () {
+    banner('error-banner', null);
+    banner('info-banner', null);
+    codeIntent = 'signin';
+    var email = document.getElementById('email').value.trim().toLowerCase();
+    var dst = document.getElementById('code-request-email');
+    dst.value = validEmail(email) ? email : '';
+    document.getElementById('code-request-title').textContent = "We'll email you a code.";
+    document.getElementById('code-request-sub').innerHTML =
+      'Enter the email on your loan. We\'ll send a 6-digit code &mdash; it works in ' +
+      'any email app, with nothing to click.';
+    show('panel-code-request');
   });
-  document.getElementById('magic-back').addEventListener('click', function () {
+
+  document.getElementById('code-request-back').addEventListener('click', function () {
     show('panel-signin');
   });
+  document.getElementById('code-verify-back').addEventListener('click', function () {
+    banner('code-verify-error', null);
+    banner('code-verify-info', null);
+    show('panel-code-request');
+  });
 
-  document.getElementById('magic-form').addEventListener('submit', async function (e) {
+  // Request a code.
+  document.getElementById('code-request-form').addEventListener('submit', async function (e) {
     e.preventDefault();
-    banner('magic-error', null);
+    banner('code-request-error', null);
 
-    var email = document.getElementById('magic-email').value.trim().toLowerCase();
-    if (!validEmail(email)) { banner('magic-error', 'Please enter a valid email.'); return; }
+    var email = document.getElementById('code-request-email').value.trim().toLowerCase();
+    if (!validEmail(email)) { banner('code-request-error', 'Please enter a valid email.'); return; }
 
-    var btn = document.getElementById('magic-btn');
+    var btn = document.getElementById('code-request-btn');
     btn.disabled = true; btn.textContent = 'Sending…';
 
     try {
-      // Direct call with EXPLICIT redirect — never trusts the Site URL
-      // default (which is what was sending borrowers to localhost).
-      // The redirect target must be in Supabase Auth → URL Configuration →
-      // Redirect URLs, or Supabase silently falls back to the Site URL.
-      var supabase = window.OF_supabase();
-      var res = await supabase.auth.signInWithOtp({
-        email: email,
-        options: { emailRedirectTo: window.location.origin + '/portal_signin.html' },
-      });
-      if (res.error) throw res.error;
-      // No enumeration: success either way.
-      showSuccess(
-        'Check your email.',
-        'We just sent a one-time sign-in link. Click it to land back here, already signed in.',
-        maskEmail(email)
-      );
+      var res = await sendCode(email);
+      // No enumeration: advance to the verify panel regardless. If the email
+      // isn't on file, no code arrives and verify fails generically.
+      if (res.error) console.warn('[portal/sign-in] code send (suppressed):', res.error.message);
     } catch (err) {
-      console.error('[portal/sign-in] magic link failed:', err);
-      banner('magic-error', err.message || 'Could not send link. Please try again.');
-      btn.disabled = false; btn.textContent = 'Email me a sign-in link →';
+      console.warn('[portal/sign-in] code send error (suppressed):', err);
     }
+
+    pendingEmail = email;
+    document.getElementById('code-verify-sub').innerHTML =
+      'We sent a 6-digit code to <strong>' + maskEmail(email) + '</strong>. ' +
+      'Enter it below &mdash; it expires in 60 minutes.';
+    document.getElementById('code-input').value = '';
+    banner('code-verify-error', null);
+    banner('code-verify-info', null);
+    show('panel-code-verify');
+    document.getElementById('code-input').focus();
+
+    btn.disabled = false; btn.textContent = 'Email me a code →';
+  });
+
+  // Verify the code → live session → route by intent.
+  document.getElementById('code-verify-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    banner('code-verify-error', null);
+    banner('code-verify-info', null);
+
+    var token = document.getElementById('code-input').value.replace(/\D/g, '');
+    if (token.length !== 6) {
+      banner('code-verify-error', 'Enter the 6-digit code from your email.');
+      return;
+    }
+    if (!validEmail(pendingEmail)) { show('panel-code-request'); return; }
+
+    var btn = document.getElementById('code-verify-btn');
+    btn.disabled = true; btn.textContent = 'Verifying…';
+
+    try {
+      var supabase = window.OF_supabase();
+      var res = await supabase.auth.verifyOtp({
+        email: pendingEmail, token: token, type: 'email',
+      });
+      if (res.error) {
+        banner('code-verify-error',
+          'That code is wrong or expired. Check the most recent email, or resend a fresh code.');
+        btn.disabled = false; btn.textContent = 'Verify & continue →';
+        return;
+      }
+      // Session is live now.
+      if (codeIntent === 'recover') {
+        show('panel-setpass');
+      } else {
+        window.location.replace('/portal_index.html');
+      }
+    } catch (err) {
+      console.error('[portal/sign-in] verify failed:', err);
+      banner('code-verify-error', 'Could not verify right now. Please try again.');
+      btn.disabled = false; btn.textContent = 'Verify & continue →';
+    }
+  });
+
+  // Resend a fresh code without leaving the verify panel.
+  document.getElementById('code-resend').addEventListener('click', async function () {
+    banner('code-verify-error', null);
+    banner('code-verify-info', null);
+    if (!validEmail(pendingEmail)) { show('panel-code-request'); return; }
+
+    var link = document.getElementById('code-resend');
+    link.disabled = true; link.textContent = 'Sending…';
+    try { await sendCode(pendingEmail); } catch (err) { /* suppressed: no enumeration */ }
+    banner('code-verify-info', 'A new code is on its way to ' + maskEmail(pendingEmail) + '.');
+    setTimeout(function () { link.disabled = false; link.textContent = 'Resend code'; }, 1500);
   });
 })();
 </script>
