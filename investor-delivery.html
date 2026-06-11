@@ -705,6 +705,15 @@ footer a:hover { color: var(--accent); }
       </div>
       <p class="modal-text">Loan: <strong id="mismo-loan">—</strong></p>
       <p class="modal-text">Current export: <strong id="mismo-current">—</strong></p>
+
+      <div style="border-top:1px dashed var(--border);margin:1rem 0 0.75rem;"></div>
+      <div class="modal-sub" style="margin-bottom:0.4rem;">RECORD AN EXISTING EXPORT</div>
+      <p class="modal-text" style="margin-bottom:0.6rem;">Already built the MISMO 3.4 file with the export pipeline outside this page? Record it on the delivery row here.</p>
+      <div class="form-row">
+        <label class="form-label">Export URL <span style="color:var(--muted);font-weight:400;">— storage signed URL, optional</span></label>
+        <input class="form-input" id="mismo-m-url" placeholder="https://…supabase.co/storage/…/mismo-3.4-….xml">
+      </div>
+      <button class="btn" id="mismo-manual" style="width:100%;">Mark export built</button>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('modal-mismo')">Cancel</button>
@@ -732,6 +741,29 @@ footer a:hover { color: var(--accent); }
       <div class="warning-box" id="ucdp-warn" style="display:none;">⚠ MISMO 3.4 export not built yet. UCDP submission requires the package — build it first.</div>
       <p class="modal-text">Loan: <strong id="ucdp-loan">—</strong></p>
       <p class="modal-text">Current UCDP status: <strong id="ucdp-current">—</strong></p>
+
+      <div style="border-top:1px dashed var(--border);margin:1rem 0 0.75rem;"></div>
+      <div class="modal-sub" style="margin-bottom:0.4rem;">RECORD PORTAL RESULT MANUALLY</div>
+      <p class="modal-text" style="margin-bottom:0.6rem;">Submitted through the GSE portal directly? Key the result back here — same fields the auto-submit would write.</p>
+      <div class="form-row">
+        <label class="form-label">Result</label>
+        <select class="form-input" id="ucdp-m-status">
+          <option value="submitted">Submitted — awaiting findings</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+          <option value="error">Error</option>
+          <option value="not_required">Not required (no appraisal / waiver)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Doc ID <span style="color:var(--muted);font-weight:400;">— optional</span></label>
+        <input class="form-input" id="ucdp-m-docid" placeholder="UCDP doc id">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Finding count <span style="color:var(--muted);font-weight:400;">— optional</span></label>
+        <input class="form-input" id="ucdp-m-findings" type="number" step="1" placeholder="0">
+      </div>
+      <button class="btn" id="ucdp-manual" style="width:100%;">Record UCDP result</button>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('modal-ucdp')">Cancel</button>
@@ -759,6 +791,29 @@ footer a:hover { color: var(--accent); }
       <div class="warning-box" id="ucd-warn" style="display:none;">⚠ MISMO 3.4 export not built yet. UCD submission requires the package — build it first.</div>
       <p class="modal-text">Loan: <strong id="ucd-loan">—</strong></p>
       <p class="modal-text">Current UCD status: <strong id="ucd-current">—</strong></p>
+
+      <div style="border-top:1px dashed var(--border);margin:1rem 0 0.75rem;"></div>
+      <div class="modal-sub" style="margin-bottom:0.4rem;">RECORD PORTAL RESULT MANUALLY</div>
+      <p class="modal-text" style="margin-bottom:0.6rem;">Submitted through the GSE portal directly? Key the result back here.</p>
+      <div class="form-row">
+        <label class="form-label">Result</label>
+        <select class="form-input" id="ucd-m-status">
+          <option value="submitted">Submitted — awaiting findings</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+          <option value="error">Error</option>
+          <option value="not_required">Not required (non-conforming)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Doc ID <span style="color:var(--muted);font-weight:400;">— optional</span></label>
+        <input class="form-input" id="ucd-m-docid" placeholder="UCD doc id">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Finding count <span style="color:var(--muted);font-weight:400;">— optional</span></label>
+        <input class="form-input" id="ucd-m-findings" type="number" step="1" placeholder="0">
+      </div>
+      <button class="btn" id="ucd-manual" style="width:100%;">Record UCD result</button>
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('modal-ucd')">Cancel</button>
@@ -995,7 +1050,7 @@ async function loadAll() {
     .select(`
       id, loan_number, status, loan_amount_cents, program, funded_at, rate_bps,
       cd_sent_at, lo_id, property_address,
-      borrowers:loan_borrowers ( position, borrower:borrower_id ( first_name, last_name ) ),
+      borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) ),
       delivery:loan_deliveries (
         id, investor, commitment_id, stage,
         ucdp_status, ucdp_submitted_at, ucdp_finding_count, ucdp_doc_id,
@@ -1009,7 +1064,7 @@ async function loadAll() {
     `)
     .eq('branch_id', me.branch_id)
     .is('archived_at', null)
-    .in('status', ['funded', 'recorded', 'complete'])
+    .eq('status', 'funded')  // [FIX] 'recorded'/'complete' are not loan_status enum members — the .in() 400'd the entire query
     .order('funded_at', { ascending: false })
     .limit(500);
 
@@ -1302,6 +1357,9 @@ function initModals() {
   $('#ucdp-submit').addEventListener('click', runSubmitUcdp);
   $('#ucd-submit').addEventListener('click', runSubmitUcd);
   $('#purchase-confirm').addEventListener('click', runMarkPurchased);
+  $('#mismo-manual').addEventListener('click', runMarkMismoBuilt);
+  $('#ucdp-manual').addEventListener('click', runRecordUcdpManual);
+  $('#ucd-manual').addEventListener('click', runRecordUcdManual);
 
   // Close on backdrop click
   document.querySelectorAll('.modal-backdrop').forEach(el => {
@@ -1357,8 +1415,40 @@ async function archiveDelivery() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// STAGE ROLL-UP
+// One place computes the delivery stage from the two sub-statuses, so the
+// auto-submit paths and the manual-record paths can never disagree.
+// ═══════════════════════════════════════════════════════════════════════════
+function rollStage(prev, ucdpStatus, ucdStatus) {
+  const ok = (v) => v === 'accepted' || v === 'not_required';
+  if (ok(ucdpStatus) && ok(ucdStatus)) return 'accepted';
+  if (ucdpStatus === 'rejected' || ucdStatus === 'rejected') return 'rejected';
+  if (ucdpStatus === 'error'    || ucdStatus === 'error')    return 'error';
+  if (ucdpStatus === 'submitted' || ucdStatus === 'submitted') return 'in_flight';
+  return prev?.stage || 'pending';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // BUILD MISMO 3.4 — hook
 // ═══════════════════════════════════════════════════════════════════════════
+// Default implementation invokes the build-mismo-package edge function. If
+// it isn't deployed yet, the call throws with a message pointing at the
+// manual "Mark export built" path in the modal — the desk never dead-ends.
+// A page-level override (window.OF_buildMismoPackage defined before this
+// script) still wins.
+if (typeof window.OF_buildMismoPackage !== 'function') {
+  window.OF_buildMismoPackage = async function (loanId) {
+    const { data, error } = await supa.functions.invoke('build-mismo-package', {
+      body: { loan_id: loanId },
+    });
+    if (error) {
+      throw new Error('build-mismo-package edge function unreachable (' +
+        (error.message || 'not deployed') +
+        '). Build the export with the existing pipeline and use "Mark export built" instead.');
+    }
+    return data;  // { url, size_bytes, version }
+  };
+}
 
 async function openMismo(loanId) {
   const r = rows.find(x => x.loan.id === loanId);
@@ -1405,6 +1495,26 @@ async function runBuildMismo() {
   }
 }
 
+async function runMarkMismoBuilt() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+  const url = $('#mismo-m-url').value.trim() || null;
+  closeModal('modal-mismo');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const { error } = await supa.from('loan_deliveries').update({
+      mismo_built_at: new Date().toISOString(),
+      mismo_export_url: url,
+      mismo_version: '3.4',
+    }).eq('id', delivery.id);
+    if (error) throw error;
+    toast('MISMO 3.4 export recorded');
+    await loadAll();
+  } catch (err) {
+    toast('Record failed: ' + (err.message || err), 'error');
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SUBMIT UCDP — hook
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1430,7 +1540,8 @@ async function runSubmitUcdp() {
   closeModal('modal-ucdp');
 
   if (typeof window.OF_submitUcdp !== 'function') {
-    toast('UCDP submit hook not implemented yet (window.OF_submitUcdp). Edge function deploy is pending.', 'warn');
+    toast('Direct UCDP submission isn\'t wired yet — submit through the GSE portal and use "Record UCDP result" in this modal.', 'warn');
+    openModal('modal-ucdp');
     return;
   }
 
@@ -1447,16 +1558,38 @@ async function runSubmitUcdp() {
       ucdp_finding_count: Number(result?.finding_count) || 0,
       ucdp_response: result?.response || null,
     };
-    // If both UCDP and UCD are now in flight, roll the stage forward.
-    if (delivery.ucd_status === 'submitted' || delivery.ucd_status === 'accepted' || status === 'submitted') {
-      update.stage = 'in_flight';
-    }
+    update.stage = rollStage(delivery, status, delivery.ucd_status);
     const { error } = await supa.from('loan_deliveries').update(update).eq('id', delivery.id);
     if (error) throw error;
     toast(`UCDP submission ${status}${result?.finding_count ? ' · ' + result.finding_count + ' findings' : ''}`);
     await loadAll();
   } catch (err) {
     toast('UCDP submit failed: ' + (err.message || err), 'error');
+  }
+}
+
+async function runRecordUcdpManual() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+  const status = $('#ucdp-m-status').value;
+  const docId = $('#ucdp-m-docid').value.trim() || null;
+  const findings = parseInt($('#ucdp-m-findings').value, 10);
+  closeModal('modal-ucdp');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const update = {
+      ucdp_status: status,
+      ucdp_submitted_at: status === 'not_required' ? null : new Date().toISOString(),
+      ucdp_doc_id: docId,
+      ucdp_finding_count: Number.isFinite(findings) ? findings : 0,
+      stage: rollStage(delivery, status, delivery.ucd_status),
+    };
+    const { error } = await supa.from('loan_deliveries').update(update).eq('id', delivery.id);
+    if (error) throw error;
+    toast('UCDP result recorded: ' + (SUB_STATUS_LABELS[status] || status));
+    await loadAll();
+  } catch (err) {
+    toast('Record failed: ' + (err.message || err), 'error');
   }
 }
 
@@ -1485,7 +1618,8 @@ async function runSubmitUcd() {
   closeModal('modal-ucd');
 
   if (typeof window.OF_submitUcd !== 'function') {
-    toast('UCD submit hook not implemented yet (window.OF_submitUcd). Edge function deploy is pending.', 'warn');
+    toast('Direct UCD submission isn\'t wired yet — submit through the GSE portal and use "Record UCD result" in this modal.', 'warn');
+    openModal('modal-ucd');
     return;
   }
 
@@ -1501,24 +1635,38 @@ async function runSubmitUcd() {
       ucd_finding_count: Number(result?.finding_count) || 0,
       ucd_response: result?.response || null,
     };
-    // Roll stage: if both passed acceptance, mark 'accepted'. If either is
-    // in_flight, mark 'in_flight'. If either rejected, 'rejected'.
-    const newUcdp = delivery.ucdp_status;
-    const newUcd  = status;
-    if ((newUcdp === 'accepted' || newUcdp === 'not_required') &&
-        (newUcd === 'accepted' || newUcd === 'not_required')) {
-      update.stage = 'accepted';
-    } else if (newUcdp === 'rejected' || newUcd === 'rejected') {
-      update.stage = 'rejected';
-    } else {
-      update.stage = 'in_flight';
-    }
+    update.stage = rollStage(delivery, delivery.ucdp_status, status);
     const { error } = await supa.from('loan_deliveries').update(update).eq('id', delivery.id);
     if (error) throw error;
     toast(`UCD submission ${status}${result?.finding_count ? ' · ' + result.finding_count + ' findings' : ''}`);
     await loadAll();
   } catch (err) {
     toast('UCD submit failed: ' + (err.message || err), 'error');
+  }
+}
+
+async function runRecordUcdManual() {
+  const loanId = activeLoanIdForAction;
+  if (!loanId) return;
+  const status = $('#ucd-m-status').value;
+  const docId = $('#ucd-m-docid').value.trim() || null;
+  const findings = parseInt($('#ucd-m-findings').value, 10);
+  closeModal('modal-ucd');
+  try {
+    const delivery = await ensureDelivery(loanId);
+    const update = {
+      ucd_status: status,
+      ucd_submitted_at: status === 'not_required' ? null : new Date().toISOString(),
+      ucd_doc_id: docId,
+      ucd_finding_count: Number.isFinite(findings) ? findings : 0,
+      stage: rollStage(delivery, delivery.ucdp_status, status),
+    };
+    const { error } = await supa.from('loan_deliveries').update(update).eq('id', delivery.id);
+    if (error) throw error;
+    toast('UCD result recorded: ' + (SUB_STATUS_LABELS[status] || status));
+    await loadAll();
+  } catch (err) {
+    toast('Record failed: ' + (err.message || err), 'error');
   }
 }
 
