@@ -691,10 +691,23 @@
   // we never auto-create an account from this screen.
   // ──────────────────────────────────────────────────────────────────────────
   function sendCode(email) {
-    var supabase = window.OF_supabase();
-    return supabase.auth.signInWithOtp({
-      email: email,
-      options: { shouldCreateUser: false },
+    // Calls our own edge function, which mints the OTP and emails the 6-digit
+    // code via Resend. Resolves to { ok: <bool> } — ok:false only on a real
+    // send-infrastructure failure (never reveals whether the email exists).
+    var base = (window.OF_CONFIG && window.OF_CONFIG.SUPABASE_URL) || '';
+    var key  = (window.OF_CONFIG && window.OF_CONFIG.SUPABASE_ANON_KEY) || '';
+    return fetch(base + '/functions/v1/send-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': key,
+        'Authorization': 'Bearer ' + key,
+      },
+      body: JSON.stringify({ email: email }),
+    }).then(function (r) {
+      return r.json().catch(function () { return { ok: r.ok }; });
+    }).catch(function () {
+      return { ok: false };
     });
   }
 
@@ -733,13 +746,20 @@
     var btn = document.getElementById('code-request-btn');
     btn.disabled = true; btn.textContent = 'Sending…';
 
+    var sent;
     try {
-      var res = await sendCode(email);
-      // No enumeration: advance to the verify panel regardless. If the email
-      // isn't on file, no code arrives and verify fails generically.
-      if (res.error) console.warn('[portal/sign-in] code send (suppressed):', res.error.message);
+      sent = await sendCode(email);
     } catch (err) {
       console.warn('[portal/sign-in] code send error (suppressed):', err);
+      sent = { ok: false };
+    }
+
+    // ok:false is a real send-infrastructure failure (not "no such account").
+    // Safe to tell the user to retry without leaking whether the email exists.
+    if (sent && sent.ok === false) {
+      banner('code-request-error', 'Could not send a code right now. Please try again in a moment.');
+      btn.disabled = false; btn.textContent = 'Email me a code →';
+      return;
     }
 
     pendingEmail = email;
@@ -773,9 +793,14 @@
 
     try {
       var supabase = window.OF_supabase();
-      var res = await supabase.auth.verifyOtp({
-        email: pendingEmail, token: token, type: 'email',
-      });
+      // Admin-generated OTPs (generateLink type:'magiclink') usually verify as
+      // 'email'; on some GoTrue versions they verify as 'magiclink'. Try the
+      // common case first, then fall back. A failed attempt does NOT consume a
+      // valid token, so the retry is safe.
+      var res = await supabase.auth.verifyOtp({ email: pendingEmail, token: token, type: 'email' });
+      if (res.error) {
+        res = await supabase.auth.verifyOtp({ email: pendingEmail, token: token, type: 'magiclink' });
+      }
       if (res.error) {
         banner('code-verify-error',
           'That code is wrong or expired. Check the most recent email, or resend a fresh code.');
