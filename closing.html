@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Closing — OriginFlow LOS</title>
+<title>Closing Desk — OriginFlow LOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
@@ -80,6 +80,7 @@ label{display:block;font-family:var(--mono);font-size:10.5px;color:var(--mut);ma
 input,select,textarea{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);
   color:var(--txt);border-radius:9px;padding:9px 10px;font-family:var(--sans);font-size:13.5px}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
+input[type=checkbox]{width:auto}
 .btn{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;cursor:pointer;
   border:1px solid var(--cyan-dim);background:rgba(25,195,230,.12);color:var(--cyan);
   padding:9px 14px;border-radius:9px;transition:.15s}
@@ -90,9 +91,26 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 .btn.go:hover{filter:brightness(1.08)}
 .btn.go:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.4)}
 .btn.danger{border-color:var(--red);color:var(--red);background:rgba(255,93,108,.1)}
+.btn.sm{padding:5px 10px;font-size:10.5px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:560px){.two,.three{grid-template-columns:1fr}}
+
+/* collapsible action forms inside cards */
+.form-block{display:none;margin-top:12px;border-top:1px dashed var(--line);padding-top:6px}
+.form-block.open{display:block}
+.checkline{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}
+.checkline input{margin:0}
+
+/* requirement / subject mini-lists */
+.minilist{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.miniitem{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:12.5px}
+.miniitem .t{flex:1;color:var(--txt)}
+.miniitem.cleared .t{color:var(--mut);text-decoration:line-through}
+.miniitem .who{font-family:var(--mono);font-size:10.5px;color:var(--mut)}
 
 /* fraud banner */
 .fraud{margin-top:6px;border:1px dashed rgba(255,180,84,.5);background:rgba(255,180,84,.06);
@@ -102,7 +120,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 /* compliance strip */
 .compliance{margin-top:16px;border:1px solid var(--line);border-radius:14px;
   background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));padding:14px 16px}
-.compliance h2{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+.compliance h2{font-family:var(--mono);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:0 0 12px;display:flex;gap:8px;align-items:center}
 .checks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 @media(max-width:880px){.checks{grid-template-columns:1fr 1fr}}
 .check{border:1px solid var(--line);border-radius:11px;padding:12px;background:rgba(0,0,0,.18)}
@@ -111,13 +129,32 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 .check .st.ok{color:var(--green)} .check .st.warn{color:var(--amber)} .check .st.block{color:var(--red)}
 .check small{display:block;color:var(--mut);font-size:11px;margin-top:4px;line-height:1.4}
 
+/* loan picker */
+.picker{margin-top:18px}
+.picker h1{font-family:var(--serif);font-size:26px;margin:6px 0 4px}
+.picker .sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+.pickgroup{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:18px 0 8px}
+.pickrow{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px;
+  background:rgba(255,255,255,.02);cursor:pointer;transition:.15s}
+.pickrow:hover{border-color:var(--cyan-dim);background:rgba(25,195,230,.05)}
+.pickrow .pn{font-family:var(--mono);font-weight:700;color:var(--cyan);font-size:13px;min-width:84px}
+.pickrow .pb{flex:1;font-size:14px}
+.pickrow .pb small{display:block;color:var(--mut);font-family:var(--mono);font-size:11px;margin-top:2px}
+.pickrow .pa{font-family:var(--mono);font-size:13px}
+.pickrow .ps{font-family:var(--mono);font-size:10.5px;color:var(--mut)}
+
+.statescreen{margin-top:60px;text-align:center;color:var(--mut);font-family:var(--mono);font-size:13px}
+.statescreen a{display:inline-block;margin-top:14px}
+
 .footnote{margin-top:24px;font-family:var(--mono);font-size:11px;color:var(--mut);line-height:1.7;
   border-top:1px solid var(--line-2);padding-top:14px}
 .footnote b{color:var(--cyan)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy-2);
   border:1px solid var(--cyan-dim);color:var(--txt);font-family:var(--mono);font-size:12.5px;
-  padding:11px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  padding:11px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90vw}
 .toast.show{opacity:1}
+.toast.err{border-color:var(--red);color:var(--red)}
 </style>
 </head>
 <body>
@@ -125,9 +162,22 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 
   <div class="top">
     <div class="brand">origin<span class="dot">●</span>flow / <span style="color:var(--mut)">closing desk</span></div>
-    <div class="crumbs"><a href="/dashboard.html">pipeline</a> / <a id="crumbLoanLink" href="#">loan</a> / <b id="crumbLoan">—</b> / closing</div>
+    <div class="crumbs"><a href="/dashboard.html">pipeline</a> / <a id="crumbLoanLink" href="/dashboard.html">loan</a> / <b id="crumbLoan">—</b> / closing</div>
     <div class="statuspill" id="connPill">● connecting…</div>
   </div>
+
+  <!-- ═══ LOAN PICKER (no ?loan_id) ═══ -->
+  <div class="picker" id="picker" style="display:none">
+    <h1>Closing desk</h1>
+    <div class="sub">Pick a file. Loans at conditional approval, clear-to-close, docs-out, and recently funded show here.</div>
+    <div id="pickerBody"><div class="muted">Loading branch pipeline…</div></div>
+  </div>
+
+  <!-- ═══ STATE SCREEN (signed out / error) ═══ -->
+  <div class="statescreen" id="stateScreen" style="display:none"></div>
+
+  <!-- ═══ DESK ═══ -->
+  <div id="desk" style="display:none">
 
   <div class="loanhead">
     <div>
@@ -140,7 +190,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
     </div>
   </div>
 
-  <!-- closing pipeline rail -->
   <div class="rail" id="rail">
     <div class="step" data-step="agent"><span class="n">13.0.8</span>Settlement Agent</div>
     <div class="step" data-step="title"><span class="n">13.0.10</span>Title Commitment</div>
@@ -157,19 +206,82 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
     <div class="card">
       <h2>● Settlement Agent <span class="tag todo" id="agentTag">—</span></h2>
       <div id="agentBody"><div class="muted">Loading…</div></div>
-      <div class="muted" style="margin-top:10px">Agent bank coordinates are recorded once at the directory level and callback-verified — loan-level wires must reference this agent, so no free-typed routing numbers under deadline pressure.</div>
+      <div class="btnrow">
+        <button class="btn ghost sm act" data-form="agentNewForm">＋ new agent</button>
+        <button class="btn sm act" id="agentVerifyBtn" style="display:none">✓ record callback verification</button>
+      </div>
+      <div class="form-block" id="agentNewForm">
+        <div class="two">
+          <div><label>company</label><input id="ag_company" placeholder="Caprock Title & Escrow"></div>
+          <div><label>type</label>
+            <select id="ag_type">
+              <option value="title_company">title_company</option>
+              <option value="escrow_company">escrow_company</option>
+              <option value="attorney">attorney</option>
+            </select>
+          </div>
+        </div>
+        <div class="two">
+          <div><label>contact name</label><input id="ag_contact" placeholder="M. Alvarado"></div>
+          <div><label>phone (independently sourced)</label><input id="ag_phone" placeholder="806-555-0142"></div>
+        </div>
+        <div class="two">
+          <div><label>email</label><input id="ag_email" type="email" placeholder="closings@…"></div>
+          <div><label>license / nmls</label><input id="ag_license" placeholder="TX-…"></div>
+        </div>
+        <div class="btnrow"><button class="btn" id="agentSaveBtn">save agent to branch directory</button></div>
+      </div>
+      <div class="muted" style="margin-top:10px">Agent bank coordinates live at the directory level and get callback-verified once — loan-level wires must reference a directory agent, so no free-typed routing numbers under deadline pressure.</div>
     </div>
 
     <!-- TITLE COMMITMENT -->
     <div class="card">
       <h2>● Title Commitment <span class="tag todo" id="titleTag">—</span></h2>
       <div id="titleBody"><div class="muted">Loading…</div></div>
+      <div class="minilist" id="titleReqs"></div>
+      <div class="btnrow">
+        <button class="btn ghost sm act" data-form="titleForm" id="titleAddBtn">＋ record commitment</button>
+        <button class="btn sm" id="titleClearBtn" style="display:none">✓ mark commitment cleared</button>
+      </div>
+      <div class="form-block" id="titleForm">
+        <div class="two">
+          <div><label>commitment #</label><input id="ti_number" placeholder="CT-2026-…"></div>
+          <div><label>settlement agent</label><select id="ti_agent"></select></div>
+        </div>
+        <div class="two">
+          <div><label>effective date</label><input id="ti_eff" type="date"></div>
+          <div><label>expiration date</label><input id="ti_exp" type="date"></div>
+        </div>
+        <div><label>lender policy ($)</label><input id="ti_policy" inputmode="decimal" placeholder="1240.00"></div>
+        <div><label>schedule B-I requirements (one per line)</label><textarea id="ti_reqs" rows="3" placeholder="Release of existing lien&#10;Survey&#10;Payoff statement"></textarea></div>
+        <div><label>schedule B-II exceptions (one per line)</label><textarea id="ti_excs" rows="2" placeholder="Utility easement&#10;Mineral rights"></textarea></div>
+        <div class="btnrow"><button class="btn" id="titleSaveBtn">record commitment</button></div>
+      </div>
     </div>
 
     <!-- CPL -->
     <div class="card">
       <h2>● Closing Protection Letter <span class="tag todo" id="cplTag">—</span></h2>
       <div id="cplBody"><div class="muted">Loading…</div></div>
+      <div class="btnrow">
+        <button class="btn ghost sm act" data-form="cplForm" id="cplAddBtn">＋ record CPL</button>
+        <button class="btn sm" id="cplAcceptBtn" style="display:none">✓ accept CPL</button>
+      </div>
+      <div class="form-block" id="cplForm">
+        <div class="two">
+          <div><label>cpl #</label><input id="cp_number" placeholder="CPL-…"></div>
+          <div><label>settlement agent</label><select id="cp_agent"></select></div>
+        </div>
+        <div class="two">
+          <div><label>issued by (title underwriter)</label><input id="cp_issuer" placeholder="First American"></div>
+          <div><label>covered amount ($)</label><input id="cp_amount" inputmode="decimal" placeholder="310000.00"></div>
+        </div>
+        <div class="two">
+          <div><label>issued date</label><input id="cp_issued" type="date"></div>
+          <div><label>expiration date</label><input id="cp_exp" type="date"></div>
+        </div>
+        <div class="btnrow"><button class="btn" id="cplSaveBtn">record CPL</button></div>
+      </div>
     </div>
 
     <!-- WIRE -->
@@ -177,8 +289,24 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
       <h2>● Wire Instructions <span class="tag todo" id="wireTag">—</span></h2>
       <div class="fraud"><b>Wire-fraud control.</b> Two-person rule enforced at the data layer (verifier ≠ enterer). Callback must use an <b>independently sourced</b> phone number — never one from the wire email.</div>
       <div id="wireBody" style="margin-top:8px"><div class="muted">Loading…</div></div>
+      <div class="btnrow">
+        <button class="btn ghost sm act" data-form="wireForm" id="wireAddBtn">＋ enter wire instructions</button>
+      </div>
+      <div class="form-block" id="wireForm">
+        <div><label>settlement agent (required — wires attach to the verified directory record)</label><select id="wi_agent"></select></div>
+        <div class="two">
+          <div><label>beneficiary</label><input id="wi_benef" placeholder="Caprock Title & Escrow"></div>
+          <div><label>bank</label><input id="wi_bank" placeholder="PlainsCapital"></div>
+        </div>
+        <div class="three">
+          <div><label>routing — last 4 only</label><input id="wi_routing" maxlength="4" inputmode="numeric" placeholder="4471"></div>
+          <div><label>account — last 4 only</label><input id="wi_account" maxlength="4" inputmode="numeric" placeholder="0098"></div>
+          <div><label>amount ($)</label><input id="wi_amount" inputmode="decimal" placeholder="248910.00"></div>
+        </div>
+        <div class="btnrow"><button class="btn" id="wireSaveBtn">save wire (status: unverified)</button></div>
+      </div>
       <div id="wireVerifyBlock" style="display:none">
-        <label>Callback phone source</label>
+        <label>callback phone source</label>
         <select id="cbSource">
           <option value="independent">independent (directory / prior file)</option>
           <option value="from_email">from the wire email ⚠</option>
@@ -193,34 +321,124 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
     <div class="card">
       <h2>● Closing Schedule <span class="tag todo" id="schedTag">—</span></h2>
       <div id="schedBody"><div class="muted">Loading…</div></div>
+      <div class="btnrow">
+        <button class="btn ghost sm act" data-form="schedForm" id="schedAddBtn">＋ schedule closing</button>
+        <button class="btn sm" id="schedCdBtn" style="display:none">✓ mark CD delivered</button>
+        <button class="btn sm" id="schedConfirmBtn" style="display:none">✓ confirm appointment</button>
+      </div>
+      <div class="form-block" id="schedForm">
+        <div><label>settlement agent</label><select id="sc_agent"></select></div>
+        <div class="two">
+          <div><label>signing date &amp; time</label><input id="sc_signing" type="datetime-local"></div>
+          <div><label>disbursement date</label><input id="sc_disb" type="date"></div>
+        </div>
+        <div class="two">
+          <div><label>closing type</label>
+            <select id="sc_type">
+              <option value="purchase">purchase</option>
+              <option value="refinance">refinance</option>
+            </select>
+          </div>
+          <div><label>signing method</label>
+            <select id="sc_method">
+              <option value="in_person">in_person</option>
+              <option value="hybrid">hybrid</option>
+              <option value="ron">ron</option>
+              <option value="mail_away">mail_away</option>
+            </select>
+          </div>
+        </div>
+        <div><label>location</label><input id="sc_location" placeholder="Caprock Title — 4th & University, Lubbock"></div>
+        <div class="btnrow"><button class="btn" id="schedSaveBtn">schedule closing</button></div>
+      </div>
     </div>
 
     <!-- SETTLEMENT STATEMENT -->
     <div class="card">
       <h2>● Settlement Statement <span class="tag todo" id="stmtTag">—</span></h2>
       <div id="stmtBody"><div class="muted">Loading…</div></div>
-      <div class="muted" style="margin-top:8px">Snapshot frozen at status=final so a CoC redisclosure can't rewrite settled figures.</div>
+      <div class="btnrow">
+        <button class="btn ghost sm act" data-form="stmtForm" id="stmtAddBtn">＋ create statement</button>
+        <button class="btn sm" id="stmtFinalBtn" style="display:none">✓ finalize (freeze snapshot)</button>
+      </div>
+      <div class="form-block" id="stmtForm">
+        <div class="two">
+          <div><label>statement date</label><input id="st_date" type="date"></div>
+          <div><label>settlement agent</label><select id="st_agent"></select></div>
+        </div>
+        <div class="two">
+          <div><label>total charges ($)</label><input id="st_charges" inputmode="decimal" placeholder="11420.00"></div>
+          <div><label>cash to close ($)</label><input id="st_ctc" inputmode="decimal" placeholder="68510.00"></div>
+        </div>
+        <div><label>net to disburse ($)</label><input id="st_disb" inputmode="decimal" placeholder="248910.00"></div>
+        <div class="btnrow"><button class="btn" id="stmtSaveBtn">save draft statement</button></div>
+      </div>
+      <div class="muted" style="margin-top:8px">Finalizing freezes the snapshot so a CoC redisclosure can't rewrite settled figures.</div>
     </div>
 
   </div>
 
   <!-- COMPLIANCE STRIP -->
   <div class="compliance">
-    <h2>● Compliance Gate — Phase 13.5</h2>
+    <h2>● Compliance Gate — Phase 13.5
+      <span style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn ghost sm act" data-form="ofacForm">＋ OFAC screening</button>
+        <button class="btn ghost sm act" data-form="cipForm">＋ CIP verification</button>
+      </span>
+    </h2>
     <div class="checks">
       <div class="check"><div class="nm">OFAC / SDN · 13.5.6</div><div class="st" id="ofacState">—</div><small id="ofacNote">loading…</small></div>
       <div class="check"><div class="nm">CIP / BSA · 13.5.7</div><div class="st" id="cipState">—</div><small id="cipNote">loading…</small></div>
       <div class="check"><div class="nm">TRID · 13.5.8</div><div class="st" id="tridState">—</div><small id="tridNote">loading…</small></div>
       <div class="check"><div class="nm">Adverse Action · 13.5.4</div><div class="st" id="aanState">—</div><small id="aanNote">loading…</small></div>
     </div>
+
+    <div class="minilist" id="subjectList"></div>
+
+    <div class="form-block" id="ofacForm">
+      <div class="three">
+        <div><label>subject</label><select id="of_subject"></select></div>
+        <div><label>role</label>
+          <select id="of_role"><option value="borrower">borrower</option><option value="co_borrower">co_borrower</option></select>
+        </div>
+        <div><label>result</label>
+          <select id="of_result"><option value="clear">clear</option><option value="potential_match">potential_match</option></select>
+        </div>
+      </div>
+      <div><label>SDN list version</label><input id="of_list" placeholder="2026-06-09"></div>
+      <div class="btnrow"><button class="btn" id="ofacSaveBtn">record screening</button></div>
+    </div>
+
+    <div class="form-block" id="cipForm">
+      <div class="two">
+        <div><label>subject</label><select id="ci_subject"></select></div>
+        <div><label>method</label>
+          <select id="ci_method"><option value="documentary">documentary</option><option value="non_documentary">non_documentary</option></select>
+        </div>
+      </div>
+      <div class="two">
+        <div><label>id doc type</label>
+          <select id="ci_doctype"><option value="drivers_license">drivers_license</option><option value="passport">passport</option><option value="state_id">state_id</option><option value="military_id">military_id</option></select>
+        </div>
+        <div><label>id # — last 4 only</label><input id="ci_last4" maxlength="4" placeholder="1234"></div>
+      </div>
+      <div class="checkline"><input type="checkbox" id="ci_name"><span>name verified</span></div>
+      <div class="checkline"><input type="checkbox" id="ci_dob"><span>date of birth verified</span></div>
+      <div class="checkline"><input type="checkbox" id="ci_addr"><span>address verified</span></div>
+      <div class="checkline"><input type="checkbox" id="ci_idnum"><span>id number verified</span></div>
+      <div class="checkline"><input type="checkbox" id="ci_bsa"><span style="color:var(--amber)">BSA flag (suspicious activity)</span></div>
+      <div class="btnrow"><button class="btn" id="cipSaveBtn">record verification</button></div>
+    </div>
+
     <div class="muted" style="margin-top:12px">On a <b style="color:var(--red)">decline</b>, <code>decision_ready</code> stays OFF until a Reg B notice with ≥1 principal reason is in <code>ready</code>/<code>sent</code> — enforced by <code>decline_notice_cleared(loan_id)</code>. Audit chain is hash-linked (13.5.10); run <code>verify_audit_chain()</code> for tamper check.</div>
   </div>
 
   <div class="footnote">
-    backend hooks: <b>OF_recordFunding</b> → rpc record_funding · <b>OF_verifyWire</b> → rpc verify_wire · <b>OF_declineCleared</b> → rpc decline_notice_cleared<br/>
-    fund gate is enforced server-side in <b>record_funding</b>: verified wire (callback) · OFAC clear · CIP verified · (if decline) adverse-action ready. The button below reflects the gate; the RPC is the law.<br/>
-    project <b>zgmwtslzsmtmqcivngdq</b> · migrations 029 (closing) + 030 (compliance)
+    backend: <b>verify_wire</b> (two-person, independent-callback) · <b>record_funding</b> (OFAC + CIP + wire gates) · <b>decline_notice_cleared</b> (Reg B)<br/>
+    the fund button reflects the gate; the RPC is the law — a stale tab can never skip a gate · project <b>zgmwtslzsmtmqcivngdq</b> · migrations 029 + 030
   </div>
+
+  </div><!-- /desk -->
 </div>
 
 <div class="toast" id="toast"></div>
@@ -230,129 +448,170 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan)}
 <script src="/js/config.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// /closing.html — LIVE CLOSING DESK (was: static OF-1043 mockup)
+// /closing.html — WORKING CLOSING DESK (demo mode removed)
 //
-// Entry: /closing.html?loan_id=<uuid>   (also accepts ?id= to match
-// loan.html's convention, so links can be built either way).
-// No param → demo mode with the OF-1043 Rodriguez seed data, same as before.
+// Entry: /closing.html?loan_id=<uuid>  (also ?id=, matching loan.html).
+// No param → live loan picker over the branch's closing-stage files.
 //
-// ─── SCHEMA STATUS: CONFIRMED ─────────────────────────────────────────────
-// Table + column names below were verified against the live introspection
-// dump (information_schema, 2026-06-10). All alias chains from the first
-// pass are collapsed to real names. Confirmed map:
-//   wire_instructions       status, callback_completed_at, callback_verified_by,
-//                           entered_by, amount_cents (NOT NULL),
-//                           settlement_agent_id (NOT NULL), routing/account_last4
-//   settlement_agents       company_name, agent_type, contact_name, phone,
-//                           nmls_or_license, verified_at, is_active
-//   closing_appointments    scheduled_at, doc_signing_at, cd_delivered_at,
-//                           closing_type, signing_method, disbursement_date
-//   settlement_statements   total_loan/total_charges/cash_to_close/
-//                           total_disbursed (all _cents), statement_date
-//   title_commitments       lender_policy_cents, requirements + exceptions (jsonb)
-//   closing_protection_letters  cpl_number, issued_by, issued_date,
-//                           covered_amount_cents
-//   funding_events          event_type, amount_cents, occurred_at
-//   ofac_screenings         PER-SUBJECT: subject_name/role, result, resolution
-//   cip_verifications       PER-SUBJECT: 4 boolean elements, bsa_flag, status
-//   adverse_action_notices  status, sent_at, reason_codes (jsonb), notice_due_by
-// select('*') retained — costs nothing at this row volume and keeps the page
-// immune to additive migrations. Status-string sets (e.g. 'cleared' vs
-// 'accepted') are still permissive unions because the enum dump wasn't in
-// the paste — tighten when enum members are confirmed.
+// Every record a closer touches is creatable/advanceable from this page:
+//   settlement_agents        ＋ new agent · record callback verification
+//   wire_instructions        ＋ enter wire · verify via verify_wire RPC
+//   closing_appointments     ＋ schedule · mark CD delivered · confirm
+//   settlement_statements    ＋ create draft · finalize (freeze)
+//   title_commitments        ＋ record · per-requirement clear · mark cleared
+//   closing_protection_letters  ＋ record · accept
+//   ofac_screenings          ＋ per-subject screening · resolve hits
+//   cip_verifications        ＋ per-subject verification (4 elements + BSA)
+//   funding_events           via record_funding RPC (server-side gate)
 //
-// Loan header uses the PROVEN select shape from dashboard.html — explicit
-// profiles!<fk> disambiguation (loans has 4 FKs to profiles) and the
-// borrowers!borrower_id join.
+// SCHEMA: confirmed against the live introspection dump (2026-06-10).
+// All column names are real. Status-string TRANSITIONS use best-guess values
+// ('verified','confirmed','final','cleared','accepted') — these columns are
+// plain text in the dump; if any carries a CHECK constraint with different
+// members, the toast surfaces the constraint error verbatim → one-line fix.
+// INSERTS omit status entirely and rely on column defaults, so a CHECK can
+// never break record creation.
 //
-// RPC signatures come from the live 029/030 migrations:
-//   verify_wire(p_wire_id uuid, p_callback_phone_source text)
-//   record_funding(p_loan_id uuid, p_amount_cents bigint)
-//   decline_notice_cleared(p_loan_id uuid)
-// The fund gate is enforced INSIDE record_funding (OFAC + CIP + wire) — the
-// client-side gate here is advisory UX; a stale page can never skip a gate.
+// WRITE-PATH RULES baked in:
+//   · branch_id stamped on every insert (NOT NULL everywhere)
+//   · created_by / entered_by / screened_by / verified_by = current user
+//   · routing/account stored LAST-4 ONLY — full coordinates never touch
+//     this app (they live with the verified directory agent)
+//   · role gate: admin / closer / processor can write; everyone else
+//     gets a read-only desk (RLS is the real enforcement underneath)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const params = new URLSearchParams(location.search);
-const LOAN_ID = params.get('loan_id') || params.get('id'); // null => demo
+const LOAN_ID = params.get('loan_id') || params.get('id');
 
 const $id = (s) => document.getElementById(s);
-function toast(m){const t=$id('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2800);}
+function toast(m, isErr){const t=$id('toast');t.textContent=m;t.classList.toggle('err',!!isErr);t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),3400);}
 function sb(){ try{ return (typeof getSupabase==='function') ? getSupabase() : null; }catch(e){ return null; } }
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function pick(row, ...keys){ if(!row) return null; for(const k of keys){ if(row[k] !== undefined && row[k] !== null) return row[k]; } return null; }
 function money(cents){ if(cents==null) return '—'; return '$' + (Number(cents)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function dollarsToCents(v){ const n = parseFloat(String(v||'').replace(/[$,\s]/g,'')); return isNaN(n) ? null : Math.round(n*100); }
 function dateStr(v){ if(!v) return '—'; const d=new Date(v); return isNaN(d) ? String(v) : d.toLocaleString('en-US',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function dateOnly(v){ if(!v) return '—'; const d=new Date(v); return isNaN(d) ? String(v) : d.toLocaleDateString(); }
 function rows(pairs){ return pairs.map(([k,v,color]) => `<div class="row"><span class="k">${esc(k)}</span><span class="v"${color?` style="color:${color}"`:''}>${esc(v)}</span></div>`).join(''); }
 function setTag(id, cls, text){ const el=$id(id); el.className='tag '+cls; el.textContent=text; }
 function setStep(step, cls){ const el=document.querySelector(`.rail .step[data-step="${step}"]`); if(!el) return; el.classList.remove('done','warn','block'); if(cls) el.classList.add(cls); }
 function setCheck(stateId, noteId, cls, text, note){ const s=$id(stateId); s.className='st '+(cls||''); s.textContent=text; $id(noteId).textContent=note; }
+function newest(arr, ...tsKeys){
+  if(!arr || !arr.length) return null;
+  const ts = (r) => { for(const k of [...tsKeys,'created_at']){ if(r[k]) return new Date(r[k]).getTime(); } return 0; };
+  return [...arr].sort((a,b)=>ts(b)-ts(a))[0];
+}
 
-// ─── Backend hooks (window.OF_*) — thin wrappers over the 029/030 RPCs ────
-window.OF_verifyWire = async (wireId, phoneSource) => {
-  const c = sb(); if(!c) return {ok:true, demo:true};
-  const {data, error} = await c.rpc('verify_wire', {p_wire_id:wireId, p_callback_phone_source:phoneSource});
-  if(error) return {ok:false, error:error.message};
-  return data ?? {ok:true};
-};
-window.OF_recordFunding = async (loanId, amountCents) => {
-  const c = sb(); if(!c) return {ok:true, demo:true};
-  const {data, error} = await c.rpc('record_funding', {p_loan_id:loanId, p_amount_cents:amountCents});
-  if(error) return {ok:false, error:error.message};
-  return data ?? {ok:true};
-};
-window.OF_declineCleared = async (loanId) => {
-  const c = sb(); if(!c) return true;
-  const {data, error} = await c.rpc('decline_notice_cleared', {p_loan_id:loanId});
-  if(error){ console.warn('decline_notice_cleared:', error.message); return null; }
-  return data;
-};
-
-// ─── Page state ───────────────────────────────────────────────────────────
-const live = !!sb() && !!LOAN_ID;
+// ─── Page state ────────────────────────────────────────────────────────────
+let me = null;            // { id, branch_id, role, full_name }
+let canWrite = false;     // admin / closer / processor
 let loan = null;
-let wire = null;            // latest wire_instructions row
-let stmt = null;            // settlement statement row (final preferred)
+let wire = null;
+let title = null, cpl = null, appt = null, stmt = null;
+let agents = [];          // branch settlement_agents directory
+let currentAgent = null;  // the agent linked to this file
+let borrowerNames = [];   // for OFAC/CIP subject prefill
 let netDisburseCents = null;
-let gates = { wire:false, ofac:false, cip:false, aan:true };  // aan true unless decline
+let gates = { wire:false, ofac:false, cip:false, aan:true };
 
-$id('connPill').textContent = live ? '● live' : '● demo mode';
-$id('connPill').style.color = live ? 'var(--green)' : 'var(--mut)';
-
-// Tolerant query helper: first table name in `names` that returns without
-// error wins. select('*') means column guesses can't 400 us — only table
-// names can, and those fall through to the next candidate.
-async function loadAny(names, loanId){
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT — auth, then route to picker or desk
+// ═══════════════════════════════════════════════════════════════════════════
+async function boot(){
   const c = sb();
-  for(const name of names){
-    const {data, error} = await c.from(name).select('*').eq('loan_id', loanId);
-    if(!error) return {table:name, rows:data || []};
-    console.warn(`[closing] ${name}:`, error.message);
+  if(!c){ return showState('Config missing — /js/config.js didn\'t load.'); }
+
+  let session = null;
+  try{ session = (typeof ofGetSession === 'function') ? await ofGetSession() : null; }catch(e){ console.warn(e); }
+  if(!session){ return showState('Sign in to use the closing desk.', '/login.html', 'Sign in →'); }
+
+  const { data: prof, error: pErr } = await c.from('profiles')
+    .select('id, branch_id, role, full_name')
+    .eq('id', session.user.id)
+    .maybeSingle();
+  if(pErr || !prof || !prof.branch_id){
+    return showState('Your account isn\'t provisioned to a branch yet.', '/home.html', 'Back to home');
   }
-  return {table:null, rows:[]};
+  me = prof;
+  canWrite = ['admin','closer','processor'].includes(me.role);
+  $id('connPill').textContent = '● live · ' + (me.role||'').toUpperCase() + (canWrite ? '' : ' (read-only)');
+  $id('connPill').style.color = 'var(--green)';
+
+  if(!canWrite){
+    document.querySelectorAll('.act, #agentVerifyBtn, #titleClearBtn, #cplAcceptBtn, #schedCdBtn, #schedConfirmBtn, #stmtFinalBtn, #verifyWireBtn, #fundBtn')
+      .forEach(b => { b.disabled = true; b.title = 'Your role (' + me.role + ') is read-only on the closing desk.'; });
+  }
+
+  if(!LOAN_ID){ return showPicker(); }
+  $id('desk').style.display = 'block';
+  await loadDesk();
 }
-// Newest row by whatever timestamp column exists.
-function newest(rowsArr, ...tsKeys){
-  if(!rowsArr.length) return null;
-  return [...rowsArr].sort((a,b)=>{
-    const ta = new Date(pick(a, ...tsKeys, 'created_at', 'updated_at') || 0).getTime();
-    const tb = new Date(pick(b, ...tsKeys, 'created_at', 'updated_at') || 0).getTime();
-    return tb - ta;
-  })[0];
+
+function showState(msg, href, linkText){
+  $id('stateScreen').style.display = 'block';
+  $id('stateScreen').innerHTML = esc(msg) + (href ? `<br><a class="btn" href="${esc(href)}">${esc(linkText||'Go')}</a>` : '');
+  $id('connPill').textContent = '● —';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// LIVE LOAD
+// LOAN PICKER — replaces demo mode. Real branch files at closing stages.
 // ═══════════════════════════════════════════════════════════════════════════
-async function loadLive(){
+async function showPicker(){
+  $id('picker').style.display = 'block';
+  const c = sb();
+  const STAGES = ['conditional_approval','clear_to_close','docs_out','funded'];
+  const LABEL = { conditional_approval:'Conditional Approval', clear_to_close:'Clear-to-Close', docs_out:'Docs Out', funded:'Recently Funded' };
+  const { data, error } = await c.from('loans')
+    .select(`
+      id, loan_number, status, loan_amount_cents, purpose, property_address, updated_at,
+      borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) )
+    `)
+    .eq('branch_id', me.branch_id)
+    .in('status', STAGES)
+    .is('archived_at', null)
+    .order('updated_at', { ascending: false });
+
+  if(error){
+    $id('pickerBody').innerHTML = `<div class="muted">Couldn't load pipeline: ${esc(error.message)}</div>`;
+    return;
+  }
+  if(!data || !data.length){
+    $id('pickerBody').innerHTML = `<div class="muted">No files at closing stages right now. Files appear here once they reach conditional approval.</div>`;
+    return;
+  }
+  const grouped = Object.fromEntries(STAGES.map(s=>[s,[]]));
+  data.forEach(l => grouped[l.status]?.push(l));
+
+  $id('pickerBody').innerHTML = STAGES.filter(s=>grouped[s].length).map(s => `
+    <div class="pickgroup">${esc(LABEL[s])} · ${grouped[s].length}</div>
+    ${grouped[s].map(l => {
+      const bs = (l.borrowers||[]).sort((a,b)=>(a.position||0)-(b.position||0)).map(b=>b.borrower).filter(Boolean);
+      const nm = bs[0] ? `${bs[0].last_name}, ${bs[0].first_name}` : 'Borrower TBD';
+      const addr = l.property_address || {};
+      return `<div class="pickrow" data-id="${esc(l.id)}">
+        <span class="pn">${esc(l.loan_number)}</span>
+        <span class="pb">${esc(nm)}<small>${esc([addr.city, addr.state].filter(Boolean).join(', ') || '—')} · ${esc((l.purpose||'').replace(/_/g,' '))}</small></span>
+        <span class="pa">${money(l.loan_amount_cents)}</span>
+        <span class="ps">${esc(String(l.status).replace(/_/g,' '))}</span>
+      </div>`;
+    }).join('')}
+  `).join('');
+
+  document.querySelectorAll('.pickrow').forEach(r => r.addEventListener('click', () => {
+    location.href = '/closing.html?loan_id=' + encodeURIComponent(r.dataset.id);
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DESK LOAD
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadDesk(){
   const c = sb();
 
-  // ─── Loan header (proven select shape from dashboard.html) ─────────────
-  const {data: l, error: lErr} = await c.from('loans')
+  // ─── Loan header — proven select shape (profiles!<fk> disambiguation) ───
+  const { data: l, error: lErr } = await c.from('loans')
     .select(`
-      id, loan_number, status, loan_amount_cents, purpose, property_address,
-      cd_sent_at,
+      id, loan_number, status, loan_amount_cents, purpose, property_address, cd_sent_at,
       lo:profiles!lo_id ( full_name ),
       borrowers:loan_borrowers ( position, borrower:borrowers!borrower_id ( first_name, last_name ) )
     `)
@@ -360,15 +619,12 @@ async function loadLive(){
     .maybeSingle();
 
   if(lErr || !l){
-    $id('loanName').textContent = 'Loan not found';
-    $id('connPill').textContent = '● error';
-    $id('connPill').style.color = 'var(--red)';
-    toast('Couldn\'t load loan: ' + (lErr?.message || 'not found / no access'));
-    return;
+    return showState('Couldn\'t load loan: ' + (lErr?.message || 'not found / no access'), '/closing.html', 'Back to file picker');
   }
   loan = l;
 
   const bs = (l.borrowers||[]).sort((a,b)=>(a.position||0)-(b.position||0)).map(b=>b.borrower).filter(Boolean);
+  borrowerNames = bs.map(b => `${b.first_name} ${b.last_name}`);
   const primary = bs[0];
   $id('loanName').textContent = primary ? `${primary.last_name}, ${primary.first_name}` : 'Borrower TBD';
   $id('crumbLoan').textContent = l.loan_number || '—';
@@ -380,26 +636,50 @@ async function loadLive(){
   $id('loanCity').textContent = [addr.city, addr.state].filter(Boolean).join(', ') || '—';
   $id('loanLO').textContent = l.lo?.full_name || 'Unassigned';
   $id('loanStatus').textContent = '● ' + String(l.status||'—').replace(/_/g,' ');
-  if(l.status === 'funded'){ $id('loanStatus').style.color = 'var(--green)'; }
+  $id('loanStatus').style.color = l.status === 'funded' ? 'var(--green)' : '';
 
-  // ─── Phase 13.0 sections — all tolerant, all parallel ───────────────────
-  const [wiresR, apptR, stmtR, titleR, cplR, fundR, ofacR, cipR, aanR] = await Promise.all([
-    loadAny(['wire_instructions'], l.id),
-    loadAny(['closing_appointments'], l.id),
-    loadAny(['settlement_statements'], l.id),
-    loadAny(['title_commitments'], l.id),
-    loadAny(['closing_protection_letters'], l.id),
-    loadAny(['funding_events'], l.id),
-    loadAny(['ofac_screenings'], l.id),
-    loadAny(['cip_verifications'], l.id),
-    loadAny(['adverse_action_notices'], l.id),
+  // Subject selects for OFAC / CIP
+  const subjectOpts = borrowerNames.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  $id('of_subject').innerHTML = subjectOpts || '<option value="">— no borrowers on file —</option>';
+  $id('ci_subject').innerHTML = subjectOpts || '<option value="">— no borrowers on file —</option>';
+
+  // ─── Branch agent directory (feeds every agent <select>) ───────────────
+  {
+    const { data: ags, error: agErr } = await c.from('settlement_agents')
+      .select('*').eq('branch_id', me.branch_id).eq('is_active', true)
+      .order('company_name', { ascending: true });
+    if(agErr){ console.warn('[closing] agents:', agErr.message); }
+    agents = ags || [];
+    const opts = '<option value="">— select agent —</option>' +
+      agents.map(a => `<option value="${esc(a.id)}">${esc(a.company_name)}${a.verified_at ? ' ✓' : ' (unverified)'}</option>`).join('');
+    ['wi_agent','ti_agent','cp_agent','sc_agent','st_agent'].forEach(id => { $id(id).innerHTML = opts; });
+  }
+
+  // ─── All loan-scoped records, parallel ──────────────────────────────────
+  const tbl = (name) => c.from(name).select('*').eq('loan_id', l.id).then(r => {
+    if(r.error){ console.warn(`[closing] ${name}:`, r.error.message); return []; }
+    return r.data || [];
+  });
+  const [wires, appts, stmts, titles, cpls, funds, ofacs, cips, aans] = await Promise.all([
+    tbl('wire_instructions'), tbl('closing_appointments'), tbl('settlement_statements'),
+    tbl('title_commitments'), tbl('closing_protection_letters'), tbl('funding_events'),
+    tbl('ofac_screenings'), tbl('cip_verifications'), tbl('adverse_action_notices'),
   ]);
 
-  // ─── Wire ───────────────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] wire_instructions: status, callback_completed_at,
-  // callback_verified_by, entered_by (two-person rule fields), amount_cents
-  // NOT NULL, settlement_agent_id NOT NULL.
-  wire = newest(wiresR.rows, 'created_at');
+  renderWire(wires);
+  renderAgent(appts);
+  renderTitle(titles);
+  renderCpl(cpls);
+  renderSched(appts);
+  renderStmt(stmts);
+  renderCompliance(ofacs, cips, aans);
+  renderFunded(funds);
+  refreshGate();
+}
+
+// ─── Wire ──────────────────────────────────────────────────────────────────
+function renderWire(wires){
+  wire = newest(wires);
   if(wire){
     const verified = String(wire.status||'').toLowerCase() === 'verified' || !!wire.callback_completed_at;
     gates.wire = verified;
@@ -409,75 +689,89 @@ async function loadLive(){
       ['Bank', (wire.bank_name || '—') + (wire.routing_last4 ? ' ····'+wire.routing_last4 : '')],
       ['Account', wire.account_last4 ? '····'+wire.account_last4 : '—'],
       ['Amount', money(wire.amount_cents)],
-      ['Callback', verified ? 'completed ' + dateStr(wire.callback_completed_at) : (wire.callback_required === false ? 'not required' : 'not yet'), verified?'var(--green)':'var(--red)'],
+      ['Callback', verified ? 'completed ' + dateStr(wire.callback_completed_at) : 'not yet', verified?'var(--green)':'var(--red)'],
     ]);
     setTag('wireTag', verified?'ok':'block', verified?'verified':'unverified');
     setStep('wire', verified?'done':'block');
-    $id('wireVerifyBlock').style.display = verified ? 'none' : 'block';
+    $id('wireVerifyBlock').style.display = (verified || !canWrite) ? 'none' : 'block';
+    $id('wireAddBtn').style.display = 'none';
   } else {
-    $id('wireBody').innerHTML = `<div class="muted">No wire instructions on file.</div>`;
+    $id('wireBody').innerHTML = `<div class="muted">No wire instructions on file. Enter them from the title company's verified package — last-4 digits only.</div>`;
     setTag('wireTag','todo','none');
     setStep('wire','block');
+    $id('wireVerifyBlock').style.display = 'none';
+    $id('wireAddBtn').style.display = canWrite ? '' : 'none';
   }
+}
 
-  // ─── Settlement agent ────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] settlement_agents: company_name, agent_type,
-  // contact_name, phone, verified_at (directory-level callback), is_active.
-  // wire_instructions.settlement_agent_id is NOT NULL, so the wire is the
-  // primary link; closing_appointments.settlement_agent_id is the fallback
-  // when no wire has been entered yet.
-  const agentId = wire?.settlement_agent_id || newest(apptR.rows)?.settlement_agent_id;
-  if(agentId){
-    const {data: ag, error: agErr} = await c.from('settlement_agents').select('*').eq('id', agentId).maybeSingle();
-    if(ag && !agErr){
-      const cb = ag.verified_at;
-      $id('agentBody').innerHTML = rows([
-        ['Company', ag.company_name || '—'],
-        ['Type', ag.agent_type || '—'],
-        ['Contact', [ag.contact_name, ag.phone].filter(Boolean).join(' · ') || '—'],
-        ['License / NMLS', ag.nmls_or_license || '—'],
-        ['Callback verified', cb ? dateOnly(cb) : 'not verified', cb?'var(--green)':'var(--amber)'],
-      ]);
-      setTag('agentTag', cb?'ok':'warn', cb?'verified':'pending');
-      setStep('agent', cb?'done':'warn');
-    } else {
-      $id('agentBody').innerHTML = `<div class="muted">Agent record unavailable.</div>`;
-      setTag('agentTag','warn','check'); setStep('agent','warn');
-    }
+// ─── Settlement agent ──────────────────────────────────────────────────────
+function renderAgent(appts){
+  const agentId = wire?.settlement_agent_id || newest(appts)?.settlement_agent_id
+    || title?.settlement_agent_id || cpl?.settlement_agent_id;
+  currentAgent = agents.find(a => a.id === agentId) || null;
+  if(currentAgent){
+    const cb = currentAgent.verified_at;
+    $id('agentBody').innerHTML = rows([
+      ['Company', currentAgent.company_name || '—'],
+      ['Type', currentAgent.agent_type || '—'],
+      ['Contact', [currentAgent.contact_name, currentAgent.phone].filter(Boolean).join(' · ') || '—'],
+      ['License / NMLS', currentAgent.nmls_or_license || '—'],
+      ['Callback verified', cb ? dateOnly(cb) : 'not verified', cb?'var(--green)':'var(--amber)'],
+    ]);
+    setTag('agentTag', cb?'ok':'warn', cb?'verified':'pending');
+    setStep('agent', cb?'done':'warn');
+    $id('agentVerifyBtn').style.display = (!cb && canWrite) ? '' : 'none';
   } else {
-    $id('agentBody').innerHTML = `<div class="muted">No settlement agent linked to this file yet.</div>`;
-    setTag('agentTag','todo','none'); setStep('agent','warn');
+    $id('agentBody').innerHTML = `<div class="muted">No settlement agent linked yet — the link happens when you enter the wire or schedule the closing. ${agents.length} agent${agents.length===1?'':'s'} in the branch directory.</div>`;
+    setTag('agentTag','todo','none');
+    setStep('agent','warn');
+    $id('agentVerifyBtn').style.display = 'none';
   }
+}
 
-  // ─── Title commitment ────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] title_commitments: lender_policy_cents,
-  // requirements (jsonb, NOT NULL) and exceptions (jsonb, NOT NULL) — the
-  // Schedule B-I / B-II arrays the demo card faked are real now.
-  const title = newest(titleR.rows, 'received_at', 'effective_date');
+// ─── Title commitment ──────────────────────────────────────────────────────
+function renderTitle(titles){
+  title = newest(titles, 'received_at');
   if(title){
     const cleared = ['cleared','accepted','clear'].includes(String(title.status||'').toLowerCase());
     const reqs = Array.isArray(title.requirements) ? title.requirements : [];
     const excs = Array.isArray(title.exceptions) ? title.exceptions : [];
-    const reqsCleared = reqs.filter(r => r && (r.cleared === true || String(r.status||'').toLowerCase()==='cleared')).length;
+    const done = reqs.filter(r => r && (r.cleared === true || String(r.status||'').toLowerCase()==='cleared')).length;
     $id('titleBody').innerHTML = rows([
       ['Commitment #', title.commitment_number || '—'],
       ['Effective', title.effective_date ? `${title.effective_date} → ${title.expiration_date || '—'}` : '—'],
       ['Lender policy', title.lender_policy_cents!=null ? money(title.lender_policy_cents) : '—'],
-      ['Schedule B-I', reqs.length ? `${reqsCleared} / ${reqs.length} cleared` : '—', reqs.length && reqsCleared===reqs.length ? 'var(--green)' : undefined],
+      ['Schedule B-I', reqs.length ? `${done} / ${reqs.length} cleared` : 'none', reqs.length && done===reqs.length ? 'var(--green)' : undefined],
       ['Schedule B-II', excs.length ? `${excs.length} exception${excs.length===1?'':'s'}` : 'none'],
       ['Status', title.status || '—', cleared?'var(--green)':undefined],
     ]);
+    // Per-requirement clear toggles
+    $id('titleReqs').innerHTML = reqs.map((r, i) => {
+      const isClr = r && (r.cleared === true || String(r.status||'').toLowerCase()==='cleared');
+      const text = typeof r === 'string' ? r : (r?.text || r?.description || 'Requirement');
+      return `<div class="miniitem ${isClr?'cleared':''}">
+        <span class="t">${esc(text)}</span>
+        ${canWrite && !cleared ? `<button class="btn ghost sm reqToggle" data-i="${i}">${isClr?'↺ reopen':'✓ clear'}</button>` : ''}
+      </div>`;
+    }).join('');
+    document.querySelectorAll('.reqToggle').forEach(b => b.addEventListener('click', () => toggleRequirement(parseInt(b.dataset.i,10))));
+
     setTag('titleTag', cleared?'ok':'warn', title.status||'received');
     setStep('title', cleared?'done':'warn');
+    $id('titleAddBtn').style.display = 'none';
+    $id('titleClearBtn').style.display = (!cleared && canWrite && (reqs.length===0 || done===reqs.length)) ? '' : 'none';
   } else {
-    $id('titleBody').innerHTML = `<div class="muted">No title commitment on file.</div>`;
+    $id('titleBody').innerHTML = `<div class="muted">No title commitment recorded.</div>`;
+    $id('titleReqs').innerHTML = '';
     setTag('titleTag','todo','none'); setStep('title','warn');
+    $id('titleAddBtn').style.display = canWrite ? '' : 'none';
+    $id('titleClearBtn').style.display = 'none';
   }
+}
 
-  // ─── CPL ─────────────────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] closing_protection_letters: cpl_number, issued_by,
-  // issued_date, expiration_date, covered_amount_cents, status.
-  const cpl = newest(cplR.rows, 'issued_date');
+// ─── CPL ───────────────────────────────────────────────────────────────────
+function renderCpl(cpls){
+  cpl = newest(cpls, 'issued_date');
   if(cpl){
     const accepted = ['accepted','verified','cleared'].includes(String(cpl.status||'').toLowerCase());
     $id('cplBody').innerHTML = rows([
@@ -489,17 +783,19 @@ async function loadLive(){
     ]);
     setTag('cplTag', accepted?'ok':'warn', cpl.status||'received');
     setStep('cpl', accepted?'done':'warn');
+    $id('cplAddBtn').style.display = 'none';
+    $id('cplAcceptBtn').style.display = (!accepted && canWrite) ? '' : 'none';
   } else {
-    $id('cplBody').innerHTML = `<div class="muted">No CPL on file.</div>`;
+    $id('cplBody').innerHTML = `<div class="muted">No CPL recorded.</div>`;
     setTag('cplTag','todo','none'); setStep('cpl','warn');
+    $id('cplAddBtn').style.display = canWrite ? '' : 'none';
+    $id('cplAcceptBtn').style.display = 'none';
   }
+}
 
-  // ─── Closing schedule ────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] closing_appointments: scheduled_at, doc_signing_at,
-  // cd_delivered_at, closing_type, signing_method, disbursement_date, status.
-  // CD delivery prefers the appointment's cd_delivered_at; loans.cd_sent_at
-  // is the fallback when the appointment hasn't recorded it.
-  const appt = newest(apptR.rows, 'scheduled_at');
+// ─── Closing schedule ──────────────────────────────────────────────────────
+function renderSched(appts){
+  appt = newest(appts, 'scheduled_at');
   if(appt){
     const cdAt = appt.cd_delivered_at || loan.cd_sent_at;
     const signing = appt.doc_signing_at || appt.scheduled_at;
@@ -511,19 +807,24 @@ async function loadLive(){
       ['Disbursement', appt.disbursement_date || '—'],
       ['Status', appt.status || '—'],
     ]);
-    const confirmed = ['confirmed','scheduled'].includes(String(appt.status||'').toLowerCase());
+    const confirmed = ['confirmed'].includes(String(appt.status||'').toLowerCase());
     setTag('schedTag', confirmed?'ok':'warn', appt.status||'set');
     setStep('sched', confirmed?'done':'warn');
+    $id('schedAddBtn').style.display = 'none';
+    $id('schedCdBtn').style.display = (!appt.cd_delivered_at && canWrite) ? '' : 'none';
+    $id('schedConfirmBtn').style.display = (!confirmed && canWrite) ? '' : 'none';
   } else {
-    $id('schedBody').innerHTML = `<div class="muted">No closing appointment scheduled yet.</div>`;
+    $id('schedBody').innerHTML = `<div class="muted">No closing appointment yet.</div>`;
     setTag('schedTag','todo','none'); setStep('sched','warn');
+    $id('schedAddBtn').style.display = canWrite ? '' : 'none';
+    $id('schedCdBtn').style.display = 'none';
+    $id('schedConfirmBtn').style.display = 'none';
   }
+}
 
-  // ─── Settlement statement ────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] settlement_statements: total_loan_cents,
-  // total_charges_cents, cash_to_close_cents, total_disbursed_cents, status,
-  // statement_date. Final row preferred (frozen snapshot).
-  stmt = stmtR.rows.find(s => String(s.status||'').toLowerCase()==='final') || newest(stmtR.rows, 'statement_date');
+// ─── Settlement statement ──────────────────────────────────────────────────
+function renderStmt(stmts){
+  stmt = stmts.find(s => String(s.status||'').toLowerCase()==='final') || newest(stmts, 'statement_date');
   if(stmt){
     const isFinal = String(stmt.status||'').toLowerCase()==='final';
     if(stmt.total_disbursed_cents != null) netDisburseCents = stmt.total_disbursed_cents;
@@ -537,64 +838,84 @@ async function loadLive(){
     ]);
     setTag('stmtTag', isFinal?'ok':'warn', stmt.status||'draft');
     setStep('stmt', isFinal?'done':'warn');
+    $id('stmtAddBtn').style.display = 'none';
+    $id('stmtFinalBtn').style.display = (!isFinal && canWrite) ? '' : 'none';
   } else {
     $id('stmtBody').innerHTML = `<div class="muted">No settlement statement yet.</div>`;
     setTag('stmtTag','todo','none'); setStep('stmt','warn');
+    $id('stmtAddBtn').style.display = canWrite ? '' : 'none';
+    $id('stmtFinalBtn').style.display = 'none';
   }
+}
 
-  // ─── Compliance strip ────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED + UPGRADED] ofac_screenings and cip_verifications are
-  // PER-SUBJECT (subject_name / subject_role rows for borrower AND
-  // co-borrower). The gate is ALL-subjects, not newest-row: one unresolved
-  // OFAC hit on a co-borrower must block funding even if the primary
-  // borrower's newer screening is clear. A potential match with a recorded
-  // resolution (false_positive / cleared) counts as clear.
-  if(ofacR.rows.length){
-    const subjClear = (r) =>
-      ['clear','no_match','pass'].includes(String(r.result||'').toLowerCase()) ||
-      ['cleared','false_positive','resolved'].includes(String(r.resolution||'').toLowerCase());
-    const allClear = ofacR.rows.every(subjClear);
+// ─── Compliance (per-subject, ALL-subjects gate) ───────────────────────────
+function renderCompliance(ofacs, cips, aans){
+  // OFAC — every screened subject must be clear or carry a resolution.
+  const subjClear = (r) =>
+    ['clear','no_match','pass'].includes(String(r.result||'').toLowerCase()) ||
+    ['cleared','false_positive','resolved'].includes(String(r.resolution||'').toLowerCase());
+  if(ofacs.length){
+    const allClear = ofacs.every(subjClear);
     gates.ofac = allClear;
-    const latest = newest(ofacR.rows, 'screened_at');
-    const blocked = ofacR.rows.filter(r => !subjClear(r)).map(r => r.subject_name);
+    const latest = newest(ofacs, 'screened_at');
+    const blocked = ofacs.filter(r => !subjClear(r)).map(r => r.subject_name);
     setCheck('ofacState','ofacNote', allClear?'ok':'block', allClear?'CLEAR':'HIT',
       allClear
-        ? `${ofacR.rows.length} subject${ofacR.rows.length===1?'':'s'} screened · list ${latest?.list_version || dateOnly(latest?.screened_at)}`
+        ? `${ofacs.length} subject${ofacs.length===1?'':'s'} screened · list ${latest?.list_version || dateOnly(latest?.screened_at)}`
         : 'unresolved: ' + blocked.join(', '));
   } else {
+    gates.ofac = false;
     setCheck('ofacState','ofacNote','block','MISSING','no screening on file — record_funding will refuse');
   }
 
-  if(cipR.rows.length){
+  // CIP — every verified subject must be verified; any BSA flag blocks.
+  if(cips.length){
     const subjOk = (r) => ['verified','pass','complete'].includes(String(r.status||'').toLowerCase());
-    const allOk = cipR.rows.every(subjOk);
-    gates.cip = allOk;
-    const latest = newest(cipR.rows, 'verified_at');
+    const allOk = cips.every(subjOk);
+    const bsa = cips.some(r => r.bsa_flag);
+    gates.cip = allOk && !bsa;
+    const latest = newest(cips, 'verified_at');
     const elems = latest ? [latest.name_verified, latest.dob_verified, latest.address_verified, latest.id_number_verified].filter(Boolean).length : 0;
-    const bsa = cipR.rows.some(r => r.bsa_flag);
-    setCheck('cipState','cipNote', allOk && !bsa ?'ok':'block', allOk ? (bsa?'BSA FLAG':'VERIFIED') : 'INCOMPLETE',
-      `${elems}/4 elements · ${latest?.verification_method || '—'} · ${cipR.rows.length} subject${cipR.rows.length===1?'':'s'}${bsa?' · BSA flagged':''}`);
-    if(bsa) gates.cip = false;
+    setCheck('cipState','cipNote', gates.cip?'ok':'block', allOk ? (bsa?'BSA FLAG':'VERIFIED') : 'INCOMPLETE',
+      `${elems}/4 elements · ${latest?.verification_method || '—'} · ${cips.length} subject${cips.length===1?'':'s'}${bsa?' · BSA flagged':''}`);
   } else {
+    gates.cip = false;
     setCheck('cipState','cipNote','block','MISSING','no CIP verification — record_funding will refuse');
   }
 
-  // TRID — CD timing computed client-side from cd_sent_at (3 business days
-  // simplified to 3 calendar days here; the disclosure engine owns the real
-  // clock). Display-only; not a fund gate in this strip.
-  if(loan.cd_sent_at){
-    const clears = new Date(new Date(loan.cd_sent_at).getTime() + 3*86400000);
+  // Subject roll-up list with resolve buttons for OFAC hits
+  const items = [];
+  for(const o of ofacs){
+    const ok = subjClear(o);
+    items.push(`<div class="miniitem ${ok?'cleared':''}">
+      <span class="t">OFAC · ${esc(o.subject_name)} — ${esc(o.result)}${o.resolution?` (${esc(o.resolution)})`:''}</span>
+      <span class="who">${dateOnly(o.screened_at)}</span>
+      ${!ok && canWrite ? `<button class="btn ghost sm ofacResolve" data-id="${esc(o.id)}">resolve false-positive</button>` : ''}
+    </div>`);
+  }
+  for(const ci of cips){
+    items.push(`<div class="miniitem cleared">
+      <span class="t">CIP · ${esc(ci.subject_name)} — ${esc(ci.status)}${ci.bsa_flag?' · <b style="color:var(--amber)">BSA</b>':''}</span>
+      <span class="who">${dateOnly(ci.verified_at || ci.created_at)}</span>
+    </div>`);
+  }
+  $id('subjectList').innerHTML = items.join('');
+  document.querySelectorAll('.ofacResolve').forEach(b => b.addEventListener('click', () => resolveOfac(b.dataset.id)));
+
+  // TRID — display-only (the disclosure engine owns the real clock).
+  const cdAt = appt?.cd_delivered_at || loan.cd_sent_at;
+  if(cdAt){
+    const clears = new Date(new Date(cdAt).getTime() + 3*86400000);
     const passed = Date.now() >= clears.getTime();
     setCheck('tridState','tridNote', passed?'ok':'warn', passed?'PASS':'WAITING',
-      'CD ' + dateOnly(loan.cd_sent_at) + ' · clears ' + dateOnly(clears));
+      'CD ' + dateOnly(cdAt) + ' · clears ' + dateOnly(clears));
   } else {
-    setCheck('tridState','tridNote','warn','NO CD','cd_sent_at not set on loan');
+    setCheck('tridState','tridNote','warn','NO CD','CD delivery not recorded');
   }
 
+  // Adverse action
   if(loan.status === 'denied'){
-    // [SCHEMA-CONFIRMED] adverse_action_notices: status, sent_at,
-    // decision_date, notice_due_by, reason_codes (jsonb).
-    const aan = newest(aanR.rows, 'created_at');
+    const aan = newest(aans);
     const st = String(aan?.status||'').toLowerCase();
     const ready = ['ready','sent'].includes(st);
     gates.aan = ready;
@@ -607,36 +928,26 @@ async function loadLive(){
     gates.aan = true;
     setCheck('aanState','aanNote','ok','N/A','approval — no Reg B notice required');
   }
+}
 
-  // ─── Funded? ────────────────────────────────────────────────────────────
-  // [SCHEMA-CONFIRMED] funding_events has event_type — only fund-family
-  // events flip the rail (the table can also hold disbursement/return
-  // events without meaning "this loan is done").
-  const funded = loan.status === 'funded' ||
-    fundR.rows.some(e => /fund/i.test(String(e.event_type||'')));
+// ─── Funded ────────────────────────────────────────────────────────────────
+function renderFunded(funds){
+  const funded = loan.status === 'funded' || funds.some(e => /fund/i.test(String(e.event_type||'')));
   if(funded){
     setStep('fund','done');
     $id('fundBtn').textContent = '✓ FUNDED';
     $id('fundBtn').disabled = true;
     $id('loanStatus').textContent = '● funded';
     $id('loanStatus').style.color = 'var(--green)';
+  } else {
+    $id('fundBtn').textContent = '▸ RECORD FUNDING';
   }
-
-  refreshGate();
 }
 
-// ─── Fund-gate (advisory — record_funding enforces server-side) ───────────
+// ─── Fund gate (advisory — record_funding is the law) ──────────────────────
 function refreshGate(){
   const fundBtn = $id('fundBtn');
-  if(loan && loan.status === 'funded'){ fundBtn.disabled = true; return; }
-  if(!live){
-    // demo: original behavior — all rail steps green unlocks the button
-    const steps=[...document.querySelectorAll('.rail .step')];
-    const allGreen = steps.every(s=>s.dataset.step==='fund' || s.classList.contains('done'));
-    fundBtn.disabled = !allGreen;
-    fundBtn.title = allGreen ? 'all gates green' : 'gates outstanding';
-    return;
-  }
+  if(!canWrite || loan?.status === 'funded'){ fundBtn.disabled = true; return; }
   const stageOk = ['clear_to_close','docs_out'].includes(loan?.status);
   const ready = stageOk && gates.wire && gates.ofac && gates.cip && gates.aan;
   fundBtn.disabled = !ready;
@@ -650,113 +961,267 @@ function refreshGate(){
     ].filter(Boolean).join(' · ');
 }
 
-// ─── Wire verification flow ────────────────────────────────────────────────
-$id('verifyWireBtn')?.addEventListener('click', async ()=>{
-  const src = $id('cbSource').value;
-  if(src === 'from_email'){ toast('⚠ refused: callback must use an independently sourced number'); return; }
-  if(live && !wire){ toast('No wire on file to verify.'); return; }
-  const btn = $id('verifyWireBtn');
-  btn.disabled = true; btn.textContent = 'verifying…';
-  const r = await window.OF_verifyWire(live ? wire.id : 'demo-wire-id', src);
-  btn.disabled = false; btn.textContent = '✓ complete callback & verify';
-  if(r && r.ok === false){
-    // Two-person rule rejections come back here (verifier === enterer, etc.)
-    toast('verify refused: ' + (r.error || 'check console'));
-    return;
+// ═══════════════════════════════════════════════════════════════════════════
+// WRITE ACTIONS
+// Inserts OMIT status (column defaults own initial state); transitions set
+// status explicitly. Any CHECK-constraint rejection lands verbatim in the
+// toast → exact failing value visible → one-line fix.
+// ═══════════════════════════════════════════════════════════════════════════
+async function doInsert(table, payload, okMsg){
+  const { error } = await sb().from(table).insert(payload);
+  if(error){ toast(`${table}: ${error.message}`, true); console.error(table, error); return false; }
+  toast(okMsg);
+  await loadDesk();
+  return true;
+}
+async function doUpdate(table, id, patch, okMsg){
+  const { error } = await sb().from(table).update(patch).eq('id', id);
+  if(error){ toast(`${table}: ${error.message}`, true); console.error(table, error); return false; }
+  toast(okMsg);
+  await loadDesk();
+  return true;
+}
+function reqd(map){
+  for(const [val, label] of map){
+    if(val === null || val === undefined || val === ''){ toast(`Missing: ${label}`, true); return false; }
   }
-  toast('✓ wire callback verified (two-person rule satisfied)');
-  if(live){ await loadLive(); }          // reload truth from the DB
-  else {
-    setStep('wire','done'); setTag('wireTag','ok','verified');
-    document.querySelectorAll('.rail .step.warn').forEach(s=>{s.classList.remove('warn');s.classList.add('done');});
-    setTag('cplTag','ok','accepted');
-    refreshGate();
-  }
+  return true;
+}
+
+// Form toggles
+document.querySelectorAll('.act').forEach(b => b.addEventListener('click', () => {
+  const f = $id(b.dataset.form);
+  if(f) f.classList.toggle('open');
+}));
+
+// ── Agent: create + verify ──
+$id('agentSaveBtn').addEventListener('click', async () => {
+  const company = $id('ag_company').value.trim();
+  if(!reqd([[company,'company name']])) return;
+  await doInsert('settlement_agents', {
+    branch_id: me.branch_id,
+    company_name: company,
+    agent_type: $id('ag_type').value,
+    contact_name: $id('ag_contact').value.trim() || null,
+    phone: $id('ag_phone').value.trim() || null,
+    email: $id('ag_email').value.trim() || null,
+    nmls_or_license: $id('ag_license').value.trim() || null,
+    is_active: true,
+    created_by: me.id,
+  }, '✓ agent saved to branch directory');
+});
+$id('agentVerifyBtn').addEventListener('click', async () => {
+  if(!currentAgent) return;
+  if(!confirm(`Confirm you completed an independent callback to ${currentAgent.company_name} at ${currentAgent.phone || 'their directory number'}?`)) return;
+  await doUpdate('settlement_agents', currentAgent.id,
+    { verified_at: new Date().toISOString(), verified_by: me.id },
+    '✓ agent callback verification recorded');
 });
 
-// ─── Funding ───────────────────────────────────────────────────────────────
-$id('fundBtn').addEventListener('click', async ()=>{
-  const num = live ? (loan?.loan_number || 'this loan') : 'OF-1043';
-  const amt = live ? (netDisburseCents ?? loan?.loan_amount_cents) : 24891000;
-  if(amt == null){ toast('No disbursement amount available — finalize the settlement statement first.'); return; }
-  if(!confirm(`Record funding for ${num} (${money(amt)} net)? This flips the loan to FUNDED.`)) return;
+// ── Wire: enter ──
+$id('wireSaveBtn').addEventListener('click', async () => {
+  const agentId = $id('wi_agent').value;
+  const benef = $id('wi_benef').value.trim();
+  const bank = $id('wi_bank').value.trim();
+  const amt = dollarsToCents($id('wi_amount').value);
+  if(!reqd([[agentId,'settlement agent'],[benef,'beneficiary'],[bank,'bank'],[amt,'amount']])) return;
+  await doInsert('wire_instructions', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    settlement_agent_id: agentId,
+    beneficiary_name: benef,
+    bank_name: bank,
+    routing_last4: $id('wi_routing').value.trim() || null,
+    account_last4: $id('wi_account').value.trim() || null,
+    amount_cents: amt,
+    callback_required: true,
+    entered_by: me.id,
+  }, '✓ wire saved — needs callback verification by a SECOND person');
+});
+
+// ── Wire: verify (RPC — two-person + independent-callback enforced server-side) ──
+$id('verifyWireBtn').addEventListener('click', async () => {
+  const src = $id('cbSource').value;
+  if(src === 'from_email'){ toast('⚠ refused: callback must use an independently sourced number', true); return; }
+  if(!wire){ toast('No wire on file to verify.', true); return; }
+  const btn = $id('verifyWireBtn');
+  btn.disabled = true; btn.textContent = 'verifying…';
+  const { data, error } = await sb().rpc('verify_wire', { p_wire_id: wire.id, p_callback_phone_source: src });
+  btn.disabled = false; btn.textContent = '✓ complete callback & verify';
+  if(error){ toast('verify refused: ' + error.message, true); return; }
+  if(data && data.ok === false){ toast('verify refused: ' + (data.error || 'see console'), true); return; }
+  toast('✓ wire callback verified (two-person rule satisfied)');
+  await loadDesk();
+});
+
+// ── Title: record / per-requirement clear / mark cleared ──
+$id('titleSaveBtn').addEventListener('click', async () => {
+  const num = $id('ti_number').value.trim();
+  if(!reqd([[num,'commitment #']])) return;
+  const lines = (t) => t.split('\n').map(s=>s.trim()).filter(Boolean);
+  await doInsert('title_commitments', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    settlement_agent_id: $id('ti_agent').value || null,
+    commitment_number: num,
+    effective_date: $id('ti_eff').value || null,
+    expiration_date: $id('ti_exp').value || null,
+    lender_policy_cents: dollarsToCents($id('ti_policy').value),
+    requirements: lines($id('ti_reqs').value).map(t => ({ text: t, cleared: false })),
+    exceptions: lines($id('ti_excs').value).map(t => ({ text: t })),
+    created_by: me.id,
+  }, '✓ title commitment recorded');
+});
+async function toggleRequirement(i){
+  if(!title) return;
+  const reqs = Array.isArray(title.requirements) ? [...title.requirements] : [];
+  if(!reqs[i]) return;
+  const r = typeof reqs[i] === 'string' ? { text: reqs[i] } : { ...reqs[i] };
+  r.cleared = !r.cleared;
+  r.cleared_by = r.cleared ? me.id : null;
+  r.cleared_at = r.cleared ? new Date().toISOString() : null;
+  reqs[i] = r;
+  await doUpdate('title_commitments', title.id, { requirements: reqs },
+    r.cleared ? '✓ requirement cleared' : '↺ requirement reopened');
+}
+$id('titleClearBtn').addEventListener('click', async () => {
+  if(!title) return;
+  await doUpdate('title_commitments', title.id, { status: 'cleared' }, '✓ title commitment cleared');
+});
+
+// ── CPL: record / accept ──
+$id('cplSaveBtn').addEventListener('click', async () => {
+  await doInsert('closing_protection_letters', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    settlement_agent_id: $id('cp_agent').value || null,
+    cpl_number: $id('cp_number').value.trim() || null,
+    issued_by: $id('cp_issuer').value.trim() || null,
+    issued_date: $id('cp_issued').value || null,
+    expiration_date: $id('cp_exp').value || null,
+    covered_amount_cents: dollarsToCents($id('cp_amount').value),
+    addressee: null,
+    created_by: me.id,
+  }, '✓ CPL recorded');
+});
+$id('cplAcceptBtn').addEventListener('click', async () => {
+  if(!cpl) return;
+  await doUpdate('closing_protection_letters', cpl.id, { status: 'accepted' }, '✓ CPL accepted');
+});
+
+// ── Schedule: create / CD delivered / confirm ──
+$id('schedSaveBtn').addEventListener('click', async () => {
+  const signing = $id('sc_signing').value;
+  if(!reqd([[signing,'signing date & time']])) return;
+  await doInsert('closing_appointments', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    settlement_agent_id: $id('sc_agent').value || null,
+    scheduled_at: new Date(signing).toISOString(),
+    doc_signing_at: new Date(signing).toISOString(),
+    closing_type: $id('sc_type').value,
+    signing_method: $id('sc_method').value,
+    location: $id('sc_location').value.trim() || null,
+    disbursement_date: $id('sc_disb').value || null,
+    created_by: me.id,
+  }, '✓ closing scheduled');
+});
+$id('schedCdBtn').addEventListener('click', async () => {
+  if(!appt) return;
+  await doUpdate('closing_appointments', appt.id,
+    { cd_delivered_at: new Date().toISOString() }, '✓ CD delivery recorded — TRID 3-day clock running');
+});
+$id('schedConfirmBtn').addEventListener('click', async () => {
+  if(!appt) return;
+  await doUpdate('closing_appointments', appt.id, { status: 'confirmed' }, '✓ appointment confirmed');
+});
+
+// ── Statement: draft / finalize ──
+$id('stmtSaveBtn').addEventListener('click', async () => {
+  const date = $id('st_date').value || new Date().toISOString().slice(0,10);
+  await doInsert('settlement_statements', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    settlement_agent_id: $id('st_agent').value || null,
+    statement_date: date,
+    total_loan_cents: loan.loan_amount_cents,
+    total_charges_cents: dollarsToCents($id('st_charges').value),
+    cash_to_close_cents: dollarsToCents($id('st_ctc').value),
+    total_disbursed_cents: dollarsToCents($id('st_disb').value),
+    created_by: me.id,
+  }, '✓ draft settlement statement saved');
+});
+$id('stmtFinalBtn').addEventListener('click', async () => {
+  if(!stmt) return;
+  if(!confirm('Finalize the settlement statement? The snapshot freezes — a CoC redisclosure can\'t rewrite settled figures.')) return;
+  await doUpdate('settlement_statements', stmt.id, { status: 'final' }, '✓ statement finalized — snapshot frozen');
+});
+
+// ── OFAC: record screening / resolve hit ──
+$id('ofacSaveBtn').addEventListener('click', async () => {
+  const subject = $id('of_subject').value;
+  if(!reqd([[subject,'subject']])) return;
+  await doInsert('ofac_screenings', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    subject_name: subject,
+    subject_role: $id('of_role').value,
+    result: $id('of_result').value,
+    list_version: $id('of_list').value.trim() || null,
+    matches: [],
+    screened_at: new Date().toISOString(),
+    screened_by: me.id,
+  }, '✓ OFAC screening recorded');
+});
+async function resolveOfac(id){
+  const note = prompt('Resolution basis (e.g. DOB mismatch, different middle name). Recorded on the screening row:');
+  if(note === null) return;
+  await doUpdate('ofac_screenings', id,
+    { resolution: 'false_positive', resolved_by: me.id },
+    '✓ OFAC hit resolved as false positive');
+}
+
+// ── CIP: record verification ──
+$id('cipSaveBtn').addEventListener('click', async () => {
+  const subject = $id('ci_subject').value;
+  if(!reqd([[subject,'subject']])) return;
+  const n=$id('ci_name').checked, d=$id('ci_dob').checked, a=$id('ci_addr').checked, i=$id('ci_idnum').checked;
+  const all = n && d && a && i;
+  if(!all && !confirm('Fewer than 4/4 elements verified — record anyway as incomplete?')) return;
+  await doInsert('cip_verifications', {
+    loan_id: loan.id,
+    branch_id: me.branch_id,
+    subject_name: subject,
+    name_verified: n, dob_verified: d, address_verified: a, id_number_verified: i,
+    id_doc_type: $id('ci_doctype').value,
+    id_doc_last4: $id('ci_last4').value.trim() || null,
+    verification_method: $id('ci_method').value,
+    bsa_flag: $id('ci_bsa').checked,
+    status: all ? 'verified' : 'pending',
+    verified_at: all ? new Date().toISOString() : null,
+    verified_by: all ? me.id : null,
+  }, all ? '✓ CIP verified — 4/4 elements' : 'CIP recorded as incomplete');
+});
+
+// ── Funding (RPC — server-side gate is the law) ──
+$id('fundBtn').addEventListener('click', async () => {
+  const amt = netDisburseCents ?? loan?.loan_amount_cents;
+  if(amt == null){ toast('No disbursement amount — finalize the settlement statement first.', true); return; }
+  if(!confirm(`Record funding for ${loan.loan_number} (${money(amt)} net)? This flips the loan to FUNDED and writes a hash-chained funding event.`)) return;
   const btn = $id('fundBtn');
   btn.disabled = true; btn.textContent = 'funding…';
-  const r = await window.OF_recordFunding(live ? loan.id : LOAN_ID, amt);
-  if(r && r.ok === false){
-    toast('funding blocked: ' + (r.error || 'gate refused — see console'));
+  const { data, error } = await sb().rpc('record_funding', { p_loan_id: loan.id, p_amount_cents: amt });
+  if(error || (data && data.ok === false)){
+    toast('funding blocked: ' + (error?.message || data?.error || 'gate refused'), true);
     btn.disabled = false; btn.textContent = '▸ RECORD FUNDING';
     return;
   }
   toast('✓ loan funded — funding_event written, audit hash-chained');
-  if(live){ await loadLive(); }
-  else {
-    setStep('fund','done');
-    $id('loanStatus').textContent='● funded'; $id('loanStatus').style.color='var(--green)';
-    btn.textContent='✓ FUNDED'; btn.disabled=true;
-  }
+  await loadDesk();
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// DEMO MODE — the OF-1043 Rodriguez seed, same content as the original mock
-// ═══════════════════════════════════════════════════════════════════════════
-function loadDemo(){
-  $id('loanName').textContent = 'Rodriguez, James';
-  $id('crumbLoan').textContent = 'OF-1043';
-  $id('loanNum').textContent = 'OF-1043';
-  $id('loanAmt').textContent = '$310,000';
-  $id('loanPurpose').textContent = 'Purchase';
-  $id('loanCity').textContent = 'Lubbock, TX';
-  $id('loanLO').textContent = 'Avery Sutton';
-  $id('loanStatus').textContent = '● clear to close';
-
-  $id('agentBody').innerHTML = rows([
-    ['Company','Caprock Title & Escrow'],['Type','title_company'],
-    ['Contact','M. Alvarado · 806-555-0142'],['Callback verified','2026-05-22','var(--green)'],
-  ]);
-  setTag('agentTag','ok','verified'); setStep('agent','done');
-
-  $id('titleBody').innerHTML = rows([
-    ['Commitment #','CT-2026-88114'],['Effective','2026-05-10 → 06-09'],
-    ['Lender policy','$1,240.00'],['Schedule B-I','3 / 3 cleared','var(--green)'],
-    ['Schedule B-II','2 exceptions · acceptable'],
-  ]);
-  setTag('titleTag','ok','cleared'); setStep('title','done');
-
-  $id('cplBody').innerHTML = rows([
-    ['Status','received'],['Received','2026-05-21'],['Underwriter','First American'],
-  ]);
-  setTag('cplTag','warn','received'); setStep('cpl','warn');
-
-  $id('wireBody').innerHTML = rows([
-    ['Beneficiary','Caprock Title & Escrow'],['Bank','PlainsCapital ····4471'],
-    ['Account','····0098'],['Amount','$248,910.00'],
-  ]);
-  setTag('wireTag','block','unverified'); setStep('wire','block');
-  $id('wireVerifyBlock').style.display = 'block';
-
-  $id('schedBody').innerHTML = rows([
-    ['CD delivered','2026-05-23 09:14','var(--green)'],['TRID 3-day clears','2026-05-27 ✓','var(--green)'],
-    ['Signing','2026-05-28 14:00'],['Method','in_person · wet'],['Disbursement','2026-05-29'],
-  ]);
-  setTag('schedTag','warn','confirmed'); setStep('sched','warn');
-
-  $id('stmtBody').innerHTML = rows([
-    ['Total loan','$310,000.00'],['Total charges','$11,420.00'],
-    ['Cash to close','$68,510.00','var(--cyan)'],['Net disbursed','$248,910.00'],
-  ]);
-  setTag('stmtTag','warn','balanced'); setStep('stmt','warn');
-
-  setCheck('ofacState','ofacNote','ok','CLEAR','borrower + co-borrower screened · list 2026-05-20');
-  setCheck('cipState','cipNote','ok','VERIFIED','4/4 elements · documentary · no BSA flag');
-  setCheck('tridState','tridNote','ok','PASS','tolerance cured · 3-day clock satisfied');
-  setCheck('aanState','aanNote','ok','N/A','approval — no Reg B notice required');
-
-  refreshGate();
-}
-
-// ─── Boot ──────────────────────────────────────────────────────────────────
-if(live){ loadLive(); } else { loadDemo(); }
+// ═══ BOOT ═══
+document.addEventListener('DOMContentLoaded', boot);
 </script>
 </body>
 </html>
