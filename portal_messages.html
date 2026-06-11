@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>OriginFlow Portal — Messages</title>
+  <title>Messages — OriginFlow Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -18,36 +18,6 @@
   <script src="/js/portal-auth.js"></script>
 
   <style>
-    /* =========================================================================
-       portal_messages.html — Phase 11.5.8 (borrower side)
-       -----------------------------------------------------------------------
-       Borrower-facing chat thread with the loan team (LO/processor/UW/LOA).
-       One channel per loan, kind='loan_borrower', backed by chat_channels
-       and chat_messages with branch-scoped RLS.
-
-       FLOW:
-         1. OF_bootstrap → session + borrower + loan
-         2. ensure_loan_borrower_channel(loan_id) → guarantees a channel exists
-         3. Fetch chat_messages_enriched (preferred) or chat_messages for the
-            channel. Enriched view exposes author name/role for cross-table
-            display without exposing the full users table.
-         4. Compose + send via send_borrower_loan_message(loan_id, body)
-         5. Poll every 5s while visible to pick up team replies.
-
-       NO REALTIME for v1. The cost/complexity of Supabase realtime channels
-       isn't worth it yet — at 5s polling, the borrower sees team replies
-       within seconds of them arriving. Upgrade path when scale demands it.
-
-       MESSAGE STYLES:
-         - Borrower's own messages: right-aligned, cyan bubble
-         - Team messages:           left-aligned, neutral bubble
-         - System messages:         centered, smaller, muted
-
-       MOBILE FIRST: compose box stays at the bottom of the page normal-flow
-       (not position:fixed) so the iOS keyboard doesn't cover it on mobile —
-       focusing the textarea naturally scrolls the page so compose stays
-       visible above the keyboard.
-       ========================================================================= */
     :root {
       --bg: #0b1220;
       --bg-elev-1: #0f1729;
@@ -60,904 +30,374 @@
       --text-faint: #5a6a87;
       --navy: #0b1220;
       --cyan: #22d3ee;
-      --cyan-bubble: #0e7490;
-      --cyan-bubble-text: #ecfeff;
+      --cyan-deep: #0891b2;
       --cyan-glow: rgba(34, 211, 238, 0.15);
       --accent-green: #86efac;
-      --warn: #fbbf24;
       --danger: #f87171;
-      --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
-
       --font-mono: 'Space Mono', ui-monospace, monospace;
       --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
       --font-serif: 'DM Serif Display', Georgia, serif;
     }
-
     *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
+    html, body { margin: 0; padding: 0; height: 100%; }
     body {
       font-family: var(--font-sans);
-      font-size: 15px;
-      line-height: 1.5;
-      color: var(--text);
-      background: var(--bg);
-      background-image: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
-      min-height: 100vh;
+      font-size: 15px; line-height: 1.5;
+      color: var(--text); background: var(--bg);
+      background-image: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34,211,238,0.07), transparent 60%);
       -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
+      display: flex; flex-direction: column;
+      height: 100dvh;
     }
-    a { color: var(--cyan); text-decoration: none; }
-    a:hover { text-decoration: underline; }
 
-    /* ─── PORTAL CHROME ─── */
-    .portal-banner {
-      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
-      border-bottom: 1px solid var(--border);
-      padding: 8px 16px;
-      font-family: var(--font-mono);
-      font-size: 11px; letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--cyan);
-      text-align: center;
-    }
-    .portal-nav {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(11, 18, 32, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px;
-    }
-    .portal-brand {
-      display: flex; align-items: center; gap: 10px;
-      color: var(--text);
-    }
-    .portal-brand:hover { text-decoration: none; }
-    .portal-brand-mark {
-      width: 28px; height: 28px; border-radius: 6px;
-      background: linear-gradient(135deg, var(--cyan), #0891b2);
+    .nav { padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
       display: grid; place-items: center;
-      font-family: var(--font-mono); font-weight: 700; font-size: 14px;
-      color: var(--navy);
-      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--navy);
+      box-shadow: 0 0 0 1px rgba(34,211,238,0.3), 0 0 24px rgba(34,211,238,0.2);
     }
-    .portal-brand-text {
-      font-family: var(--font-mono); font-weight: 700; font-size: 13px;
-      letter-spacing: 0.04em;
-    }
-    .portal-brand-text .subtitle {
-      display: block; font-weight: 400; font-size: 10px;
-      color: var(--text-faint);
-      letter-spacing: 0.1em; text-transform: uppercase;
-      margin-top: 1px;
-    }
-    .portal-user {
-      display: flex; align-items: center; gap: 10px;
-      font-family: var(--font-mono); font-size: 12px;
-      color: var(--text-dim);
-    }
-    .portal-user-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: var(--bg-elev-2);
-      border: 1px solid var(--border-strong);
-      display: grid; place-items: center;
-      font-family: var(--font-sans); font-weight: 600; font-size: 13px;
-      color: var(--cyan);
-    }
+    .brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
+    .brand-subtitle { display: block; font-weight: 400; font-size: 10px; color: var(--text-faint);
+      letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+    .nav-right { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
 
-    /* ─── MAIN ─── */
-    .portal-main {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 16px 16px 24px;
+    .thread-head {
+      max-width: 640px; width: 100%; margin: 0 auto; padding: 0 20px 10px; flex-shrink: 0;
     }
-    @media (min-width: 640px) {
-      .portal-main { padding: 24px 24px 32px; }
-    }
+    .page-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 4px; }
+    .page-title { font-family: var(--font-serif); font-size: 22px; margin: 0; }
+    .page-sub { color: var(--text-dim); font-size: 13px; margin: 4px 0 0; }
 
-    .back-link {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--font-mono); font-size: 11px;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 12px;
-    }
-    .back-link:hover { color: var(--cyan); text-decoration: none; }
-
-    .page-header { margin-bottom: 20px; }
-    .page-eyebrow {
-      font-family: var(--font-mono); font-size: 11px;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--cyan); margin-bottom: 4px;
-    }
-    .page-title {
-      font-family: var(--font-serif);
-      font-size: 28px; line-height: 1.1;
-      color: var(--text); margin: 0 0 4px 0;
-    }
-    @media (min-width: 640px) { .page-title { font-size: 32px; } }
-    .page-subtitle {
-      color: var(--text-dim); font-size: 14px;
-      margin: 0;
-    }
-
-    /* ─── MESSAGE THREAD ─────────────────────────────────────────────
-       Container styled like a card. Internal padding bottom is generous
-       to leave room above the compose box on small screens. Min-height
-       keeps the layout from collapsing when there's <2 messages.
-       ────────────────────────────────────────────────────────────── */
+    /* scrolling thread */
     .thread {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-      min-height: 240px;
-      display: flex; flex-direction: column;
-      gap: 12px;
+      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 6px 0 12px;
     }
+    .thread-inner { max-width: 640px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
 
-    .thread-empty {
-      text-align: center;
-      padding: 28px 16px;
-      color: var(--text-dim);
-      font-size: 14px;
-    }
-    .thread-empty-icon {
-      font-size: 28px;
-      color: var(--text-faint);
-      margin-bottom: 8px;
-    }
-
-    /* ─── DAY DIVIDER ─── */
     .day-divider {
-      display: flex; align-items: center; gap: 12px;
-      font-family: var(--font-mono); font-size: 10px;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--text-faint);
-      margin: 4px 0;
+      text-align: center; font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint);
+      margin: 10px 0 2px;
     }
-    .day-divider::before,
-    .day-divider::after {
-      content: ''; flex: 1; height: 1px;
-      background: var(--border);
+    .msg { max-width: 82%; padding: 10px 14px; border-radius: 16px; font-size: 14.5px; line-height: 1.45; word-wrap: break-word; }
+    .msg .who { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+      text-transform: uppercase; margin-bottom: 3px; opacity: 0.8; }
+    .msg .when { font-family: var(--font-mono); font-size: 9.5px; opacity: 0.55; margin-top: 4px; text-align: right; }
+    .msg.them {
+      align-self: flex-start;
+      background: var(--bg-elev-2); border: 1px solid var(--border);
+      border-bottom-left-radius: 5px;
     }
-
-    /* ─── SYSTEM MESSAGE ─── */
-    .msg-system {
-      text-align: center;
-      color: var(--text-faint);
-      font-size: 12px;
-      padding: 4px 14px;
-      margin: 0 auto;
-      max-width: 80%;
-      font-style: italic;
+    .msg.them .who { color: var(--cyan); }
+    .msg.me {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(34,211,238,0.22), rgba(8,145,178,0.22));
+      border: 1px solid rgba(34,211,238,0.35);
+      border-bottom-right-radius: 5px;
     }
-
-    /* ─── BUBBLES ─── */
-    .msg-row {
-      display: flex; flex-direction: column;
-      gap: 2px;
-      max-width: 100%;
-    }
-    .msg-row.is-self {
-      align-items: flex-end;
-    }
-    .msg-row.is-team {
-      align-items: flex-start;
+    .msg.system {
+      align-self: center; max-width: 92%;
+      background: transparent; border: 1px dashed var(--border);
+      color: var(--text-faint); font-size: 12.5px; text-align: center;
     }
 
-    .msg-meta {
-      display: flex; align-items: baseline; gap: 8px;
-      font-family: var(--font-mono); font-size: 10px;
-      letter-spacing: 0.06em;
-      color: var(--text-faint);
-      padding: 0 4px;
+    .empty {
+      text-align: center; padding: 36px 24px; color: var(--text-dim); font-size: 14px;
+      background: var(--bg-elev-1); border: 1px dashed var(--border); border-radius: 14px;
+      margin: 14px 0;
     }
-    .msg-meta .author {
-      color: var(--text-dim);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: none;
-    }
-    .msg-meta .role {
-      color: var(--text-faint);
-    }
+    .empty .big { font-size: 30px; margin-bottom: 10px; }
 
-    .msg-bubble {
-      display: inline-block;
-      padding: 10px 14px;
-      border-radius: 16px;
-      max-width: min(80%, 520px);
-      line-height: 1.45;
-      font-size: 14.5px;
-      word-wrap: break-word;
-      white-space: pre-wrap;
+    /* composer above tab bar */
+    .composer-wrap {
+      flex-shrink: 0; border-top: 1px solid var(--border);
+      background: rgba(15,23,41,0.96); backdrop-filter: blur(12px);
+      padding: 10px 0 0;
     }
-    .msg-row.is-self .msg-bubble {
-      background: var(--cyan-bubble);
-      color: var(--cyan-bubble-text);
-      border-bottom-right-radius: 4px;
+    .composer {
+      max-width: 640px; margin: 0 auto; padding: 0 14px 10px;
+      display: flex; gap: 8px; align-items: flex-end;
     }
-    .msg-row.is-team .msg-bubble {
-      background: var(--bg-elev-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px;
+    .composer textarea {
+      flex: 1; resize: none; max-height: 110px;
+      background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 14px;
+      color: var(--text); font-family: var(--font-sans); font-size: 15px;
+      padding: 11px 14px; outline: none; line-height: 1.4;
     }
-    .msg-bubble.is-pending {
-      opacity: 0.7;
-    }
-    .msg-edited {
-      font-size: 10px;
-      color: var(--text-faint);
-      margin-left: 6px;
-      font-style: italic;
-    }
-
-    /* Consecutive messages by same author within 2 min hide the meta row */
-    .msg-row.is-grouped > .msg-meta {
-      display: none;
-    }
-
-    /* ─── COMPOSE ─── */
-    .compose {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px 8px 8px 12px;
-      display: flex; align-items: flex-end;
-      gap: 8px;
-      box-shadow: var(--shadow-1);
-    }
-    .compose-input {
-      flex: 1;
-      min-height: 38px;
-      max-height: 180px;
-      padding: 10px 4px;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text);
-      font-family: var(--font-sans);
-      font-size: 15px;
-      line-height: 1.4;
-      resize: none;
-    }
-    .compose-input::placeholder { color: var(--text-faint); }
-
-    .compose-send {
-      width: 40px; height: 40px;
-      border-radius: 8px;
-      background: var(--cyan);
-      color: var(--navy);
-      border: none;
-      cursor: pointer;
+    .composer textarea:focus { border-color: var(--cyan); background: var(--bg-elev-3); }
+    .send-btn {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      border: 1px solid var(--cyan); background: var(--cyan); color: var(--navy);
+      font-size: 18px; font-weight: 700; cursor: pointer;
       display: grid; place-items: center;
-      font-size: 16px;
-      font-weight: 700;
-      transition: background 0.15s ease;
+    }
+    .send-btn:disabled { opacity: 0.45; }
+    .send-btn:active:not(:disabled) { background: var(--accent-green); border-color: var(--accent-green); }
+
+    /* bottom tab bar */
+    .tabbar {
       flex-shrink: 0;
+      background: rgba(15,23,41,0.96); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     }
-    .compose-send:hover:not(:disabled) {
-      background: #67e8f9;
+    .tab {
+      flex: 1; max-width: 140px; text-align: center; text-decoration: none;
+      color: var(--text-faint); font-family: var(--font-mono);
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 6px 0; border-radius: 10px;
     }
-    .compose-send:disabled {
-      background: var(--bg-elev-3);
-      color: var(--text-faint);
-      cursor: not-allowed;
-    }
+    .tab .ico { display: block; font-size: 19px; margin-bottom: 3px; }
+    .tab.active { color: var(--cyan); background: var(--cyan-glow); }
 
-    .compose-hint {
-      font-family: var(--font-mono); font-size: 10px;
-      color: var(--text-faint);
-      text-align: right;
-      padding: 6px 4px 0;
-      letter-spacing: 0.06em;
+    .veil {
+      position: fixed; inset: 0; background: var(--bg); z-index: 100;
+      display: grid; place-items: center; color: var(--text-faint);
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      transition: opacity 0.15s;
     }
-    @media (max-width: 480px) {
-      .compose-hint { display: none; }
-    }
+    .veil.is-hidden { opacity: 0; pointer-events: none; }
 
-    /* ─── TOASTS ─── */
-    .toast-host {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 50;
-      display: flex; flex-direction: column;
-      gap: 8px;
-      width: calc(100% - 32px);
-      max-width: 420px;
-      pointer-events: none;
-    }
     .toast {
-      background: var(--bg-elev-2);
-      border: 1px solid var(--border-strong);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 13px;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.4);
-      pointer-events: auto;
-      animation: toastIn 0.22s ease;
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(140px + env(safe-area-inset-bottom));
+      background: var(--bg-elev-2); border: 1px solid var(--cyan-deep);
+      color: var(--text); font-size: 13px; padding: 11px 16px; border-radius: 10px;
+      opacity: 0; transition: 0.25s; pointer-events: none; z-index: 60; max-width: 88vw;
     }
-    .toast.is-error { border-color: rgba(248, 113, 113, 0.4); }
-    @keyframes toastIn {
-      from { transform: translateY(8px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-
-    /* ─── FOOTER ─── */
-    .portal-footer {
-      padding: 24px 20px 40px;
-      text-align: center;
-      font-family: var(--font-mono); font-size: 10px;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .portal-footer a {
-      color: var(--text-faint); margin: 0 6px; cursor: pointer;
-    }
-    .portal-footer a:hover { color: var(--cyan); }
-
-    /* ─── BOOTSTRAP VEIL ─── */
-    .bootstrap-veil {
-      position: fixed; inset: 0;
-      background: var(--bg);
-      z-index: 100;
-      display: grid; place-items: center;
-      color: var(--text-faint);
-      font-family: var(--font-mono); font-size: 11px;
-      letter-spacing: 0.14em; text-transform: uppercase;
-      transition: opacity 0.18s ease;
-    }
-    .bootstrap-veil.is-hidden {
-      opacity: 0; pointer-events: none;
-    }
+    .toast.show { opacity: 1; }
+    .toast.err { border-color: var(--danger); color: var(--danger); }
   </style>
 </head>
 <body>
 
-<div class="bootstrap-veil" id="bootstrap-veil">Loading conversation…</div>
+<div class="veil" id="veil">Loading messages…</div>
 
-<div class="portal-banner">Your loan — secured borrower portal</div>
-
-<header class="portal-nav">
-  <a class="portal-brand" href="/portal_index.html">
-    <div class="portal-brand-mark">OF</div>
-    <div class="portal-brand-text">
-      OriginFlow
-      <span class="subtitle">Borrower portal</span>
-    </div>
-  </a>
-  <div class="portal-user">
-    <span class="portal-user-name" id="portal-user-name">—</span>
-    <div class="portal-user-avatar" id="portal-user-avatar">—</div>
-  </div>
+<header class="nav">
+  <div class="brand-mark">OF</div>
+  <div class="brand-text">OriginFlow<span class="brand-subtitle">Borrower portal</span></div>
+  <div class="nav-right" id="loan-pill">—</div>
 </header>
 
-<main class="portal-main">
+<div class="thread-head">
+  <div class="page-eyebrow">Messages</div>
+  <h1 class="page-title">Your loan team.</h1>
+  <p class="page-sub" id="team-sub">Questions about your loan land here — no phone tag.</p>
+</div>
 
-  <a class="back-link" href="/portal_index.html">← Back to overview</a>
+<div class="thread" id="thread">
+  <div class="thread-inner" id="thread-inner"></div>
+</div>
 
-  <section class="page-header">
-    <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
-    <h1 class="page-title">Messages</h1>
-    <p class="page-subtitle">Chat with your loan team. Replies usually within a business day.</p>
-  </section>
-
-  <section class="thread" id="thread">
-    <div class="thread-empty" id="thread-empty">
-      <div class="thread-empty-icon">✉</div>
-      <div>No messages yet.</div>
-      <div style="font-size:12px;margin-top:6px;color:var(--text-faint);">
-        Start a conversation below — anything from "what's next?" to a specific question about your documents.
-      </div>
-    </div>
-  </section>
-
-  <div class="compose">
-    <textarea class="compose-input"
-              id="compose-input"
-              placeholder="Type a message…"
-              rows="1"
-              maxlength="4000"></textarea>
-    <button class="compose-send" id="compose-send" type="button" title="Send" aria-label="Send message">↑</button>
+<div class="composer-wrap">
+  <div class="composer">
+    <textarea id="composer-input" rows="1" maxlength="2000" placeholder="Write a message…"></textarea>
+    <button class="send-btn" id="send-btn" disabled>↑</button>
   </div>
-  <div class="compose-hint">Enter to send · Shift+Enter for a new line</div>
+  <nav class="tabbar">
+    <a class="tab" href="/portal_index.html"><span class="ico">⌂</span>Home</a>
+    <a class="tab" href="/portal_docs.html"><span class="ico">⇪</span>Documents</a>
+    <a class="tab active" href="/portal_messages.html"><span class="ico">✉</span>Messages</a>
+  </nav>
+</div>
 
-</main>
-
-<footer class="portal-footer">
-  <a href="#">Privacy</a> ·
-  <a href="#">Terms</a> ·
-  <a href="#">Help</a> ·
-  <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
-</footer>
-
-<div class="toast-host" id="toast-host"></div>
+<div class="toast" id="toast"></div>
 
 <script>
-/* =============================================================================
-   portal_messages.html — boot + render + send + poll
-   ============================================================================= */
+// =============================================================================
+// PORTAL · MESSAGES — borrower ↔ loan-team thread
+// -----------------------------------------------------------------------------
+// Auth: OF_bootstrap() → { session, borrower, loan }, same contract as
+// portal_index.html (which already counts unread messages for this loan, so
+// borrower read access through RLS is established).
+//
+// ⚠ FLAGGED GUESS — the messages table. Best guess: `loan_messages`
+// (the staff side has loan_messages.html). This page is built to survive
+// schema drift in two ways:
+//   · SELECT * — column-name guesses can't 400 the read
+//   · field READS go through alias chains (body/message/content, etc.)
+//   · the SEND payload is the minimal shape; a column error surfaces
+//     verbatim in the toast for the one-paste fix
+// Run portal_schema_dump.sql and paste the output to collapse the guesses.
+// =============================================================================
 
-/* ─── Constants ────────────────────────────────────────────────────────── */
+const MSG_TABLE = 'loan_messages';   // ⚠ CONFIRM against the schema dump
 
-const POLL_INTERVAL_MS = 5000;
-const GROUP_WINDOW_MS  = 120000;   // 2 min — messages by same author within
-                                   // this window collapse to a single header
+const $ = (s) => document.querySelector(s);
+let ctx = null, supa = null, chan = null;
+let msgs = [];
 
-/* ─── State ────────────────────────────────────────────────────────────── */
-
-const state = {
-  borrower:    null,
-  loan:        null,
-  channel:     null,         // chat_channels row
-  authUserId:  null,         // auth.uid() — for self-detection
-  messages:    [],
-  pendingId:   0,            // sequence for optimistic pending messages
-  sending:     false,
-  polling:     true,
-  initialRender: false,
-};
-window.OF_PORTAL_MSG_STATE = state;
-
-/* ─── Helpers ──────────────────────────────────────────────────────────── */
-
-function titleCase(s) {
-  if (!s) return "";
-  return String(s).toLowerCase()
-    .split(/(\s+|-|')/)
-    .map(p => p.length && /^[a-zà-ÿ]/i.test(p)
-      ? p.charAt(0).toUpperCase() + p.slice(1)
-      : p)
-    .join("");
-}
-function initials(first, last) {
-  return ((first || "").charAt(0) + (last || "").charAt(0)).toUpperCase() || "·";
-}
-function escapeHtml(s) {
-  if (s == null) return "";
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-function formatTime(iso) {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-function formatDay(iso) {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const that  = new Date(d); that.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((today - that) / 86400000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7)   return d.toLocaleDateString("en-US", { weekday: "long" });
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+function toast(m, err){ const t=$('#toast'); t.textContent=m; t.classList.toggle('err',!!err);
+  t.classList.add('show'); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove('show'),3400); }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function dropVeil(){ const v=$('#veil'); if(!v) return; v.classList.add('is-hidden'); setTimeout(()=>v.remove(),200); }
+function pick(row, ...keys){ if(!row) return null; for(const k of keys){ if(row[k] !== undefined && row[k] !== null) return row[k]; } return null; }
+function timeStr(iso){ const d=new Date(iso); return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
+function dayStr(iso){
+  const d = new Date(iso); const today = new Date();
+  const y = new Date(); y.setDate(today.getDate()-1);
+  if (d.toDateString() === today.toDateString()) return 'Today';
+  if (d.toDateString() === y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
-/* ─── Toasts ───────────────────────────────────────────────────────────── */
-
-function toast(message, kind) {
-  const host = document.getElementById("toast-host");
-  const el = document.createElement("div");
-  el.className = "toast" + (kind ? " is-" + kind : "");
-  el.textContent = message;
-  host.appendChild(el);
-  setTimeout(() => {
-    el.style.transition = "opacity 0.18s ease, transform 0.18s ease";
-    el.style.opacity = "0";
-    el.style.transform = "translateY(8px)";
-    setTimeout(() => el.remove(), 220);
-  }, 3500);
+// A message is "mine" (the borrower's) if any of the likely authorship
+// markers point at the borrower. Everything else renders as the team.
+function isMine(m){
+  if (pick(m,'borrower_id') === ctx.borrower.id) return true;
+  if (pick(m,'sender_borrower_id') === ctx.borrower.id) return true;
+  const st = String(pick(m,'sender_type','author_type','sender_role') || '').toLowerCase();
+  if (st === 'borrower') return true;
+  if (pick(m,'sender_id','author_id') === ctx.session.user.id) return true;
+  return false;
+}
+function bodyOf(m){ return pick(m,'body','message','content','text') || ''; }
+function senderName(m){
+  if (isMine(m)) return 'You';
+  return pick(m,'sender_name','author_name') || 'Your loan team';
 }
 
-/* ─── Channel + messages ───────────────────────────────────────────────── */
-
-/**
- * Resolve the loan_borrower channel for this borrower's loan. The RPC
- * `ensure_loan_borrower_channel` creates one if missing (idempotent) and
- * returns its id. Then we re-fetch the row from chat_channels because
- * the RPC only returns the id, and we want the slug/label for display.
- */
-async function resolveChannel(supabase, loanId) {
-  const { data, error } = await supabase.rpc("ensure_loan_borrower_channel", {
-    p_loan_id: loanId,
-  });
-  if (error) throw new Error("could not open conversation: " + error.message);
-  if (!data || !data[0]) throw new Error("no channel returned from ensure_loan_borrower_channel");
-  const channelId = data[0].channel_id;
-
-  const { data: chan, error: chanErr } = await supabase
-    .from("chat_channels")
-    .select("*")
-    .eq("id", channelId)
-    .maybeSingle();
-  if (chanErr) throw new Error("channel fetch failed: " + chanErr.message);
-  return chan;
-}
-
-/**
- * Read messages for the channel. We try `chat_messages_enriched` first
- * because it exposes author display info without leaking the users table
- * to borrowers. If the view doesn't exist or isn't readable, we fall back
- * to raw chat_messages and best-effort author display.
- *
- * Pagination: not implemented in v1. We fetch the last 200 messages and
- * trust that's enough headroom. A real conversation between an LO and
- * borrower on a single loan rarely exceeds 50 messages end-to-end.
- */
-async function fetchMessages(supabase, channelId, sinceIso) {
-  // First attempt: enriched view (preferred)
-  try {
-    let q = supabase
-      .from("chat_messages_enriched")
-      .select("*")
-      .eq("channel_id", channelId)
-      .order("created_at", { ascending: true })
-      .limit(200);
-    if (sinceIso) q = q.gt("created_at", sinceIso);
-    const { data, error } = await q;
-    if (!error && data) return { rows: data, source: "enriched" };
-  } catch (e) {
-    // fall through
+async function init(){
+  try { ctx = await window.OF_bootstrap(); }
+  catch (e) {
+    console.error('[portal/messages] bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message)) ? 'not_a_borrower' : 'link_failed';
+    window.location.replace('/portal_signin.html?error=' + code);
+    return;
   }
+  if (!ctx || !ctx.session)  { window.location.replace('/portal_signin.html'); return; }
+  if (!ctx.borrower)         { window.location.replace('/portal_signin.html?error=not_a_borrower'); return; }
+  if (!ctx.loan)             { window.location.replace('/portal_apply.html'); return; }
 
-  // Fallback: raw chat_messages
-  let q = supabase
-    .from("chat_messages")
-    .select("id, channel_id, author_id, body, mentions, is_system, created_at, edited_at")
-    .eq("channel_id", channelId)
-    .order("created_at", { ascending: true })
+  supa = window.OF_supabase();
+  $('#loan-pill').textContent = 'Loan #' + (ctx.loan.loan_number || ctx.loan.loan_no || '—');
+
+  await loadThread();
+  initComposer();
+  initRealtime();
+  dropVeil();
+}
+
+async function loadThread(){
+  const { data, error } = await supa.from(MSG_TABLE)
+    .select('*')
+    .eq('loan_id', ctx.loan.id)
+    .order('created_at', { ascending: true })
     .limit(200);
-  if (sinceIso) q = q.gt("created_at", sinceIso);
-  const { data, error } = await q;
-  if (error) throw new Error("messages fetch failed: " + error.message);
-  return { rows: data || [], source: "raw" };
-}
 
-/* ─── Send ─────────────────────────────────────────────────────────────── */
-
-async function sendMessage(text) {
-  if (!text || !text.trim()) return;
-  if (state.sending) return;
-
-  const supabase = window.OF_supabase();
-  state.sending = true;
-  updateSendButton();
-
-  // Optimistic insert — show the message instantly with is-pending styling.
-  // We give it a synthetic id so it can be replaced when the canonical row
-  // arrives on the next refresh.
-  const tempId = "pending-" + (++state.pendingId);
-  const optimistic = {
-    id:          tempId,
-    channel_id:  state.channel.id,
-    author_id:   state.authUserId,
-    body:        text.trim(),
-    mentions:    [],
-    is_system:   false,
-    created_at:  new Date().toISOString(),
-    edited_at:   null,
-    __pending:   true,
-  };
-  state.messages.push(optimistic);
+  if (error) {
+    console.error('[portal/messages] load:', error);
+    $('#thread-inner').innerHTML =
+      `<div class="empty"><div class="big">⚠</div>Messages couldn't load right now.<br>Your loan team can still be reached by phone or email.</div>`;
+    dropVeil();
+    return;
+  }
+  msgs = data || [];
   renderThread();
-
-  try {
-    const { data, error } = await supabase.rpc("send_borrower_loan_message", {
-      p_loan_id: state.loan.id,
-      p_body:    text.trim(),
-    });
-    if (error) throw new Error(error.message);
-    // RPC returned the new message id. Drop the pending placeholder; the
-    // refresh below will pull in the canonical row.
-    state.messages = state.messages.filter(m => m.id !== tempId);
-    await refreshMessages();
-  } catch (e) {
-    // Restore compose text + show error. Remove the pending bubble.
-    state.messages = state.messages.filter(m => m.id !== tempId);
-    renderThread();
-    document.getElementById("compose-input").value = text;
-    toast("Couldn't send: " + e.message, "error");
-  } finally {
-    state.sending = false;
-    updateSendButton();
-  }
+  markThreadRead();
 }
 
-/* ─── Refresh + polling ────────────────────────────────────────────────── */
-
-async function refreshMessages() {
-  const supabase = window.OF_supabase();
-  // Find the latest server-side created_at so we can incrementally fetch.
-  // Pending optimistic messages don't count — they may not have a real
-  // created_at on the server yet.
-  const serverMessages = state.messages.filter(m => !m.__pending);
-  const lastCreatedAt = serverMessages.length
-    ? serverMessages[serverMessages.length - 1].created_at
-    : null;
-
-  const { rows } = await fetchMessages(supabase, state.channel.id, lastCreatedAt);
-
-  if (rows.length > 0) {
-    // Append new rows, then re-sort defensively in case the server
-    // returned anything out of order.
-    state.messages = state.messages
-      .concat(rows)
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    renderThread();
-    scrollThreadToBottom();
-  }
-}
-
-function startPolling() {
-  setTimeout(async function tick() {
-    if (state.polling && !document.hidden) {
-      try {
-        await refreshMessages();
-      } catch (e) {
-        console.warn("[messages] poll failed:", e.message);
-      }
-    }
-    setTimeout(tick, POLL_INTERVAL_MS);
-  }, POLL_INTERVAL_MS);
-}
-
-/* ─── Render ───────────────────────────────────────────────────────────── */
-
-function renderHeader() {
-  document.getElementById("portal-user-name").textContent =
-    [state.borrower.first_name, state.borrower.last_name].filter(Boolean).join(" ");
-  document.getElementById("portal-user-avatar").textContent =
-    initials(state.borrower.first_name, state.borrower.last_name);
-
-  const loanNo =
-    state.loan.loan_number ||
-    state.loan.loan_no ||
-    (state.loan.id ? String(state.loan.id).slice(0, 8).toUpperCase() : "—");
-  document.getElementById("page-eyebrow").textContent = "Loan " + loanNo;
-}
-
-/**
- * Resolve display info for a message author.
- * - Self: "You"
- * - Team member (enriched view path): use author_first_name/last_name + role
- * - Team member (raw fallback): generic "Your team"
- */
-function authorDisplay(msg) {
-  if (msg.author_id === state.authUserId) {
-    return { isSelf: true, name: "You", role: "" };
-  }
-  // Enriched view exposes some combination of these — be lenient about
-  // which exact column names are present so we don't break if the view
-  // shape evolves.
-  const first =
-    msg.author_first_name || msg.first_name ||
-    (msg.author && msg.author.first_name) || "";
-  const last =
-    msg.author_last_name || msg.last_name ||
-    (msg.author && msg.author.last_name) || "";
-  const role =
-    msg.author_role || msg.role ||
-    (msg.author && msg.author.role) || "";
-  const fullName = [titleCase(first), titleCase(last)].filter(Boolean).join(" ");
-  return {
-    isSelf: false,
-    name:   fullName || "Your team",
-    role:   role ? prettyRole(role) : "",
-  };
-}
-
-function prettyRole(role) {
-  const map = {
-    lo:           "Loan Officer",
-    loa:          "Loan Officer Asst",
-    processor:    "Processor",
-    underwriter:  "Underwriter",
-    admin:        "Admin",
-    closer:       "Closer",
-  };
-  return map[role.toLowerCase()] || titleCase(role);
-}
-
-function renderThread() {
-  const thread = document.getElementById("thread");
-  const empty  = document.getElementById("thread-empty");
-
-  if (state.messages.length === 0) {
-    thread.innerHTML = "";
-    thread.appendChild(empty);
+function renderThread(){
+  const inner = $('#thread-inner');
+  if (msgs.length === 0) {
+    inner.innerHTML = `<div class="empty"><div class="big">👋</div>No messages yet.<br>Say hello — your loan team gets it instantly.</div>`;
     return;
   }
-  empty.remove();
-  thread.innerHTML = "";
-
-  let lastDayKey   = null;
-  let lastAuthorId = null;
-  let lastTime     = 0;
-
-  for (const msg of state.messages) {
-    const t = new Date(msg.created_at).getTime();
-    const dayKey = (() => {
-      const d = new Date(msg.created_at);
-      d.setHours(0, 0, 0, 0);
-      return d.getTime();
-    })();
-
-    // Day separator on day change
-    if (dayKey !== lastDayKey) {
-      const div = document.createElement("div");
-      div.className = "day-divider";
-      div.innerHTML = `<span>${escapeHtml(formatDay(msg.created_at))}</span>`;
-      thread.appendChild(div);
-      lastDayKey   = dayKey;
-      lastAuthorId = null;  // force header on first message of new day
-    }
-
-    if (msg.is_system) {
-      const sys = document.createElement("div");
-      sys.className = "msg-system";
-      sys.textContent = msg.body;
-      thread.appendChild(sys);
-      lastAuthorId = null;
-      lastTime = t;
-      continue;
-    }
-
-    const grouped = (
-      msg.author_id === lastAuthorId &&
-      (t - lastTime) < GROUP_WINDOW_MS
-    );
-    const author = authorDisplay(msg);
-
-    const row = document.createElement("div");
-    row.className = "msg-row"
-      + (author.isSelf ? " is-self" : " is-team")
-      + (grouped ? " is-grouped" : "");
-
-    const editedSuffix = msg.edited_at
-      ? ` <span class="msg-edited">(edited)</span>`
-      : "";
-
-    row.innerHTML = `
-      <div class="msg-meta">
-        <span class="author">${escapeHtml(author.name)}</span>
-        ${author.role ? `<span class="role">${escapeHtml(author.role)}</span>` : ""}
-        <span>${escapeHtml(formatTime(msg.created_at))}</span>
-      </div>
-      <div class="msg-bubble${msg.__pending ? " is-pending" : ""}">${escapeHtml(msg.body)}${editedSuffix}</div>
-    `;
-
-    thread.appendChild(row);
-    lastAuthorId = msg.author_id;
-    lastTime     = t;
-  }
+  let lastDay = '';
+  inner.innerHTML = msgs.map(m => {
+    const created = pick(m,'created_at') || new Date().toISOString();
+    const day = dayStr(created);
+    const divider = day !== lastDay ? `<div class="day-divider">${esc(day)}</div>` : '';
+    lastDay = day;
+    const sys = !!pick(m,'is_system');
+    if (sys) return divider + `<div class="msg system">${esc(bodyOf(m))}</div>`;
+    const mine = isMine(m);
+    return divider + `
+      <div class="msg ${mine ? 'me' : 'them'}">
+        ${!mine ? `<div class="who">${esc(senderName(m))}</div>` : ''}
+        <div>${esc(bodyOf(m))}</div>
+        <div class="when">${esc(timeStr(created))}</div>
+      </div>`;
+  }).join('');
+  scrollToEnd();
 }
 
-function scrollThreadToBottom() {
-  // Page-level scroll, not container scroll. Scroll to the compose box.
-  const compose = document.querySelector(".compose");
-  if (compose) compose.scrollIntoView({ behavior: state.initialRender ? "smooth" : "auto", block: "end" });
-  state.initialRender = true;
-}
+function scrollToEnd(){ const t=$('#thread'); requestAnimationFrame(()=>{ t.scrollTop = t.scrollHeight; }); }
 
-function updateSendButton() {
-  const send = document.getElementById("compose-send");
-  const input = document.getElementById("compose-input");
-  const hasText = input.value.trim().length > 0;
-  send.disabled = state.sending || !hasText;
-}
-
-/* ─── Init ─────────────────────────────────────────────────────────────── */
-
-async function init() {
-  let ctx;
+// Best-effort read receipt — if the table has read_at / read_by_borrower_at
+// it gets stamped; if not, the update errors silently and nothing breaks.
+async function markThreadRead(){
   try {
-    ctx = await window.OF_bootstrap();
-  } catch (e) {
-    console.error("[messages] OF_bootstrap failed:", e);
-    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
-      ? "not_a_borrower" : "link_failed";
-    window.location.replace("/portal_signin.html?error=" + code);
+    await supa.from(MSG_TABLE)
+      .update({ read_at: new Date().toISOString() })
+      .eq('loan_id', ctx.loan.id)
+      .is('read_at', null);
+  } catch (_) {}
+}
+
+function initComposer(){
+  const inp = $('#composer-input');
+  const btn = $('#send-btn');
+  inp.addEventListener('input', () => {
+    btn.disabled = !inp.value.trim();
+    inp.style.height = 'auto';
+    inp.style.height = Math.min(inp.scrollHeight, 110) + 'px';
+  });
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) {
+      e.preventDefault(); send();
+    }
+  });
+  btn.addEventListener('click', send);
+}
+
+async function send(){
+  const inp = $('#composer-input');
+  const btn = $('#send-btn');
+  const body = inp.value.trim();
+  if (!body) return;
+  btn.disabled = true;
+
+  // ⚠ Minimal payload, best-guess columns — a mismatch surfaces verbatim.
+  const payload = {
+    loan_id: ctx.loan.id,
+    branch_id: ctx.loan.branch_id || null,
+    borrower_id: ctx.borrower.id,
+    sender_type: 'borrower',
+    body,
+  };
+  const { data, error } = await supa.from(MSG_TABLE).insert(payload).select('*').maybeSingle();
+  if (error) {
+    console.error('[portal/messages] send:', error);
+    toast('Message didn\'t send — please try again.', true);
+    btn.disabled = false;
     return;
   }
-  if (!ctx || !ctx.session) { window.location.replace("/portal_signin.html"); return; }
-  if (!ctx.borrower)        { window.location.replace("/portal_signin.html?error=not_a_borrower"); return; }
-  if (!ctx.loan)            { window.location.replace("/portal_apply.html"); return; }
-
-  state.borrower = {
-    id:         ctx.borrower.id,
-    first_name: titleCase(ctx.borrower.first_name),
-    last_name:  titleCase(ctx.borrower.last_name),
-  };
-  state.loan       = ctx.loan;
-  state.authUserId = ctx.session.user && ctx.session.user.id;
-
-  renderHeader();
-
-  const supabase = window.OF_supabase();
-
-  // Get or create the loan_borrower channel + load initial messages
-  try {
-    state.channel = await resolveChannel(supabase, state.loan.id);
-    const { rows } = await fetchMessages(supabase, state.channel.id);
-    state.messages = rows;
-    renderThread();
-    requestAnimationFrame(scrollThreadToBottom);
-  } catch (e) {
-    console.error("[messages] init failed:", e);
-    toast("Couldn't load conversation: " + e.message, "error");
-  }
-
-  // Wire compose interactions
-  wireCompose();
-
-  // Drop the veil
-  const veil = document.getElementById("bootstrap-veil");
-  if (veil) {
-    veil.classList.add("is-hidden");
-    setTimeout(() => veil.remove(), 220);
-  }
-
-  startPolling();
-
-  if (typeof window.OF_touchLastSeen === "function") {
-    window.OF_touchLastSeen().catch(() => {});
-  }
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) refreshMessages().catch(() => {});
-  });
+  inp.value = ''; inp.style.height = 'auto';
+  if (data && !msgs.some(m => m.id === data.id)) { msgs.push(data); renderThread(); }
+  btn.disabled = true;
 }
 
-function wireCompose() {
-  const input = document.getElementById("compose-input");
-  const send  = document.getElementById("compose-send");
-
-  // Auto-resize the textarea up to max-height
-  const autoResize = () => {
-    input.style.height = "auto";
-    input.style.height = Math.min(input.scrollHeight, 180) + "px";
-    updateSendButton();
-  };
-
-  input.addEventListener("input", autoResize);
-  input.addEventListener("keydown", (e) => {
-    // Enter sends, Shift+Enter inserts a newline. On mobile we leave
-    // Enter as newline by default to avoid accidental sends — touch
-    // users should tap the send button. (Detection by pointer:coarse.)
-    const isMobile = window.matchMedia("(pointer:coarse)").matches;
-    if (e.key === "Enter" && !e.shiftKey && !isMobile) {
-      e.preventDefault();
-      handleSendClick();
-    }
-  });
-
-  send.addEventListener("click", handleSendClick);
-
-  function handleSendClick() {
-    const text = input.value;
-    if (!text.trim()) return;
-    input.value = "";
-    autoResize();
-    sendMessage(text);
-  }
-
-  updateSendButton();
+function initRealtime(){
+  chan = supa.channel(`portal-messages:${ctx.loan.id}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: MSG_TABLE, filter: `loan_id=eq.${ctx.loan.id}` },
+      (payload) => {
+        const row = payload.new;
+        if (msgs.some(m => m.id === row.id)) return;   // already optimistic-rendered
+        msgs.push(row);
+        renderThread();
+        if (!isMine(row)) markThreadRead();
+      })
+    .subscribe();
 }
 
-document.addEventListener("DOMContentLoaded", init);
+init();
 </script>
 
 </body>

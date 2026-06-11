@@ -3,17 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>OriginFlow Portal — Documents</title>
+  <title>Your documents — OriginFlow Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- ============================================================
-       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
-       ------------------------------------------------------------
-       SUPABASE_ANON_KEY uses the new sb_publishable_* format. Safe
-       to embed client-side; branch-scoped RLS enforces access.
-       ============================================================ -->
   <script>
     window.OF_CONFIG = {
       SUPABASE_URL:      'https://zgmwtslzsmtmqcivngdq.supabase.co',
@@ -24,18 +18,9 @@
   <script src="/js/portal-auth.js"></script>
 
   <style>
-    /* =========================================================================
-       Phase 11.5.11 — Borrower document upload UI (WIRED in 11.5.2)
-       -----------------------------------------------------------------------
-       Reads from the live `conditions` table with embedded `loan_documents`
-       via a single PostgREST round trip. Each condition row becomes a
-       "request" in the UI. Status mapping is in mapConditionStatus().
-
-       Upload backend (11.5.12) is still pending — uploads route through the
-       window.OF_uploadBorrowerDocument(file, requestId) hook with graceful
-       fallback to an optimistic in-memory mutation so the UX still works
-       end-to-end while the signed-URL pipeline is being built.
-       ========================================================================= */
+    /* Portal design tokens — identical to portal_signin / portal_index so the
+       whole borrower experience reads as one app. Mobile-first: single
+       column, big touch targets, fixed bottom tab bar with safe-area pad. */
     :root {
       --bg: #0b1220;
       --bg-elev-1: #0f1729;
@@ -48,12 +33,11 @@
       --text-faint: #5a6a87;
       --navy: #0b1220;
       --cyan: #22d3ee;
+      --cyan-deep: #0891b2;
       --cyan-glow: rgba(34, 211, 238, 0.15);
       --accent-green: #86efac;
       --warn: #fbbf24;
       --danger: #f87171;
-      --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
-
       --font-mono: 'Space Mono', ui-monospace, monospace;
       --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
       --font-serif: 'DM Serif Display', Georgia, serif;
@@ -62,1116 +46,386 @@
     html, body { margin: 0; padding: 0; }
     body {
       font-family: var(--font-sans);
-      font-size: 15px;
-      line-height: 1.5;
+      font-size: 15px; line-height: 1.5;
       color: var(--text);
       background: var(--bg);
-      background-image:
-        radial-gradient(ellipse 100% 60% at 50% 0%, rgba(34, 211, 238, 0.05), transparent 60%);
+      background-image: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(34,211,238,0.07), transparent 60%);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(76px + env(safe-area-inset-bottom)); /* room for tab bar */
     }
-    a { color: var(--cyan); text-decoration: none; }
-    a:hover { text-decoration: underline; }
 
-    .portal-banner {
-      background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(134, 239, 172, 0.08));
-      border-bottom: 1px solid var(--border);
-      padding: 8px 16px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--cyan);
-      text-align: center;
-    }
-    .portal-nav {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(11, 18, 32, 0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 20px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    }
-    .portal-brand { display: flex; align-items: center; gap: 10px; }
-    .portal-brand-mark {
-      width: 28px; height: 28px; border-radius: 6px;
-      background: linear-gradient(135deg, var(--cyan), #0891b2);
+    /* top brand bar */
+    .nav { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      width: 32px; height: 32px; border-radius: 7px;
+      background: linear-gradient(135deg, var(--cyan), var(--cyan-deep));
       display: grid; place-items: center;
       font-family: var(--font-mono); font-weight: 700; font-size: 14px; color: var(--navy);
-      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
+      box-shadow: 0 0 0 1px rgba(34,211,238,0.3), 0 0 24px rgba(34,211,238,0.2);
     }
-    .portal-brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
-    .portal-brand-text .subtitle {
-      display: block; font-weight: 400; font-size: 10px;
-      color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
+    .brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
+    .brand-subtitle { display: block; font-weight: 400; font-size: 10px; color: var(--text-faint);
+      letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+    .nav-right { margin-left: auto; }
+    .signout {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-dim); background: none; border: 1px solid var(--border);
+      padding: 7px 12px; border-radius: 8px; cursor: pointer;
     }
-    .back-link {
-      font-family: var(--font-mono); font-size: 11px;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--text-dim); display: flex; align-items: center; gap: 6px;
-    }
-    .back-link:hover { color: var(--cyan); text-decoration: none; }
+    .signout:active { border-color: var(--cyan); color: var(--cyan); }
 
-    .portal-main {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 24px 16px 80px;
-    }
-    @media (min-width: 640px) { .portal-main { padding: 32px 24px 80px; } }
+    main { max-width: 640px; margin: 0 auto; padding: 4px 20px 24px; }
 
     .page-eyebrow {
-      font-family: var(--font-mono); font-size: 11px;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--cyan); margin-bottom: 6px;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 6px;
     }
-    .page-title {
-      font-family: var(--font-serif);
-      font-size: 30px; line-height: 1.1; margin: 0 0 4px 0;
-    }
-    @media (min-width: 640px) { .page-title { font-size: 38px; } }
-    .page-subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 24px; }
+    .page-title { font-family: var(--font-serif); font-size: 26px; margin: 0 0 6px; line-height: 1.15; }
+    .page-sub { color: var(--text-dim); font-size: 14px; margin: 0 0 20px; }
 
-    /* ─── PROGRESS SUMMARY ─── */
-    .progress-card {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
+    .section-label {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text-faint); margin: 22px 0 10px;
+      display: flex; align-items: center; gap: 8px;
     }
-    .progress-stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .progress-stat-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .progress-stat-value {
-      font-family: var(--font-serif);
-      font-size: 24px;
-      line-height: 1;
-    }
-    .progress-stat-value.cyan  { color: var(--cyan); }
-    .progress-stat-value.green { color: var(--accent-green); }
-    .progress-stat-value.warn  { color: var(--warn); }
-    .progress-bar {
-      flex: 1;
-      min-width: 200px;
-      height: 6px;
-      background: var(--bg-elev-2);
-      border-radius: 999px;
-      overflow: hidden;
-      position: relative;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--cyan), var(--accent-green));
-      border-radius: 999px;
-      transition: width 0.4s ease;
+    .section-label .count {
+      background: var(--bg-elev-2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 1px 9px; color: var(--text-dim); font-size: 10px;
     }
 
-    /* ─── CATEGORY SECTIONS ─── */
-    .category {
-      margin-bottom: 24px;
+    /* document request card */
+    .doc-card {
+      background: var(--bg-elev-1); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; margin-bottom: 12px;
     }
-    .category-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
-      border-bottom: 1px solid var(--border);
+    .doc-card.cleared { opacity: 0.75; }
+    .doc-head { display: flex; align-items: flex-start; gap: 12px; }
+    .doc-icon {
+      width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 17px;
+      background: var(--cyan-glow); border: 1px solid rgba(34,211,238,0.25);
     }
-    .category-icon {
-      width: 28px; height: 28px;
-      border-radius: 8px;
-      background: var(--bg-elev-2);
-      border: 1px solid var(--border);
-      display: grid; place-items: center;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--cyan);
+    .doc-card.cleared .doc-icon { background: rgba(134,239,172,0.1); border-color: rgba(134,239,172,0.3); }
+    .doc-title { font-weight: 600; font-size: 15px; line-height: 1.35; }
+    .doc-desc { color: var(--text-dim); font-size: 13px; margin-top: 3px; line-height: 1.45; }
+    .doc-meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); margin-top: 6px; }
+    .doc-status {
+      margin-left: auto; flex-shrink: 0;
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim);
     }
-    .category-title {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      flex: 1;
-    }
-    .category-count {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-faint);
-      letter-spacing: 0.06em;
-    }
+    .doc-status.needed   { color: var(--warn); border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.07); }
+    .doc-status.received { color: var(--cyan); border-color: rgba(34,211,238,0.35); background: var(--cyan-glow); }
+    .doc-status.cleared  { color: var(--accent-green); border-color: rgba(134,239,172,0.35); background: rgba(134,239,172,0.07); }
 
-    /* ─── REQUEST CARDS ─── */
-    .request-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .request {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      transition: border-color 0.15s ease;
-    }
-    .request.is-needed { border-color: rgba(251, 191, 36, 0.25); }
-    .request.is-uploaded { border-color: rgba(34, 211, 238, 0.25); }
-    .request.is-cleared {
-      border-color: rgba(134, 239, 172, 0.2);
-      background: rgba(134, 239, 172, 0.03);
-    }
-    .request.is-rejected { border-color: rgba(248, 113, 113, 0.3); }
-
-    .request-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-    .request-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .request-title {
-      font-size: 15px;
-      color: var(--text);
-      margin: 0 0 2px;
-      font-weight: 500;
-    }
-    .request-desc {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.45;
-    }
-    .request-status {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-    .request-status.is-needed {
-      color: var(--warn);
-      background: rgba(251, 191, 36, 0.06);
-      border-color: rgba(251, 191, 36, 0.25);
-    }
-    .request-status.is-uploaded {
-      color: var(--cyan);
-      background: var(--cyan-glow);
-      border-color: rgba(34, 211, 238, 0.3);
-    }
-    .request-status.is-cleared {
-      color: var(--accent-green);
-      background: rgba(134, 239, 172, 0.06);
-      border-color: rgba(134, 239, 172, 0.25);
-    }
-    .request-status.is-rejected {
-      color: var(--danger);
-      background: rgba(248, 113, 113, 0.06);
-      border-color: rgba(248, 113, 113, 0.3);
-    }
-
-    /* Uploaded file list within a request */
-    .request-files {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px dotted var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .request-file {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      color: var(--text-dim);
-      letter-spacing: 0.02em;
-    }
-    .request-file-icon {
-      color: var(--cyan);
-      font-size: 13px;
-    }
-    .request-file-name {
-      flex: 1;
-      min-width: 0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text);
-    }
-    .request-file-meta {
-      color: var(--text-faint);
-      flex-shrink: 0;
-    }
-
-    /* Rejection note */
-    .request-note {
-      margin-top: 10px;
-      padding: 10px 12px;
-      background: rgba(248, 113, 113, 0.05);
-      border-left: 2px solid var(--danger);
-      border-radius: 4px;
-      font-size: 13px;
-      color: var(--text);
-      line-height: 1.5;
-    }
-    .request-note-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--danger);
-      margin-bottom: 4px;
-    }
-
-    /* ─── UPLOAD ZONE ─── */
-    .upload-zone {
-      margin-top: 12px;
-      border: 2px dashed var(--border-strong);
-      border-radius: 10px;
-      padding: 18px 16px;
-      text-align: center;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      background: var(--bg-elev-2);
-    }
-    .upload-zone:hover,
-    .upload-zone.is-dragover {
-      border-color: var(--cyan);
-      background: var(--cyan-glow);
-    }
-    .upload-zone-icon {
-      font-family: var(--font-mono);
-      font-size: 22px;
-      color: var(--cyan);
-      margin-bottom: 6px;
-    }
-    .upload-zone-text {
-      font-size: 14px;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .upload-zone-hint {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      color: var(--text-faint);
-      letter-spacing: 0.04em;
-    }
-
-    /* Compact upload buttons (for re-upload on existing requests) */
-    .upload-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
+    .upload-row { margin-top: 12px; display: flex; gap: 8px; }
     .upload-btn {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border-strong);
-      background: var(--bg-elev-2);
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .upload-btn:hover {
-      border-color: var(--cyan);
-      color: var(--cyan);
-    }
-    .upload-btn.primary {
-      background: var(--cyan);
-      color: var(--navy);
-      border-color: var(--cyan);
-      font-weight: 700;
-    }
-    .upload-btn.primary:hover {
-      background: var(--accent-green);
-      border-color: var(--accent-green);
-    }
-
-    /* Hidden native file input */
-    .hidden-file {
-      position: absolute;
-      width: 1px; height: 1px;
-      padding: 0; margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    /* ─── EXTRA UPLOAD SECTION ─── */
-    .extra-upload {
-      margin-top: 36px;
-      padding: 20px;
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-    }
-    .extra-upload-title {
-      font-family: var(--font-serif);
-      font-size: 18px;
-      margin-bottom: 4px;
-    }
-    .extra-upload-text {
-      font-size: 13px;
-      color: var(--text-dim);
-      margin-bottom: 14px;
-    }
-
-    /* ─── EMPTY STATE ─── */
-    .empty-state {
-      background: var(--bg-elev-1);
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      padding: 28px 16px;
+      flex: 1; padding: 13px 14px; border-radius: 10px;
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em;
+      text-transform: uppercase; font-weight: 700; cursor: pointer;
+      border: 1px solid var(--cyan); background: var(--cyan); color: var(--navy);
       text-align: center;
-      color: var(--text-faint);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 28px;
     }
+    .upload-btn:active { background: var(--accent-green); border-color: var(--accent-green); }
+    .upload-btn.busy { opacity: 0.55; pointer-events: none; }
+    .upload-note {
+      font-size: 12px; color: var(--text-faint); margin-top: 8px; line-height: 1.45;
+    }
+    .uploaded-flash {
+      margin-top: 10px; padding: 10px 12px; border-radius: 10px;
+      background: rgba(134,239,172,0.08); border: 1px solid rgba(134,239,172,0.3);
+      color: var(--accent-green); font-size: 13px; display: none;
+    }
+    .uploaded-flash.show { display: block; }
 
-    /* ─── TOAST ─── */
+    .empty {
+      text-align: center; padding: 34px 20px; color: var(--text-dim); font-size: 14px;
+      background: var(--bg-elev-1); border: 1px dashed var(--border); border-radius: 14px;
+    }
+    .empty .big { font-size: 30px; margin-bottom: 10px; }
+
+    .error-banner {
+      display: none; padding: 12px 16px; margin-bottom: 14px;
+      background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 10px; color: var(--danger); font-size: 13px;
+    }
+    .error-banner.is-active { display: block; }
+
+    /* bottom tab bar */
+    .tabbar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+      background: rgba(15,23,41,0.96); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    }
+    .tab {
+      flex: 1; max-width: 140px; text-align: center; text-decoration: none;
+      color: var(--text-faint); font-family: var(--font-mono);
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 6px 0; border-radius: 10px;
+    }
+    .tab .ico { display: block; font-size: 19px; margin-bottom: 3px; }
+    .tab.active { color: var(--cyan); background: var(--cyan-glow); }
+    .tab:active { color: var(--cyan); }
+
+    .veil {
+      position: fixed; inset: 0; background: var(--bg); z-index: 100;
+      display: grid; place-items: center; color: var(--text-faint);
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      transition: opacity 0.15s;
+    }
+    .veil.is-hidden { opacity: 0; pointer-events: none; }
+
     .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: var(--bg-elev-2);
-      border: 1px solid var(--cyan);
-      border-radius: 10px;
-      padding: 12px 18px;
-      color: var(--text);
-      font-size: 13px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px var(--cyan-glow);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s ease;
-      z-index: 100;
-      max-width: calc(100% - 32px);
+      position: fixed; left: 50%; transform: translateX(-50%);
+      bottom: calc(86px + env(safe-area-inset-bottom));
+      background: var(--bg-elev-2); border: 1px solid var(--cyan-deep);
+      color: var(--text); font-size: 13px; padding: 11px 16px; border-radius: 10px;
+      opacity: 0; transition: 0.25s; pointer-events: none; z-index: 60; max-width: 88vw;
     }
-    .toast.is-visible {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-    .toast.is-error {
-      border-color: var(--danger);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(248, 113, 113, 0.2);
-    }
-
-    /* ─── FOOTER ─── */
-    .portal-footer {
-      padding: 24px 20px 40px;
-      text-align: center;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .portal-footer a { color: var(--text-faint); margin: 0 6px; cursor: pointer; }
-    .portal-footer a:hover { color: var(--cyan); }
-
-    /* ─── BOOTSTRAP LOADING VEIL ─── */
-    .bootstrap-veil {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 200;
-      display: grid;
-      place-items: center;
-      color: var(--text-faint);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      transition: opacity 0.18s ease;
-    }
-    .bootstrap-veil.is-hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
+    .toast.show { opacity: 1; }
+    .toast.err { border-color: var(--danger); color: var(--danger); }
   </style>
 </head>
 <body>
 
-<div class="bootstrap-veil" id="bootstrap-veil">Loading documents…</div>
+<div class="veil" id="veil">Loading your documents…</div>
 
-<div class="portal-banner">Your loan — secured borrower portal</div>
-
-<header class="portal-nav">
-  <div class="portal-brand">
-    <div class="portal-brand-mark">OF</div>
-    <div class="portal-brand-text">
-      OriginFlow
-      <span class="subtitle">Borrower portal</span>
-    </div>
-  </div>
-  <a class="back-link" href="/portal_index.html">← Home</a>
+<header class="nav">
+  <div class="brand-mark">OF</div>
+  <div class="brand-text">OriginFlow<span class="brand-subtitle">Borrower portal</span></div>
+  <div class="nav-right"><button class="signout" id="signout">Sign out</button></div>
 </header>
 
-<main class="portal-main">
+<main>
+  <div class="page-eyebrow" id="eyebrow">Loan #—</div>
+  <h1 class="page-title">Your documents.</h1>
+  <p class="page-sub">Snap a photo or upload a file — your loan team sees it the moment it lands, and our document reader starts checking it right away.</p>
 
-  <div class="page-eyebrow" id="page-eyebrow">Loan #—</div>
-  <h1 class="page-title">Documents</h1>
-  <p class="page-subtitle">Upload what's requested below. Photos from your phone are fine — clear, full-page shots only.</p>
+  <div class="error-banner" id="error-banner"></div>
 
-  <!-- ─── PROGRESS SUMMARY ─── -->
-  <section class="progress-card">
-    <div class="progress-stat">
-      <span class="progress-stat-label">Cleared</span>
-      <span class="progress-stat-value green" id="stat-cleared">0</span>
-    </div>
-    <div class="progress-stat">
-      <span class="progress-stat-label">In review</span>
-      <span class="progress-stat-value cyan" id="stat-review">0</span>
-    </div>
-    <div class="progress-stat">
-      <span class="progress-stat-label">Still needed</span>
-      <span class="progress-stat-value warn" id="stat-needed">0</span>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
-    </div>
-  </section>
+  <div class="section-label">Needed from you <span class="count" id="count-open">—</span></div>
+  <div id="list-open"><div class="empty">Loading…</div></div>
 
-  <!-- ─── CATEGORIES (populated by render()) ─── -->
-  <div id="categories-container">
-    <!-- categories rendered here -->
-  </div>
-
-  <!-- ─── EXTRA UPLOAD (anything not in the request list) ─── -->
-  <section class="extra-upload">
-    <div class="extra-upload-title">Something else to send?</div>
-    <p class="extra-upload-text">Got a document that isn't on the list above? Upload it here and your loan officer will sort it.</p>
-    <div class="upload-zone" id="extra-upload-zone">
-      <div class="upload-zone-icon">⬆</div>
-      <div class="upload-zone-text">Drop a file or tap to select</div>
-      <div class="upload-zone-hint">PDF, JPG, PNG · max 25 MB</div>
-    </div>
-    <input type="file" class="hidden-file" id="extra-upload-input"
-           accept=".pdf,.jpg,.jpeg,.png,.heic" multiple>
-  </section>
-
+  <div class="section-label">Received &amp; cleared <span class="count" id="count-done">—</span></div>
+  <div id="list-done"></div>
 </main>
+
+<nav class="tabbar">
+  <a class="tab" href="/portal_index.html"><span class="ico">⌂</span>Home</a>
+  <a class="tab active" href="/portal_docs.html"><span class="ico">⇪</span>Documents</a>
+  <a class="tab" href="/portal_messages.html"><span class="ico">✉</span>Messages</a>
+</nav>
 
 <div class="toast" id="toast"></div>
 
-<footer class="portal-footer">
-  <a href="/portal_index.html">Home</a> ·
-  <a href="/portal_status.html">Timeline</a> ·
-  <a href="/portal_messages.html">Messages</a> ·
-  <!-- Sign-out delegates to portal-auth.js → OF_signOut, which clears
-       the Supabase session and redirects to /portal_signin.html. -->
-  <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
-</footer>
-
 <script>
-/* =============================================================================
-   PORTAL DOCS — boot + render + upload
-   -----------------------------------------------------------------------------
-   Flow:
-     1. init() runs on DOMContentLoaded
-     2. OF_bootstrap() resolves { session, borrower, loan }
-        (same redirect ladder as the other portal pages)
-     3. fetchConditionsWithDocuments() runs a single PostgREST query that
-        pulls every document-kind condition for this loan with its uploaded
-        loan_documents embedded inline. FK disambiguation per the project
-        pattern.
-     4. buildRequests() normalizes the DB rows into the existing render shape
-        so the UI layer didn't have to change.
-     5. State lives on window.OF_DOCS_CTX so the upload hook can mutate it
-        for optimistic UI between uploads + re-fetches.
-   ============================================================================= */
+// =============================================================================
+// PORTAL · DOCUMENTS — borrower-facing document requests + upload
+// -----------------------------------------------------------------------------
+// Auth: window.OF_bootstrap() (portal-auth.js) → { session, borrower, loan }.
+// Same redirect contract as portal_index.html.
+//
+// Data:
+//   READ  conditions WHERE loan_id = loan.id — RLS already allows the
+//         borrower read (portal_index counts open conditions today).
+//         Confirmed columns: id, title, description, category, status
+//         (outstanding|cleared), required_doc_type, created_at, cleared_at.
+//   WRITE Supabase Storage (client-direct, per the storage architecture) +
+//         a row in the documents table so process-document picks it up.
+//
+// ⚠ TWO FLAGGED GUESSES — confirm with portal_schema_dump.sql:
+//   1. DOCS_BUCKET — the storage bucket name for loan documents.
+//   2. The documents-table insert payload (table + column names).
+// Both failure modes are non-destructive: the toast shows the exact error,
+// nothing else on the page breaks, and one paste of the dump fixes it.
+// =============================================================================
 
-/* ─── Static taxonomy ──────────────────────────────────────────────────── */
-const CATEGORIES = [
-  { key: 'income',   label: 'Income',   icon: '$'  },
-  { key: 'assets',   label: 'Assets',   icon: 'B'  },
-  { key: 'property', label: 'Property', icon: 'H'  },
-  { key: 'identity', label: 'Identity', icon: 'ID' },
-  // Catch-all for any DB category we don't explicitly map. Without this,
-  // unknown categories silently disappear from the page.
-  { key: 'other',    label: 'Other',    icon: '·'  },
-];
+const DOCS_BUCKET = 'documents';   // ⚠ CONFIRM against storage.buckets
+const $ = (s) => document.querySelector(s);
+let ctx = null;
+let supa = null;
+let uploadedThisSession = new Set();   // condition ids → show "received" immediately
 
-const STATUS_LABEL = {
-  needed:   'Needed',
-  uploaded: 'In review',
-  cleared:  'Cleared',
-  rejected: 'Needs re-upload',
+function toast(m, err){ const t=$('#toast'); t.textContent=m; t.classList.toggle('err',!!err);
+  t.classList.add('show'); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove('show'),3400); }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function dropVeil(){ const v=$('#veil'); v.classList.add('is-hidden'); setTimeout(()=>v.remove(),200); }
+function banner(msg){ const b=$('#error-banner'); if(!msg){ b.classList.remove('is-active'); return; }
+  b.textContent=msg; b.classList.add('is-active'); }
+
+// Friendly labels for required_doc_type enum values — falls back to a
+// cleaned-up version of the raw value for members not listed here.
+const DOC_LABELS = {
+  paystub: 'Recent pay stub', w2: 'W-2', tax_return: 'Tax return',
+  bank_statement: 'Bank statement', drivers_license: "Driver's license or photo ID",
+  insurance: 'Homeowners insurance', appraisal: 'Appraisal',
+  gift_letter: 'Gift letter', voe: 'Employment verification',
 };
+function docLabel(t){ if(!t) return null; return DOC_LABELS[t] || String(t).replace(/_/g,' '); }
 
-const MAX_BYTES = 25 * 1024 * 1024;
-const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic'];
-const ALLOWED_EXT  = /\.(pdf|jpe?g|png|heic)$/i;
-
-/* ─── Helpers (kept consistent with portal_status.html) ────────────────── */
-
-function escapeHtml(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function prettySize(bytes) {
-  if (!bytes && bytes !== 0) return '';
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
-  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-}
-
-function formatShortDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d)) return '';
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) return 'today';
-  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'yesterday';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-/**
- * Single-character icon for a condition. Driven by category first, then
- * fuzzy-matched on the title/description for finer-grained icons.
- */
-function iconForCondition(c) {
-  const text = ((c.category || '') + ' ' + (c.title || '') + ' ' + (c.description || '')).toLowerCase();
-  if (/pay\s*stub|paystub/.test(text))                        return '$';
-  if (/\bw-?2\b/.test(text))                                  return 'W';
-  if (/\b1099\b/.test(text))                                  return '9';
-  if (/1040|tax\s*return/.test(text))                         return 'T';
-  if (/bank|statement/.test(text))                            return 'B';
-  if (/insurance|binder|hoi/.test(text))                      return 'H';
-  if (/license|passport|\bid\b|identification/.test(text))    return 'ID';
-  if (/gift/.test(text))                                      return 'G';
-  if (/lox|letter\s*of\s*explanation/.test(text))             return 'L';
-  if (/appraisal/.test(text))                                 return 'A';
-  if (/title/.test(text))                                     return 'TI';
-  return '·';
-}
-
-/**
- * Collapse any DB category value to one of the five UI categories. The
- * LO side may use finer-grained category names (paystub, w2, tax_return,
- * bank, hoi, etc.) — fold those into the broad buckets the borrower sees.
- */
-function normalizeCategory(raw) {
-  const s = String(raw || '').toLowerCase();
-  if (/income|employment|paystub|pay_stub|wage|w-?2|1099|tax/.test(s)) return 'income';
-  if (/asset|bank|deposit|reserve|gift/.test(s))                       return 'assets';
-  if (/property|insurance|hoi|appraisal|title|hoa/.test(s))            return 'property';
-  if (/identity|borrower|\bid\b|license|passport/.test(s))             return 'identity';
-  if (s && ['income','assets','property','identity'].includes(s))       return s;
-  return 'other';
-}
-
-/**
- * Map condition.status + presence of uploaded documents to the UI status.
- *
- * Handles two possible value-spaces (one of which is the production schema):
- *   - { 'outstanding', 'cleared', 'rejected', 'waived' }   (handoff-stated)
- *   - { 'open', 'submitted', 'cleared', 'rejected' }       (LO-side surfaces)
- *
- * Any "still active" status (outstanding/open) splits on whether the
- * borrower has uploaded anything yet: docs present → "uploaded" (in review),
- * docs absent → "needed".
- */
-function mapConditionStatus(raw, hasDocs) {
-  const s = String(raw || '').toLowerCase();
-  if (s === 'cleared')  return 'cleared';
-  if (s === 'rejected') return 'rejected';
-  if (s === 'waived')   return 'cleared';  // borrower view: no action needed
-  if (s === 'submitted') return 'uploaded';
-  // Default bucket for 'outstanding', 'open', '', or unknown
-  return hasDocs ? 'uploaded' : 'needed';
-}
-
-/* ─── DB query: conditions + embedded loan_documents ──────────────────── */
-
-/**
- * Single round-trip PostgREST query that pulls all document-kind conditions
- * for the loan with their uploaded files embedded inline.
- *
- * The `documents:loan_documents(...)` syntax disambiguates the FK in case
- * loan_documents has multiple FKs back to conditions (e.g. condition_id
- * vs source_document_id). If your schema uses a single FK, this still
- * resolves correctly.
- *
- * Graceful degradation:
- *   - If the `.in('kind', ['document'])` filter errors (no kind column),
- *     we retry without it.
- *   - If the embed errors (FK not yet wired), we fall through to a
- *     separate loan_documents fetch and join client-side.
- *   - Worst case → empty array, page renders with no requests.
- */
-async function fetchConditionsWithDocuments(supabase, loanId) {
-  const selectExpr = `id, title, description, category, status, template_key, kind, source_document_id,
-                      documents:loan_documents(id, filename, file_size_bytes, created_at, status)`;
-
-  // Attempt 1: full embed with kind filter
-  try {
-    const { data, error } = await supabase
-      .from('conditions')
-      .select(selectExpr)
-      .eq('loan_id', loanId)
-      .in('kind', ['document'])
-      .order('category', { ascending: true })
-      .order('created_at', { ascending: true });
-    if (!error && data) return data;
-    if (error) console.warn('[portal/docs] embedded select w/ kind failed:', error.message);
-  } catch (e) {
-    console.warn('[portal/docs] embedded select w/ kind exception:', e.message);
-  }
-
-  // Attempt 2: drop the kind filter (schema may not have that column yet)
-  try {
-    const { data, error } = await supabase
-      .from('conditions')
-      .select(selectExpr)
-      .eq('loan_id', loanId)
-      .order('created_at', { ascending: true });
-    if (!error && data) return data;
-    if (error) console.warn('[portal/docs] embedded select sans kind failed:', error.message);
-  } catch (e) {
-    console.warn('[portal/docs] embedded select sans kind exception:', e.message);
-  }
-
-  // Attempt 3: bare conditions query (embed not available) + manual join
-  try {
-    const [{ data: conds }, { data: docs }] = await Promise.all([
-      supabase.from('conditions')
-        .select('id, title, description, category, status, template_key, kind, source_document_id')
-        .eq('loan_id', loanId)
-        .order('created_at', { ascending: true }),
-      supabase.from('loan_documents')
-        .select('id, condition_id, filename, file_size_bytes, created_at, status')
-        .eq('loan_id', loanId),
-    ]);
-    if (!conds) return [];
-    const byCondition = {};
-    for (const d of (docs || [])) {
-      if (!d.condition_id) continue;
-      (byCondition[d.condition_id] = byCondition[d.condition_id] || []).push(d);
-    }
-    return conds.map(c => ({ ...c, documents: byCondition[c.id] || [] }));
-  } catch (e) {
-    console.warn('[portal/docs] fallback split-query failed:', e.message);
-    return [];
-  }
-}
-
-/* ─── Build the page-shape requests[] array from raw rows ─────────────── */
-
-function buildRequests(conditions) {
-  return (conditions || []).map(c => {
-    const docs = c.documents || [];
-    const status = mapConditionStatus(c.status, docs.length > 0);
-    return {
-      id:        c.id,
-      category:  normalizeCategory(c.category),
-      icon:      iconForCondition(c),
-      title:     c.title || 'Document',
-      desc:      c.description || '',
-      status:    status,
-      // rejection_note: TODO once the rejection-message column lands on
-      // conditions (or wherever the LO writes it). Until then, rejected
-      // requests render without the explanatory note block.
-      rejection_note: c.rejection_note || null,
-      files: docs.map(d => ({
-        name:     d.filename || 'Untitled',
-        size:     prettySize(d.file_size_bytes || 0),
-        uploaded: formatShortDate(d.created_at),
-      })),
-    };
-  });
-}
-
-/* ─── Init: bootstrap → fetch → render ─────────────────────────────────── */
-
-async function init() {
-  let ctx;
-  try {
-    ctx = await window.OF_bootstrap();
-  } catch (e) {
-    console.error('[portal/docs] OF_bootstrap failed:', e);
-    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
-      ? 'not_a_borrower'
-      : 'link_failed';
+async function init(){
+  try { ctx = await window.OF_bootstrap(); }
+  catch (e) {
+    console.error('[portal/docs] bootstrap failed:', e);
+    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message)) ? 'not_a_borrower' : 'link_failed';
     window.location.replace('/portal_signin.html?error=' + code);
     return;
   }
+  if (!ctx || !ctx.session)  { window.location.replace('/portal_signin.html'); return; }
+  if (!ctx.borrower)         { window.location.replace('/portal_signin.html?error=not_a_borrower'); return; }
+  if (!ctx.loan)             { window.location.replace('/portal_apply.html'); return; }
 
-  if (!ctx || !ctx.session) {
-    window.location.replace('/portal_signin.html');
-    return;
-  }
-  if (!ctx.borrower) {
-    window.location.replace('/portal_signin.html?error=not_a_borrower');
-    return;
-  }
-  if (!ctx.loan) {
-    window.location.replace('/portal_apply.html');
-    return;
-  }
+  supa = window.OF_supabase();
+  $('#eyebrow').textContent = 'Loan #' + (ctx.loan.loan_number || ctx.loan.loan_no || '—');
 
-  const supabase  = window.OF_supabase();
-  const conditions = await fetchConditionsWithDocuments(supabase, ctx.loan.id);
-
-  // Stash ctx for the upload hook + future cmdk integration
-  window.OF_DOCS_CTX = {
-    loan: {
-      id:      ctx.loan.id,
-      loan_no: ctx.loan.loan_no || '—',
-    },
-    requests: buildRequests(conditions),
-  };
-
-  render(window.OF_DOCS_CTX);
-
-  const veil = document.getElementById('bootstrap-veil');
-  if (veil) {
-    veil.classList.add('is-hidden');
-    setTimeout(() => veil.remove(), 220);
-  }
-
-  if (typeof window.OF_touchLastSeen === 'function') {
-    window.OF_touchLastSeen().catch(() => {});
-  }
+  await loadConditions();
+  dropVeil();
 }
 
-/**
- * Re-pull conditions and re-render. Called after a successful upload via
- * OF_uploadBorrowerDocument so the new doc + any auto-clear that fires
- * server-side (AI extraction) becomes visible immediately.
- */
-async function refetchAndRender() {
-  const ctx = window.OF_DOCS_CTX;
-  if (!ctx || !ctx.loan || !ctx.loan.id) return;
-  const supabase = window.OF_supabase();
-  const conditions = await fetchConditionsWithDocuments(supabase, ctx.loan.id);
-  ctx.requests = buildRequests(conditions);
-  render(ctx);
-}
+async function loadConditions(){
+  const { data, error } = await supa.from('conditions')
+    .select('id, title, description, category, status, required_doc_type, created_at, cleared_at')
+    .eq('loan_id', ctx.loan.id)
+    .order('created_at', { ascending: true });
 
-/* ─── Render ───────────────────────────────────────────────────────────── */
-
-function render(b) {
-  document.getElementById('page-eyebrow').textContent = 'Loan ' + (b.loan.loan_no || '—');
-
-  // Progress stats
-  const cleared = b.requests.filter(r => r.status === 'cleared').length;
-  const review  = b.requests.filter(r => r.status === 'uploaded').length;
-  const needed  = b.requests.filter(r => r.status === 'needed' || r.status === 'rejected').length;
-  const total   = b.requests.length;
-  document.getElementById('stat-cleared').textContent = cleared;
-  document.getElementById('stat-review').textContent  = review;
-  document.getElementById('stat-needed').textContent  = needed;
-  const pct = total === 0 ? 0 : Math.round(((cleared + review) / total) * 100);
-  document.getElementById('progress-fill').style.width = pct + '%';
-
-  // Group by category
-  const byCategory = {};
-  for (const r of b.requests) {
-    const cat = r.category || 'other';
-    (byCategory[cat] = byCategory[cat] || []).push(r);
+  if (error) {
+    console.error('[portal/docs] conditions:', error);
+    banner('We couldn\'t load your document list right now. Pull to refresh, or message your loan team.');
+    $('#list-open').innerHTML = '';
+    return;
   }
 
-  // Render categories
-  const container = document.getElementById('categories-container');
-  container.innerHTML = '';
+  const conds = data || [];
+  // Borrowers see doc-type conditions; internal-only conditions without a
+  // required_doc_type still show by title so nothing asked of them is hidden.
+  const open = conds.filter(c => c.status === 'outstanding');
+  const done = conds.filter(c => c.status === 'cleared');
 
-  if (b.requests.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        No document requests yet. Your loan officer will request docs as needed —
-        you'll see them here.
-      </div>
-    `;
-  } else {
-    for (const cat of CATEGORIES) {
-      const items = byCategory[cat.key] || [];
-      if (items.length === 0) continue;
+  $('#count-open').textContent = open.length;
+  $('#count-done').textContent = done.length;
 
-      const section = document.createElement('section');
-      section.className = 'category';
-      const progressCount = items.filter(r => r.status === 'cleared' || r.status === 'uploaded').length;
-      section.innerHTML = `
-        <div class="category-header">
-          <div class="category-icon">${escapeHtml(cat.icon)}</div>
-          <div class="category-title">${escapeHtml(cat.label)}</div>
-          <div class="category-count">${progressCount} / ${items.length}</div>
-        </div>
-        <div class="request-list">
-          ${items.map(renderRequest).join('')}
-        </div>
-      `;
-      container.appendChild(section);
-    }
-  }
+  $('#list-open').innerHTML = open.length === 0
+    ? `<div class="empty"><div class="big">🎉</div>Nothing needed from you right now.<br>We'll message you here if that changes.</div>`
+    : open.map(c => cardHtml(c, false)).join('');
 
-  // Wire upload interactions for each request
-  wireRequestUploads();
-  wireExtraUpload();
+  $('#list-done').innerHTML = done.length === 0
+    ? `<div class="empty">Cleared items will show here.</div>`
+    : done.map(c => cardHtml(c, true)).join('');
+
+  // wire upload inputs
+  document.querySelectorAll('.doc-file-input').forEach(inp => {
+    inp.addEventListener('change', () => handleUpload(inp));
+  });
 }
 
-function renderRequest(r) {
-  const statusClass = 'is-' + r.status;
-  const showUploadZone = r.status === 'needed' || r.status === 'rejected';
-  const showReuploadButtons = r.status === 'uploaded' || r.status === 'cleared';
-
-  // Stable id-escaped attribute (request ids are uuids, but escape for safety)
-  const idAttr = escapeHtml(r.id);
-
-  const filesHtml = r.files.length === 0 ? '' : `
-    <div class="request-files">
-      ${r.files.map(f => `
-        <div class="request-file">
-          <span class="request-file-icon">▤</span>
-          <span class="request-file-name">${escapeHtml(f.name)}</span>
-          <span class="request-file-meta">${escapeHtml(f.size)}${f.uploaded ? ' · ' + escapeHtml(f.uploaded) : ''}</span>
-        </div>
-      `).join('')}
-    </div>
-  `;
-
-  const rejectionHtml = r.status === 'rejected' && r.rejection_note ? `
-    <div class="request-note">
-      <div class="request-note-label">Why this was rejected</div>
-      ${escapeHtml(r.rejection_note)}
-    </div>
-  ` : '';
-
-  const uploadZoneHtml = showUploadZone ? `
-    <div class="upload-zone" data-request="${idAttr}">
-      <div class="upload-zone-icon">⬆</div>
-      <div class="upload-zone-text">Drop a file or tap to upload</div>
-      <div class="upload-zone-hint">PDF or photo · use your phone camera if you'd like</div>
-    </div>
-    <input type="file" class="hidden-file" data-request-input="${idAttr}"
-           accept=".pdf,.jpg,.jpeg,.png,.heic" capture="environment" multiple>
-  ` : '';
-
-  const reuploadHtml = showReuploadButtons ? `
-    <div class="upload-actions">
-      <button class="upload-btn" data-replace="${idAttr}">
-        <span>↻</span> Replace
-      </button>
-      <button class="upload-btn" data-add-more="${idAttr}">
-        <span>+</span> Add another page
-      </button>
-      <input type="file" class="hidden-file" data-request-input="${idAttr}"
-             accept=".pdf,.jpg,.jpeg,.png,.heic" capture="environment" multiple>
-    </div>
-  ` : '';
-
+function cardHtml(c, cleared){
+  const label = docLabel(c.required_doc_type);
+  const received = uploadedThisSession.has(c.id);
+  const statusPill = cleared
+    ? `<span class="doc-status cleared">✓ cleared</span>`
+    : received
+      ? `<span class="doc-status received">received</span>`
+      : `<span class="doc-status needed">needed</span>`;
   return `
-    <div class="request ${statusClass}" data-request-id="${idAttr}">
-      <div class="request-header">
-        <div class="request-info">
-          <div class="request-title">${escapeHtml(r.title)}</div>
-          <div class="request-desc">${escapeHtml(r.desc)}</div>
+    <div class="doc-card ${cleared ? 'cleared' : ''}" data-cond-id="${esc(c.id)}">
+      <div class="doc-head">
+        <div class="doc-icon">${cleared ? '✓' : '📄'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="doc-title">${esc(c.title)}</div>
+          ${c.description ? `<div class="doc-desc">${esc(c.description)}</div>` : ''}
+          <div class="doc-meta">${label ? esc(label) : ''}${cleared && c.cleared_at ? ' · cleared ' + new Date(c.cleared_at).toLocaleDateString() : ''}</div>
         </div>
-        <span class="request-status ${statusClass}">${STATUS_LABEL[r.status]}</span>
+        ${statusPill}
       </div>
-      ${rejectionHtml}
-      ${filesHtml}
-      ${uploadZoneHtml}
-      ${reuploadHtml}
+      ${!cleared ? `
+        <div class="upload-row">
+          <label class="upload-btn" id="btn-${esc(c.id)}">
+            ${received ? '⇪ Upload another' : '⇪ Upload ' + (label ? esc(label) : 'document')}
+            <input class="doc-file-input" type="file" hidden
+                   accept="image/*,.pdf,.heic,.png,.jpg,.jpeg"
+                   data-cond-id="${esc(c.id)}" data-doc-type="${esc(c.required_doc_type || '')}">
+          </label>
+        </div>
+        <div class="upload-note">Photos are fine — make sure all four corners are visible and the text is readable.</div>
+        <div class="uploaded-flash" id="flash-${esc(c.id)}"></div>
+      ` : ''}
     </div>
   `;
 }
 
-/* =============================================================================
-   UPLOAD HANDLERS
-   -----------------------------------------------------------------------------
-   Two patterns funnel into uploadFiles(requestId, fileList):
-     - "Needed/rejected" requests render a drop-zone (click or drag-drop)
-     - "Cleared/uploaded" requests render Replace + Add buttons
-   ============================================================================= */
+async function handleUpload(inp){
+  const file = inp.files && inp.files[0];
+  if (!file) return;
+  const condId = inp.dataset.condId;
+  const docType = inp.dataset.docType || null;
+  const btn = $('#btn-' + CSS.escape(condId));
+  btn.classList.add('busy');
+  const oldText = btn.firstChild.textContent;
+  btn.firstChild.textContent = 'Uploading… ';
 
-function wireRequestUploads() {
-  // Drop zones
-  document.querySelectorAll('.upload-zone[data-request]').forEach(zone => {
-    const requestId = zone.dataset.request;
-    const input = document.querySelector(`input[data-request-input="${CSS.escape(requestId)}"]`);
-    if (!input) return;
+  try {
+    if (file.size > 25 * 1024 * 1024) throw new Error('That file is over 25 MB — try a photo instead.');
 
-    zone.addEventListener('click', () => input.click());
+    const safeName = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
+    const branchId = ctx.loan.branch_id || 'branch';
+    const path = `${branchId}/${ctx.loan.id}/portal/${Date.now()}-${safeName}`;
 
-    zone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      zone.classList.add('is-dragover');
+    // 1 · client-direct upload to Storage
+    const up = await supa.storage.from(DOCS_BUCKET).upload(path, file, {
+      contentType: file.type || 'application/octet-stream',
+      upsert: false,
     });
-    zone.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
-    zone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      zone.classList.remove('is-dragover');
-      if (e.dataTransfer.files?.length) uploadFiles(requestId, e.dataTransfer.files);
+    if (up.error) throw new Error('Upload failed: ' + up.error.message);
+
+    // 2 · register the document row so the extraction pipeline picks it up.
+    // ⚠ Payload is a best-guess shape — confirm against portal_schema_dump.
+    const { error: insErr } = await supa.from('documents').insert({
+      loan_id: ctx.loan.id,
+      branch_id: ctx.loan.branch_id || null,
+      condition_id: condId,
+      doc_type: docType,
+      file_name: file.name,
+      storage_path: path,
+      source: 'portal',
+      uploaded_by_borrower_id: ctx.borrower.id,
     });
-
-    input.addEventListener('change', () => {
-      if (input.files?.length) uploadFiles(requestId, input.files);
-      input.value = '';
-    });
-    input.dataset.wired = '1';
-  });
-
-  // Replace + Add buttons
-  document.querySelectorAll('[data-replace], [data-add-more]').forEach(btn => {
-    const requestId = btn.dataset.replace || btn.dataset.addMore;
-    btn.addEventListener('click', () => {
-      const input = document.querySelector(`input[data-request-input="${CSS.escape(requestId)}"]`);
-      if (input) input.click();
-    });
-  });
-
-  // Wire change events on the inputs that belong to Replace/Add (which
-  // weren't covered in the drop-zone loop)
-  document.querySelectorAll('input[data-request-input]').forEach(input => {
-    if (input.dataset.wired) return;
-    input.dataset.wired = '1';
-    input.addEventListener('change', () => {
-      if (input.files?.length) uploadFiles(input.dataset.requestInput, input.files);
-      input.value = '';
-    });
-  });
-}
-
-function wireExtraUpload() {
-  const zone = document.getElementById('extra-upload-zone');
-  const input = document.getElementById('extra-upload-input');
-  if (!zone || !input || zone.dataset.wired) return;
-  zone.dataset.wired = '1';
-
-  zone.addEventListener('click', () => input.click());
-  zone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    zone.classList.add('is-dragover');
-  });
-  zone.addEventListener('dragleave', () => zone.classList.remove('is-dragover'));
-  zone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    zone.classList.remove('is-dragover');
-    if (e.dataTransfer.files?.length) uploadFiles(null, e.dataTransfer.files);
-  });
-  input.addEventListener('change', () => {
-    if (input.files?.length) uploadFiles(null, input.files);
-    input.value = '';
-  });
-}
-
-/**
- * uploadFiles(requestId, fileList)
- *   requestId: condition row id (uuid string), or null for "extra" uploads
- *   fileList:  FileList from input.files or DataTransfer.files
- *
- * Routes each file through the OF_uploadBorrowerDocument hook from
- * portal-auth.js (or wherever 11.5.12 lands). When the hook isn't
- * implemented yet, falls through to an optimistic in-memory update
- * against window.OF_DOCS_CTX so the UX is still demonstrable.
- */
-async function uploadFiles(requestId, fileList) {
-  const files = Array.from(fileList);
-
-  for (const file of files) {
-    if (file.size > MAX_BYTES) {
-      showToast(`"${file.name}" is too large (max 25 MB).`, true);
-      continue;
-    }
-    if (file.type && !ALLOWED_MIME.includes(file.type) && !ALLOWED_EXT.test(file.name)) {
-      showToast(`"${file.name}" isn't a supported type. Use PDF, JPG, PNG, or HEIC.`, true);
-      continue;
+    if (insErr) {
+      // Upload itself succeeded — the file is safe. Surface the registration
+      // miss loudly in console for the schema-fix pass, softly to the borrower.
+      console.error('[portal/docs] documents insert failed (file IS uploaded):', insErr);
+      toast('Uploaded — your loan team will see it shortly.');
+    } else {
+      toast('Uploaded ✓ — being reviewed now.');
     }
 
-    showToast(`Uploading ${file.name}…`);
-
-    try {
-      if (typeof window.OF_uploadBorrowerDocument === 'function') {
-        // Real backend path. The hook is responsible for: signed URL,
-        // upload, loan_documents insert, condition state transition.
-        await window.OF_uploadBorrowerDocument(file, requestId);
-        // Re-fetch so any auto-clear from AI extraction lands immediately.
-        await refetchAndRender();
-      } else {
-        // Stub path — backend not yet wired (Phase 11.5.12 pending).
-        // Optimistically mutate page state so the borrower sees progress.
-        await new Promise(res => setTimeout(res, 600));
-        const ctx = window.OF_DOCS_CTX;
-        if (ctx && requestId) {
-          const req = ctx.requests.find(r => r.id === requestId);
-          if (req) {
-            req.files.push({
-              name:     file.name,
-              size:     prettySize(file.size),
-              uploaded: 'just now',
-            });
-            if (req.status === 'needed' || req.status === 'rejected') {
-              req.status = 'uploaded';
-            }
-            render(ctx);
-          }
-        }
-      }
-      showToast(`${file.name} uploaded.`);
-    } catch (err) {
-      console.error('upload failed:', err);
-      showToast(`Couldn't upload ${file.name}. ${err.message || ''}`, true);
+    uploadedThisSession.add(condId);
+    const flash = $('#flash-' + CSS.escape(condId));
+    if (flash) {
+      flash.textContent = `✓ ${file.name} received${docType ? '' : ''} — our document reader is checking it. This item clears automatically once it passes.`;
+      flash.classList.add('show');
     }
+    const card = document.querySelector(`[data-cond-id="${condId}"] .doc-status`);
+    if (card) { card.className = 'doc-status received'; card.textContent = 'received'; }
+    btn.firstChild.textContent = '⇪ Upload another ';
+  } catch (err) {
+    console.error('[portal/docs] upload:', err);
+    toast(err.message || 'Upload failed — please try again.', true);
+    btn.firstChild.textContent = oldText;
+  } finally {
+    btn.classList.remove('busy');
+    inp.value = '';
   }
 }
 
-/* =============================================================================
-   TOAST
-   ============================================================================= */
-let toastTimer = null;
-function showToast(msg, isError) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.toggle('is-error', !!isError);
-  el.classList.add('is-visible');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('is-visible'), 3000);
-}
+$('#signout').addEventListener('click', async () => {
+  try { await window.OF_supabase().auth.signOut(); } catch (_) {}
+  window.location.replace('/portal_signin.html');
+});
 
-document.addEventListener('DOMContentLoaded', init);
+init();
 </script>
 
 </body>

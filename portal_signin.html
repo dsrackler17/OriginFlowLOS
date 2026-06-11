@@ -11,14 +11,9 @@
   <!-- ============================================================
        OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
        ------------------------------------------------------------
-       SUPABASE_ANON_KEY uses the new sb_publishable_* format. This
-       replaces the legacy anon JWT and is safe to embed client-side;
-       branch-scoped RLS enforces all access control server-side.
-
-       Loaded in <head> so that portal-auth.js (which reads
-       window.OF_CONFIG synchronously inside OF_supabase()) and the
-       inline scripts at the bottom of <body> can both rely on it
-       being defined before any other JS runs.
+       SUPABASE_ANON_KEY uses the new sb_publishable_* format. Safe
+       to embed client-side; branch-scoped RLS enforces all access
+       control server-side.
 
        supabase-js MUST load before portal-auth.js — portal-auth.js
        calls window.supabase.createClient() on its first invocation.
@@ -28,6 +23,23 @@
       SUPABASE_URL:      'https://zgmwtslzsmtmqcivngdq.supabase.co',
       SUPABASE_ANON_KEY: 'sb_publishable_1NED7PleUmnkJH_zVM3mlg_g_KBINng',
     };
+
+    // ──────────────────────────────────────────────────────────
+    // CAPTURE THE AUTH HASH *BEFORE* THE SDK EATS IT.
+    // Invite / recovery links land here with a URL fragment like
+    //   #access_token=…&type=invite   or   &type=recovery
+    // supabase-js (detectSessionInUrl) consumes and strips that
+    // fragment the moment the client initializes, so we snapshot
+    // it synchronously, first thing, to know whether this visit
+    // should show the SET-PASSWORD state instead of the sign-in
+    // form. ?setup=1 in the query string forces the same state
+    // (used as the redirectTo for resetPasswordForEmail and as
+    // the invite-email landing target).
+    // ──────────────────────────────────────────────────────────
+    window.__OF_HASH_TYPE = (function () {
+      var m = (window.location.hash || '').match(/[#&]type=([a-z_]+)/i);
+      return m ? m[1].toLowerCase() : null;
+    })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/js/portal-auth.js"></script>
@@ -144,9 +156,7 @@
       margin-bottom: 24px;
     }
 
-    .field {
-      margin-bottom: 18px;
-    }
+    .field { margin-bottom: 18px; }
     .field-label {
       display: block;
       font-family: var(--font-mono);
@@ -156,6 +166,18 @@
       color: var(--text-dim);
       margin-bottom: 6px;
     }
+    .field-row {
+      display: flex; align-items: baseline; justify-content: space-between;
+    }
+    .field-link {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--cyan);
+      text-decoration: none;
+      cursor: pointer;
+      background: none; border: none; padding: 0;
+    }
+    .field-link:hover { text-decoration: underline; }
     .field-input {
       width: 100%;
       padding: 14px 16px;
@@ -171,6 +193,11 @@
     .field-input:focus {
       border-color: var(--cyan);
       background: var(--bg-elev-3);
+    }
+    .field-hint {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 6px;
     }
 
     .btn {
@@ -194,6 +221,16 @@
       box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
     }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.secondary {
+      background: transparent;
+      color: var(--cyan);
+      margin-top: 10px;
+    }
+    .btn.secondary:hover:not(:disabled) {
+      background: var(--cyan-glow);
+      color: var(--cyan);
+      box-shadow: none;
+    }
 
     .error-banner {
       display: none;
@@ -207,19 +244,34 @@
     }
     .error-banner.is-active { display: block; }
 
+    .info-banner {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(34, 211, 238, 0.06);
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      border-radius: 10px;
+      color: var(--cyan);
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .info-banner.is-active { display: block; }
+
     .helper {
       text-align: center;
       margin-top: 20px;
       font-size: 13px;
       color: var(--text-dim);
     }
-    .helper a {
+    .helper a, .helper button {
       color: var(--cyan);
       text-decoration: none;
+      background: none; border: none; padding: 0;
+      font-size: 13px; font-family: var(--font-sans);
+      cursor: pointer;
     }
-    .helper a:hover { text-decoration: underline; }
+    .helper a:hover, .helper button:hover { text-decoration: underline; }
 
-    /* Success state — replaces the form once email is sent */
+    /* Success state — replaces the form once a fallback email is sent */
     .success {
       display: none;
       text-align: center;
@@ -252,9 +304,11 @@
       font-size: 13px;
     }
 
-    /* Pre-auth session check — covers the body while we decide
-       whether to redirect a still-signed-in user to /portal_index.html.
-       Without this, the form briefly flashes before redirect. */
+    /* Hidden-by-default panels — JS picks exactly one to show */
+    .panel { display: none; }
+    .panel.is-active { display: block; }
+
+    /* Pre-auth session check veil */
     .session-veil {
       position: fixed;
       inset: 0;
@@ -277,10 +331,10 @@
 </head>
 <body>
 
-<!-- Veil covers the page until the session check resolves. If a session
-     already exists we redirect to /portal_index.html and the veil stays up; if not
-     we drop the veil and show the form. Prevents the "flash of sign-in
-     form" for already-authenticated users hitting this URL by mistake. -->
+<!-- Veil covers the page until the session/hash check resolves. Routes:
+     · auth hash type=invite/recovery, or ?setup=1 → SET-PASSWORD panel
+     · existing session, no setup intent          → redirect /portal_index.html
+     · no session                                 → SIGN-IN panel            -->
 <div class="session-veil" id="session-veil">Checking session…</div>
 
 <header class="nav">
@@ -294,13 +348,14 @@
 <main class="center">
   <div class="card">
 
-    <!-- Sign-in form -->
-    <div id="form-state">
+    <!-- ═══ PANEL 1 · SIGN IN (email + password) ═══ -->
+    <div id="panel-signin" class="panel">
       <div class="eyebrow">Sign in</div>
       <h1 class="title">Welcome back.</h1>
-      <p class="subtitle">Enter the email on your loan and we'll send you a one-time sign-in link.</p>
+      <p class="subtitle">Sign in with the email on your loan and your portal password.</p>
 
       <div class="error-banner" id="error-banner"></div>
+      <div class="info-banner" id="info-banner"></div>
 
       <form id="signin-form" autocomplete="on" novalidate>
         <div class="field">
@@ -309,20 +364,82 @@
                  autocomplete="email" required inputmode="email"
                  placeholder="you@example.com" maxlength="120">
         </div>
-        <button class="btn" type="submit" id="submit-btn">Email me a sign-in link →</button>
+        <div class="field">
+          <div class="field-row">
+            <label class="field-label" for="password">Password</label>
+            <button type="button" class="field-link" id="forgot-link">Forgot password?</button>
+          </div>
+          <input class="field-input" id="password" type="password"
+                 autocomplete="current-password" required
+                 placeholder="••••••••" maxlength="72">
+        </div>
+        <button class="btn" type="submit" id="submit-btn">Sign in →</button>
       </form>
 
       <div class="helper">
-        Don't have a loan with us yet? <a href="/apply.html">Start an application</a>
+        First time here? Use the secure link in your invite email —
+        it signs you in and lets you create your password.
+        <br><br>
+        No invite yet? <a href="/apply.html">Start an application</a>
+        · <button type="button" id="magic-link-toggle">Email me a one-time sign-in link</button>
       </div>
     </div>
 
-    <!-- Success state -->
+    <!-- ═══ PANEL 2 · SET PASSWORD (invite / recovery landings) ═══ -->
+    <div id="panel-setpass" class="panel">
+      <div class="eyebrow" id="setpass-eyebrow">Create your password</div>
+      <h1 class="title" id="setpass-title">One step left.</h1>
+      <p class="subtitle" id="setpass-subtitle">
+        Create a password so next time you can sign in directly — no email link needed.
+      </p>
+
+      <div class="error-banner" id="setpass-error"></div>
+
+      <form id="setpass-form" autocomplete="on" novalidate>
+        <div class="field">
+          <label class="field-label" for="new-password">New password</label>
+          <input class="field-input" id="new-password" type="password"
+                 autocomplete="new-password" required
+                 placeholder="At least 8 characters" maxlength="72">
+          <div class="field-hint">8+ characters. A phrase you'll remember beats a string you won't.</div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="confirm-password">Confirm password</label>
+          <input class="field-input" id="confirm-password" type="password"
+                 autocomplete="new-password" required
+                 placeholder="Type it again" maxlength="72">
+        </div>
+        <button class="btn" type="submit" id="setpass-btn">Save password &amp; open my portal →</button>
+        <button class="btn secondary" type="button" id="setpass-skip">Skip for now</button>
+      </form>
+    </div>
+
+    <!-- ═══ PANEL 3 · MAGIC-LINK FALLBACK (request a one-time link) ═══ -->
+    <div id="panel-magic" class="panel">
+      <div class="eyebrow">One-time link</div>
+      <h1 class="title">We'll email you in.</h1>
+      <p class="subtitle">Enter the email on your loan and we'll send a one-time sign-in link.</p>
+
+      <div class="error-banner" id="magic-error"></div>
+
+      <form id="magic-form" autocomplete="on" novalidate>
+        <div class="field">
+          <label class="field-label" for="magic-email">Email</label>
+          <input class="field-input" id="magic-email" type="email"
+                 autocomplete="email" required inputmode="email"
+                 placeholder="you@example.com" maxlength="120">
+        </div>
+        <button class="btn" type="submit" id="magic-btn">Email me a sign-in link →</button>
+        <button class="btn secondary" type="button" id="magic-back">← Back to password sign-in</button>
+      </form>
+    </div>
+
+    <!-- ═══ PANEL 4 · EMAIL-SENT SUCCESS ═══ -->
     <div class="success" id="success-state">
       <div class="success-icon">✓</div>
-      <h2 class="success-title">Check your email.</h2>
-      <p class="success-text">
-        We just sent a sign-in link. Click it to land back here, already signed in.
+      <h2 class="success-title" id="success-title">Check your email.</h2>
+      <p class="success-text" id="success-text">
+        We just sent you a link. Click it to land back here, already signed in.
       </p>
       <p class="success-email" id="success-email">—</p>
       <p class="success-text" style="margin-top: 20px;">
@@ -334,119 +451,296 @@
 </main>
 
 <script>
-// ============================================================
-// Pre-auth session check
-// ------------------------------------------------------------
-// If the user already holds a valid Supabase session (most common
-// causes: bookmarked /portal_signin.html while signed in elsewhere, or
-// hit the browser back button after landing on /portal_index.html), short-
-// circuit the magic-link dance and punt them straight to /portal_index.html.
+// =============================================================================
+// PORTAL SIGN-IN — Phase 11.6 · PASSWORD-FIRST AUTH
+// -----------------------------------------------------------------------------
+// WHY THIS EXISTS: the old flow made borrowers request a magic-link email on
+// EVERY visit — the invite email got them in once, then every return trip was
+// another email round-trip ("signing in twice"). New model:
 //
-// We do NOT call OF_bootstrap() here — that resolves the borrower
-// row and is the responsibility of the page they land on. All we
-// need is the raw session.
+//   1. Invite email (send-notification → borrower_invite) → borrower clicks →
+//      lands here with #type=invite in the auth hash → SDK establishes the
+//      session → we show SET-PASSWORD → they save → /portal_index.html.
+//   2. Every visit after that: email + password → straight in. One screen.
+//   3. Supabase persists the session in localStorage, so on the same device
+//      most return visits skip this page entirely (portal_index's
+//      OF_bootstrap finds the live session and renders).
+//   4. Forgot password → resetPasswordForEmail(redirectTo: ?setup=1) → lands
+//      back here in SET-PASSWORD mode.
+//   5. Magic link kept as an explicit fallback (panel 3) — never the default.
 //
-// If OF_supabase() throws (config missing) we fall through to the
-// form rather than blocking the page; the form submit handler will
-// surface the real error if the SDK is unreachable.
-// ============================================================
-(async function redirectIfSignedIn() {
-  const veil = document.getElementById('session-veil');
-  try {
-    const supabase = window.OF_supabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      // Don't drop the veil — keep it up through the redirect to
-      // avoid a flash of the sign-in form mid-navigation.
-      window.location.replace('/portal_index.html');
+// SUPABASE DASHBOARD PREREQS (one-time, no code):
+//   · Auth → Providers → Email: "Email + Password" enabled (default-on).
+//   · Auth → URL Configuration: add
+//       https://<portal-domain>/portal_signin.html
+//     to the redirect allow-list (needed for the ?setup=1 recovery redirect).
+//   · The borrower invite link should target /portal_signin.html?setup=1 so
+//     first-clickers get the set-password panel instead of bouncing through
+//     portal_index and back.
+//
+// SECURITY NOTES:
+//   · No open access. This portal fronts borrower PII and loan docs; every
+//     entry path still terminates in a real Supabase session + RLS.
+//   · signInWithPassword errors are surfaced generically ("email or password
+//     didn't match") — never "no account with that email" (enumeration leak).
+//   · The magic-link fallback keeps the same no-enumeration behavior as
+//     before: success state shows regardless of whether the email matched.
+// =============================================================================
+
+(function () {
+  'use strict';
+
+  var qs = new URLSearchParams(window.location.search);
+  var WANT_SETUP = qs.get('setup') === '1'
+    || window.__OF_HASH_TYPE === 'invite'
+    || window.__OF_HASH_TYPE === 'recovery'
+    || window.__OF_HASH_TYPE === 'signup';
+
+  var veil = document.getElementById('session-veil');
+
+  function show(panelId) {
+    ['panel-signin', 'panel-setpass', 'panel-magic'].forEach(function (id) {
+      document.getElementById(id).classList.toggle('is-active', id === panelId);
+    });
+    document.getElementById('success-state').classList.remove('is-active');
+    dropVeil();
+  }
+  function showSuccess(title, text, emailMasked) {
+    ['panel-signin', 'panel-setpass', 'panel-magic'].forEach(function (id) {
+      document.getElementById(id).classList.remove('is-active');
+    });
+    document.getElementById('success-title').textContent = title;
+    document.getElementById('success-text').textContent = text;
+    document.getElementById('success-email').textContent = emailMasked || '';
+    document.getElementById('success-state').classList.add('is-active');
+    dropVeil();
+  }
+  function dropVeil() {
+    if (!veil) return;
+    veil.classList.add('is-hidden');
+    setTimeout(function () { if (veil.parentNode) veil.remove(); veil = null; }, 200);
+  }
+  function banner(id, msg) {
+    var el = document.getElementById(id);
+    if (!msg) { el.classList.remove('is-active'); return; }
+    el.textContent = msg;
+    el.classList.add('is-active');
+  }
+  function maskEmail(email) {
+    var parts = email.split('@');
+    var local = parts[0], domain = parts[1];
+    if (!domain) return email;
+    if (local.length <= 2) return local[0] + '***@' + domain;
+    return local[0] + '***' + local.slice(-1) + '@' + domain;
+  }
+  function validEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // BOOT — decide which panel this visit gets.
+  //
+  // The auth hash (invite/recovery token) is consumed by supabase-js during
+  // client init; session establishment from the hash can lag a tick, so when
+  // WANT_SETUP is true we poll getSession briefly before concluding the
+  // token failed. PASSWORD_RECOVERY also arrives via onAuthStateChange.
+  // ──────────────────────────────────────────────────────────────────────────
+  (async function boot() {
+    var supabase;
+    try {
+      supabase = window.OF_supabase();
+    } catch (e) {
+      console.warn('[portal/sign-in] config missing:', e);
+      show('panel-signin');
       return;
     }
-  } catch (e) {
-    console.warn('[portal/sign-in] session check skipped:', e);
+
+    // Recovery events fired by the SDK while the page is open (e.g. the SDK
+    // finishes parsing the hash after our first getSession call).
+    supabase.auth.onAuthStateChange(function (event) {
+      if (event === 'PASSWORD_RECOVERY') show('panel-setpass');
+    });
+
+    if (WANT_SETUP) {
+      // Give the SDK up to ~3s to turn the hash into a session.
+      for (var i = 0; i < 10; i++) {
+        var r = await supabase.auth.getSession();
+        if (r.data && r.data.session) { show('panel-setpass'); return; }
+        await new Promise(function (res) { setTimeout(res, 300); });
+      }
+      // Token expired or already used — back to sign-in with a clear message.
+      show('panel-signin');
+      banner('error-banner',
+        'That link expired or was already used. Sign in with your password, ' +
+        'or request a fresh link below.');
+      return;
+    }
+
+    // Normal visit: existing session → skip this page entirely.
+    try {
+      var s = await supabase.auth.getSession();
+      if (s.data && s.data.session) {
+        window.location.replace('/portal_index.html');
+        return; // keep the veil up through the redirect
+      }
+    } catch (e) {
+      console.warn('[portal/sign-in] session check skipped:', e);
+    }
+    show('panel-signin');
+    showRedirectError();
+  })();
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Redirect-error banner — other portal pages send users back here with
+  // ?error=<code>. Codes are part of the portal-auth.js contract.
+  // ──────────────────────────────────────────────────────────────────────────
+  function showRedirectError() {
+    var error = qs.get('error');
+    if (!error) return;
+    var messages = {
+      not_a_borrower: 'That email is registered with us, but not as a borrower. Use a different email or contact your loan officer.',
+      link_failed:    'We couldn\'t sign you in with that link. Sign in with your password, or request a fresh link.',
+      expired:        'That sign-in link expired. Sign in with your password, or request a new link.',
+    };
+    banner('error-banner', messages[error] || 'Sign-in failed. Please try again.');
   }
-  // No session — reveal the form.
-  veil.classList.add('is-hidden');
-  // Remove from DOM after fade so it doesn't trap pointer events.
-  setTimeout(() => veil.remove(), 200);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // PANEL 1 · email + password
+  // ──────────────────────────────────────────────────────────────────────────
+  document.getElementById('signin-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    banner('error-banner', null);
+    banner('info-banner', null);
+
+    var email = document.getElementById('email').value.trim().toLowerCase();
+    var password = document.getElementById('password').value;
+    if (!validEmail(email)) { banner('error-banner', 'Please enter a valid email.'); return; }
+    if (!password)          { banner('error-banner', 'Please enter your password.'); return; }
+
+    var btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+
+    try {
+      var supabase = window.OF_supabase();
+      var res = await supabase.auth.signInWithPassword({ email: email, password: password });
+      if (res.error) {
+        // Generic on purpose — never confirm whether the email exists.
+        banner('error-banner', 'That email and password didn\'t match. Try again, or use "Forgot password?".');
+        btn.disabled = false; btn.textContent = 'Sign in →';
+        return;
+      }
+      window.location.replace('/portal_index.html');
+    } catch (err) {
+      console.error('[portal/sign-in] password sign-in failed:', err);
+      banner('error-banner', 'Could not sign in right now. Please try again.');
+      btn.disabled = false; btn.textContent = 'Sign in →';
+    }
+  });
+
+  // Forgot password → recovery email → lands back here with ?setup=1.
+  document.getElementById('forgot-link').addEventListener('click', async function () {
+    banner('error-banner', null);
+    var email = document.getElementById('email').value.trim().toLowerCase();
+    if (!validEmail(email)) {
+      banner('info-banner', 'Type your email above first, then tap "Forgot password?" again.');
+      document.getElementById('email').focus();
+      return;
+    }
+    try {
+      var supabase = window.OF_supabase();
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/portal_signin.html?setup=1',
+      });
+    } catch (err) {
+      console.warn('[portal/sign-in] reset request error (shown as success anyway — no enumeration):', err);
+    }
+    // Same response whether or not the account exists.
+    showSuccess(
+      'Check your email.',
+      'If that email is on a loan with us, a password-reset link is on its way. It signs you in and lets you choose a new password.',
+      maskEmail(email)
+    );
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // PANEL 2 · set password (invite / recovery / ?setup=1 landings)
+  // ──────────────────────────────────────────────────────────────────────────
+  document.getElementById('setpass-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    banner('setpass-error', null);
+
+    var p1 = document.getElementById('new-password').value;
+    var p2 = document.getElementById('confirm-password').value;
+    if (p1.length < 8)  { banner('setpass-error', 'Password needs at least 8 characters.'); return; }
+    if (p1 !== p2)      { banner('setpass-error', 'Those passwords don\'t match.'); return; }
+
+    var btn = document.getElementById('setpass-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    try {
+      var supabase = window.OF_supabase();
+      var res = await supabase.auth.updateUser({ password: p1 });
+      if (res.error) throw res.error;
+      window.location.replace('/portal_index.html');
+    } catch (err) {
+      console.error('[portal/sign-in] set password failed:', err);
+      banner('setpass-error', err.message || 'Could not save that password. Please try again.');
+      btn.disabled = false; btn.textContent = 'Save password & open my portal →';
+    }
+  });
+
+  // Already signed in via the invite token — skipping just proceeds to the
+  // portal on the current session. They can set a password later via
+  // "Forgot password?" (which works even when no password was ever set).
+  document.getElementById('setpass-skip').addEventListener('click', function () {
+    window.location.replace('/portal_index.html');
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // PANEL 3 · magic-link fallback (delegates to OF_signInWithEmail)
+  // ──────────────────────────────────────────────────────────────────────────
+  document.getElementById('magic-link-toggle').addEventListener('click', function () {
+    var email = document.getElementById('email').value.trim();
+    if (email) document.getElementById('magic-email').value = email;
+    show('panel-magic');
+  });
+  document.getElementById('magic-back').addEventListener('click', function () {
+    show('panel-signin');
+  });
+
+  document.getElementById('magic-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    banner('magic-error', null);
+
+    var email = document.getElementById('magic-email').value.trim().toLowerCase();
+    if (!validEmail(email)) { banner('magic-error', 'Please enter a valid email.'); return; }
+
+    var btn = document.getElementById('magic-btn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+
+    try {
+      // Direct call with EXPLICIT redirect — never trusts the Site URL
+      // default (which is what was sending borrowers to localhost).
+      // The redirect target must be in Supabase Auth → URL Configuration →
+      // Redirect URLs, or Supabase silently falls back to the Site URL.
+      var supabase = window.OF_supabase();
+      var res = await supabase.auth.signInWithOtp({
+        email: email,
+        options: { emailRedirectTo: window.location.origin + '/portal_signin.html' },
+      });
+      if (res.error) throw res.error;
+      // No enumeration: success either way.
+      showSuccess(
+        'Check your email.',
+        'We just sent a one-time sign-in link. Click it to land back here, already signed in.',
+        maskEmail(email)
+      );
+    } catch (err) {
+      console.error('[portal/sign-in] magic link failed:', err);
+      banner('magic-error', err.message || 'Could not send link. Please try again.');
+      btn.disabled = false; btn.textContent = 'Email me a sign-in link →';
+    }
+  });
 })();
-
-// ============================================================
-// Redirect-error banner
-// ------------------------------------------------------------
-// Other portal pages send users back here with ?error=<code> when
-// they cannot establish a session. The codes are part of the
-// portal-auth.js contract; if a new code is added there it needs
-// a matching entry in this map.
-// ============================================================
-(function showRedirectError() {
-  const params = new URLSearchParams(window.location.search);
-  const error = params.get('error');
-  if (!error) return;
-  const banner = document.getElementById('error-banner');
-  const messages = {
-    not_a_borrower: 'That email is registered with us, but not as a borrower. Use a different email or contact your loan officer.',
-    link_failed:    'We couldn\'t sign you in with that link. Try again — request a fresh link below.',
-    expired:        'That sign-in link expired. Request a new one below.',
-  };
-  banner.textContent = messages[error] || 'Sign-in failed. Please try again.';
-  banner.classList.add('is-active');
-})();
-
-// ============================================================
-// Form submission
-// ------------------------------------------------------------
-// Delegates entirely to OF_signInWithEmail() from portal-auth.js,
-// which wraps supabase.auth.signInWithOtp(). The function returns
-// a promise that resolves once the magic-link email is dispatched
-// (NOT once the user clicks it — that's handled by the auth flow
-// on the landing page via detectSessionInUrl: true).
-//
-// Email validation here is intentionally loose. Supabase performs
-// the real validation server-side and we'd rather show the user a
-// generic "could not send" than try to outguess valid TLDs.
-// ============================================================
-document.getElementById('signin-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const emailInput = document.getElementById('email');
-  const submitBtn = document.getElementById('submit-btn');
-  const banner = document.getElementById('error-banner');
-  banner.classList.remove('is-active');
-
-  const email = emailInput.value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    banner.textContent = 'Please enter a valid email.';
-    banner.classList.add('is-active');
-    return;
-  }
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Sending…';
-
-  try {
-    await window.OF_signInWithEmail(email);
-    // Swap to success state. We intentionally do NOT confirm whether
-    // the email matched a known borrower — that's an account-
-    // enumeration leak. Supabase's signInWithOtp returns success
-    // either way; if no account exists, no email is sent and the
-    // user simply never receives a link.
-    document.getElementById('form-state').style.display = 'none';
-    document.getElementById('success-state').classList.add('is-active');
-    document.getElementById('success-email').textContent = maskEmail(email);
-  } catch (err) {
-    console.error('Sign-in failed:', err);
-    banner.textContent = err.message || 'Could not send link. Please try again.';
-    banner.classList.add('is-active');
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Email me a sign-in link →';
-  }
-});
-
-function maskEmail(email) {
-  const [local, domain] = email.split('@');
-  if (!domain) return email;
-  if (local.length <= 2) return local[0] + '***@' + domain;
-  return local[0] + '***' + local.slice(-1) + '@' + domain;
-}
 </script>
 
 </body>
