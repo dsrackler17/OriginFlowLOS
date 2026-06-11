@@ -239,10 +239,8 @@
 //     (classify → extract → auto-clear) takes over from there.
 //   · conditions: borrower_can_read_own_conditions confirmed.
 //
-// ⚠ ONE REMAINING UNKNOWN: the exact path rule inside "borrower uploads to
-//   own loan path" (the policy qual wasn't in the dump). Primary guess is
-//   {loan_id}/... as the first folder; on an RLS rejection the upload
-//   retries {branch_id}/{loan_id}/... before surfacing the error.
+// ⚠ resolved: the "own loan path" rule is loans/{loan_id}/… — confirmed
+//   from the storage policy qual; upload below uses exactly that shape.
 // =============================================================================
 
 const DOCS_BUCKET = 'loan-documents';   // [CONFIRMED] storage.buckets
@@ -421,29 +419,15 @@ async function handleUpload(inp){
     if (file.size > 25 * 1024 * 1024) throw new Error('That file is over 25 MB — try a photo instead.');
 
     const safeName = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
-    const stamp = Date.now();
-    const branchId = ctx.loan.branch_id || 'branch';
 
-    // Primary path puts loan_id as the first folder ("own loan path");
-    // fall back to branch/loan if the storage policy expects that shape.
-    const candidates = [
-      `${ctx.loan.id}/portal/${stamp}-${safeName}`,
-      `${branchId}/${ctx.loan.id}/portal/${stamp}-${safeName}`,
-    ];
-    let uploaded = null, lastErr = null;
-    for (const path of candidates) {
-      const up = await supa.storage.from(DOCS_BUCKET).upload(path, file, {
-        contentType: file.type || 'application/octet-stream',
-        upsert: false,
-      });
-      if (!up.error) { uploaded = path; break; }
-      lastErr = up.error;
-      // Only retry the alternate shape on a policy rejection; anything
-      // else (network, size) won't be fixed by a different path.
-      if (!/policy|row.level|security|violat/i.test(up.error.message || '')) break;
-      console.warn('[portal/docs] path rejected, retrying alternate:', path, up.error.message);
-    }
-    if (!uploaded) throw new Error('Upload failed: ' + (lastErr?.message || 'unknown'));
+    // [CONFIRMED] storage policy "borrower uploads to own loan path":
+    //   bucket loan-documents · foldername[1] = 'loans' · foldername[2] = loan uuid
+    const path = `loans/${ctx.loan.id}/portal/${Date.now()}-${safeName}`;
+    const up = await supa.storage.from(DOCS_BUCKET).upload(path, file, {
+      contentType: file.type || 'application/octet-stream',
+      upsert: false,
+    });
+    if (up.error) throw new Error('Upload failed: ' + up.error.message);
 
     // No table insert from the client — borrowers can't write documents /
     // loan_documents by design. The process-document webhook registers the
