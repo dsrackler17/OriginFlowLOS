@@ -211,6 +211,9 @@
 
   <div class="section-label">Received &amp; cleared <span class="count" id="count-done">—</span></div>
   <div id="list-done"></div>
+
+  <div class="section-label">Your uploads <span class="count" id="count-up">—</span></div>
+  <div id="list-uploads"><div class="empty">Files you send show their review status here.</div></div>
 </main>
 
 <nav class="tabbar">
@@ -226,24 +229,23 @@
 // PORTAL · DOCUMENTS — borrower-facing document requests + upload
 // -----------------------------------------------------------------------------
 // Auth: window.OF_bootstrap() (portal-auth.js) → { session, borrower, loan }.
-// Same redirect contract as portal_index.html.
 //
-// Data:
-//   READ  conditions WHERE loan_id = loan.id — RLS already allows the
-//         borrower read (portal_index counts open conditions today).
-//         Confirmed columns: id, title, description, category, status
-//         (outstanding|cleared), required_doc_type, created_at, cleared_at.
-//   WRITE Supabase Storage (client-direct, per the storage architecture) +
-//         a row in the documents table so process-document picks it up.
+// [SCHEMA-CONFIRMED 2026-06-10]
+//   · Bucket: loan-documents. Storage policies: "borrower uploads to own
+//     loan path" (INSERT) + "borrower reads own loan docs" (SELECT).
+//   · Borrowers can READ loan_documents but CANNOT insert into documents or
+//     loan_documents — registration is the process-document webhook's job.
+//     So the client's only write is the storage upload itself; the pipeline
+//     (classify → extract → auto-clear) takes over from there.
+//   · conditions: borrower_can_read_own_conditions confirmed.
 //
-// ⚠ TWO FLAGGED GUESSES — confirm with portal_schema_dump.sql:
-//   1. DOCS_BUCKET — the storage bucket name for loan documents.
-//   2. The documents-table insert payload (table + column names).
-// Both failure modes are non-destructive: the toast shows the exact error,
-// nothing else on the page breaks, and one paste of the dump fixes it.
+// ⚠ ONE REMAINING UNKNOWN: the exact path rule inside "borrower uploads to
+//   own loan path" (the policy qual wasn't in the dump). Primary guess is
+//   {loan_id}/... as the first folder; on an RLS rejection the upload
+//   retries {branch_id}/{loan_id}/... before surfacing the error.
 // =============================================================================
 
-const DOCS_BUCKET = 'documents';   // ⚠ CONFIRM against storage.buckets
+const DOCS_BUCKET = 'loan-documents';   // [CONFIRMED] storage.buckets
 const $ = (s) => document.querySelector(s);
 let ctx = null;
 let supa = null;
@@ -282,7 +284,57 @@ async function init(){
   $('#eyebrow').textContent = 'Loan #' + (ctx.loan.loan_number || ctx.loan.loan_no || '—');
 
   await loadConditions();
+  await loadUploads();
   dropVeil();
+}
+
+// ─── Your uploads — live status off loan_documents (borrower SELECT is
+// confirmed by RLS). This is the extraction pipeline made visible to the
+// borrower: received → scanned → classified ("we read it as a W-2") →
+// extracted → accepted, or rejected with the reason.
+const UP_STATUS = {
+  pending_upload: ['waiting', 'needed'],
+  uploaded:       ['received', 'received'],
+  scanned:        ['scanning', 'received'],
+  classified:     ['identified', 'received'],
+  extracted:      ['reading complete', 'received'],
+  accepted:       ['✓ accepted', 'cleared'],
+  rejected:       ['needs another try', 'needed'],
+};
+async function loadUploads(){
+  const { data, error } = await supa.from('loan_documents')
+    .select('id, filename, status, ai_classified_doc_type, ai_classification_confidence, rejected_reason, uploaded_at, created_at')
+    .eq('loan_id', ctx.loan.id)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error) {
+    console.warn('[portal/docs] loan_documents:', error.message);
+    return;   // section keeps its placeholder; nothing else breaks
+  }
+  const docs = (data || []).filter(d => d.status !== 'pending_upload');
+  $('#count-up').textContent = docs.length;
+  if (!docs.length) return;
+
+  $('#list-uploads').innerHTML = docs.map(d => {
+    const [label, cls] = UP_STATUS[d.status] || [String(d.status||'').replace(/_/g,' '), 'received'];
+    const klass = d.ai_classified_doc_type
+      ? `Read as: ${docLabel(d.ai_classified_doc_type)}${d.ai_classification_confidence != null ? ' · ' + Math.round(Number(d.ai_classification_confidence)*100) + '% sure' : ''}`
+      : null;
+    return `
+      <div class="doc-card">
+        <div class="doc-head">
+          <div class="doc-icon">${d.status === 'accepted' ? '✓' : d.status === 'rejected' ? '↺' : '🤖'}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="doc-title">${esc(d.filename || 'Document')}</div>
+            ${klass ? `<div class="doc-desc">${esc(klass)}</div>` : ''}
+            ${d.status === 'rejected' && d.rejected_reason ? `<div class="doc-desc" style="color:var(--warn);">${esc(d.rejected_reason)}</div>` : ''}
+            <div class="doc-meta">${d.uploaded_at ? 'sent ' + new Date(d.uploaded_at).toLocaleString() : ''}</div>
+          </div>
+          <span class="doc-status ${cls}">${esc(label)}</span>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 async function loadConditions(){
@@ -360,7 +412,6 @@ async function handleUpload(inp){
   const file = inp.files && inp.files[0];
   if (!file) return;
   const condId = inp.dataset.condId;
-  const docType = inp.dataset.docType || null;
   const btn = $('#btn-' + CSS.escape(condId));
   btn.classList.add('busy');
   const oldText = btn.firstChild.textContent;
@@ -370,46 +421,47 @@ async function handleUpload(inp){
     if (file.size > 25 * 1024 * 1024) throw new Error('That file is over 25 MB — try a photo instead.');
 
     const safeName = file.name.replace(/[^\w.\-]+/g, '_').slice(-80);
+    const stamp = Date.now();
     const branchId = ctx.loan.branch_id || 'branch';
-    const path = `${branchId}/${ctx.loan.id}/portal/${Date.now()}-${safeName}`;
 
-    // 1 · client-direct upload to Storage
-    const up = await supa.storage.from(DOCS_BUCKET).upload(path, file, {
-      contentType: file.type || 'application/octet-stream',
-      upsert: false,
-    });
-    if (up.error) throw new Error('Upload failed: ' + up.error.message);
-
-    // 2 · register the document row so the extraction pipeline picks it up.
-    // ⚠ Payload is a best-guess shape — confirm against portal_schema_dump.
-    const { error: insErr } = await supa.from('documents').insert({
-      loan_id: ctx.loan.id,
-      branch_id: ctx.loan.branch_id || null,
-      condition_id: condId,
-      doc_type: docType,
-      file_name: file.name,
-      storage_path: path,
-      source: 'portal',
-      uploaded_by_borrower_id: ctx.borrower.id,
-    });
-    if (insErr) {
-      // Upload itself succeeded — the file is safe. Surface the registration
-      // miss loudly in console for the schema-fix pass, softly to the borrower.
-      console.error('[portal/docs] documents insert failed (file IS uploaded):', insErr);
-      toast('Uploaded — your loan team will see it shortly.');
-    } else {
-      toast('Uploaded ✓ — being reviewed now.');
+    // Primary path puts loan_id as the first folder ("own loan path");
+    // fall back to branch/loan if the storage policy expects that shape.
+    const candidates = [
+      `${ctx.loan.id}/portal/${stamp}-${safeName}`,
+      `${branchId}/${ctx.loan.id}/portal/${stamp}-${safeName}`,
+    ];
+    let uploaded = null, lastErr = null;
+    for (const path of candidates) {
+      const up = await supa.storage.from(DOCS_BUCKET).upload(path, file, {
+        contentType: file.type || 'application/octet-stream',
+        upsert: false,
+      });
+      if (!up.error) { uploaded = path; break; }
+      lastErr = up.error;
+      // Only retry the alternate shape on a policy rejection; anything
+      // else (network, size) won't be fixed by a different path.
+      if (!/policy|row.level|security|violat/i.test(up.error.message || '')) break;
+      console.warn('[portal/docs] path rejected, retrying alternate:', path, up.error.message);
     }
+    if (!uploaded) throw new Error('Upload failed: ' + (lastErr?.message || 'unknown'));
+
+    // No table insert from the client — borrowers can't write documents /
+    // loan_documents by design. The process-document webhook registers the
+    // file, classifies it, extracts, and auto-clears the condition.
+    toast('Uploaded ✓ — being reviewed now.');
 
     uploadedThisSession.add(condId);
     const flash = $('#flash-' + CSS.escape(condId));
     if (flash) {
-      flash.textContent = `✓ ${file.name} received${docType ? '' : ''} — our document reader is checking it. This item clears automatically once it passes.`;
+      flash.textContent = `✓ ${file.name} received — our document reader is checking it. This item clears automatically once it passes.`;
       flash.classList.add('show');
     }
     const card = document.querySelector(`[data-cond-id="${condId}"] .doc-status`);
     if (card) { card.className = 'doc-status received'; card.textContent = 'received'; }
     btn.firstChild.textContent = '⇪ Upload another ';
+
+    // Refresh the uploads section after a beat so the pipeline's row shows.
+    setTimeout(loadUploads, 2500);
   } catch (err) {
     console.error('[portal/docs] upload:', err);
     toast(err.message || 'Upload failed — please try again.', true);

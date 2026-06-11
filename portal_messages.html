@@ -212,24 +212,25 @@
 // =============================================================================
 // PORTAL · MESSAGES — borrower ↔ loan-team thread
 // -----------------------------------------------------------------------------
-// Auth: OF_bootstrap() → { session, borrower, loan }, same contract as
-// portal_index.html (which already counts unread messages for this loan, so
-// borrower read access through RLS is established).
+// Auth: OF_bootstrap() → { session, borrower, loan }.
 //
-// ⚠ FLAGGED GUESS — the messages table. Best guess: `loan_messages`
-// (the staff side has loan_messages.html). This page is built to survive
-// schema drift in two ways:
-//   · SELECT * — column-name guesses can't 400 the read
-//   · field READS go through alias chains (body/message/content, etc.)
-//   · the SEND payload is the minimal shape; a column error surfaces
-//     verbatim in the toast for the one-paste fix
-// Run portal_schema_dump.sql and paste the output to collapse the guesses.
+// [SCHEMA-CONFIRMED 2026-06-10] There is no loan_messages table. Messaging
+// runs on the chat system the staff side already uses:
+//   chat_channels  (kind='loan', loan_id, branch_id, slug, label)
+//   chat_messages  (channel_id, author_id, body, is_system, created_at)
+// The borrower posts with author_id = their auth uid. Sender display: any
+// message whose author_id ≠ the borrower renders as "Your loan team" —
+// borrowers can't join profiles, and that's fine for this surface.
+//
+// ⚠ ONE REMAINING UNKNOWN: whether chat_channels / chat_messages RLS grants
+// the borrower read+insert. If not, this page shows a clean "thread not
+// available yet" state and the chat_borrower_rls.sql migration (delivered
+// alongside) adds the policies using the same borrower-ownership predicate
+// as borrower_can_read_own_conditions.
 // =============================================================================
 
-const MSG_TABLE = 'loan_messages';   // ⚠ CONFIRM against the schema dump
-
 const $ = (s) => document.querySelector(s);
-let ctx = null, supa = null, chan = null;
+let ctx = null, supa = null, chan = null, channel = null;
 let msgs = [];
 
 function toast(m, err){ const t=$('#toast'); t.textContent=m; t.classList.toggle('err',!!err);
@@ -246,21 +247,10 @@ function dayStr(iso){
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
-// A message is "mine" (the borrower's) if any of the likely authorship
-// markers point at the borrower. Everything else renders as the team.
-function isMine(m){
-  if (pick(m,'borrower_id') === ctx.borrower.id) return true;
-  if (pick(m,'sender_borrower_id') === ctx.borrower.id) return true;
-  const st = String(pick(m,'sender_type','author_type','sender_role') || '').toLowerCase();
-  if (st === 'borrower') return true;
-  if (pick(m,'sender_id','author_id') === ctx.session.user.id) return true;
-  return false;
-}
-function bodyOf(m){ return pick(m,'body','message','content','text') || ''; }
-function senderName(m){
-  if (isMine(m)) return 'You';
-  return pick(m,'sender_name','author_name') || 'Your loan team';
-}
+// chat_messages semantics: the borrower's messages carry their auth uid.
+function isMine(m){ return m.author_id === ctx.session.user.id; }
+function bodyOf(m){ return m.body || ''; }
+function senderName(m){ return isMine(m) ? 'You' : 'Your loan team'; }
 
 async function init(){
   try { ctx = await window.OF_bootstrap(); }
@@ -284,9 +274,33 @@ async function init(){
 }
 
 async function loadThread(){
-  const { data, error } = await supa.from(MSG_TABLE)
-    .select('*')
+  // 1 · resolve this loan's chat channel
+  const { data: ch, error: chErr } = await supa.from('chat_channels')
+    .select('id, label, kind, loan_id, branch_id')
+    .eq('kind', 'loan')
     .eq('loan_id', ctx.loan.id)
+    .maybeSingle();
+
+  if (chErr) {
+    console.error('[portal/messages] channel:', chErr);
+    $('#thread-inner').innerHTML =
+      `<div class="empty"><div class="big">⚠</div>Messages aren't available on your portal yet.<br>Your loan team can still be reached by phone or email.</div>`;
+    $('#composer-input').disabled = true;
+    return;
+  }
+  channel = ch || null;
+
+  if (!channel) {
+    // No thread yet — first send creates it.
+    msgs = [];
+    renderThread();
+    return;
+  }
+
+  // 2 · load the thread
+  const { data, error } = await supa.from('chat_messages')
+    .select('id, channel_id, author_id, body, is_system, created_at')
+    .eq('channel_id', channel.id)
     .order('created_at', { ascending: true })
     .limit(200);
 
@@ -294,12 +308,11 @@ async function loadThread(){
     console.error('[portal/messages] load:', error);
     $('#thread-inner').innerHTML =
       `<div class="empty"><div class="big">⚠</div>Messages couldn't load right now.<br>Your loan team can still be reached by phone or email.</div>`;
-    dropVeil();
     return;
   }
   msgs = data || [];
   renderThread();
-  markThreadRead();
+  initRealtime();
 }
 
 function renderThread(){
@@ -329,17 +342,6 @@ function renderThread(){
 
 function scrollToEnd(){ const t=$('#thread'); requestAnimationFrame(()=>{ t.scrollTop = t.scrollHeight; }); }
 
-// Best-effort read receipt — if the table has read_at / read_by_borrower_at
-// it gets stamped; if not, the update errors silently and nothing breaks.
-async function markThreadRead(){
-  try {
-    await supa.from(MSG_TABLE)
-      .update({ read_at: new Date().toISOString() })
-      .eq('loan_id', ctx.loan.id)
-      .is('read_at', null);
-  } catch (_) {}
-}
-
 function initComposer(){
   const inp = $('#composer-input');
   const btn = $('#send-btn');
@@ -363,36 +365,53 @@ async function send(){
   if (!body) return;
   btn.disabled = true;
 
-  // ⚠ Minimal payload, best-guess columns — a mismatch surfaces verbatim.
-  const payload = {
-    loan_id: ctx.loan.id,
-    branch_id: ctx.loan.branch_id || null,
-    borrower_id: ctx.borrower.id,
-    sender_type: 'borrower',
-    body,
-  };
-  const { data, error } = await supa.from(MSG_TABLE).insert(payload).select('*').maybeSingle();
-  if (error) {
-    console.error('[portal/messages] send:', error);
+  try {
+    // First message creates the loan channel (same slug convention the
+    // staff dashboard uses, so both sides land in one thread).
+    if (!channel) {
+      const { data: newCh, error: createErr } = await supa.from('chat_channels')
+        .insert({
+          branch_id: ctx.loan.branch_id,
+          slug: `loan-${ctx.loan.id}`,
+          label: ctx.loan.loan_number || 'Loan',
+          kind: 'loan',
+          loan_id: ctx.loan.id,
+        })
+        .select('id, branch_id').single();
+      if (createErr) throw createErr;
+      channel = newCh;
+      initRealtime();
+    }
+
+    const { data, error } = await supa.from('chat_messages').insert({
+      branch_id: channel.branch_id || ctx.loan.branch_id,
+      channel_id: channel.id,
+      author_id: ctx.session.user.id,
+      body,
+    }).select('id, channel_id, author_id, body, is_system, created_at').maybeSingle();
+    if (error) throw error;
+
+    inp.value = ''; inp.style.height = 'auto';
+    if (data && !msgs.some(m => m.id === data.id)) { msgs.push(data); renderThread(); }
+  } catch (err) {
+    console.error('[portal/messages] send:', err);
     toast('Message didn\'t send — please try again.', true);
     btn.disabled = false;
     return;
   }
-  inp.value = ''; inp.style.height = 'auto';
-  if (data && !msgs.some(m => m.id === data.id)) { msgs.push(data); renderThread(); }
   btn.disabled = true;
 }
 
 function initRealtime(){
-  chan = supa.channel(`portal-messages:${ctx.loan.id}`)
+  if (chan || !channel) return;
+  chan = supa.channel(`portal-chat:${channel.id}`)
     .on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: MSG_TABLE, filter: `loan_id=eq.${ctx.loan.id}` },
+      { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `channel_id=eq.${channel.id}` },
       (payload) => {
         const row = payload.new;
         if (msgs.some(m => m.id === row.id)) return;   // already optimistic-rendered
         msgs.push(row);
         renderThread();
-        if (!isMine(row)) markThreadRead();
       })
     .subscribe();
 }
