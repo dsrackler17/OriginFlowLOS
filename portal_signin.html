@@ -200,16 +200,18 @@
       margin-top: 6px;
     }
 
-    /* 6-digit OTP code entry — big, centered, spaced so it reads as a code */
+    /* OTP code entry — big, centered, spaced so it reads as a code. Length is
+       not hardcoded: the project's OTP can be 6–10 digits, so this has to look
+       right across that range. */
     .code-input {
       text-align: center;
       font-family: var(--font-mono);
-      font-size: 28px;
-      letter-spacing: 0.5em;
-      padding-left: 0.5em; /* offset the trailing letter-spacing so it looks centered */
+      font-size: 24px;
+      letter-spacing: 0.32em;
+      padding-left: 0.32em; /* offset the trailing letter-spacing so it looks centered */
       font-weight: 700;
     }
-    .code-input::placeholder { letter-spacing: 0.35em; font-size: 20px; }
+    .code-input::placeholder { letter-spacing: 0.16em; font-size: 16px; }
 
     .btn {
       width: 100%;
@@ -397,7 +399,7 @@
       <div class="eyebrow">One-time code</div>
       <h1 class="title" id="code-request-title">We'll email you a code.</h1>
       <p class="subtitle" id="code-request-sub">
-        Enter the email on your loan. We'll send a 6-digit code &mdash; it works in
+        Enter the email on your loan. We'll send a code &mdash; it works in
         any email app, with nothing to click.
       </p>
 
@@ -420,7 +422,7 @@
       <div class="eyebrow">Enter your code</div>
       <h1 class="title">Check your email.</h1>
       <p class="subtitle" id="code-verify-sub">
-        We sent a 6-digit code to your email. Enter it below.
+        We sent a code to your email. Enter it below.
       </p>
 
       <div class="error-banner" id="code-verify-error"></div>
@@ -428,10 +430,10 @@
 
       <form id="code-verify-form" autocomplete="one-time-code" novalidate>
         <div class="field">
-          <label class="field-label" for="code-input">6-digit code</label>
+          <label class="field-label" for="code-input">Verification code</label>
           <input class="field-input code-input" id="code-input" type="text"
                  inputmode="numeric" autocomplete="one-time-code" required
-                 pattern="[0-9]*" placeholder="000000" maxlength="6">
+                 pattern="[0-9]*" placeholder="Enter code" maxlength="10">
         </div>
         <button class="btn" type="submit" id="code-verify-btn">Verify &amp; continue →</button>
         <div class="helper">
@@ -640,7 +642,7 @@
     dst.value = validEmail(email) ? email : '';
     document.getElementById('code-request-title').textContent = 'Reset your password.';
     document.getElementById('code-request-sub').innerHTML =
-      'Enter your email and we\'ll send a 6-digit code. After you enter it, ' +
+      'Enter your email and we\'ll send a code. After you enter it, ' +
       'you can choose a new password.';
     show('panel-code-request');
     if (!validEmail(email)) dst.focus();
@@ -721,7 +723,7 @@
     dst.value = validEmail(email) ? email : '';
     document.getElementById('code-request-title').textContent = "We'll email you a code.";
     document.getElementById('code-request-sub').innerHTML =
-      'Enter the email on your loan. We\'ll send a 6-digit code &mdash; it works in ' +
+      'Enter the email on your loan. We\'ll send a code &mdash; it works in ' +
       'any email app, with nothing to click.';
     show('panel-code-request');
   });
@@ -764,7 +766,7 @@
 
     pendingEmail = email;
     document.getElementById('code-verify-sub').innerHTML =
-      'We sent a 6-digit code to <strong>' + maskEmail(email) + '</strong>. ' +
+      'We sent a code to <strong>' + maskEmail(email) + '</strong>. ' +
       'Enter it below &mdash; it expires in 60 minutes.';
     document.getElementById('code-input').value = '';
     banner('code-verify-error', null);
@@ -782,8 +784,8 @@
     banner('code-verify-info', null);
 
     var token = document.getElementById('code-input').value.replace(/\D/g, '');
-    if (token.length !== 6) {
-      banner('code-verify-error', 'Enter the 6-digit code from your email.');
+    if (token.length < 6) {
+      banner('code-verify-error', 'Enter the full code from your email.');
       return;
     }
     if (!validEmail(pendingEmail)) { show('panel-code-request'); return; }
