@@ -473,6 +473,51 @@ footer a:hover { color: var(--accent); }
   .loan-block-head { grid-template-columns: 1fr; gap: 0.4rem; }
   .loan-block-progress { width: 100%; }
 }
+
+/* ─── 12.4 · MODALS (add condition / templates / reassign) + TOAST ───── */
+.cmod-overlay{position:fixed;inset:0;background:rgba(4,13,26,0.85);backdrop-filter:blur(6px);
+  z-index:1000;display:none;align-items:center;justify-content:center;padding:1.5rem;}
+.cmod-overlay.open{display:flex;}
+.cmod{background:var(--surface);border:1px solid var(--border);width:100%;max-width:600px;
+  max-height:88vh;display:flex;flex-direction:column;
+  box-shadow:0 30px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(0,212,255,0.08);}
+.cmod-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:var(--deep);
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.cmod-title{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);}
+.cmod-x{font-family:var(--mono);font-size:0.7rem;color:var(--muted);background:none;
+  border:1px solid var(--border);padding:0.3rem 0.6rem;cursor:pointer;}
+.cmod-x:hover{color:var(--red);border-color:rgba(255,68,68,0.4);}
+.cmod-body{padding:1.1rem 1.25rem;overflow-y:auto;}
+.cmod-foot{padding:0.9rem 1.25rem;border-top:1px solid var(--border);background:var(--deep);
+  display:flex;justify-content:flex-end;gap:0.6rem;flex-shrink:0;}
+.cmod-sub{font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.05em;
+  margin-bottom:0.85rem;line-height:1.6;}
+.cmod-field{display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.8rem;}
+.cmod-field label{font-family:var(--mono);font-size:0.56rem;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--muted);}
+.cmod-field input,.cmod-field select,.cmod-field textarea{background:var(--deep);
+  border:1px solid var(--border);color:var(--white);font-family:var(--sans);font-size:0.82rem;
+  padding:0.55rem 0.7rem;outline:none;}
+.cmod-field input:focus,.cmod-field select:focus,.cmod-field textarea:focus{border-color:var(--accent);}
+.cmod-tpl-list{display:flex;flex-direction:column;gap:0.4rem;max-height:300px;overflow-y:auto;margin-bottom:0.85rem;}
+.cmod-tpl{display:grid;grid-template-columns:auto auto 1fr auto;gap:0.6rem;align-items:center;
+  padding:0.5rem 0.7rem;background:var(--deep);border:1px solid var(--border);cursor:pointer;
+  font-size:0.8rem;transition:border-color 0.15s;}
+.cmod-tpl:hover{border-color:rgba(0,212,255,0.35);}
+.cmod-tpl.checked{border-color:var(--accent);background:rgba(0,212,255,0.05);}
+.cmod-tpl input{accent-color:var(--accent);cursor:pointer;}
+.cmod-tpl .t-title{color:var(--text);line-height:1.3;}
+.cmod-tpl .t-badge{font-family:var(--mono);font-size:0.52rem;letter-spacing:0.08em;
+  padding:0.1rem 0.4rem;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
+.cmod-tpl .t-badge.ai{color:var(--accent2);border-color:rgba(0,255,157,0.4);}
+.cmod-divider{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.14em;color:var(--muted);
+  text-transform:uppercase;margin:1rem 0 0.6rem;padding-top:0.85rem;border-top:1px dashed var(--border);}
+.of-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);
+  border:1px solid var(--border);border-left:3px solid var(--accent2);padding:0.85rem 1.1rem;
+  font-family:var(--mono);font-size:0.7rem;color:var(--text);letter-spacing:0.04em;z-index:1200;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);display:none;max-width:380px;}
+.of-toast.err{border-left-color:var(--red);color:var(--red);}
+.of-toast.show{display:block;}
 </style>
 </head>
 <body>
@@ -550,9 +595,9 @@ footer a:hover { color: var(--accent); }
       <p>Every PTD, PTC, and ATC condition across your branch in one place. AI auto-clears anything it can prove from documents — humans handle the rest.</p>
     </div>
     <div class="page-actions">
-      <button class="btn" onclick="alert('PDF export coming with checklist 13.5.8 (TRID dashboard) / CC.7 (PDF infra)')">⤓ Export PDF</button>
-      <button class="btn" onclick="alert('Condition templates UI is part of UW workspace · checklist 12.5.8')">📋 Templates</button>
-      <button class="btn primary" onclick="alert('Add Condition modal coming with 12.5.8 — UW workspace · for now, conditions are seeded by the condition_templates engine')">+ Add Condition</button>
+      <button class="btn" onclick="exportConditionsPdf()">⤓ Export PDF</button>
+      <button class="btn" onclick="openTemplatesModal()">📋 Templates</button>
+      <button class="btn primary" onclick="openAddConditionModal()">+ Add Condition</button>
     </div>
   </section>
 
@@ -599,6 +644,8 @@ footer a:hover { color: var(--accent); }
 </footer>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<!-- 12.4 · notify transport (window.OF_notify) — same file documents.html loads -->
+<script src="/js/of-notify.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // CONDITIONS — branch-wide cross-loan surface
@@ -835,7 +882,7 @@ async function loadBorrowers() {
     // keep the primary (position 1 / role 'primary'), else first seen.
     const { data } = await supa
       .from('loan_borrowers')
-      .select('loan_id, position, role, borrowers(id, first_name, last_name)')
+      .select('loan_id, position, role, borrowers(id, first_name, last_name, email)')
       .in('loan_id', loanIds);
     const map = {};
     for (const row of data || []) {
@@ -1068,8 +1115,8 @@ function renderBulkBar() {
         : ''}
     </span>
     <div class="bulk-actions">
-      <button class="btn" onclick="alert('Bulk borrower notification coming with 11.5.9 (notification system)')">Notify Borrowers</button>
-      <button class="btn" onclick="alert('Bulk reassignment coming with 12.5.8 (UW workspace)')">Reassign Selected</button>
+      <button class="btn" onclick="notifyBorrowersBulk()">Notify Borrowers</button>
+      <button class="btn" onclick="openReassignModal()">Reassign Filtered</button>
     </div>
   `;
 }
@@ -1229,7 +1276,7 @@ function renderConditionRow(c) {
         <div class="cond-desc">${desc}</div>
       </div>
       <span class="cond-owner">${ownerAv}${ownerLabel}</span>
-      <button class="cond-action" onclick="alert('Condition detail panel coming next — for now, click the loan row to open the loan detail page (Conditions tab).')">${action}</button>
+      <button class="cond-action" onclick="window.location.href='/loan.html?id=' + encodeURIComponent('${escapeHtml(c.loan_id)}') + '#tab=conditions'">${action}</button>
     </div>
   `;
 }
@@ -1525,7 +1572,365 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+// ═══════════════════════════════════════════════════════════════════════════
+// 12.4 · FUNCTIONAL ACTION BAR
+// Add Condition · Templates browser · Export PDF (print) · Notify Borrowers
+// (bulk, via /js/of-notify.js → send-notification edge fn) · Reassign Filtered
+// ═══════════════════════════════════════════════════════════════════════════
+
+function showToast(msg, isErr) {
+  const t = document.getElementById('of-toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(t._x);
+  t._x = setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+let _templates = null;        // cached condition_templates rows
+let _branchLoans = null;      // cached active branch loans for the picker
+
+async function fetchTemplates() {
+  if (_templates) return _templates;
+  const { data, error } = await supa.from('condition_templates')
+    .select('key, category, title, description, auto_clearable, match_criteria, applies_when, default_owner_role, seed_by_default, active')
+    .eq('active', true)
+    .order('category', { ascending: true })
+    .order('title', { ascending: true });
+  if (error) {
+    console.warn('[Conditions] templates read failed (RLS?):', error.message);
+    return null;   // modals degrade gracefully
+  }
+  _templates = data || [];
+  return _templates;
+}
+
+async function fetchBranchLoans() {
+  if (_branchLoans) return _branchLoans;
+  const { data, error } = await supa.from('loans')
+    .select('id, loan_number, status, program')
+    .eq('branch_id', state.branch.id)
+    .is('archived_at', null)
+    .not('status', 'in', '("funded","denied","withdrawn","cancelled")')
+    .order('loan_number', { ascending: false });
+  if (error) { console.warn('[Conditions] loans for picker:', error.message); return []; }
+  _branchLoans = data || [];
+  return _branchLoans;
+}
+
+// ─── ADD CONDITION ───────────────────────────────────────────────────────
+async function openAddConditionModal() {
+  const loans = await fetchBranchLoans();
+  const tpls = await fetchTemplates();
+
+  const loanSel = document.getElementById('ac-loan');
+  loanSel.innerHTML = loans.length
+    ? loans.map(l => {
+        const b = state.borrowers[l.id];
+        const name = b ? ` · ${b.last_name}, ${b.first_name}` : '';
+        return `<option value="${escapeHtml(l.id)}">${escapeHtml(l.loan_number || '—')}${escapeHtml(name)} · ${escapeHtml((l.program || '').toUpperCase())}</option>`;
+      }).join('')
+    : '<option value="">No active loans in branch</option>';
+
+  const list = document.getElementById('ac-tpl-list');
+  if (tpls === null) {
+    list.innerHTML = `<div class="cmod-sub" style="color:var(--amber);">Template list unavailable (likely RLS on condition_templates for app sessions — see the policy in chat). Custom condition below still works.</div>`;
+  } else {
+    list.innerHTML = tpls.map((t, i) => `
+      <label class="cmod-tpl" data-i="${i}">
+        <input type="checkbox" data-ac-tpl="${i}">
+        <span class="cond-cat ${escapeHtml(t.category)}">${escapeHtml(t.category)}</span>
+        <span class="t-title">${escapeHtml(t.title)}</span>
+        <span class="t-badge ${t.auto_clearable ? 'ai' : ''}">${t.auto_clearable ? 'AI' : 'MANUAL'}</span>
+      </label>
+    `).join('');
+    list.querySelectorAll('input[data-ac-tpl]').forEach(cb => {
+      cb.addEventListener('change', () => cb.closest('.cmod-tpl').classList.toggle('checked', cb.checked));
+    });
+  }
+  document.getElementById('ac-custom-title').value = '';
+  document.getElementById('ac-custom-desc').value = '';
+  document.getElementById('cmod-add').classList.add('open');
+}
+
+async function submitAddCondition() {
+  const btn = document.getElementById('ac-submit');
+  const loanId = document.getElementById('ac-loan').value;
+  if (!loanId) { showToast('Pick a loan first.', true); return; }
+
+  // Mirrors seed_default_conditions' column mapping exactly — the same
+  // doc-type map, so AI-clearable templates added here behave identically
+  // to seeded ones.
+  const DOC_MAP = {
+    paystub: 'paystub', w2: 'w2', tax_return: 'tax_return_1040',
+    bank_statement: 'bank_statement', appraisal: 'appraisal',
+    insurance: 'homeowners_insurance', flood_cert: 'flood_cert',
+    title: 'title_commitment', gift_letter: 'gift_letter',
+  };
+
+  const rows = [];
+  document.querySelectorAll('input[data-ac-tpl]:checked').forEach(cb => {
+    const t = _templates[parseInt(cb.dataset.acTpl, 10)];
+    if (!t) return;
+    const mcDoc = t.match_criteria?.any_of?.[0]?.doc_type;
+    rows.push({
+      loan_id: loanId, branch_id: state.branch.id,
+      category: t.category, title: t.title, description: t.description,
+      template_key: t.key,
+      required_doc_type: mcDoc ? (DOC_MAP[mcDoc] || null) : null,
+      match_criteria: t.match_criteria,
+      auto_clearable: t.auto_clearable,
+      kind: t.key, source_type: 'ai_auto_seed',
+      status: 'outstanding',
+      owner_role: t.default_owner_role || 'processor',
+      created_by: state.user.id,
+    });
+  });
+
+  const customTitle = document.getElementById('ac-custom-title').value.trim();
+  if (customTitle) {
+    rows.push({
+      loan_id: loanId, branch_id: state.branch.id,
+      category: document.getElementById('ac-custom-cat').value,
+      title: customTitle,
+      description: document.getElementById('ac-custom-desc').value.trim() || null,
+      template_key: null, required_doc_type: null, match_criteria: null,
+      auto_clearable: false,
+      kind: customTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60) || 'custom',
+      source_type: 'manual',
+      status: 'outstanding',
+      owner_role: document.getElementById('ac-custom-owner').value,
+      created_by: state.user.id,
+    });
+  }
+  if (!rows.length) { showToast('Select templates or enter a custom condition.', true); return; }
+
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    let { error } = await supa.from('conditions').insert(rows);
+    // Self-heal: if source_type is an enum that lacks 'manual', retry the
+    // custom rows under the known-valid seeder value.
+    if (error && /source_type/.test(error.message || '')) {
+      rows.forEach(r => { if (r.source_type === 'manual') r.source_type = 'ai_auto_seed'; });
+      ({ error } = await supa.from('conditions').insert(rows));
+    }
+    if (error) throw error;
+    document.getElementById('cmod-add').classList.remove('open');
+    showToast(`Added ${rows.length} condition${rows.length === 1 ? '' : 's'}.`);
+    // realtime INSERT events repopulate state; force a reload as belt+braces
+    await loadConditions(); await loadLoans(); await loadBorrowers(); await loadProfiles();
+    rerender();
+  } catch (err) {
+    console.error('[Conditions] add failed:', err);
+    showToast('Add failed: ' + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Add Conditions';
+  }
+}
+
+// ─── TEMPLATES BROWSER ───────────────────────────────────────────────────
+async function openTemplatesModal() {
+  const tpls = await fetchTemplates();
+  const body = document.getElementById('tpl-list');
+  if (tpls === null) {
+    body.innerHTML = `<div class="cmod-sub" style="color:var(--amber);">Couldn't read condition_templates from the app session — likely missing an RLS read policy for authenticated. Grant it and reload (see policy SQL in chat).</div>`;
+  } else {
+    body.innerHTML = tpls.map(t => {
+      const progs = t.applies_when?.programs;
+      return `
+        <div class="cmod-tpl" style="cursor:default;grid-template-columns:auto 1fr auto auto;">
+          <span class="cond-cat ${escapeHtml(t.category)}">${escapeHtml(t.category)}</span>
+          <span class="t-title">${escapeHtml(t.title)}<br>
+            <span style="font-family:var(--mono);font-size:0.55rem;color:var(--muted);">${escapeHtml(t.key)}${progs ? ' · ' + escapeHtml(progs.join(', ').toUpperCase()) : ' · all programs'}</span>
+          </span>
+          <span class="t-badge ${t.auto_clearable ? 'ai' : ''}">${t.auto_clearable ? 'AI' : 'MANUAL'}</span>
+          <span class="t-badge">${t.seed_by_default ? 'SEEDED' : 'OPT-IN'}</span>
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('cmod-tpl').classList.add('open');
+}
+
+// ─── EXPORT PDF (print pipeline — browser's Save as PDF) ────────────────
+function exportConditionsPdf() {
+  const filtered = applyFilters(state.conditions);
+  if (!filtered.length) { showToast('Nothing to export under the current filter.', true); return; }
+  const byLoan = {};
+  filtered.forEach(c => { (byLoan[c.loan_id] ||= []).push(c); });
+
+  const blocks = Object.entries(byLoan).map(([loanId, conds]) => {
+    const l = state.loans[loanId] || {};
+    const b = state.borrowers[loanId];
+    const who = b ? `${b.last_name}, ${b.first_name}` : '';
+    return `
+      <h2>${escapeHtml(l.loan_number || loanId)} ${escapeHtml(who)} <small>${escapeHtml((l.loan_program || '').toUpperCase())} · ${escapeHtml(String(l.status || '').replace(/_/g, ' '))}</small></h2>
+      <table>
+        <tr><th>Cat</th><th>Condition</th><th>Status</th><th>Owner</th><th>Age</th></tr>
+        ${conds.map(c => {
+          const owner = c.assigned_to_user_id ? (state.profilesById[c.assigned_to_user_id]?.full_name || '') : (c.assigned_to_role || '').toUpperCase();
+          return `<tr>
+            <td>${escapeHtml(c.category || '')}</td>
+            <td>${escapeHtml(c.title || '')}</td>
+            <td>${c.status === 'cleared' ? '✓ cleared' + (c.cleared_method === 'ai' ? ' (AI)' : '') : 'open'}</td>
+            <td>${escapeHtml(owner || '—')}</td>
+            <td>${daysSince(c.created_at)}d</td>
+          </tr>`;
+        }).join('')}
+      </table>`;
+  }).join('');
+
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Popup blocked — allow popups for this site.', true); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Conditions · ${escapeHtml(state.branch.name || 'Branch')}</title>
+    <style>
+      body{font:13px/1.5 -apple-system,system-ui,sans-serif;color:#111;margin:32px;}
+      h1{font-size:18px;margin:0 0 2px;} .meta{color:#666;font-size:11px;margin-bottom:18px;}
+      h2{font-size:14px;margin:18px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px;}
+      h2 small{color:#888;font-weight:normal;font-size:11px;}
+      table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+      th,td{border:1px solid #ddd;padding:4px 7px;text-align:left;font-size:11px;}
+      th{background:#f3f3f3;} @media print{h2{page-break-after:avoid;}}
+    </style></head><body>
+    <h1>Conditions Report · ${escapeHtml(state.branch.name || 'Branch')}</h1>
+    <div class="meta">Generated ${new Date().toLocaleString()} · ${filtered.length} condition(s) · current filter view · OriginFlow</div>
+    ${blocks}
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 350);
+}
+
+// ─── NOTIFY BORROWERS (bulk) ─────────────────────────────────────────────
+async function notifyBorrowersBulk() {
+  if (typeof window.OF_notify !== 'function') {
+    showToast('Notify transport unavailable — /js/of-notify.js didn\'t load.', true);
+    return;
+  }
+  const filtered = applyFilters(state.conditions).filter(c => c.status !== 'cleared' && c.status !== 'waived');
+  const byLoan = {};
+  filtered.forEach(c => { (byLoan[c.loan_id] ||= []).push(c); });
+  const loanIds = Object.keys(byLoan);
+  if (!loanIds.length) { showToast('No open conditions in the current filter.', true); return; }
+
+  const withEmail = loanIds.filter(id => state.borrowers[id]?.email);
+  if (!withEmail.length) { showToast('No borrower emails on file for these loans.', true); return; }
+  if (!confirm(`Email ${withEmail.length} borrower${withEmail.length === 1 ? '' : 's'} a list of their outstanding items? (${loanIds.length - withEmail.length} loan(s) skipped — no email on file.)`)) return;
+
+  let sent = 0, failed = 0;
+  for (const loanId of withEmail) {
+    const b = state.borrowers[loanId];
+    const l = state.loans[loanId] || {};
+    const items = byLoan[loanId].slice(0, 10).map(c => c.title);
+    try {
+      const r = await window.OF_notify('document_request', b.email, {
+        branchName: state.branch.name || 'OriginFlow',
+        firstName: b.first_name || '',
+        loanNumber: l.loan_number || '',
+        path: '/portal_docs.html',
+        items,
+      });
+      if (r && r.ok === false) failed++; else sent++;
+    } catch (e) { console.warn('[Conditions] notify failed for', loanId, e); failed++; }
+  }
+  showToast(`Notified ${sent} borrower${sent === 1 ? '' : 's'}${failed ? ` · ${failed} failed` : ''}${loanIds.length - withEmail.length ? ` · ${loanIds.length - withEmail.length} no-email skipped` : ''}.`, failed > 0);
+}
+
+// ─── REASSIGN (current filter's open conditions) ─────────────────────────
+function openReassignModal() {
+  const open = applyFilters(state.conditions).filter(c => c.status !== 'cleared' && c.status !== 'waived');
+  if (!open.length) { showToast('No open conditions in the current filter.', true); return; }
+  document.getElementById('ra-count').textContent = open.length;
+  const sel = document.getElementById('ra-assignee');
+  sel.innerHTML = '<option value="">— Unassign —</option>' +
+    Object.values(state.profilesById)
+      .map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.full_name || '?')} (${escapeHtml((p.role || '').toUpperCase())})</option>`)
+      .join('');
+  document.getElementById('cmod-ra').classList.add('open');
+}
+
+async function submitReassign() {
+  const btn = document.getElementById('ra-submit');
+  const assignee = document.getElementById('ra-assignee').value || null;
+  const open = applyFilters(state.conditions).filter(c => c.status !== 'cleared' && c.status !== 'waived');
+  const ids = open.map(c => c.id);
+  if (!ids.length) return;
+
+  btn.disabled = true; btn.textContent = 'Reassigning…';
+  try {
+    const { error } = await supa.from('conditions')
+      .update({ assignee_id: assignee })
+      .in('id', ids);
+    if (error) throw error;
+    open.forEach(c => { c.assigned_to_user_id = assignee; c.assignee_id = assignee; });
+    document.getElementById('cmod-ra').classList.remove('open');
+    showToast(`Reassigned ${ids.length} condition${ids.length === 1 ? '' : 's'}.`);
+    rerender();
+  } catch (err) {
+    console.error('[Conditions] reassign failed:', err);
+    showToast('Reassign failed: ' + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Reassign';
+  }
+}
+
+function closeCmod(id) { document.getElementById(id).classList.remove('open'); }
 </script>
+
+<!-- ═══ 12.4 · MODALS + TOAST ═══ -->
+<div class="cmod-overlay" id="cmod-add" role="dialog" aria-modal="true">
+  <div class="cmod">
+    <div class="cmod-head"><span class="cmod-title">Add Conditions</span>
+      <button class="cmod-x" onclick="closeCmod('cmod-add')">✕</button></div>
+    <div class="cmod-body">
+      <div class="cmod-field"><label>Loan</label><select id="ac-loan"></select></div>
+      <div class="cmod-sub">Pick from the template library (AI-clearable templates keep their matcher rules) and/or add a one-off custom condition below.</div>
+      <div class="cmod-tpl-list" id="ac-tpl-list"></div>
+      <div class="cmod-divider">Custom condition (optional)</div>
+      <div class="cmod-field"><label>Title</label>
+        <input type="text" id="ac-custom-title" placeholder="e.g. 'Updated HOA dues statement'" maxlength="200"></div>
+      <div class="cmod-field"><label>Description</label>
+        <input type="text" id="ac-custom-desc" placeholder="Optional detail for the borrower/processor" maxlength="500"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;">
+        <div class="cmod-field"><label>Category</label>
+          <select id="ac-custom-cat"><option value="PTD">PTD · Prior to Docs</option><option value="PTC">PTC · Prior to Close</option><option value="ATC">ATC · At Close</option></select></div>
+        <div class="cmod-field"><label>Owner</label>
+          <select id="ac-custom-owner"><option value="processor">Processor</option><option value="lo">LO</option><option value="underwriter">Underwriter</option><option value="ai">AI</option></select></div>
+      </div>
+    </div>
+    <div class="cmod-foot">
+      <button class="btn" onclick="closeCmod('cmod-add')">Cancel</button>
+      <button class="btn primary" id="ac-submit" onclick="submitAddCondition()">Add Conditions</button>
+    </div>
+  </div>
+</div>
+
+<div class="cmod-overlay" id="cmod-tpl" role="dialog" aria-modal="true">
+  <div class="cmod">
+    <div class="cmod-head"><span class="cmod-title">Condition Template Library</span>
+      <button class="cmod-x" onclick="closeCmod('cmod-tpl')">✕</button></div>
+    <div class="cmod-body">
+      <div class="cmod-sub">Every active template the seeding engine knows. SEEDED templates land on new loans automatically (program-scoped); OPT-IN templates are added per-loan via + Add Condition. AI templates carry matcher rules and auto-clear from documents.</div>
+      <div class="cmod-tpl-list" id="tpl-list" style="max-height:55vh;"></div>
+    </div>
+    <div class="cmod-foot"><button class="btn" onclick="closeCmod('cmod-tpl')">Close</button></div>
+  </div>
+</div>
+
+<div class="cmod-overlay" id="cmod-ra" role="dialog" aria-modal="true">
+  <div class="cmod" style="max-width:440px;">
+    <div class="cmod-head"><span class="cmod-title">Reassign Conditions</span>
+      <button class="cmod-x" onclick="closeCmod('cmod-ra')">✕</button></div>
+    <div class="cmod-body">
+      <div class="cmod-sub">Applies to the <b id="ra-count">0</b> open condition(s) in the current filter view. Narrow the filters first to scope it down.</div>
+      <div class="cmod-field"><label>New assignee</label><select id="ra-assignee"></select></div>
+    </div>
+    <div class="cmod-foot">
+      <button class="btn" onclick="closeCmod('cmod-ra')">Cancel</button>
+      <button class="btn primary" id="ra-submit" onclick="submitReassign()">Reassign</button>
+    </div>
+  </div>
+</div>
+
+<div class="of-toast" id="of-toast" role="status"></div>
 
 </body>
 </html>
