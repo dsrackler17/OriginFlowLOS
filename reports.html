@@ -144,7 +144,7 @@ nav {
 
 /* ─── METRIC HERO STRIP ────────────────────────────────────────────── */
 .hero-strip {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);  /* 12.5: + target cell */
   gap: 1px; background: var(--border);
   border-bottom: 1px solid var(--border);
 }
@@ -459,12 +459,20 @@ footer a:hover { color: var(--accent); }
         <h1 class="page-title">Pipeline &amp; Performance</h1>
         <p class="page-sub" id="page-sub">Live data. Updates as loans progress through the pipeline.</p>
       </div>
-      <div class="range-toggle" id="range-toggle">
-        <button data-range="30">Last 30d</button>
-        <button data-range="90">Last 90d</button>
-        <button data-range="365" class="active">Last year</button>
-        <button data-range="ytd">YTD</button>
-        <button data-range="all">All time</button>
+      <div style="display:flex;flex-direction:column;gap:0.6rem;align-items:flex-end;">
+        <div class="range-toggle" id="range-toggle">
+          <button data-range="30">Last 30d</button>
+          <button data-range="90">Last 90d</button>
+          <button data-range="365" class="active">Last year</button>
+          <button data-range="ytd">YTD</button>
+          <button data-range="all">All time</button>
+        </div>
+        <!-- 12.5 · report actions -->
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn" onclick="exportReportPdf()">⤓ Export PDF</button>
+          <button class="btn" onclick="emailReport()">✉ Email Report</button>
+          <button class="btn" onclick="openTargets()">◎ Set Targets</button>
+        </div>
       </div>
     </header>
 
@@ -761,15 +769,22 @@ async function loadAll() {
     .is('archived_at', null)
     .limit(5000);
 
-  // AUS runs — most-recent per loan
-  const ausP = supa.from('aus_runs')
-    .select('loan_id, outcome, decision_score, is_mock, created_at')
-    .order('created_at', { ascending: false });
+  // AUS — most-recent per loan.
+  // [SCHEMA FIX] the real table is aus_findings (what loan.html, home, and
+  // the dashboard all read); aus_runs was a phantom, so the AUS card always
+  // showed "No AUS runs yet." Rows are normalized below to the
+  // outcome/decision_score/is_mock shape this page consumes. Self-heals
+  // back to aus_runs if some environment actually has it instead.
+  const ausP = supa.from('aus_findings')
+    .select('loan_id, engine, result, decision_credit_score, submitted_at')
+    .order('submitted_at', { ascending: false });
 
   // Conditions
+  // [SCHEMA FIX] conditions has no archived_at column — the filter 400'd
+  // and Promise.allSettled swallowed it, silently zeroing every condition
+  // metric on this page. Same bug the dashboard had.
   const condsP = supa.from('conditions')
-    .select('loan_id, status, created_at')
-    .is('archived_at', null);
+    .select('loan_id, status, created_at');
 
   // COCs
   const cocsP = supa.from('change_of_circumstance')
@@ -812,13 +827,39 @@ async function loadAll() {
   }
   allLoans = loansR.value.data || [];
 
-  // AUS — keep only the most recent run per loan
-  if (ausR.status === 'fulfilled' && !ausR.value.error) {
+  // AUS — keep only the most recent run per loan, normalized to the
+  // outcome buckets renderAus() expects (approve / refer / ineligible /
+  // error). aus_findings result values map: approve_eligible→approve,
+  // approve_ineligible+out_of_scope→ineligible, refer_*→refer, error→error.
+  {
+    let rows = [];
+    if (ausR.status === 'fulfilled' && !ausR.value.error) {
+      rows = ausR.value.data || [];
+    } else {
+      const { data: legacy, error: legacyErr } = await supa.from('aus_runs')
+        .select('loan_id, outcome, decision_score, is_mock, created_at')
+        .order('created_at', { ascending: false });
+      if (!legacyErr) rows = (legacy || []).map(r => ({ ...r, _legacy: true }));
+      else console.warn('AUS unavailable (aus_findings and aus_runs both failed)');
+    }
     const seen = new Set();
-    for (const r of (ausR.value.data || [])) {
+    for (const r of rows) {
       if (seen.has(r.loan_id)) continue;
       seen.add(r.loan_id);
-      allAus.set(r.loan_id, r);
+      if (r._legacy) { allAus.set(r.loan_id, r); continue; }
+      const res = String(r.result || '').toLowerCase();
+      const outcome =
+        res === 'approve_eligible' || res === 'accept' ? 'approve' :
+        res.startsWith('refer') || res === 'caution'   ? 'refer'   :
+        res === 'error' || res === 'errored'           ? 'error'   :
+        'ineligible';   // approve_ineligible, out_of_scope, ineligible
+      allAus.set(r.loan_id, {
+        loan_id: r.loan_id,
+        outcome,
+        decision_score: r.decision_credit_score,
+        is_mock: false,
+        created_at: r.submitted_at,
+      });
     }
   }
   if (condsR.status === 'fulfilled' && !condsR.value.error) allConds = condsR.value.data || [];
@@ -845,7 +886,7 @@ async function loadAll() {
   const loIds = [...new Set(allLoans.map(l => l.lo_id).filter(Boolean))];
   if (loIds.length > 0) {
     const { data: prs } = await supa.from('profiles')
-      .select('id, full_name, role')
+      .select('id, full_name, role, email')
       .in('id', loIds);
     (prs || []).forEach(p => loProfiles.set(p.id, p));
   }
@@ -879,7 +920,10 @@ function renderAll() {
 
 function renderHero() {
   // Active pipeline = loans NOT in {funded, complete, archived} status.
-  const ACTIVE = ['draft','application','processing','underwriting','approved','clear_to_close','docs_out','signed'];
+  // [SCHEMA FIX] real status enum — 'draft'/'approved'/'signed' don't exist;
+  // 'submitted' and 'conditional_approval' do, and were silently excluded,
+  // undercounting Active Pipeline.
+  const ACTIVE = ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'];
   const active = allLoans.filter(l => ACTIVE.includes(l.status));
   const activeAmt = active.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
 
@@ -921,6 +965,7 @@ function renderHero() {
       <div class="hero-value ${avgCycle == null ? '' : avgCycle <= 35 ? 'green' : avgCycle <= 50 ? 'amber' : 'red'}">${$days(avgCycle)}</div>
       <div class="hero-sub">application → funded · funded loans only</div>
     </div>
+    ${renderTargetCell()}
     <div class="hero-cell">
       <div class="hero-label">Conversion</div>
       <div class="hero-value ${conversionPct == null ? '' : conversionPct >= 60 ? 'green' : conversionPct >= 40 ? 'amber' : 'red'}">${$pct(conversionPct, 0)}</div>
@@ -987,16 +1032,18 @@ function renderVelocity() {
 // ─── 3. PIPELINE BY STATUS ────────────────────────────────────────────────
 
 function renderPipeline() {
+  // [SCHEMA FIX] real loan_status enum order, lead → funded + terminals.
   const STATUS_ORDER = [
-    'draft', 'application', 'processing', 'underwriting',
-    'approved', 'clear_to_close', 'docs_out', 'signed',
-    'funded', 'recorded', 'complete',
+    'lead', 'application', 'submitted', 'processing', 'underwriting',
+    'conditional_approval', 'clear_to_close', 'docs_out',
+    'funded', 'denied', 'withdrawn', 'cancelled',
   ];
   const STATUS_LABELS = {
-    draft:'Draft', application:'Application', processing:'Processing',
-    underwriting:'Underwriting', approved:'Approved',
-    clear_to_close:'Clear to close', docs_out:'Docs out', signed:'Signed',
-    funded:'Funded', recorded:'Recorded', complete:'Complete',
+    lead:'Lead', application:'Application', submitted:'Submitted',
+    processing:'Processing', underwriting:'Underwriting',
+    conditional_approval:'Conditional', clear_to_close:'Clear to close',
+    docs_out:'Docs out', funded:'Funded', denied:'Denied',
+    withdrawn:'Withdrawn', cancelled:'Cancelled',
   };
 
   const buckets = {};
@@ -1414,11 +1461,26 @@ function renderLeaderboard() {
           <th class="right">Funded count</th>
           <th class="right">Funded volume</th>
           <th class="right">Pull-through</th>
+          <th style="width:36px"></th>
         </tr>
       </thead>
       <tbody>
         ${rows.map((r, i) => {
           const conv = r.startedCount > 0 ? (r.fundedCount / r.startedCount) * 100 : null;
+          const email = loProfiles.get(r.lo_id)?.email;
+          // 12.5 · per-LO nudge: opens a prefilled email asking the LO for
+          // their numbers / file updates. mailto = zero infra, works with
+          // whatever mail client the branch manager runs.
+          const nudge = email
+            ? `<a class="btn" style="padding:0.2rem 0.5rem;font-size:0.6rem;" title="Email ${escapeHtml(r.name)}"
+                 href="mailto:${escapeHtml(email)}?subject=${encodeURIComponent('OriginFlow · your pipeline numbers (' + rangeLabel() + ')')}&body=${encodeURIComponent(
+                   'Hi ' + (r.name.split(' ')[0] || '') + ',\n\n' +
+                   'Quick pipeline check-in from the reports dashboard (' + rangeLabel() + '):\n' +
+                   '· Funded: ' + r.fundedCount + ' loans\n' +
+                   '· Started: ' + r.startedCount + ' loans\n\n' +
+                   'Can you make sure your active files are up to date in OriginFlow — statuses, docs, and anything waiting on a borrower? Reply here if any numbers look off.\n\nThanks!'
+                 )}">✉</a>`
+            : '';
           return `
             <tr>
               <td class="rank">${i + 1}</td>
@@ -1426,6 +1488,7 @@ function renderLeaderboard() {
               <td class="right">${$count(r.fundedCount)}</td>
               <td class="right">${$money(r.fundedAmt)}</td>
               <td class="right">${$pct(conv, 0)}</td>
+              <td class="right">${nudge}</td>
             </tr>
           `;
         }).join('')}
@@ -1540,6 +1603,139 @@ document.addEventListener('DOMContentLoaded', bootstrap);
 //    transparency is intentional — LOs benefit from seeing their own
 //    leaderboard rank.
 // ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 12.5 · REPORT ACTIONS — Export PDF · Email Report · Manual Targets
+// All three are zero-backend by design: print pipeline for PDF, mailto for
+// email (works with any client, sends to whomever), localStorage for the
+// manually entered monthly targets (per-browser; nothing sensitive).
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TARGETS_KEY = 'of_branch_targets';
+
+function getTargets() {
+  try { return JSON.parse(localStorage.getItem(TARGETS_KEY)) || null; }
+  catch (_) { return null; }
+}
+
+// Hero cell: funded THIS CALENDAR MONTH vs the manually entered target.
+// Independent of the page's range toggle on purpose — a monthly goal is a
+// monthly goal regardless of what window the rest of the report shows.
+function renderTargetCell() {
+  const t = getTargets();
+  if (!t || (!t.amt && !t.count)) {
+    return `
+      <div class="hero-cell" style="cursor:pointer;" onclick="openTargets()" title="Set a monthly funding target">
+        <div class="hero-label">Monthly Target</div>
+        <div class="hero-value" style="color:var(--muted);">—</div>
+        <div class="hero-sub">click ◎ Set Targets to add one</div>
+      </div>`;
+  }
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const fundedThisMonth = allLoans.filter(l =>
+    l.status === 'funded' && l.funded_at && new Date(l.funded_at).getTime() >= monthStart);
+  const amt = fundedThisMonth.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
+  const pctAmt = t.amt > 0 ? Math.min(999, Math.round((amt / 100) / t.amt * 100)) : null;
+  const cls = pctAmt == null ? '' : pctAmt >= 100 ? 'green' : pctAmt >= 60 ? 'amber' : 'red';
+  return `
+    <div class="hero-cell" style="cursor:pointer;" onclick="openTargets()" title="Click to edit targets">
+      <div class="hero-label">This Month vs Target</div>
+      <div class="hero-value ${cls}">${pctAmt != null ? pctAmt + '%' : '—'}</div>
+      <div class="hero-sub">${$money(amt)} of $${Number(t.amt || 0).toLocaleString()}${t.count ? ' · ' + fundedThisMonth.length + '/' + t.count + ' loans' : ''}</div>
+    </div>`;
+}
+
+function openTargets() {
+  const cur = getTargets() || {};
+  const amtStr = prompt('Monthly funded-volume target, in dollars (blank to clear):',
+    cur.amt ? String(cur.amt) : '');
+  if (amtStr === null) return;   // cancelled
+  const countStr = prompt('Monthly funded-loan COUNT target (blank for none):',
+    cur.count ? String(cur.count) : '');
+  if (countStr === null) return;
+  const amt = parseInt(String(amtStr).replace(/[^0-9]/g, ''), 10) || 0;
+  const count = parseInt(String(countStr).replace(/[^0-9]/g, ''), 10) || 0;
+  try {
+    if (!amt && !count) localStorage.removeItem(TARGETS_KEY);
+    else localStorage.setItem(TARGETS_KEY, JSON.stringify({ amt, count }));
+  } catch (_) {}
+  renderHero();
+}
+
+// Compile the visible report into plain text — shared by Email + clipboard.
+function compileReportText() {
+  const ACTIVE = ['application','submitted','processing','underwriting','conditional_approval','clear_to_close','docs_out'];
+  const active = allLoans.filter(l => ACTIVE.includes(l.status));
+  const activeAmt = active.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
+  const fundedInRange = allLoans.filter(l => l.status === 'funded' && l.funded_at && inRange(l.funded_at));
+  const fundedAmt = fundedInRange.reduce((s, l) => s + (Number(l.loan_amount_cents) || 0), 0);
+  const openConds = allConds.filter(c => c.status === 'outstanding').length;
+
+  const byStatus = {};
+  allLoans.forEach(l => { byStatus[l.status] = (byStatus[l.status] || 0) + 1; });
+
+  const lines = [
+    `OriginFlow · Branch Report — ${branch?.name || 'Branch'}`,
+    `Window: ${rangeLabel()} · generated ${new Date().toLocaleString()}`,
+    ``,
+    `ACTIVE PIPELINE: ${$money(activeAmt)} across ${active.length} loans`,
+    `FUNDED (${rangeLabel()}): ${$money(fundedAmt)} across ${fundedInRange.length} loans`,
+    `OPEN CONDITIONS: ${openConds}`,
+    ``,
+    `PIPELINE BY STATUS:`,
+    ...Object.entries(byStatus)
+      .sort((a, b) => b[1] - a[1])
+      .map(([s, n]) => `  ${String(s).replace(/_/g, ' ')}: ${n}`),
+    ``,
+    `— sent from OriginFlow Reports · originflowlos.com`,
+  ];
+  return lines.join('\n');
+}
+
+function emailReport() {
+  const to = prompt('Send this report snapshot to (email address):', '');
+  if (to === null) return;
+  const body = compileReportText();
+  const subject = `Branch report · ${branch?.name || 'OriginFlow'} · ${rangeLabel()}`;
+  // mailto keeps this zero-infra and lets the sender review before sending.
+  // Body is plain text and well under typical mailto length limits at
+  // branch scale; if it ever overflows, the PDF export carries the rest.
+  window.location.href = 'mailto:' + encodeURIComponent(to.trim())
+    + '?subject=' + encodeURIComponent(subject)
+    + '&body=' + encodeURIComponent(body);
+}
+
+function exportReportPdf() {
+  const text = compileReportText();
+  // Print view: clone the live report grid for full fidelity, headed by the
+  // text summary for skimmability.
+  const grid = document.querySelector('.report-grid');
+  const hero = document.getElementById('hero-strip');
+  const w = window.open('', '_blank');
+  if (!w) { alert('Popup blocked — allow popups for this site to export.'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Branch Report · ${escapeHtml(branch?.name || '')}</title>
+    <style>
+      body{font:13px/1.5 -apple-system,system-ui,sans-serif;color:#111;margin:32px;background:#fff;}
+      pre{font:11px/1.6 ui-monospace,monospace;background:#f6f6f6;border:1px solid #ddd;padding:12px;white-space:pre-wrap;}
+      h1{font-size:18px;margin:0 0 12px;}
+      /* flatten the dark theme for print */
+      .report-grid,.hero-strip{display:block!important;}
+      .report-card,.hero-cell{border:1px solid #ccc!important;background:#fff!important;color:#111!important;
+        margin:0 0 14px;padding:10px 12px;page-break-inside:avoid;}
+      .report-card *,.hero-cell *{color:#111!important;background:transparent!important;border-color:#ddd!important;}
+      .bar-track{background:#eee!important;height:8px;}
+      .bar-fill{background:#888!important;height:8px;}
+      table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ddd;padding:4px 7px;font-size:11px;text-align:left;}
+    </style></head><body>
+    <h1>Branch Report · ${escapeHtml(branch?.name || 'OriginFlow')}</h1>
+    <pre>${escapeHtml(text)}</pre>
+    ${hero ? hero.outerHTML : ''}
+    ${grid ? grid.outerHTML : ''}
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
 </script>
 
 </body>
