@@ -163,12 +163,21 @@ async function loadDocs(loanId){
 
   // pull latest extraction runs + conditions cleared by these docs, in parallel
   const docIds = docs.map(d=>d.id);
-  const [runsRes, condRes] = await Promise.all([
-    supa.from('ai_extraction_runs').select('loan_document_id, call_type, status, model, cost_cents, created_at').in('loan_document_id', docIds).order('created_at',{ascending:false}),
-    supa.from('conditions').select('id, title, status, auto_cleared, cleared_by_document_id, cleared_confidence, cleared_at').in('cleared_by_document_id', docIds),
-  ]);
+  // [SCHEMA FIX] conditions real evidence column is source_document_id (per
+  // the loan.html schema pass), not cleared_by_document_id — the old select
+  // 400'd and the error was swallowed by (condRes.data||[]), so auto-clear
+  // attribution rows silently never rendered. Self-heals back to the old
+  // name if some environment actually has it.
+  const runsRes = await supa.from('ai_extraction_runs').select('loan_document_id, call_type, status, model, cost_cents, created_at').in('loan_document_id', docIds).order('created_at',{ascending:false});
+  let condRes = await supa.from('conditions').select('id, title, status, auto_cleared, source_document_id, cleared_confidence, cleared_at').in('source_document_id', docIds);
+  let clearCol = 'source_document_id';
+  if (condRes.error && /source_document_id/.test(condRes.error.message||'')) {
+    condRes = await supa.from('conditions').select('id, title, status, auto_cleared, cleared_by_document_id, cleared_confidence, cleared_at').in('cleared_by_document_id', docIds);
+    clearCol = 'cleared_by_document_id';
+  }
+  if (condRes.error) console.warn('[DocAI] clears query failed:', condRes.error.message);
   const runsByDoc = {}; (runsRes.data||[]).forEach(r=>{ (runsByDoc[r.loan_document_id] ||= []).push(r); });
-  const clearsByDoc = {}; (condRes.data||[]).forEach(c=>{ (clearsByDoc[c.cleared_by_document_id] ||= []).push(c); });
+  const clearsByDoc = {}; (condRes.data||[]).forEach(c=>{ (clearsByDoc[c[clearCol]] ||= []).push(c); });
 
   wrap.innerHTML = docs.map(d=>renderDoc(d, runsByDoc[d.id]||[], clearsByDoc[d.id]||[])).join('');
   wrap.querySelectorAll('[data-reprocess]').forEach(btn=>{

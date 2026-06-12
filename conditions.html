@@ -522,7 +522,7 @@ footer a:hover { color: var(--accent); }
   <h2>You need to sign in</h2>
   <p>The conditions surface is only available to authenticated branch staff.</p>
   <div class="state-actions">
-    <a class="btn primary" href="signin.html">Sign in</a>
+    <a class="btn primary" href="/login.html">Sign in</a>
   </div>
 </div>
 
@@ -722,6 +722,27 @@ function showState(id) {
 }
 
 // ─── DATA LOADERS ──────────────────────────────────────────────────────
+
+// [SCHEMA FIX] Module-level normalizer: raw DB rows (REST or realtime) use
+// outstanding/owner_role/assignee_id/cleared_confidence/source_document_id;
+// the render layer expects open/assigned_to_role/assigned_to_user_id/
+// ai_confidence/evidence_document_id. Realtime previously pushed RAW rows
+// straight into state — a freshly seeded condition arrived as 'outstanding'
+// and never showed under the Open filter, and live AI auto-clears rendered
+// with missing fields. One normalizer, used by both paths.
+function normCondRow(c) {
+  return {
+    ...c,
+    status: c.status === 'outstanding' ? 'open' : c.status,
+    assigned_to_role: c.owner_role,
+    assigned_to_user_id: c.assignee_id,
+    cleared_method: c.auto_cleared ? 'ai' : (c.cleared_by_user_id ? 'manual' : null),
+    ai_confidence: c.cleared_confidence,
+    evidence_document_id: c.source_document_id,
+    created_by_user_id: c.created_by,
+  };
+}
+
 async function loadConditions() {
   // Try the comprehensive query first; on failure (e.g., column missing),
   // fall back to select(*). Both filter by branch_id.
@@ -866,7 +887,7 @@ function wireSignOut() {
   document.getElementById('nav-signout').addEventListener('click', async () => {
     if (state.realtimeChannel) try { await supa.removeChannel(state.realtimeChannel); } catch (_) {}
     await supa.auth.signOut();
-    window.location.href = 'signin.html';
+    window.location.href = '/login.html';
   });
 }
 
@@ -1384,23 +1405,25 @@ function subscribeToConditions() {
 
 function handleRealtimeChange(payload) {
   if (payload.eventType === 'INSERT') {
-    // New condition — append, then re-fetch loan + assignee if unknown
+    // New condition — normalize the RAW realtime row first, then append
     if (!state.conditions.find(c => c.id === payload.new.id)) {
-      state.conditions.push(payload.new);
+      const row = normCondRow(payload.new);
+      state.conditions.push(row);
       // If we don't know this loan/assignee yet, lazy-load
-      if (payload.new.loan_id && !state.loans[payload.new.loan_id]) {
+      if (row.loan_id && !state.loans[row.loan_id]) {
         loadLoans().then(loadBorrowers).then(loadProfiles).then(rerender);
         return;
       }
-      if (payload.new.assigned_to_user_id && !state.profilesById[payload.new.assigned_to_user_id]) {
+      if (row.assigned_to_user_id && !state.profilesById[row.assigned_to_user_id]) {
         loadProfiles().then(rerender);
         return;
       }
     }
   } else if (payload.eventType === 'UPDATE') {
-    const idx = state.conditions.findIndex(c => c.id === payload.new.id);
-    if (idx >= 0) state.conditions[idx] = payload.new;
-    else state.conditions.push(payload.new);
+    const row = normCondRow(payload.new);
+    const idx = state.conditions.findIndex(c => c.id === row.id);
+    if (idx >= 0) state.conditions[idx] = row;
+    else state.conditions.push(row);
   } else if (payload.eventType === 'DELETE') {
     state.conditions = state.conditions.filter(c => c.id !== payload.old.id);
   }
