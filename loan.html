@@ -2085,6 +2085,66 @@ footer a:hover { color: var(--accent); }
   display: flex; gap: 0.5rem; flex-wrap: wrap;
   margin: 0.85rem 0 1rem;
 }
+
+/* ─── NATIVE MESSAGES TAB (12.2 — replaces iframe) ────────────────────── */
+.lchat-pane { display: flex; flex-direction: column; gap: 0.75rem; }
+.lchat-thread {
+  display: flex; flex-direction: column; gap: 0.55rem;
+  min-height: 240px; max-height: 56vh; overflow-y: auto;
+  padding: 0.85rem;
+  background: var(--deep); border: 1px solid var(--border);
+}
+.lchat-empty {
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+  text-align: center; padding: 2rem 0.5rem; letter-spacing: 0.04em;
+}
+.lchat-msg {
+  background: var(--surface); border-left: 2px solid var(--border);
+  padding: 0.55rem 0.8rem; font-size: 0.8rem;
+}
+.lchat-msg.system {
+  background: rgba(0,212,255,0.04); border-left-color: var(--accent);
+  font-family: var(--mono); font-size: 0.62rem; color: var(--muted);
+}
+.lchat-msg.lo, .lchat-msg.loa, .lchat-msg.admin { border-left-color: var(--accent); }
+.lchat-msg.processor, .lchat-msg.closer { border-left-color: var(--accent2); }
+.lchat-msg.underwriter { border-left-color: var(--amber); }
+.lchat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem; }
+.lchat-author { font-family: var(--mono); font-size: 0.6rem; color: var(--white); letter-spacing: 0.06em; }
+.lchat-author small { color: var(--muted); margin-left: 0.4rem; font-size: 0.55rem; }
+.lchat-time { font-family: var(--mono); font-size: 0.55rem; color: var(--muted); }
+.lchat-body { color: var(--text); line-height: 1.5; word-wrap: break-word; }
+.lchat-mention { color: var(--accent); font-weight: 500; }
+.lchat-form { display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; }
+.lchat-form input {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--white); font-family: var(--sans); font-size: 0.8rem;
+  padding: 0.6rem 0.75rem; outline: none; transition: border-color 0.15s;
+}
+.lchat-form input:focus { border-color: var(--accent); }
+.lchat-form button {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.08em;
+  text-transform: uppercase; background: var(--accent); color: var(--navy);
+  border: none; padding: 0.6rem 0.95rem; cursor: pointer; font-weight: 700;
+}
+.lchat-form button:hover:not(:disabled) { background: var(--accent2); }
+.lchat-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── AUS RECORD MODAL FORM GRID (12.2) ──────────────────────────────── */
+.aus-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem;
+}
+.aus-grid label {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.aus-grid input, .aus-grid select {
+  background: var(--deep); border: 1px solid var(--border);
+  color: var(--white); font-family: var(--mono); font-size: 0.78rem;
+  padding: 0.5rem 0.6rem; outline: none;
+}
+.aus-grid input:focus, .aus-grid select:focus { border-color: var(--accent); }
 </style>
 
 <!-- gtag — same as home.html for analytics continuity -->
@@ -2954,17 +3014,180 @@ function renderOverview() {
 // so it suppresses its own top nav when embedded here, removing the
 // double-nav effect.
 // ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// [12.2] MESSAGES TAB — native chat over chat_channels / chat_messages.
+//
+// Replaced the /loan_messages.html iframe: the iframe target 404'd on
+// GitHub Pages and made this tab depend on a second deployed file. This is
+// the same proven pattern as dashboard.html's inline file chat — per-loan
+// channel (kind='loan'), direct join author:profiles!author_id (FK
+// disambiguated — chat_messages joins profiles), channel auto-created on
+// first send, realtime INSERT subscription.
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _lchat = { channelId: null, chan: null };
+
 function renderMessages() {
-  const src = `/loan_messages.html?loan=${encodeURIComponent(loan.id)}`;
+  setTimeout(() => loadLoanChatTab(), 0);
   return `
-    <div class="iframe-tab">
-      <div class="iframe-tab-note">
-        <span>Embedded conversation · ${escapeHtml(loan.loan_number)}</span>
-        <a href="${src}" target="_blank" rel="noopener">Open in new window ↗</a>
+    <div class="lchat-pane" id="lchat-pane">
+      <div class="lchat-thread" id="lchat-thread">
+        <div class="lchat-empty">Loading conversation…</div>
       </div>
-      <iframe src="${src}" title="Loan ${escapeHtml(loan.loan_number)} messages"></iframe>
+      <form class="lchat-form" id="lchat-form" autocomplete="off">
+        <input type="text" id="lchat-input" placeholder="Message about ${escapeHtml(loan.loan_number)}… use @ to mention" maxlength="2000" disabled>
+        <button type="submit" id="lchat-send" disabled>Send</button>
+      </form>
     </div>
   `;
+}
+
+async function loadLoanChatTab() {
+  const thread = document.getElementById('lchat-thread');
+  if (!thread) return; // tab switched before load
+
+  document.getElementById('lchat-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await sendLoanChatMsg();
+  });
+
+  const { data: ch, error: chErr } = await supa.from('chat_channels')
+    .select('id, label, kind, loan_id')
+    .eq('branch_id', loan.branch_id)
+    .eq('kind', 'loan')
+    .eq('loan_id', loan.id)
+    .maybeSingle();
+
+  if (chErr) {
+    thread.innerHTML = `<div class="lchat-empty" style="color:var(--red);">Chat unavailable: ${escapeHtml(chErr.message)}</div>`;
+    return;
+  }
+
+  _lchat.channelId = ch ? ch.id : null;
+
+  const canPost = me.role !== 'viewer';
+  const inp = document.getElementById('lchat-input');
+  const btn = document.getElementById('lchat-send');
+  inp.disabled = !canPost;
+  btn.disabled = !canPost;
+  if (!canPost) inp.placeholder = 'Viewers cannot post';
+
+  if (!ch) {
+    thread.innerHTML = `<div class="lchat-empty">No messages yet — send the first one to start this file's thread.</div>`;
+    return;
+  }
+
+  const { data: rawMsgs, error: mErr } = await supa.from('chat_messages')
+    .select(`
+      id, channel_id, author_id, body, is_system, created_at,
+      author:profiles!author_id ( full_name, role )
+    `)
+    .eq('channel_id', ch.id)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (mErr) {
+    thread.innerHTML = `<div class="lchat-empty" style="color:var(--red);">Couldn't load messages: ${escapeHtml(mErr.message)}</div>`;
+    return;
+  }
+
+  const msgs = (rawMsgs || []).map(m => ({
+    ...m,
+    author_name: m.author?.full_name || 'Teammate',
+    author_role: m.author?.role || 'viewer',
+  }));
+
+  thread.innerHTML = msgs.length === 0
+    ? `<div class="lchat-empty">No messages yet — start the conversation.</div>`
+    : msgs.map(renderLoanChatMsg).join('');
+  thread.scrollTop = thread.scrollHeight;
+
+  subscribeLoanChat(ch.id);
+}
+
+function subscribeLoanChat(channelId) {
+  if (_lchat.chan) {
+    try { supa.removeChannel(_lchat.chan); } catch (_) {}
+    _lchat.chan = null;
+  }
+  _lchat.chan = supa
+    .channel(`loanpage-chat:${channelId}`)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `channel_id=eq.${channelId}` },
+      async (payload) => {
+        const thread = document.getElementById('lchat-thread');
+        if (!thread) return; // tab no longer visible
+        const row = payload.new;
+        const { data: prof } = await supa.from('profiles')
+          .select('full_name, role').eq('id', row.author_id).maybeSingle();
+        const empty = thread.querySelector('.lchat-empty');
+        if (empty) thread.innerHTML = '';
+        thread.insertAdjacentHTML('beforeend', renderLoanChatMsg({
+          ...row,
+          author_name: prof?.full_name || 'Teammate',
+          author_role: prof?.role || 'viewer',
+        }));
+        thread.scrollTop = thread.scrollHeight;
+      }
+    )
+    .subscribe();
+}
+
+function renderLoanChatMsg(m) {
+  if (m.is_system) {
+    return `<div class="lchat-msg system"><div class="lchat-body">${escapeHtml(m.body)}</div></div>`;
+  }
+  const role = (m.author_role || 'viewer').toLowerCase();
+  const body = escapeHtml(m.body).replace(/@(\w+)/g, '<span class="lchat-mention">@$1</span>');
+  return `
+    <div class="lchat-msg ${escapeHtml(role)}">
+      <div class="lchat-head">
+        <span class="lchat-author">${escapeHtml(m.author_name)} <small>${escapeHtml(role.toUpperCase())}</small></span>
+        <span class="lchat-time">${timeAgo(m.created_at)}</span>
+      </div>
+      <div class="lchat-body">${body}</div>
+    </div>
+  `;
+}
+
+async function sendLoanChatMsg() {
+  const inp = document.getElementById('lchat-input');
+  const btn = document.getElementById('lchat-send');
+  const body = String(inp.value || '').trim();
+  if (!body) return;
+
+  inp.disabled = true; btn.disabled = true;
+  try {
+    if (!_lchat.channelId) {
+      const { data: newCh, error: createErr } = await supa.from('chat_channels')
+        .insert({
+          branch_id: loan.branch_id,
+          slug: `loan-${loan.id}`,
+          label: loan.loan_number || 'Loan',
+          kind: 'loan',
+          loan_id: loan.id,
+        })
+        .select().single();
+      if (createErr) throw createErr;
+      _lchat.channelId = newCh.id;
+    }
+    const { error } = await supa.from('chat_messages').insert({
+      branch_id: loan.branch_id,
+      channel_id: _lchat.channelId,
+      author_id: me.id,
+      body,
+    });
+    if (error) throw error;
+    inp.value = '';
+    if (!_lchat.chan) subscribeLoanChat(_lchat.channelId);
+  } catch (err) {
+    console.error('[12.2] loan chat send failed:', err);
+    showToast('Send failed: ' + err.message);
+  } finally {
+    const canPost = me.role !== 'viewer';
+    inp.disabled = !canPost; btn.disabled = !canPost;
+    inp.focus();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -3189,6 +3412,9 @@ async function loadAndRenderDocuments() {
         <div class="docs-overall-empty-sub">
           We couldn't load this loan's documents right now. This has been logged.
           Try refreshing in a moment — your files are safe.
+        </div>
+        <div class="docs-overall-empty-sub" style="font-family:var(--mono);font-size:0.62rem;color:var(--red);margin-top:0.6rem;word-break:break-word;">
+          ${escapeHtml(docsError)}
         </div>
       </div>
     `;
@@ -3683,12 +3909,18 @@ async function loadAndRenderConditions() {
     } catch (err2) {
       // [SCHEMA PASS] log raw, show calm empty state — no raw error to user.
       console.error('[Loan] conditions load failed:', err2);
+      // [12.2] Show the raw error inline. Hiding it behind console.error cost
+      // a full diagnostic round-trip — solo-operator app, the operator IS the
+      // developer, the error message belongs on the screen.
       paneEl.innerHTML = `
         <div class="cond-empty">
           <div class="cond-empty-title">Conditions temporarily unavailable</div>
           <div class="cond-empty-sub">
             We couldn't load conditions for this loan right now. This has been
             logged — try refreshing in a moment.
+          </div>
+          <div class="cond-empty-sub" style="font-family:var(--mono);font-size:0.62rem;color:var(--red);margin-top:0.6rem;word-break:break-word;">
+            ${escapeHtml(err2.message || String(err2))}
           </div>
         </div>
       `;
@@ -4863,11 +5095,75 @@ function renderFindingsEmpty() {
         and flags discrepancies as new conditions in the Conditions tab.
       </div>
       <div class="upload-hero-actions">
-        <button class="btn primary" onclick="alert('Findings PDF upload + parser lands with checklist 12.5.6.\\n\\nFor now, the LO/UW runs DU or LPA in their existing tool — direct AUS submission is Phase 4 work.')">⤴ Upload Findings PDF</button>
+        <button class="btn primary" onclick="openAusModal()">+ Record AUS Findings</button>
       </div>
-      <div class="upload-hero-ref">Gated by 12.5.6 (AUS findings upload + parser)</div>
+      <div class="upload-hero-ref">Manual entry — PDF upload + auto-parse lands with 12.5.6</div>
     </div>
   `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// [12.2] MANUAL AUS RECORD — bridge until the 12.5.6 PDF parser ships.
+// The LO/UW runs DU or LPA in their existing tool and keys the findings in
+// here. Writes aus_findings with the column set already read by this tab,
+// home.html, and the dashboard pill — so one entry lights up all three.
+// branch_id is included but self-heals if the column doesn't exist (it was
+// never in any select on this table, so it's unverified).
+// ═══════════════════════════════════════════════════════════════════════════
+
+function openAusModal() {
+  document.getElementById('aus-overlay').classList.add('open');
+}
+function closeAusModal() {
+  document.getElementById('aus-overlay').classList.remove('open');
+}
+
+async function submitAusFindings() {
+  const btn = document.getElementById('aus-submit');
+  const v = (id) => document.getElementById(id).value;
+  const num = (id) => {
+    const raw = String(v(id) || '').trim();
+    if (raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const row = {
+    loan_id: loan.id,
+    branch_id: loan.branch_id,
+    engine: v('aus-engine'),
+    result: v('aus-result'),
+    casefile_id: String(v('aus-casefile') || '').trim() || null,
+    total_ratio_pct: num('aus-dti'),
+    housing_ratio_pct: num('aus-housing'),
+    ltv_pct: num('aus-ltv'),
+    cltv_pct: num('aus-cltv'),
+    decision_credit_score: num('aus-score'),
+    reserves_months: num('aus-reserves'),
+    findings_summary: String(v('aus-summary') || '').trim() || null,
+    submitted_at: new Date().toISOString(),
+    submitted_by: me.id,
+  };
+
+  btn.disabled = true; btn.textContent = 'Recording…';
+  try {
+    let { error } = await supa.from('aus_findings').insert(row);
+    // Self-heal: branch_id was never in any select on aus_findings, so its
+    // existence is unverified. If PostgREST rejects it, retry without.
+    if (error && /branch_id/.test(error.message || '')) {
+      const { branch_id, ...slim } = row;
+      ({ error } = await supa.from('aus_findings').insert(slim));
+    }
+    if (error) throw error;
+    closeAusModal();
+    showToast(`Recorded ${row.engine.toUpperCase()} findings: ${row.result.replace(/_/g, ' ')}.`);
+    loadAndRenderFindings();
+  } catch (err) {
+    console.error('[12.2] AUS record failed:', err);
+    showToast('Couldn\'t record findings: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Record Findings';
+  }
 }
 
 function renderFindingsLoaded(r) {
@@ -7023,6 +7319,73 @@ document.addEventListener('DOMContentLoaded', bootstrap);
       <div style="display:flex; gap:0.6rem;">
         <button class="btn" type="button" onclick="closeDocRequestModal()">Cancel</button>
         <button class="btn primary" type="button" id="dreq-submit" onclick="submitDocRequests()">Create Requests</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- AUS RECORD MODAL (12.2) — manual findings entry                      -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="dreq-overlay" id="aus-overlay" role="dialog" aria-modal="true" aria-label="Record AUS findings">
+  <div class="dreq-modal">
+    <div class="dreq-head">
+      <span class="dreq-title">Record AUS Findings</span>
+      <button class="dreq-close" type="button" onclick="closeAusModal()">✕</button>
+    </div>
+    <div class="dreq-body">
+      <div class="dreq-sub">
+        Key in the findings from your DU / LPA run. Ratios and score are
+        optional — engine and result are enough to light up the pipeline pill.
+      </div>
+      <div class="aus-grid">
+        <label>ENGINE
+          <select id="aus-engine">
+            <option value="du">DU (Fannie Mae)</option>
+            <option value="lpa">LPA (Freddie Mac)</option>
+          </select>
+        </label>
+        <label>RESULT
+          <select id="aus-result">
+            <option value="approve_eligible">Approve / Eligible</option>
+            <option value="approve_ineligible">Approve / Ineligible</option>
+            <option value="refer_eligible">Refer / Eligible</option>
+            <option value="refer_with_caution">Refer with Caution</option>
+            <option value="out_of_scope">Out of Scope</option>
+            <option value="error">Error</option>
+          </select>
+        </label>
+        <label style="grid-column:1/-1;">CASEFILE / LP KEY
+          <input type="text" id="aus-casefile" placeholder="e.g. 1A2B3C4D" maxlength="40">
+        </label>
+        <label>TOTAL DTI %
+          <input type="number" id="aus-dti" step="0.01" min="0" max="99" placeholder="—">
+        </label>
+        <label>HOUSING %
+          <input type="number" id="aus-housing" step="0.01" min="0" max="99" placeholder="—">
+        </label>
+        <label>LTV %
+          <input type="number" id="aus-ltv" step="0.01" min="0" max="200" placeholder="—">
+        </label>
+        <label>CLTV %
+          <input type="number" id="aus-cltv" step="0.01" min="0" max="200" placeholder="—">
+        </label>
+        <label>DECISION SCORE
+          <input type="number" id="aus-score" step="1" min="300" max="850" placeholder="—">
+        </label>
+        <label>RESERVES (MO)
+          <input type="number" id="aus-reserves" step="0.1" min="0" placeholder="—">
+        </label>
+        <label style="grid-column:1/-1;">FINDINGS SUMMARY
+          <input type="text" id="aus-summary" placeholder="Optional one-liner, e.g. 'Approve/Eligible, verify reserves'" maxlength="500">
+        </label>
+      </div>
+    </div>
+    <div class="dreq-foot">
+      <span class="dreq-count"></span>
+      <div style="display:flex; gap:0.6rem;">
+        <button class="btn" type="button" onclick="closeAusModal()">Cancel</button>
+        <button class="btn primary" type="button" id="aus-submit" onclick="submitAusFindings()">Record Findings</button>
       </div>
     </div>
   </div>
