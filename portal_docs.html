@@ -209,6 +209,13 @@
   <div class="section-label">Needed from you <span class="count" id="count-open">—</span></div>
   <div id="list-open"><div class="empty">Loading…</div></div>
 
+  <!-- [12.3] Staff-created document requests (document_requests table) — the
+       "+ Request from Borrower" flow on loan.html writes here. Hidden
+       entirely when there are none or when borrower RLS doesn't allow the
+       read, so nothing breaks on environments without the policy. -->
+  <div class="section-label" id="label-requests" style="display:none;">Requested by your loan team <span class="count" id="count-req">—</span></div>
+  <div id="list-requests" style="display:none;"></div>
+
   <div class="section-label">Received &amp; cleared <span class="count" id="count-done">—</span></div>
   <div id="list-done"></div>
 
@@ -282,6 +289,7 @@ async function init(){
   $('#eyebrow').textContent = 'Loan #' + (ctx.loan.loan_number || ctx.loan.loan_no || '—');
 
   await loadConditions();
+  await loadDocRequests();
   await loadUploads();
   dropVeil();
 }
@@ -333,6 +341,67 @@ async function loadUploads(){
         </div>
       </div>`;
   }).join('');
+}
+
+// ─── [12.3] Staff document requests — rows the loan team created via the
+// "+ Request from Borrower" flow. Fail-soft by design: if borrower RLS
+// doesn't grant SELECT on document_requests yet, the section just stays
+// hidden and the conditions-driven list above carries the page. Uploads
+// here land on the same loans/{id}/portal/ storage path, so the
+// process-document pipeline picks them up identically.
+async function loadDocRequests(){
+  let reqs = [];
+  try {
+    const { data, error } = await supa.from('document_requests')
+      .select('id, title, description, category, required, status, due_at, requested_at')
+      .eq('loan_id', ctx.loan.id)
+      .in('status', ['pending', 'partially_provided'])
+      .order('required', { ascending: false })
+      .order('requested_at', { ascending: true });
+    if (error) { console.warn('[portal/docs] document_requests:', error.message); return; }
+    reqs = data || [];
+  } catch (e) { console.warn('[portal/docs] document_requests:', e); return; }
+
+  if (!reqs.length) return;   // section stays hidden
+
+  $('#label-requests').style.display = '';
+  $('#list-requests').style.display = '';
+  $('#count-req').textContent = reqs.length;
+  $('#list-requests').innerHTML = reqs.map(r => {
+    const received = uploadedThisSession.has('req-' + r.id);
+    const due = r.due_at ? 'needed by ' + new Date(r.due_at).toLocaleDateString() : '';
+    return `
+      <div class="doc-card" data-cond-id="req-${esc(r.id)}">
+        <div class="doc-head">
+          <div class="doc-icon">📄</div>
+          <div style="flex:1;min-width:0;">
+            <div class="doc-title">${esc(r.title)}</div>
+            ${r.description ? `<div class="doc-desc">${esc(r.description)}</div>` : ''}
+            <div class="doc-meta">${r.required ? 'Required' : 'If it applies to you'}${due ? ' · ' + due : ''}</div>
+          </div>
+          ${received
+            ? `<span class="doc-status received">received</span>`
+            : `<span class="doc-status needed">needed</span>`}
+        </div>
+        <div class="upload-row">
+          <label class="upload-btn" id="btn-req-${esc(r.id)}">
+            ${received ? '⇪ Upload another' : '⇪ Upload'}
+            <input class="doc-file-input" type="file" hidden
+                   accept="image/*,.pdf,.heic,.png,.jpg,.jpeg"
+                   data-cond-id="req-${esc(r.id)}" data-doc-type="${esc(r.category || '')}">
+          </label>
+        </div>
+        <div class="upload-note">Photos are fine — make sure all four corners are visible and the text is readable.</div>
+        <div class="uploaded-flash" id="flash-req-${esc(r.id)}"></div>
+      </div>
+    `;
+  }).join('');
+
+  // Same upload handler as conditions cards — storage path is identical and
+  // the webhook pipeline doesn't care which card initiated the upload.
+  $('#list-requests').querySelectorAll('.doc-file-input').forEach(inp => {
+    inp.addEventListener('change', () => handleUpload(inp));
+  });
 }
 
 async function loadConditions(){

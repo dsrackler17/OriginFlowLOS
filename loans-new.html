@@ -1526,8 +1526,8 @@ function renderStepTerms(el) {
           ['purchase','Purchase'],
           ['refinance','Refinance'],
           ['cashout_refi','Cash-Out Refi'],
+          ['heloc','HELOC'],
           ['construction','Construction'],
-          ['other','Other'],
         ], { required: true })}
         <div class="row cols-2">
           ${f_money('loan_amount', 'Loan Amount', { required: true, placeholder: '350,000' })}
@@ -1545,7 +1545,7 @@ function renderStepTerms(el) {
         <div class="row cols-2">
           ${f_select('loan_program', 'Loan Program', [
             ['conventional','Conventional'],['fha','FHA'],['va','VA'],['usda','USDA Rural'],
-            ['jumbo','Jumbo'],['non_qm','Non-QM'],['other','Other'],
+            ['jumbo','Jumbo'],['non_qm','Non-QM'],
           ], { required: true })}
           ${f_select('amortization_type', 'Amortization', [
             ['fixed','Fixed Rate'],['arm_5_1','ARM 5/1'],['arm_7_1','ARM 7/1'],
