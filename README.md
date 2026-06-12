@@ -1,26 +1,36 @@
-# OriginFlow LOS
+# OriginFlow
 
-Web-native loan origination system for independent mortgage branches. Built solo by a Navy vet because Encompass shouldn't cost $3,000/mo to feel like Windows 95.
+The fast loan-officer workspace that sits in front of your system of record.
+Built solo by a Navy veteran in Lubbock, TX.
 
 **Live site:** [originflowlos.com](https://originflowlos.com)
 
-**Live dashboard demo:** [originflowlos.com/dashboard.html](https://originflowlos.com/dashboard.html)
+## What this is
 
-## What's in this repo
-
-- `index.html` — Marketing landing page
-- `dashboard.html` — Static dashboard demo with mock data
-- `CNAME` — GitHub Pages custom-domain config
-- `.nojekyll` — Disables Jekyll processing
+OriginFlow is where loan officers start and run the loan: files open in
+seconds, AI document extraction reads paystubs and clears conditions
+automatically, and the finished file exports as MISMO 3.4 XML into
+Encompass or whatever system of record your shop already runs. Nothing to
+rip out, nothing to re-key.
 
 ## Stack
 
-Static HTML for the marketing surface. The actual product runs on Next.js / React 19 / Tailwind, Supabase (Postgres + Auth + RLS + Realtime + Storage), Claude Vision for document extraction, and Cloudflare for edge.
+Vanilla HTML/JS served from GitHub Pages behind Cloudflare. Backend is
+Supabase: Postgres with row-level security, Auth, Realtime, Storage, and
+Deno edge functions. Document extraction runs Claude (Haiku
+classification, Sonnet field extraction). Billing through Stripe, email
+through Resend. No framework, no build step — deliberately.
 
 ## Status
 
-Private beta opens Q2 2026 to a small group of Lubbock-area independent branches. Public launch targets December 2026.
+Onboarding the first Texas branches now. $400/branch/month + $25 per
+closed loan, listed publicly, no sales call.
 
 ## Founder
 
-Davis Rackler · [@DRackler](https://x.com/DRackler) · Texas Tech BBA-IT Systems · Navy veteran (USS Montana)
+Davis Rackler · [@DRackler](https://twitter.com/DRackler) · Navy veteran ·
+Texas Tech BBA-IT Systems · also operates
+[Submarine Catalyst](https://submarinecatalyst.com), a biotech
+intelligence platform with paying customers.
+
+Questions: dsrackler@gmail.com
