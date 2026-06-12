@@ -1463,11 +1463,35 @@ async function loadMetrics(cfg) {
         summarize({ status: 'clear_to_close' }),
         summarize({ status: 'funded' }),
       ]);
-      const soon = new Date(Date.now() + 3*86400*1000).toISOString();
-      const { count: locksCount } = await supa.from('loans')
-        .select('id', { count: 'exact', head: true })
-        .eq('branch_id', me.branch_id).is('archived_at', null)
-        .not('lock_expires_at', 'is', null).lt('lock_expires_at', soon);
+      // [SCHEMA FIX] loans has no lock_expires_at column — rate locks live in
+      // the `locks` table (expires_at_utc precise, expiration_date date-only
+      // fallback). Was 400ing silently → metric always rendered '—'.
+      // Newest-locked-row-per-loan, same rules as dashboard 9.4's lock badge.
+      let locksCount = null;
+      try {
+        const { data: lockRows, error: lockErr } = await supa.from('locks')
+          .select('loan_id, status, expires_at_utc, expiration_date, locked_at, loans!loan_id!inner ( branch_id, archived_at )')
+          .eq('loans.branch_id', me.branch_id)
+          .is('loans.archived_at', null)
+          .eq('status', 'locked')
+          .is('archived_at', null)
+          .order('locked_at', { ascending: false });
+        if (!lockErr) {
+          const soonMs = Date.now() + 3*86400*1000;
+          const seenLk = new Set();
+          locksCount = 0;
+          for (const lk of (lockRows || [])) {
+            if (seenLk.has(lk.loan_id)) continue;  // newest lock per loan wins
+            seenLk.add(lk.loan_id);
+            let expMs = null;
+            if (lk.expires_at_utc)       expMs = new Date(lk.expires_at_utc).getTime();
+            else if (lk.expiration_date) expMs = new Date(lk.expiration_date + 'T23:59:59').getTime();
+            if (expMs != null && expMs < soonMs) locksCount++;
+          }
+        } else {
+          console.warn('locks metric query failed (non-fatal):', lockErr);
+        }
+      } catch (_) { }
       row.innerHTML = `
         <div class="metric-cell"><div class="metric-label">Active Pipeline</div><div class="metric-value cyan">${money(active.total)}</div><div class="metric-sub">${active.count} files</div></div>
         <div class="metric-cell"><div class="metric-label">In Underwriting</div><div class="metric-value amber">${uw.count}</div><div class="metric-sub">UW + conditional</div></div>
@@ -1554,19 +1578,37 @@ async function loadQueue(cfg) {
       }
 
       if (myLoans.length > 0) {
-        const soon = new Date(Date.now() + 3*86400*1000).toISOString();
-        const { data: locks } = await supa.from('loans')
-          .select('id, loan_number, lock_expires_at')
-          .in('id', myLoans).not('lock_expires_at', 'is', null)
-          .lt('lock_expires_at', soon).limit(5);
-        for (const l of (locks || [])) {
-          const days = Math.ceil((new Date(l.lock_expires_at) - Date.now()) / 86400000);
-          items.push({
-            icon: '⚑', urgency: days < 0 ? 'urgent' : '',
-            text: `<strong>${escapeHtml(l.loan_number)}</strong> · rate lock ${days < 0 ? 'EXPIRED ' + (-days) + 'd ago' : 'expires in ' + days + 'd'}`,
-            href: `/loan.html?id=${l.id}#tab=overview`,
-          });
-        }
+        // [SCHEMA FIX] loans.lock_expires_at doesn't exist — pull from `locks`
+        // (newest non-archived locked row per loan), compute countdown off
+        // expires_at_utc with expiration_date end-of-day fallback. Was 400ing
+        // silently → expiring-lock items never appeared in the queue.
+        try {
+          const { data: lockRows } = await supa.from('locks')
+            .select('loan_id, status, expires_at_utc, expiration_date, locked_at, loans!loan_id!inner ( loan_number )')
+            .in('loan_id', myLoans)
+            .eq('status', 'locked')
+            .is('archived_at', null)
+            .order('locked_at', { ascending: false });
+          const soonMs = Date.now() + 3*86400*1000;
+          const seenLk = new Set();
+          let lockItems = 0;
+          for (const lk of (lockRows || [])) {
+            if (lockItems >= 5) break;
+            if (seenLk.has(lk.loan_id)) continue;  // newest lock per loan wins
+            seenLk.add(lk.loan_id);
+            let expMs = null;
+            if (lk.expires_at_utc)       expMs = new Date(lk.expires_at_utc).getTime();
+            else if (lk.expiration_date) expMs = new Date(lk.expiration_date + 'T23:59:59').getTime();
+            if (expMs == null || expMs >= soonMs) continue;
+            const days = Math.ceil((expMs - Date.now()) / 86400000);
+            lockItems++;
+            items.push({
+              icon: '⚑', urgency: days <= 0 ? 'urgent' : '',
+              text: `<strong>${escapeHtml(lk.loans?.loan_number || 'Loan')}</strong> · rate lock ${days <= 0 ? 'EXPIRED ' + (days === 0 ? 'today' : (-days) + 'd ago') : 'expires in ' + days + 'd'}`,
+              href: `/loan.html?id=${lk.loan_id}#tab=overview`,
+            });
+          }
+        } catch (_) { }
       }
 
       if (myLoans.length > 0) {
@@ -1898,8 +1940,15 @@ async function switchChannel(channelId) {
   const thread = $('#chat-thread');
   thread.innerHTML = `<div class="chat-empty">Loading #${escapeHtml(ch.label)}…</div>`;
 
-  const { data, error } = await supa.from('chat_messages_enriched')
-    .select('*')
+  // [VIEW DEP FIX] dropped the chat_messages_enriched view dependency —
+  // direct join on chat_messages with author:profiles!author_id, the same
+  // pattern dashboard.html already uses. Flattened below to the
+  // author_name/author_role shape renderMsg expects.
+  const { data: rawMsgs, error } = await supa.from('chat_messages')
+    .select(`
+      id, channel_id, author_id, body, is_system, created_at,
+      author:profiles!author_id ( full_name, role )
+    `)
     .eq('channel_id', channelId)
     .order('created_at', { ascending: true })
     .limit(100);
@@ -1908,6 +1957,12 @@ async function switchChannel(channelId) {
     thread.innerHTML = `<div class="chat-error">Couldn't load messages: ${escapeHtml(error.message)}</div>`;
     return;
   }
+
+  const data = (rawMsgs || []).map(m => ({
+    ...m,
+    author_name: m.author?.full_name || 'Teammate',
+    author_role: m.author?.role || 'viewer',
+  }));
 
   if (!data || data.length === 0) {
     thread.innerHTML = `<div class="chat-empty">No messages yet — start the conversation.</div>`;
