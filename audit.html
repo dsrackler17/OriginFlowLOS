@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Audit Log · OriginFlow LOS — Live Demo</title>
-<meta name="description" content="Immutable audit trail for OriginFlow LOS — every login, upload, edit, AI action, and stage move. SOC 2 Type II ready.">
+<title>Audit Log · OriginFlow LOS</title>
+<meta name="description" content="Append-only, hash-chained audit trail for OriginFlow — every stage move, condition clear, AI action, and field edit, verifiable on demand.">
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -452,22 +452,43 @@ footer a:hover { color: var(--accent); }
   .event-tag { justify-self: start; }
 }
 </style>
+
+<style>
+/* ─── LIVE BUILD ADDITIONS (12.6) ─────────────────────────────────────── */
+.state-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4rem 2rem;min-height:60vh;text-align:center;position:relative;z-index:1;}
+.state-eyebrow{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.18em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.state-heading{font-family:var(--serif);font-size:1.8rem;color:var(--white);margin:0 0 0.85rem;}
+.state-text{max-width:520px;color:var(--muted);margin-bottom:1.5rem;}
+.spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:sp .8s linear infinite;margin-bottom:1.25rem;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.event-tag.CREATE{color:var(--accent2);border-color:rgba(0,255,157,0.4);background:rgba(0,255,157,0.06);}
+.event-tag.DELETE{color:var(--red);border-color:rgba(255,68,68,0.5);background:rgba(255,68,68,0.08);}
+.event-tag.CHAIN{color:var(--accent);border-color:rgba(0,212,255,0.4);background:rgba(0,212,255,0.06);}
+.of-toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);
+  border:1px solid var(--border);border-left:3px solid var(--accent2);padding:0.85rem 1.1rem;
+  font-family:var(--mono);font-size:0.7rem;color:var(--text);z-index:1200;display:none;max-width:380px;
+  box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+.of-toast.err{border-left-color:var(--red);color:var(--red);}
+.of-toast.show{display:block;}
+.chain-verify-btn{width:100%;margin-top:0.6rem;font-family:var(--mono);font-size:0.62rem;
+  letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem;cursor:pointer;
+  background:var(--accent);color:var(--navy);border:1px solid var(--accent);font-weight:700;}
+.chain-verify-btn:hover{background:var(--accent2);border-color:var(--accent2);}
+.chain-verify-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.empty-stream{font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-align:center;
+  padding:3rem 1rem;border:1px dashed var(--border);letter-spacing:0.04em;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- DEMO BANNER                                                          -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<div class="demo-banner">
-  ⚠ <strong>This is a static demo</strong> with mock data — Q2 2026 beta opens to real branches with live Supabase backend ·
-  <a href="index.html">← Back to landing page</a>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- NAV                                                                  -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- NAV (live) -->
 <nav>
-  <a href="index.html" class="nav-logo">
+  <a href="/home.html" class="nav-logo">
     <div class="sonar-icon">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="16" cy="16" r="15" stroke="#1a3a5c" stroke-width="1"/>
@@ -483,791 +504,591 @@ footer a:hover { color: var(--accent); }
     <span class="nav-wordmark">ORIGIN<span>FLOW</span> · LOS</span>
   </a>
   <ul class="nav-center">
-    <li><a href="dashboard.html">Pipeline</a></li>
-    <li><a href="documents.html">Documents</a></li>
-    <li><a href="conditions.html">Conditions</a></li>
-    <li><a href="reports.html">Reports</a></li>
-    <li><a href="audit.html" class="active">Audit Log</a></li>
+    <li><a href="/home.html">Home</a></li>
+    <li><a href="/dashboard.html">Pipeline</a></li>
+    <li><a href="/documents.html">Documents</a></li>
+    <li><a href="/conditions.html">Conditions</a></li>
+    <li><a href="/reports.html">Reports</a></li>
+    <li><a href="/audit.html" class="active">Audit Log</a></li>
   </ul>
   <div class="nav-right">
-    <span class="nav-branch"><strong>● ACTIVE</strong> &nbsp;Submarine Catalyst</span>
+    <span class="nav-branch" id="nav-branch-pill" style="display:none;"><strong>● ACTIVE</strong> &nbsp;<span id="nav-branch-name">—</span></span>
     <span>
-      <span class="nav-user-name">Davis Rackler</span>
-      <span class="nav-user-role">OWNER</span>
+      <span class="nav-user-name" id="nav-user-name">…</span>
+      <span class="nav-user-role" id="nav-user-role" style="display:none;">—</span>
     </span>
-    <button class="nav-signout" onclick="window.location.href='index.html'">Sign Out</button>
+    <button class="nav-signout" onclick="handleSignOut()">Sign Out</button>
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- METRIC STRIP                                                         -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<section class="metric-strip">
-  <div class="metric-cell">
-    <div class="metric-label">Events · Today</div>
-    <div class="metric-value white">847</div>
-    <div class="metric-sub">across 14 active files</div>
-    <div class="metric-trend">▲ 112 vs yesterday</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Unique Actors · 24h</div>
-    <div class="metric-value cyan">6</div>
-    <div class="metric-sub">4 humans · 1 AI · 1 system</div>
-    <div class="metric-trend">all expected</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">AI Events · Today</div>
-    <div class="metric-value green">312</div>
-    <div class="metric-sub">extracts, clears, recomputes</div>
-    <div class="metric-trend">37% of activity</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Critical Events · 7d</div>
-    <div class="metric-value red">2</div>
-    <div class="metric-sub">failed login + perm change</div>
-    <div class="metric-trend down">▲ 1 vs prior week</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">Last Login · You</div>
-    <div class="metric-value white">07:42</div>
-    <div class="metric-sub">today · 73.183.42.118 · Lubbock</div>
-    <div class="metric-trend">no anomalies</div>
-  </div>
-  <div class="metric-cell">
-    <div class="metric-label">System Uptime · 90d</div>
-    <div class="metric-value green">99.998%</div>
-    <div class="metric-sub">2 brief degraded windows</div>
-    <div class="metric-trend">SOC 2 Type II ✓</div>
-  </div>
+<!-- STATES -->
+<div class="state-screen" id="state-loading">
+  <div class="spin"></div>
+  <div class="state-eyebrow">Authenticating</div>
+  <div class="state-heading" style="font-size:1.3rem;">Loading audit trail…</div>
+</div>
+<div class="state-screen" id="state-signed-out" style="display:none;">
+  <div class="state-eyebrow">Sign in required</div>
+  <h1 class="state-heading">The audit log is branch-scoped.</h1>
+  <p class="state-text">Sign in to see every action on every loan in your branch — append-only, hash-chained, verifiable on demand.</p>
+  <a href="/login.html" class="btn primary" style="font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.7rem 1.25rem;background:var(--accent);color:var(--navy);border:1px solid var(--accent);text-decoration:none;font-weight:700;">Sign in →</a>
+</div>
+<div class="state-screen" id="state-pending" style="display:none;">
+  <div class="state-eyebrow">Account pending</div>
+  <h1 class="state-heading">Your branch hasn't been provisioned yet.</h1>
+  <a href="/home.html" style="color:var(--accent);">Back to Home</a>
+</div>
+
+<div id="audit-active" style="display:none;">
+
+<!-- METRIC STRIP (live) -->
+<section class="metric-strip" id="metric-strip">
+  <div class="metric-cell"><div class="metric-label">Events · Today</div><div class="metric-value white" id="m-today">—</div><div class="metric-sub" id="m-today-sub">loading</div></div>
+  <div class="metric-cell"><div class="metric-label">Unique Actors · 24h</div><div class="metric-value cyan" id="m-actors">—</div><div class="metric-sub" id="m-actors-sub">—</div></div>
+  <div class="metric-cell"><div class="metric-label">AI / System Events · Today</div><div class="metric-value green" id="m-ai">—</div><div class="metric-sub" id="m-ai-sub">extracts, clears, recomputes</div></div>
+  <div class="metric-cell"><div class="metric-label">Events · 7d</div><div class="metric-value white" id="m-week">—</div><div class="metric-sub" id="m-week-sub">—</div></div>
+  <div class="metric-cell"><div class="metric-label">Chain Integrity</div><div class="metric-value" id="m-chain" style="color:var(--muted);">—</div><div class="metric-sub" id="m-chain-sub">click Verify in the rail</div></div>
+  <div class="metric-cell"><div class="metric-label">Last Event</div><div class="metric-value white" id="m-last">—</div><div class="metric-sub" id="m-last-sub">—</div></div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- PAGE HEAD                                                            -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE HEAD -->
 <section class="page-head">
-  <div class="crumb"><a href="dashboard.html">Dashboard</a> &nbsp;›&nbsp; <span>Audit Log</span></div>
+  <div class="crumb"><a href="/dashboard.html">Dashboard</a> &nbsp;›&nbsp; <span>Audit Log</span></div>
   <div class="page-title-row">
     <div>
       <h1 class="page-title">Audit Log</h1>
       <p class="page-desc">
-        Every action on every loan — <strong>immutable, hash-chained, append-only</strong>. Logins, uploads, AI extractions,
-        condition clears, stage moves, field edits with full before/after diff, permission changes, and API calls. Built for
-        SOC 2 Type II, state regulator audits, and post-incident forensics. <strong>7-year retention</strong>.
+        Every action on every loan in your branch — <strong>append-only and hash-chained</strong>, with the chain
+        verifiable on demand against the live database. Stage moves, condition clears, AI extractions, field edits
+        with before/after, and system writes, from both audit stores.
       </p>
     </div>
     <div class="page-meta">
-      <span class="pulse-dot"></span>Live · 14:38:22 CDT · 0.2s sync
+      <span class="pulse-dot"></span><span id="live-clock">live</span>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- FILTER BAR                                                           -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- FILTER BAR (live) -->
 <section class="filter-bar">
-  <input type="text" class="search" placeholder="Search actor, action, target, IP, file...">
-  <select>
-    <option>All actors</option>
-    <option>Corbin Matisse · LO</option>
-    <option>Sarah Hayes · Processor</option>
-    <option>Diana Mendez · Underwriter</option>
-    <option>Davis Rackler · Owner</option>
-    <option>AI · Claude Vision</option>
-    <option>System</option>
+  <input type="text" class="search" id="f-search" placeholder="Search actor, action, table, loan #…">
+  <select id="f-actor"><option value="all">All actors</option></select>
+  <select id="f-action"><option value="all">All actions</option></select>
+  <select id="f-source">
+    <option value="all">Both stores</option>
+    <option value="chain">Hash-chained store</option>
+    <option value="log">Audit log store</option>
   </select>
-  <select>
-    <option>All actions</option>
-    <option>Login / logout</option>
-    <option>Document upload</option>
-    <option>AI extraction</option>
-    <option>Field edit</option>
-    <option>Condition clear</option>
-    <option>Stage move</option>
-    <option>Permission change</option>
-    <option>API call</option>
-    <option>Data export</option>
-    <option>Failed / security</option>
-  </select>
-  <select>
-    <option>All loans</option>
-    <option>OF-1043 · Rodriguez</option>
-    <option>OF-1042 · Chen</option>
-    <option>OF-1041 · Anderson</option>
-    <option>OF-1045 · Thompson</option>
-    <option>OF-1038 · Foster</option>
-    <option>OF-1044 · Williams</option>
-    <option>OF-1037 · Singh</option>
-  </select>
-  <select>
-    <option>Last 24 hours</option>
-    <option>Last 7 days</option>
-    <option>Last 30 days</option>
-    <option>This quarter</option>
-    <option>Year-to-date</option>
-    <option>Custom range...</option>
+  <select id="f-range">
+    <option value="1">Last 24 hours</option>
+    <option value="7" selected>Last 7 days</option>
+    <option value="30">Last 30 days</option>
+    <option value="all">All loaded</option>
   </select>
   <span class="spacer"></span>
-  <button class="btn">Apply</button>
-  <button class="btn primary">↓ Export CSV</button>
+  <button class="btn primary" id="btn-csv" style="font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem 0.9rem;background:var(--accent);color:var(--navy);border:1px solid var(--accent);cursor:pointer;font-weight:700;">↓ Export CSV</button>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MAIN: EVENT STREAM + RIGHT RAIL                                      -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MAIN -->
 <div class="audit-grid">
-
-  <!-- ─── EVENT STREAM ────────────────────────────────────────────── -->
   <section class="event-stream" id="event-stream">
-
-    <!-- ───────── BUCKET: TODAY · 14:00 ───────── -->
-    <div class="bucket">
-      <div class="bucket-time"><strong>14:00–14:38</strong>Today · CDT</div>
-      <div class="bucket-events" id="live-bucket">
-
-        <div class="event green fresh" id="latest-event">
-          <div class="event-time"><strong>14:38:14</strong>just now</div>
-          <div class="event-body">
-            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
-            auto-cleared condition <span class="event-target">30-day paystub</span> on
-            <span class="event-loan">OF-1043</span>
-            <div class="event-extra">trigger: paystub_2026_Q1.pdf · conf 98.2% · ms 1,847 · model claude-vision-2026-04</div>
-          </div>
-          <span class="event-tag CLEAR">CLEAR · AI</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>14:38:02</strong>12s ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            uploaded <span class="event-target">paystub_2026_Q1.pdf</span> to
-            <span class="event-loan">OF-1043</span>
-            <div class="event-extra">2.4 MB · sha256:7a9f...e2b1 · 73.183.40.04 (Lubbock, TX) · firefox/123 macOS</div>
-          </div>
-          <span class="event-tag UPLOAD">UPLOAD</span>
-        </div>
-
-        <div class="event amber">
-          <div class="event-time"><strong>14:36:12</strong>2m ago</div>
-          <div class="event-body">
-            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
-            flagged unidentified deposit on <span class="event-loan">OF-1043</span>
-            and auto-created condition <span class="event-target">LOX · $3,200 deposit on 02/14</span>
-            <div class="event-extra">source: chase_statement_feb2026.pdf · category PTD · auto-assigned to Corbin Matisse</div>
-          </div>
-          <span class="event-tag AI">AI · FLAG</span>
-        </div>
-
-        <div class="event green">
-          <div class="event-time"><strong>14:33:44</strong>5m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
-            moved <span class="event-loan">OF-1042</span> · Chen, S+M
-            <div class="event-diff">
-              <span class="diff-old">Conditional</span>
-              <span class="diff-arrow">→</span>
-              <span class="diff-new">Clear-to-Close</span>
-            </div>
-            <div class="event-extra">all 12 conditions cleared · CD eligible · rate lock 4d remaining</div>
-          </div>
-          <span class="event-tag MOVE">STAGE MOVE</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>14:31:08</strong>7m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
-            cleared condition <span class="event-target">Title commitment</span>
-            on <span class="event-loan">OF-1042</span>
-            <div class="event-extra">manual clear · note: "received clean commitment from First American · no exceptions"</div>
-          </div>
-          <span class="event-tag CLEAR">CLEAR</span>
-        </div>
-
-        <div class="event amber">
-          <div class="event-time"><strong>14:26:51</strong>12m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            edited field <span class="event-target">property_value</span> on
-            <span class="event-loan">OF-1045</span>
-            <div class="event-diff">
-              <span class="diff-old">$510,000</span>
-              <span class="diff-arrow">→</span>
-              <span class="diff-new">$516,667</span>
-            </div>
-            <div class="event-extra">trigger: appraisal_OF-1045.pdf received · LTV recomputed 90.0% → 90.0% (rounded)</div>
-          </div>
-          <span class="event-tag EDIT">EDIT</span>
-        </div>
-
-        <div class="event green">
-          <div class="event-time"><strong>14:23:17</strong>15m ago</div>
-          <div class="event-body">
-            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
-            extracted <span class="event-target">appraisal_OF-1045.pdf</span> on
-            <span class="event-loan">OF-1045</span> · 17 fields written
-            <div class="event-extra">value $516,667 · gross_living_area 2,184 sqft · year_built 2008 · conf 96.4% · ms 4,212</div>
-          </div>
-          <span class="event-tag AI">AI · EXTRACT</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>14:21:02</strong>17m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            uploaded <span class="event-target">appraisal_OF-1045.pdf</span> to
-            <span class="event-loan">OF-1045</span>
-            <div class="event-extra">8.7 MB · sha256:c14e...92ab · 73.183.40.04 · routed to AI extraction queue</div>
-          </div>
-          <span class="event-tag UPLOAD">UPLOAD</span>
-        </div>
-
-        <div class="event green">
-          <div class="event-time"><strong>14:18:33</strong>20m ago</div>
-          <div class="event-body">
-            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
-            auto-cleared condition <span class="event-target">Bank statement · 60 days</span> on
-            <span class="event-loan">OF-1043</span>
-            <div class="event-extra">trigger: chase_statement_feb2026.pdf · conf 94.1%</div>
-          </div>
-          <span class="event-tag CLEAR">CLEAR · AI</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>14:11:48</strong>26m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
-            created lead <span class="event-loan">OF-1052</span> · Patel, R. +1
-            <div class="event-extra">source: web inquiry · loan_purpose refinance · property_state TX · auto-assigned to self</div>
-          </div>
-          <span class="event-tag EDIT">CREATE</span>
-        </div>
-
-        <div class="event green">
-          <div class="event-time"><strong>14:08:21</strong>30m ago</div>
-          <div class="event-body">
-            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
-            extracted <span class="event-target">w2_2025_anderson.pdf</span> on
-            <span class="event-loan">OF-1041</span> · AGI $87,400 written to <code>income_sources</code>
-            <div class="event-extra">conf 99.1% · DTI recomputed 41.3% → 39.8% · ms 1,114</div>
-          </div>
-          <span class="event-tag AI">AI · EXTRACT</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>14:02:55</strong>35m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
-            opened loan <span class="event-loan">OF-1043</span> · Rodriguez, James
-            <div class="event-extra">73.183.40.18 (Lubbock, TX) · chrome/124 macOS · session 4h 22m</div>
-          </div>
-          <span class="event-tag API">VIEW</span>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ───────── BUCKET: TODAY · 13:00 ───────── -->
-    <div class="bucket">
-      <div class="bucket-time"><strong>13:00–13:59</strong>Today · CDT</div>
-      <div class="bucket-events">
-
-        <div class="event">
-          <div class="event-time"><strong>13:48:11</strong>50m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
-            issued conditional approval on <span class="event-loan">OF-1038</span> · Foster, D.
-            <div class="event-extra">3 PTC conditions added · approval_letter generated · auto-emailed to borrower + LO</div>
-          </div>
-          <span class="event-tag MOVE">UW · APPROVE</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>13:44:02</strong>54m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            mentioned <strong>@Diana</strong> in chat on <span class="event-loan">OF-1045</span>
-            <div class="event-extra">"DTI back at 44.8% after rate change — can you take another look?" · notification delivered 1.2s</div>
-          </div>
-          <span class="event-tag UPLOAD">CHAT</span>
-        </div>
-
-        <div class="event green">
-          <div class="event-time"><strong>13:38:14</strong>1h ago</div>
-          <div class="event-body">
-            <span class="event-actor">System</span><span class="event-role-badge sys">SYS</span>
-            recomputed DTI on <span class="event-loan">OF-1044</span>
-            <div class="event-diff">
-              <span class="diff-old">38.7%</span>
-              <span class="diff-arrow">→</span>
-              <span class="diff-new">35.6%</span>
-            </div>
-            <div class="event-extra">trigger: tax_return_2024_williams.pdf processed · schedule-c income added</div>
-          </div>
-          <span class="event-tag EDIT">RECOMPUTE</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>13:22:37</strong>1h 16m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
-            exported pipeline report · <span class="event-target">pipeline_2026_apr.csv</span>
-            <div class="event-extra">14 rows · 47 columns · scope: branch=Submarine Catalyst · 73.183.42.118</div>
-          </div>
-          <span class="event-tag EXPORT">EXPORT</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>13:14:08</strong>1h 24m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
-            sent Loan Estimate on <span class="event-loan">OF-1048</span> · Williams, Tasha
-            <div class="event-extra">3-day TRID clock started · LE.pdf signed and emailed to tasha.williams@…example.com</div>
-          </div>
-          <span class="event-tag UPLOAD">SEND · TRID</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>13:02:55</strong>1h 35m ago</div>
-          <div class="event-body">
-            <span class="event-actor">API · LoanDepot Wholesale</span><span class="event-role-badge sys">API</span>
-            pulled pricing for <span class="event-loan">OF-1046</span> · 7 scenarios returned
-            <div class="event-extra">key: ld_***892 · response 312ms · best 6.625% · 30yr conv · 740+ FICO · 85 LTV</div>
-          </div>
-          <span class="event-tag API">API</span>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ───────── BUCKET: TODAY · 12:00 ───────── -->
-    <div class="bucket">
-      <div class="bucket-time"><strong>12:00–12:59</strong>Today · CDT</div>
-      <div class="bucket-events">
-
-        <div class="event amber">
-          <div class="event-time"><strong>12:47:21</strong>1h 51m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            edited field <span class="event-target">borrower_phone</span> on
-            <span class="event-loan">OF-1041</span>
-            <div class="event-diff">
-              <span class="diff-old">(806) 555-0142</span>
-              <span class="diff-arrow">→</span>
-              <span class="diff-new">(806) 555-0188</span>
-            </div>
-            <div class="event-extra">note: "borrower called — old number disconnected"</div>
-          </div>
-          <span class="event-tag EDIT">EDIT · PII</span>
-        </div>
-
-        <div class="event green">
-          <div class="event-time"><strong>12:33:01</strong>2h 5m ago</div>
-          <div class="event-body">
-            <span class="event-actor">AI · Claude Vision</span><span class="event-role-badge ai">AI</span>
-            batch-processed 4 docs on <span class="event-loan">OF-1037</span> · Singh, A. +1 · all auto-cleared
-            <div class="event-extra">paystub × 2 · w2 × 1 · bank stmt × 1 · avg conf 96.7% · total ms 7,841</div>
-          </div>
-          <span class="event-tag AI">AI · BATCH</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>12:18:42</strong>2h 19m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
-            ran report <span class="event-target">LO leaderboard · MTD</span>
-            <div class="event-extra">scope: branch=Submarine Catalyst · cached 8.4s · 73.183.42.118</div>
-          </div>
-          <span class="event-tag API">REPORT</span>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ───────── BUCKET: EARLIER TODAY ───────── -->
-    <div class="bucket">
-      <div class="bucket-time"><strong>07:00–11:59</strong>Earlier today</div>
-      <div class="bucket-events">
-
-        <div class="event amber">
-          <div class="event-time"><strong>11:42:18</strong>2h 56m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
-            updated permission on <span class="event-target">user · sarah.hayes@submarinecatalyst.com</span>
-            <div class="event-diff">
-              <span class="diff-old">processor</span>
-              <span class="diff-arrow">→</span>
-              <span class="diff-new">processor + reports_view</span>
-            </div>
-            <div class="event-extra">added scope: read:reports · approver: davis.rackler · 2-step auth confirmed</div>
-          </div>
-          <span class="event-tag PERM">PERMISSION</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>10:15:33</strong>4h 23m ago</div>
-          <div class="event-body">
-            <span class="event-actor">API · Optimal Blue</span><span class="event-role-badge sys">API</span>
-            posted rate sheet update · 247 products · applied to all active locks
-            <div class="event-extra">webhook · key ob_***441 · ms 1,204 · 0 conflicts</div>
-          </div>
-          <span class="event-tag API">API · WEBHOOK</span>
-        </div>
-
-        <div class="event cyan">
-          <div class="event-time"><strong>09:01:17</strong>5h 37m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Diana Mendez</span><span class="event-role-badge uw">UW</span>
-            signed in · 2-step verified
-            <div class="event-extra">73.183.41.220 (Lubbock, TX) · safari/17 macOS · device trust ✓ · session id 8c4f...d9</div>
-          </div>
-          <span class="event-tag LOGIN">LOGIN</span>
-        </div>
-
-        <div class="event cyan">
-          <div class="event-time"><strong>08:14:42</strong>6h 23m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            signed in · 2-step verified
-            <div class="event-extra">73.183.40.04 (Lubbock, TX) · firefox/123 macOS · device trust ✓ · session id 1a2b...77</div>
-          </div>
-          <span class="event-tag LOGIN">LOGIN</span>
-        </div>
-
-        <div class="event cyan">
-          <div class="event-time"><strong>07:42:11</strong>6h 56m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Davis Rackler</span><span class="event-role-badge own">OWNER</span>
-            signed in · 2-step verified
-            <div class="event-extra">73.183.42.118 (Lubbock, TX) · chrome/124 macOS · device trust ✓ · this device</div>
-          </div>
-          <span class="event-tag LOGIN">LOGIN</span>
-        </div>
-
-        <div class="event cyan">
-          <div class="event-time"><strong>07:38:54</strong>6h 59m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Corbin Matisse</span><span class="event-role-badge lo">LO</span>
-            signed in · 2-step verified
-            <div class="event-extra">73.183.40.18 (Lubbock, TX) · chrome/124 macOS · device trust ✓</div>
-          </div>
-          <span class="event-tag LOGIN">LOGIN</span>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ───────── BUCKET: YESTERDAY ───────── -->
-    <div class="bucket">
-      <div class="bucket-time"><strong>Yesterday</strong>Apr 28 · summarized</div>
-      <div class="bucket-events">
-
-        <div class="event red">
-          <div class="event-time"><strong>23:14:02</strong>15h 24m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Unknown</span><span class="event-role-badge red">FAIL</span>
-            failed login attempt for <span class="event-target">corbin.matisse@submarinecatalyst.com</span>
-            <div class="event-extra">
-              IP 185.220.101.42 (TOR exit node, NL) · 3 attempts blocked · account auto-locked 5 min · admin notified
-            </div>
-          </div>
-          <span class="event-tag FAIL">SECURITY</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>17:22:11</strong>21h 16m ago</div>
-          <div class="event-body">
-            <span class="event-actor">Sarah Hayes</span><span class="event-role-badge proc">PROC</span>
-            signed out · session duration 9h 7m
-            <div class="event-extra">manual logout · 73.183.40.04</div>
-          </div>
-          <span class="event-tag LOGIN">LOGOUT</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>16:48:33</strong>21h 50m ago</div>
-          <div class="event-body">
-            <span class="event-actor">System</span><span class="event-role-badge sys">SYS</span>
-            nightly snapshot · 14 active loans · 312 docs · 4.2 GB
-            <div class="event-extra">backup_id sn_2026-04-28_2148 · region us-central · sha256:fe21...c0a8 · ms 18,442</div>
-          </div>
-          <span class="event-tag API">SNAPSHOT</span>
-        </div>
-
-        <div class="event">
-          <div class="event-time"><strong>14:08:55</strong>1d ago</div>
-          <div class="event-body">
-            <span class="event-actor">summary</span><span class="event-role-badge sys">+228 EVENTS</span>
-            228 additional events from yesterday · 89 AI · 71 uploads · 38 edits · 24 clears · 6 stage moves
-            <div class="event-extra">expand to view all 228 · or use the filter bar to narrow by actor / action / loan</div>
-          </div>
-          <span class="event-tag API">COLLAPSED</span>
-        </div>
-
-      </div>
-    </div>
-
+    <div class="empty-stream">Loading events…</div>
   </section>
 
-  <!-- ─── RIGHT RAIL ──────────────────────────────────────────────── -->
   <aside class="right-rail">
-
-    <!-- LIVE -->
     <div class="rail-block">
-      <div class="rail-head">Live · Last 60s <span class="pulse"></span></div>
-      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--text);line-height:1.7;">
-        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">events/min</span><strong style="color:var(--accent2);">14.2</strong></div>
-        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">ai events/min</span><strong style="color:var(--accent2);">5.8</strong></div>
-        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">avg latency</span><strong style="color:var(--white);">42ms</strong></div>
-        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">queue depth</span><strong style="color:var(--white);">0</strong></div>
+      <div class="rail-head">Hash Chain</div>
+      <div style="font-family:var(--mono);font-size:0.68rem;color:var(--text);line-height:1.8;" id="chain-panel">
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">status</span><strong id="chain-status" style="color:var(--muted);">not verified yet</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">last verify</span><strong id="chain-when" style="color:var(--white);">—</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">chained rows</span><strong id="chain-rows" style="color:var(--white);">—</strong></div>
       </div>
+      <button class="chain-verify-btn" id="btn-verify" onclick="verifyChain()">⛓ Verify chain now</button>
+      <div class="hash-strip" id="hash-strip" style="margin-top:0.6rem;">latest digest: <strong id="latest-hash">—</strong></div>
     </div>
 
-    <!-- BREAKDOWN -->
     <div class="rail-block">
-      <div class="rail-head">Event Type · Today</div>
-
-      <div class="bd-row">
-        <span class="bd-tag AI">AI</span>
-        <div class="bd-bar"><span style="width:88%"></span></div>
-        <span class="bd-count">312</span>
-      </div>
-      <div class="bd-row">
-        <span class="bd-tag UPLOAD">UPLOAD</span>
-        <div class="bd-bar"><span style="width:54%"></span></div>
-        <span class="bd-count">189</span>
-      </div>
-      <div class="bd-row amberfill">
-        <span class="bd-tag EDIT">EDIT</span>
-        <div class="bd-bar"><span style="width:38%"></span></div>
-        <span class="bd-count">134</span>
-      </div>
-      <div class="bd-row">
-        <span class="bd-tag CLEAR">CLEAR</span>
-        <div class="bd-bar"><span style="width:22%"></span></div>
-        <span class="bd-count">78</span>
-      </div>
-      <div class="bd-row">
-        <span class="bd-tag MOVE">MOVE</span>
-        <div class="bd-bar"><span style="width:18%"></span></div>
-        <span class="bd-count">62</span>
-      </div>
-      <div class="bd-row">
-        <span class="bd-tag LOGIN">LOGIN</span>
-        <div class="bd-bar"><span style="width:8%"></span></div>
-        <span class="bd-count">28</span>
-      </div>
-      <div class="bd-row amberfill">
-        <span class="bd-tag PERM">PERM</span>
-        <div class="bd-bar"><span style="width:3%"></span></div>
-        <span class="bd-count">4</span>
-      </div>
-      <div class="bd-row redfill">
-        <span class="bd-tag FAIL">FAIL</span>
-        <div class="bd-bar"><span style="width:1%"></span></div>
-        <span class="bd-count">2</span>
-      </div>
+      <div class="rail-head">Event Type · loaded window</div>
+      <div id="rail-breakdown"><div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);">—</div></div>
     </div>
 
-    <!-- TOP ACTORS -->
     <div class="rail-block">
-      <div class="rail-head">Top Actors · Today</div>
-
-      <div class="actor-row">
-        <span class="actor-init ai">AI</span>
-        <div class="actor-name">Claude Vision<small>extracts, clears, recomputes</small></div>
-        <span class="actor-count">312</span>
-        <span class="actor-bar green"><span style="width:100%"></span></span>
-      </div>
-      <div class="actor-row">
-        <span class="actor-init proc">SH</span>
-        <div class="actor-name">Sarah Hayes<small>PROCESSOR</small></div>
-        <span class="actor-count">194</span>
-        <span class="actor-bar green"><span style="width:62%"></span></span>
-      </div>
-      <div class="actor-row">
-        <span class="actor-init">CM</span>
-        <div class="actor-name">Corbin Matisse<small>LO</small></div>
-        <span class="actor-count">156</span>
-        <span class="actor-bar"><span style="width:50%"></span></span>
-      </div>
-      <div class="actor-row">
-        <span class="actor-init uw">DM</span>
-        <div class="actor-name">Diana Mendez<small>UNDERWRITER</small></div>
-        <span class="actor-count">98</span>
-        <span class="actor-bar"><span style="width:31%"></span></span>
-      </div>
-      <div class="actor-row">
-        <span class="actor-init own">DR</span>
-        <div class="actor-name">Davis Rackler<small>OWNER · you</small></div>
-        <span class="actor-count">42</span>
-        <span class="actor-bar"><span style="width:13%"></span></span>
-      </div>
-      <div class="actor-row">
-        <span class="actor-init" style="background:var(--muted);">SY</span>
-        <div class="actor-name">System<small>cron · webhooks · APIs</small></div>
-        <span class="actor-count">45</span>
-        <span class="actor-bar"><span style="width:14%"></span></span>
-      </div>
+      <div class="rail-head">Top Actors · loaded window</div>
+      <div id="rail-actors" style="font-family:var(--mono);font-size:0.68rem;color:var(--text);line-height:1.9;">—</div>
     </div>
-
-    <!-- CRITICAL EVENTS -->
-    <div class="rail-block">
-      <div class="rail-head" style="color:var(--red);">Critical Events · 7d</div>
-
-      <div class="crit-row">
-        <div class="crit-time">YESTERDAY · 23:14</div>
-        <div class="crit-body">
-          <strong>Failed login attempt</strong> on corbin.matisse from TOR exit node (NL) · 3 attempts · auto-locked · admin notified
-        </div>
-      </div>
-      <div class="crit-row">
-        <div class="crit-time">TODAY · 11:42</div>
-        <div class="crit-body">
-          <strong>Permission elevated</strong> · sarah.hayes granted reports_view by davis.rackler · 2-step confirmed
-        </div>
-      </div>
-      <p style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:0.5rem;letter-spacing:0.04em;">
-        ↳ All critical events alert <strong style="color:var(--white);">davis@submarinecatalyst.com</strong> in real time.
-      </p>
-    </div>
-
-    <!-- RETENTION + INTEGRITY -->
-    <div class="rail-block">
-      <div class="rail-head">Retention &amp; Integrity</div>
-      <div class="retention">
-        <div class="ret-row"><span class="ret-label">Retention</span><strong>7 years</strong></div>
-        <div class="ret-row"><span class="ret-label">Storage</span>append-only · WORM</div>
-        <div class="ret-row"><span class="ret-label">Hashing</span>SHA-256 chain</div>
-        <div class="ret-row"><span class="ret-label">Compliance</span><strong>SOC 2 Type II</strong></div>
-        <div class="ret-row"><span class="ret-label">Encryption</span>AES-256 at rest</div>
-        <div class="ret-row"><span class="ret-label">Last verify</span>14:35 · ✓ intact</div>
-      </div>
-      <div class="hash-strip">
-        <strong>head:</strong> a9c4f17b2e88...d31f4a · 847 events · chain intact ✓
-      </div>
-    </div>
-
   </aside>
-
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- FOOTER                                                               -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+</div><!-- /audit-active -->
+
 <footer>
-  <span style="font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
-  <span>Demo build · mock data · v0.1 · all activity simulated</span>
-  <div style="display:flex;gap:1.25rem;">
-    <a href="dashboard.html">← Pipeline</a>
-    <a href="index.html">Landing</a>
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
-    <a href="https://x.com/DRackler" target="_blank" rel="noopener">@DRackler</a>
+  <span style="font-family:var(--mono);font-size:0.6rem;font-weight:700;letter-spacing:0.12em;">ORIGINFLOW LOS</span>
+  <span style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);">v0.2 · live data · branch-scoped · append-only</span>
+  <div style="display:flex;gap:1.25rem;font-family:var(--mono);font-size:0.58rem;">
+    <a href="/home.html" style="color:var(--muted);text-decoration:none;">Home</a>
+    <a href="/dashboard.html" style="color:var(--muted);text-decoration:none;">Pipeline</a>
+    <a href="/reports.html" style="color:var(--muted);text-decoration:none;">Reports</a>
+    <a href="/privacy.html" style="color:var(--muted);text-decoration:none;">Privacy</a>
   </div>
 </footer>
 
+<div class="of-toast" id="of-toast" role="status"></div>
+
 <script>
-  // ─── Live event simulation ─────────────────────────────────────────
-  // Prepend a new audit row to the top bucket every ~13s to give
-  // viewers a live feeling. Shifts the previous "fresh" row down.
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT LOG · LIVE (12.6)
+//
+// Replaces the static marketing demo. Reads BOTH audit stores in parallel —
+// `loan_audit_events` (the hash-chained, append-only store behind
+// verify_audit_chain) and `audit_logs` (the app-level operation log the
+// dashboard writes stage-change fallbacks into) — normalizes them into one
+// stream, and tags each row with its source. Schema-ADAPTIVE on purpose:
+// the two stores have different column sets, so the normalizer probes for
+// the common aliases (operation/event_type/action, diff/old+new/payload,
+// created_at/occurred_at, digest/row_hash) rather than hard-coding one
+// shape. Reconciling the two stores into one table is on the debt list;
+// this page makes both visible until then.
+//
+// Chain verification calls the real verify_audit_chain() function and
+// renders whatever it returns (boolean, count, or broken-row list).
+// ═══════════════════════════════════════════════════════════════════════════
 
-  const liveBucket = document.getElementById('live-bucket');
+const $ = (s) => document.querySelector(s);
+let supa = null, me = null, branch = null;
+let allEvents = [];                  // normalized, merged, sorted desc
+let profilesById = new Map();
+let loansById = new Map();
+let filters = { search: '', actor: 'all', action: 'all', source: 'all', range: '7' };
+let rtChans = [];
 
-  const fakeEvents = [
-    { tag: 'AI', tagClass: 'AI', stripe: 'green',
-      actor: 'AI · Claude Vision', role: 'AI', roleClass: 'ai',
-      action: 'auto-extracted W-2 from <span class="event-target">w2_2025_brooks.pdf</span> on <span class="event-loan">OF-1047</span>',
-      extra: 'AGI $124,800 · conf 99.4% · DTI recomputed 38.1% → 37.4% · ms 1,028' },
+function escapeHtml(s){return String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function showToast(m, err){const t=$('#of-toast');t.textContent=m;t.classList.toggle('err',!!err);
+  t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),4000);}
+function timeAgo(iso){if(!iso)return '';const d=(Date.now()-new Date(iso).getTime())/1000;
+  if(d<60)return Math.floor(d)+'s ago';if(d<3600)return Math.floor(d/60)+'m ago';
+  if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
+function hhmmss(iso){return new Date(iso).toLocaleTimeString([], {hour12:false});}
+function dayKey(iso){const d=new Date(iso);return d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'});}
 
-    { tag: 'UPLOAD', tagClass: 'UPLOAD', stripe: '',
-      actor: 'Sarah Hayes', role: 'PROC', roleClass: 'proc',
-      action: 'uploaded <span class="event-target">title_commitment_OF-1042.pdf</span> to <span class="event-loan">OF-1042</span>',
-      extra: '1.8 MB · sha256:b22e...44f0 · 73.183.40.04 · routed to AI extraction queue' },
+function handleSignOut(){ if (typeof ofSignOut==='function') ofSignOut(); else window.location.href='/login.html'; }
 
-    { tag: 'CLEAR · AI', tagClass: 'CLEAR', stripe: 'green',
-      actor: 'AI · Claude Vision', role: 'AI', roleClass: 'ai',
-      action: 'auto-cleared condition <span class="event-target">Tax return · 2024</span> on <span class="event-loan">OF-1041</span>',
-      extra: 'trigger: tax_return_2024_anderson.pdf · conf 97.2% · ms 982' },
+// ─── Normalizer: any audit row → one shape ───────────────────────────────
+function normalizeEvent(row, source) {
+  const ts = row.created_at || row.occurred_at || row.event_time || row.at || row.inserted_at;
+  const opRaw = row.operation || row.event_type || row.action || row.kind || row.op || 'event';
+  const diff = row.diff
+    || row.changes
+    || ((row.old_values || row.new_values) ? { _old: row.old_values, _new: row.new_values } : null)
+    || row.payload || null;
+  return {
+    id: source + ':' + (row.id ?? Math.random().toString(36).slice(2)),
+    source,                                            // 'chain' | 'log'
+    ts: ts || new Date(0).toISOString(),
+    op: String(opRaw).toLowerCase(),
+    table: row.table_name || row.target_table || row.entity || row.table || '',
+    actorId: row.actor_id || row.user_id || row.changed_by || row.performed_by || null,
+    actorRole: (row.actor_role || row.role || '').toLowerCase(),
+    loanId: row.loan_id || null,
+    recordId: row.record_id || row.row_id || null,
+    diff,
+    hash: row.digest || row.row_hash || row.hash || row.event_hash || null,
+    raw: row,
+  };
+}
 
-    { tag: 'EDIT', tagClass: 'EDIT', stripe: 'amber',
-      actor: 'Corbin Matisse', role: 'LO', roleClass: 'lo',
-      action: 'edited field <span class="event-target">interest_rate</span> on <span class="event-loan">OF-1048</span>',
-      extra: 'before: 6.875% · after: 6.750% · trigger: rate sheet refresh · LE re-disclosure required',
-      diff: { old: '6.875%', new: '6.750%' } },
+function tagFor(e) {
+  const o = e.op;
+  if (o.includes('clear')) return 'CLEAR';
+  if (o.includes('stage') || o.includes('status') || o.includes('move')) return 'MOVE';
+  if (o.includes('upload') || o.includes('document')) return 'UPLOAD';
+  if (o.includes('login') || o.includes('auth') || o.includes('session')) return 'LOGIN';
+  if (o.includes('extract') || o.includes('classif') || o.includes('ai')) return 'AI';
+  if (o.includes('delete') || o.includes('archive')) return 'DELETE';
+  if (o.includes('insert') || o.includes('create') || o.includes('seed')) return 'CREATE';
+  if (o.includes('update') || o.includes('edit')) return 'EDIT';
+  if (o.includes('export')) return 'EXPORT';
+  if (o.includes('perm') || o.includes('role') || o.includes('impersonat')) return 'PERM';
+  if (o.includes('fail') || o.includes('denied') || o.includes('error')) return 'FAIL';
+  return 'API';
+}
+function rowAccent(tag) {
+  return tag === 'FAIL' || tag === 'DELETE' ? 'red'
+       : tag === 'EDIT' || tag === 'PERM' ? 'amber'
+       : tag === 'CLEAR' || tag === 'AI' || tag === 'CREATE' ? 'green'
+       : tag === 'MOVE' || tag === 'LOGIN' ? 'cyan' : '';
+}
+function roleBadge(role) {
+  const r = (role || '').toLowerCase();
+  const cls = r === 'lo' || r === 'loa' ? 'lo'
+            : r === 'processor' || r === 'closer' ? 'proc'
+            : r === 'underwriter' ? 'uw'
+            : r === 'admin' ? 'own'
+            : r === 'ai' ? 'ai'
+            : r === 'system' || r === 'service' ? 'sys' : 'sys';
+  const label = r ? r.toUpperCase().slice(0, 5) : 'SYS';
+  return `<span class="event-role-badge ${cls}">${escapeHtml(label)}</span>`;
+}
 
-    { tag: 'MOVE', tagClass: 'MOVE', stripe: 'green',
-      actor: 'Sarah Hayes', role: 'PROC', roleClass: 'proc',
-      action: 'moved <span class="event-loan">OF-1046</span> · Henderson, M. +1',
-      extra: 'all submission requirements met · auto-assigned to Diana Mendez',
-      diff: { old: 'Submitted', new: 'Processing' } },
-
-    { tag: 'API', tagClass: 'API', stripe: '',
-      actor: 'API · CoreLogic Flood', role: 'API', roleClass: 'sys',
-      action: 'returned flood determination for <span class="event-loan">OF-1045</span>',
-      extra: 'zone X · LOMA not required · key cl_***117 · ms 88' },
-
-    { tag: 'AI · FLAG', tagClass: 'AI', stripe: 'amber',
-      actor: 'AI · Claude Vision', role: 'AI', roleClass: 'ai',
-      action: 'flagged <span class="event-target">handwriting mismatch</span> on signature page · <span class="event-loan">OF-1044</span>',
-      extra: 'page 14 of borrower_authorization.pdf · sent to Sarah for human review' },
-
-    { tag: 'CHAT', tagClass: 'UPLOAD', stripe: '',
-      actor: 'Diana Mendez', role: 'UW', roleClass: 'uw',
-      action: 'replied in chat thread on <span class="event-loan">OF-1045</span>',
-      extra: '"propose buy-down to 6.875% — gets DTI back under 43%" · 2 mentions' },
-  ];
-
-  let liveIdx = 0;
-
-  function buildEventNode(e) {
-    const div = document.createElement('div');
-    div.className = `event fresh ${e.stripe}`;
-    let diffHtml = '';
-    if (e.diff) {
-      diffHtml = `
-        <div class="event-diff">
-          <span class="diff-old">${e.diff.old}</span>
-          <span class="diff-arrow">→</span>
-          <span class="diff-new">${e.diff.new}</span>
-        </div>`;
-    }
-    div.innerHTML = `
-      <div class="event-time"><strong>just now</strong>live</div>
-      <div class="event-body">
-        <span class="event-actor">${e.actor}</span><span class="event-role-badge ${e.roleClass}">${e.role}</span>
-        ${e.action}
-        ${diffHtml}
-        <div class="event-extra">${e.extra}</div>
-      </div>
-      <span class="event-tag ${e.tagClass}">${e.tag}</span>
-    `;
-    return div;
+// ─── Diff renderer — handles every shape we know about ──────────────────
+function renderDiff(diff) {
+  if (!diff || typeof diff !== 'object') return '';
+  // shape: { from_status, to_status }  (dashboard stage-change fallback)
+  if (diff.from_status || diff.to_status) {
+    return `<div class="event-diff"><span class="diff-old">${escapeHtml(String(diff.from_status ?? '—').replace(/_/g,' '))}</span>
+      <span class="diff-arrow">→</span><span class="diff-new">${escapeHtml(String(diff.to_status ?? '—').replace(/_/g,' '))}</span></div>`;
   }
+  // shape: { _old:{...}, _new:{...} }
+  if (diff._old || diff._new) {
+    const oldV = diff._old || {}, newV = diff._new || {};
+    const keys = [...new Set([...Object.keys(oldV), ...Object.keys(newV)])]
+      .filter(k => JSON.stringify(oldV[k]) !== JSON.stringify(newV[k])).slice(0, 4);
+    if (!keys.length) return '';
+    return keys.map(k => `<div class="event-diff"><span style="color:var(--muted);font-size:0.62rem;">${escapeHtml(k)}:</span>
+      <span class="diff-old">${escapeHtml(fmtVal(oldV[k]))}</span><span class="diff-arrow">→</span>
+      <span class="diff-new">${escapeHtml(fmtVal(newV[k]))}</span></div>`).join('');
+  }
+  // shape: { field: [old, new], ... }
+  const pairKeys = Object.keys(diff).filter(k => Array.isArray(diff[k]) && diff[k].length === 2).slice(0, 4);
+  if (pairKeys.length) {
+    return pairKeys.map(k => `<div class="event-diff"><span style="color:var(--muted);font-size:0.62rem;">${escapeHtml(k)}:</span>
+      <span class="diff-old">${escapeHtml(fmtVal(diff[k][0]))}</span><span class="diff-arrow">→</span>
+      <span class="diff-new">${escapeHtml(fmtVal(diff[k][1]))}</span></div>`).join('');
+  }
+  // anything else: compact key list
+  const keys = Object.keys(diff).slice(0, 6);
+  if (!keys.length) return '';
+  return `<div class="event-extra">${escapeHtml(keys.map(k => k + ': ' + fmtVal(diff[k])).join(' · ').slice(0, 220))}</div>`;
+}
+function fmtVal(v) {
+  if (v == null) return '—';
+  if (typeof v === 'object') return JSON.stringify(v).slice(0, 60);
+  return String(v).slice(0, 60);
+}
 
-  setInterval(() => {
-    const e = fakeEvents[liveIdx % fakeEvents.length];
-    liveIdx++;
-    const node = buildEventNode(e);
-    liveBucket.insertBefore(node, liveBucket.firstChild);
+// ─── BOOTSTRAP ───────────────────────────────────────────────────────────
+async function bootstrap() {
+  supa = (typeof getSupabase === 'function') ? getSupabase() : null;
+  if (!supa) { showState('state-signed-out'); return; }
+  let session = null;
+  try { session = (typeof ofGetSession === 'function') ? await ofGetSession() : null; } catch (_) {}
+  if (!session) { showState('state-signed-out'); return; }
 
-    // Demote previously-fresh rows
-    const rows = liveBucket.querySelectorAll('.event');
-    rows.forEach((r, i) => {
-      if (i === 0) return;
-      r.classList.remove('fresh');
-      const t = r.querySelector('.event-time strong');
-      const sub = r.querySelector('.event-time');
-      if (t && t.textContent === 'just now') {
-        t.textContent = '14:38:' + String(38 - i * 2).padStart(2, '0');
-        if (sub.lastChild) sub.lastChild.textContent = (i * 13) + 's ago';
-      }
-    });
+  const { data: profile } = await supa.from('profiles')
+    .select('id, branch_id, role, full_name, branches:branch_id ( id, name )')
+    .eq('id', session.user.id).maybeSingle();
+  if (!profile || !profile.branch_id) { showState('state-pending'); return; }
 
-    // Keep the live bucket from getting absurdly long
-    while (liveBucket.children.length > 16) {
-      liveBucket.removeChild(liveBucket.lastChild);
+  me = profile; branch = profile.branches || { name: 'Your Branch' };
+  $('#nav-user-name').textContent = profile.full_name || 'Signed in';
+  $('#nav-user-role').textContent = (profile.role || '').toUpperCase();
+  $('#nav-user-role').style.display = 'inline-block';
+  $('#nav-branch-name').textContent = branch.name;
+  $('#nav-branch-pill').style.display = 'inline-flex';
+
+  showState(null);
+  setInterval(() => { $('#live-clock').textContent = 'live · ' + new Date().toLocaleTimeString(); }, 1000);
+
+  await loadEvents();
+  buildFilterOptions();
+  renderAll();
+  initFilters();
+  initRealtime();
+}
+
+function showState(id) {
+  ['state-loading','state-signed-out','state-pending'].forEach(s =>
+    document.getElementById(s).style.display = (s === id) ? 'flex' : 'none');
+  $('#audit-active').style.display = id == null ? 'block' : 'none';
+}
+
+// ─── LOAD ────────────────────────────────────────────────────────────────
+async function loadEvents() {
+  // select('*') deliberately: two stores, two unknown-but-overlapping
+  // shapes, RLS handles scoping. The normalizer makes the shapes converge.
+  const [chainR, logR] = await Promise.allSettled([
+    supa.from('loan_audit_events').select('*').order('created_at', { ascending: false }).limit(400),
+    supa.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(400),
+  ]);
+
+  allEvents = [];
+  let chainErr = null, logErr = null;
+  if (chainR.status === 'fulfilled' && !chainR.value.error) {
+    (chainR.value.data || []).forEach(r => allEvents.push(normalizeEvent(r, 'chain')));
+  } else chainErr = chainR.status === 'fulfilled' ? chainR.value.error?.message : String(chainR.reason);
+  if (logR.status === 'fulfilled' && !logR.value.error) {
+    (logR.value.data || []).forEach(r => allEvents.push(normalizeEvent(r, 'log')));
+  } else logErr = logR.status === 'fulfilled' ? logR.value.error?.message : String(logR.reason);
+
+  if (chainErr && logErr) {
+    $('#event-stream').innerHTML = `<div class="empty-stream" style="color:var(--red);">
+      Couldn't read either audit store.<br><br>loan_audit_events: ${escapeHtml(chainErr)}<br>audit_logs: ${escapeHtml(logErr)}</div>`;
+    return;
+  }
+  if (chainErr) console.warn('[audit] loan_audit_events unavailable:', chainErr);
+  if (logErr) console.warn('[audit] audit_logs unavailable:', logErr);
+
+  allEvents.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+  // Hydrate actor names + loan numbers
+  const actorIds = [...new Set(allEvents.map(e => e.actorId).filter(Boolean))];
+  if (actorIds.length) {
+    const { data } = await supa.from('profiles').select('id, full_name, role').in('id', actorIds);
+    (data || []).forEach(p => profilesById.set(p.id, p));
+  }
+  const loanIds = [...new Set(allEvents.map(e => e.loanId).filter(Boolean))];
+  if (loanIds.length) {
+    const { data } = await supa.from('loans').select('id, loan_number').in('id', loanIds);
+    (data || []).forEach(l => loansById.set(l.id, l));
+  }
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────────────────
+function buildFilterOptions() {
+  const actors = new Map();
+  allEvents.forEach(e => {
+    if (!e.actorId) return;
+    const p = profilesById.get(e.actorId);
+    actors.set(e.actorId, (p?.full_name || 'Unknown') + (p?.role ? ' · ' + p.role.toUpperCase() : ''));
+  });
+  $('#f-actor').innerHTML = '<option value="all">All actors</option>'
+    + '<option value="system">System / no actor</option>'
+    + [...actors.entries()].map(([id, label]) => `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`).join('');
+
+  const tags = [...new Set(allEvents.map(e => tagFor(e)))].sort();
+  $('#f-action').innerHTML = '<option value="all">All actions</option>'
+    + tags.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+function applyFilters() {
+  const cutoff = filters.range === 'all' ? 0 : Date.now() - Number(filters.range) * 86400000;
+  const q = filters.search.toLowerCase();
+  return allEvents.filter(e => {
+    if (new Date(e.ts).getTime() < cutoff) return false;
+    if (filters.source !== 'all' && e.source !== filters.source) return false;
+    if (filters.action !== 'all' && tagFor(e) !== filters.action) return false;
+    if (filters.actor === 'system' && e.actorId) return false;
+    if (filters.actor !== 'all' && filters.actor !== 'system' && e.actorId !== filters.actor) return false;
+    if (q) {
+      const p = profilesById.get(e.actorId);
+      const hay = [e.op, e.table, p?.full_name, loansById.get(e.loanId)?.loan_number,
+                   JSON.stringify(e.diff || '')].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
     }
-  }, 13000);
+    return true;
+  });
+}
+
+function initFilters() {
+  $('#f-search').addEventListener('input', e => { filters.search = e.target.value.trim(); renderStream(); });
+  $('#f-actor').addEventListener('change', e => { filters.actor = e.target.value; renderStream(); });
+  $('#f-action').addEventListener('change', e => { filters.action = e.target.value; renderStream(); });
+  $('#f-source').addEventListener('change', e => { filters.source = e.target.value; renderStream(); });
+  $('#f-range').addEventListener('change', e => { filters.range = e.target.value; renderStream(); });
+  $('#btn-csv').addEventListener('click', exportCsv);
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────
+function renderAll() { renderMetrics(); renderStream(); renderRail(); }
+
+function renderMetrics() {
+  const now = Date.now();
+  const dayStart = new Date(); dayStart.setHours(0,0,0,0);
+  const today = allEvents.filter(e => new Date(e.ts) >= dayStart);
+  const last24 = allEvents.filter(e => now - new Date(e.ts).getTime() < 86400000);
+  const week = allEvents.filter(e => now - new Date(e.ts).getTime() < 7 * 86400000);
+  const actors24 = new Set(last24.map(e => e.actorId || 'system'));
+  const aiToday = today.filter(e => !e.actorId || e.actorRole === 'ai' || e.actorRole === 'system'
+    || tagFor(e) === 'AI' || e.op.includes('seed') || e.op.includes('recompute')).length;
+  const loansToday = new Set(today.map(e => e.loanId).filter(Boolean));
+
+  $('#m-today').textContent = today.length;
+  $('#m-today-sub').textContent = `across ${loansToday.size} loan${loansToday.size === 1 ? '' : 's'}`;
+  $('#m-actors').textContent = actors24.size;
+  $('#m-actors-sub').textContent = `${[...actors24].filter(a => a !== 'system').length} human · ${actors24.has('system') ? 'incl. system' : 'no system'}`;
+  $('#m-ai').textContent = aiToday;
+  $('#m-week').textContent = week.length;
+  $('#m-week-sub').textContent = `${allEvents.length} loaded total (cap 800)`;
+  const latest = allEvents[0];
+  $('#m-last').textContent = latest ? hhmmss(latest.ts) : '—';
+  $('#m-last-sub').textContent = latest ? timeAgo(latest.ts) : 'no events';
+  const latestHash = allEvents.find(e => e.hash);
+  $('#latest-hash').textContent = latestHash ? String(latestHash.hash).slice(0, 18) + '…' : 'none in window';
+}
+
+function renderEventRow(e, fresh) {
+  const tag = tagFor(e);
+  const accent = rowAccent(tag);
+  const p = profilesById.get(e.actorId);
+  const actorName = p?.full_name || (e.actorId ? 'Teammate' : 'System');
+  const role = p?.role || e.actorRole || (e.actorId ? '' : 'system');
+  const loanNum = e.loanId ? (loansById.get(e.loanId)?.loan_number || e.loanId.slice(0, 8)) : null;
+  const extra = [
+    e.table ? 'table: ' + e.table : null,
+    e.hash ? 'hash: ' + String(e.hash).slice(0, 14) + '…' : null,
+    e.source === 'chain' ? 'hash-chained store' : 'audit log store',
+  ].filter(Boolean).join(' · ');
+
+  return `
+    <div class="event ${accent} ${fresh ? 'fresh' : ''}">
+      <div class="event-time"><strong>${hhmmss(e.ts)}</strong>${timeAgo(e.ts)}</div>
+      <div class="event-body">
+        <span class="event-actor">${escapeHtml(actorName)}</span>${roleBadge(role)}
+        ${escapeHtml(e.op.replace(/_/g, ' '))}
+        ${e.table ? `on <span class="event-target">${escapeHtml(e.table)}</span>` : ''}
+        ${loanNum ? `· <a class="event-loan" style="cursor:pointer;text-decoration:none;" href="/loan.html?id=${encodeURIComponent(e.loanId)}">${escapeHtml(loanNum)}</a>` : ''}
+        ${renderDiff(e.diff)}
+        ${extra ? `<div class="event-extra">${escapeHtml(extra)}</div>` : ''}
+      </div>
+      <span class="event-tag ${tag}">${tag}${e.source === 'chain' ? ' ⛓' : ''}</span>
+    </div>`;
+}
+
+function renderStream() {
+  const rows = applyFilters();
+  if (!rows.length) {
+    $('#event-stream').innerHTML = `<div class="empty-stream">No events match this filter. Widen the range or clear the search.</div>`;
+    return;
+  }
+  // Group into day buckets
+  const byDay = new Map();
+  rows.slice(0, 300).forEach(e => {
+    const k = dayKey(e.ts);
+    if (!byDay.has(k)) byDay.set(k, []);
+    byDay.get(k).push(e);
+  });
+  $('#event-stream').innerHTML = [...byDay.entries()].map(([day, evts]) => `
+    <div class="bucket">
+      <div class="bucket-time"><strong>${escapeHtml(day)}</strong>${evts.length} event${evts.length === 1 ? '' : 's'}</div>
+      <div class="bucket-events">${evts.map(e => renderEventRow(e, false)).join('')}</div>
+    </div>`).join('')
+    + (rows.length > 300 ? `<div class="empty-stream">Showing newest 300 of ${rows.length} — tighten filters or export CSV for the rest.</div>` : '');
+}
+
+function renderRail() {
+  // Breakdown by tag
+  const counts = {};
+  allEvents.forEach(e => { const t = tagFor(e); counts[t] = (counts[t] || 0) + 1; });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const max = Math.max(1, ...entries.map(([, n]) => n));
+  $('#rail-breakdown').innerHTML = entries.map(([t, n]) => `
+    <div class="bd-row">
+      <span class="bd-tag ${t}">${t}</span>
+      <div class="bd-bar"><span style="width:${Math.round(n / max * 100)}%"></span></div>
+      <span class="bd-count">${n}</span>
+    </div>`).join('') || '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);">no events</div>';
+
+  // Top actors
+  const byActor = new Map();
+  allEvents.forEach(e => {
+    const k = e.actorId || 'system';
+    byActor.set(k, (byActor.get(k) || 0) + 1);
+  });
+  $('#rail-actors').innerHTML = [...byActor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
+    .map(([id, n]) => {
+      const name = id === 'system' ? 'System / triggers' : (profilesById.get(id)?.full_name || 'Teammate');
+      return `<div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">${escapeHtml(name)}</span><strong style="color:var(--white);">${n}</strong></div>`;
+    }).join('') || '—';
+
+  $('#chain-rows').textContent = allEvents.filter(e => e.source === 'chain').length + ' loaded';
+}
+
+// ─── CHAIN VERIFICATION — the real verify_audit_chain() ─────────────────
+async function verifyChain() {
+  const btn = $('#btn-verify');
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  const t0 = performance.now();
+  try {
+    // Arg signature unknown across environments — try no-arg, then branch arg.
+    let { data, error } = await supa.rpc('verify_audit_chain');
+    if (error && /function|argument|parameter/i.test(error.message || '')) {
+      ({ data, error } = await supa.rpc('verify_audit_chain', { p_branch_id: me.branch_id }));
+    }
+    if (error) throw error;
+    const ms = Math.round(performance.now() - t0);
+
+    // Adaptive result handling: boolean, count, or broken-row list.
+    let ok, detail;
+    if (data === true || data === 'valid') { ok = true; detail = 'verified'; }
+    else if (data === false) { ok = false; detail = 'chain reported invalid'; }
+    else if (Array.isArray(data)) { ok = data.length === 0; detail = ok ? '0 broken rows' : data.length + ' broken row(s)'; }
+    else if (typeof data === 'number') { ok = data === 0; detail = data + ' broken row(s)'; }
+    else if (data && typeof data === 'object') {
+      const broken = data.broken_rows ?? data.broken ?? data.invalid ?? null;
+      ok = broken === 0 || data.valid === true || data.ok === true;
+      detail = broken != null ? broken + ' broken row(s)' : JSON.stringify(data).slice(0, 60);
+    } else { ok = true; detail = 'verified'; }
+
+    $('#chain-status').textContent = ok ? '✓ intact' : '✗ BROKEN';
+    $('#chain-status').style.color = ok ? 'var(--accent2)' : 'var(--red)';
+    $('#m-chain').textContent = ok ? '✓ intact' : '✗ broken';
+    $('#m-chain').style.color = ok ? 'var(--accent2)' : 'var(--red)';
+    $('#m-chain-sub').textContent = detail + ' · ' + ms + 'ms';
+    $('#chain-when').textContent = new Date().toLocaleTimeString();
+    showToast(ok ? `Hash chain verified intact (${detail}, ${ms}ms).` : 'Chain verification FAILED: ' + detail, !ok);
+  } catch (err) {
+    console.error('[audit] verify failed:', err);
+    $('#chain-status').textContent = 'verify error';
+    $('#chain-status').style.color = 'var(--amber)';
+    $('#m-chain-sub').textContent = err.message?.slice(0, 60) || 'error';
+    showToast('Verify failed: ' + err.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = '⛓ Verify chain now';
+  }
+}
+
+// ─── CSV EXPORT (current filter) ─────────────────────────────────────────
+function exportCsv() {
+  const rows = applyFilters();
+  if (!rows.length) { showToast('Nothing to export under this filter.', true); return; }
+  const esc = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = ['timestamp,source,actor,role,operation,table,loan,diff,hash']
+    .concat(rows.map(e => {
+      const p = profilesById.get(e.actorId);
+      return [e.ts, e.source, p?.full_name || (e.actorId ? e.actorId : 'system'),
+        p?.role || e.actorRole || '', e.op, e.table,
+        loansById.get(e.loanId)?.loan_number || e.loanId || '',
+        e.diff ? JSON.stringify(e.diff) : '', e.hash || ''].map(esc).join(',');
+    })).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `audit-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast(`Exported ${rows.length} events to CSV.`);
+}
+
+// ─── REALTIME — both stores, live prepend ────────────────────────────────
+function initRealtime() {
+  [['loan_audit_events', 'chain'], ['audit_logs', 'log']].forEach(([table, source]) => {
+    const ch = supa.channel(`audit-${table}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table }, async (payload) => {
+        const e = normalizeEvent(payload.new, source);
+        // hydrate actor/loan if new to us
+        if (e.actorId && !profilesById.has(e.actorId)) {
+          const { data } = await supa.from('profiles').select('id, full_name, role').eq('id', e.actorId).maybeSingle();
+          if (data) profilesById.set(data.id, data);
+        }
+        if (e.loanId && !loansById.has(e.loanId)) {
+          const { data } = await supa.from('loans').select('id, loan_number').eq('id', e.loanId).maybeSingle();
+          if (data) loansById.set(data.id, data);
+        }
+        allEvents.unshift(e);
+        if (allEvents.length > 800) allEvents.pop();
+        renderMetrics(); renderRail();
+        // Prepend into the stream if it passes the current filter
+        const stream = $('#event-stream');
+        const firstBucket = stream.querySelector('.bucket-events');
+        if (firstBucket && applyFilters().some(x => x.id === e.id)) {
+          firstBucket.insertAdjacentHTML('afterbegin', renderEventRow(e, true));
+        }
+      })
+      .subscribe();
+    rtChans.push(ch);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', bootstrap);
 </script>
 
 </body>
