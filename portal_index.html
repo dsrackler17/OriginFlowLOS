@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- ============================================================
-       OF_CONFIG — Supabase project bootstrap (Phase 11.5.2)
+       OF_CONFIG — Supabase project bootstrap
        ============================================================ -->
   <script>
     window.OF_CONFIG = {
@@ -39,6 +39,7 @@
       --cyan-glow: rgba(34, 211, 238, 0.15);
       --accent-green: #86efac;
       --warn: #fbbf24;
+      --warn-glow: rgba(251, 191, 36, 0.12);
       --danger: #f87171;
       --shadow-1: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 10px rgba(0,0,0,0.25);
 
@@ -91,391 +92,230 @@
       justify-content: space-between;
       gap: 16px;
     }
-    .portal-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .portal-brand { display: flex; align-items: center; gap: 10px; }
     .portal-brand-mark {
       width: 28px; height: 28px;
       border-radius: 6px;
       background: linear-gradient(135deg, var(--cyan), #0891b2);
       display: grid; place-items: center;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      font-size: 14px;
+      font-family: var(--font-mono); font-weight: 700; font-size: 14px;
       color: var(--navy);
       box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 0 20px rgba(34, 211, 238, 0.2);
     }
-    .portal-brand-text {
-      font-family: var(--font-mono);
-      font-weight: 700;
-      font-size: 13px;
-      letter-spacing: 0.04em;
-    }
+    .portal-brand-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; letter-spacing: 0.04em; }
     .portal-brand-text .subtitle {
-      display: block;
-      font-weight: 400;
-      font-size: 10px;
-      color: var(--text-faint);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      margin-top: 1px;
+      display: block; font-weight: 400; font-size: 10px; color: var(--text-faint);
+      letter-spacing: 0.1em; text-transform: uppercase; margin-top: 1px;
     }
-    .portal-user {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text-dim);
-    }
+    .portal-user { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
+    .portal-user-name { display: none; }
+    @media (min-width: 480px) { .portal-user-name { display: inline; } }
     .portal-user-avatar {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: var(--bg-elev-2);
-      border: 1px solid var(--border-strong);
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg-elev-2); border: 1px solid var(--border-strong);
       display: grid; place-items: center;
-      font-family: var(--font-sans);
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--cyan);
+      font-family: var(--font-sans); font-weight: 600; font-size: 13px; color: var(--cyan);
     }
+    .nav-signout {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-faint); background: transparent; border: 1px solid var(--border);
+      border-radius: 7px; padding: 7px 10px; cursor: pointer; transition: all 0.15s;
+    }
+    .nav-signout:hover { color: var(--danger); border-color: rgba(248,113,113,0.4); }
 
-    .portal-main {
-      max-width: 880px;
-      margin: 0 auto;
-      padding: 24px 16px 80px;
-    }
-    @media (min-width: 640px) {
-      .portal-main { padding: 32px 24px 80px; }
-    }
+    .portal-main { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; }
+    @media (min-width: 640px) { .portal-main { padding: 32px 24px 80px; } }
 
-    .page-header { margin-bottom: 28px; }
+    .page-header { margin-bottom: 22px; }
     .page-eyebrow {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--cyan);
-      margin-bottom: 6px;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 6px;
     }
-    .page-title {
-      font-family: var(--font-serif);
-      font-size: 30px;
-      line-height: 1.1;
-      color: var(--text);
-      margin: 0 0 4px 0;
-    }
+    .page-title { font-family: var(--font-serif); font-size: 30px; line-height: 1.1; color: var(--text); margin: 0 0 4px 0; }
     @media (min-width: 640px) { .page-title { font-size: 38px; } }
-    .page-subtitle {
-      font-family: var(--font-sans);
-      color: var(--text-dim);
-      font-size: 15px;
+    .page-subtitle { font-family: var(--font-sans); color: var(--text-dim); font-size: 15px; }
+
+    .card {
+      background: var(--bg-elev-1); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; margin-bottom: 18px; box-shadow: var(--shadow-1);
+    }
+    .card-label {
+      font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--text-faint); margin-bottom: 12px;
     }
 
-    .status-card {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-1);
-    }
-    .status-card-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin-bottom: 12px;
-    }
-    .status-current {
-      font-family: var(--font-serif);
-      font-size: 22px;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .status-detail {
-      font-size: 13px;
-      color: var(--text-dim);
-      margin-bottom: 16px;
+    /* ── Status / progress ─────────────────────────────────────────────── */
+    .status-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .status-current { font-family: var(--font-serif); font-size: 22px; color: var(--text); }
+    .status-pct { font-family: var(--font-mono); font-size: 12px; color: var(--cyan); }
+    .status-detail { font-size: 13px; color: var(--text-dim); margin: 4px 0 0; }
+
+    .progress { height: 8px; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin: 16px 0 8px; }
+    .progress-fill {
+      height: 100%; width: 0;
+      background: linear-gradient(90deg, var(--cyan), var(--accent-green));
+      border-radius: 999px; box-shadow: 0 0 12px var(--cyan-glow);
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .status-timeline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 12px;
-    }
+    .status-timeline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
     .status-step {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px 6px 8px;
-      border-radius: 999px;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      background: var(--bg-elev-2);
-      border: 1px solid var(--border);
-      color: var(--text-faint);
+      display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 8px;
+      border-radius: 999px; font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: var(--bg-elev-2); border: 1px solid var(--border); color: var(--text-faint);
     }
-    .status-step .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--text-faint);
-    }
-    .status-step.is-done {
-      color: var(--accent-green);
-      background: rgba(134, 239, 172, 0.06);
-      border-color: rgba(134, 239, 172, 0.2);
-    }
+    .status-step .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
+    .status-step.is-done { color: var(--accent-green); background: rgba(134, 239, 172, 0.06); border-color: rgba(134, 239, 172, 0.2); }
     .status-step.is-done .dot { background: var(--accent-green); }
-    .status-step.is-current {
-      color: var(--cyan);
-      background: var(--cyan-glow);
-      border-color: rgba(34, 211, 238, 0.3);
-      box-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+    .status-step.is-current { color: var(--cyan); background: var(--cyan-glow); border-color: rgba(34, 211, 238, 0.3); box-shadow: 0 0 12px rgba(34, 211, 238, 0.15); }
+    .status-step.is-current .dot { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+    .next-step {
+      margin-top: 16px; padding: 12px 14px; background: var(--cyan-glow);
+      border: 1px solid rgba(34, 211, 238, 0.25); border-radius: 10px;
+      font-size: 13px; color: var(--text); line-height: 1.45;
     }
-    .status-step.is-current .dot {
-      background: var(--cyan);
-      box-shadow: 0 0 6px var(--cyan);
+    .next-step b {
+      color: var(--cyan); font-family: var(--font-mono); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 3px;
     }
 
-    .action-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-bottom: 24px;
+    /* ── Tasks card ────────────────────────────────────────────────────── */
+    .tasks-card.has-tasks { border-color: rgba(251, 191, 36, 0.3); background: linear-gradient(180deg, var(--warn-glow), var(--bg-elev-1) 60%); }
+    .tasks-card.all-clear { border-color: rgba(134, 239, 172, 0.25); }
+    .task-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px dotted var(--border); }
+    .task-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .task-row:first-of-type { padding-top: 4px; }
+    .task-icon {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 16px;
+      background: var(--bg-elev-2); border: 1px solid var(--border);
     }
-    @media (min-width: 640px) {
-      .action-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
-    }
+    .task-icon.warn { background: var(--warn-glow); border-color: rgba(251,191,36,0.35); }
+    .task-icon.ok   { background: rgba(134,239,172,0.08); border-color: rgba(134,239,172,0.3); }
+    .task-body { flex: 1; min-width: 0; }
+    .task-title { font-weight: 600; font-size: 14px; color: var(--text); }
+    .task-desc { font-size: 12.5px; color: var(--text-dim); margin-top: 1px; }
+    .task-cta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; color: var(--cyan); flex-shrink: 0; }
+
+    /* ── Action grid ───────────────────────────────────────────────────── */
+    .action-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 22px; }
+    @media (min-width: 640px) { .action-grid { grid-template-columns: 1fr 1fr; gap: 14px; } }
     .action-card {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: border-color 0.15s ease, background 0.15s ease;
-      cursor: pointer;
+      background: var(--bg-elev-1); border: 1px solid var(--border); border-radius: 10px;
+      padding: 18px; display: flex; flex-direction: column; gap: 8px;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease; cursor: pointer;
     }
-    .action-card:hover {
-      border-color: var(--border-strong);
-      background: var(--bg-elev-2);
-    }
-    .action-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .action-card-tag {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .action-card-tag.warn  { color: var(--warn); }
-    .action-card-tag.ok    { color: var(--accent-green); }
+    .action-card:hover { border-color: var(--border-strong); background: var(--bg-elev-2); transform: translateY(-1px); }
+    .action-card-header { display: flex; align-items: center; justify-content: space-between; }
+    .action-card-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); }
+    .action-card-tag.warn { color: var(--warn); }
+    .action-card-tag.ok { color: var(--accent-green); }
     .action-card-count {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      color: var(--text);
-      background: var(--bg-elev-2);
-      padding: 2px 8px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 12px; color: var(--text);
+      background: var(--bg-elev-2); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border);
     }
-    .action-card-title {
-      font-family: var(--font-serif);
-      font-size: 19px;
-      color: var(--text);
-      margin: 4px 0 2px;
-    }
-    .action-card-desc {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.45;
-    }
+    .action-card-title { font-family: var(--font-serif); font-size: 19px; color: var(--text); margin: 4px 0 2px; }
+    .action-card-desc { font-size: 13px; color: var(--text-dim); line-height: 1.45; }
     .action-card-cta {
-      margin-top: auto;
-      padding-top: 10px;
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--cyan);
+      margin-top: auto; padding-top: 10px; font-family: var(--font-mono); font-size: 11px;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan);
       display: flex; align-items: center; gap: 6px;
     }
 
-    .summary-card {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .summary-card h3 {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin: 0 0 14px 0;
-    }
-    .summary-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px 24px;
-    }
-    @media (min-width: 640px) {
-      .summary-grid { grid-template-columns: 1fr 1fr 1fr; }
-    }
-    .summary-item dt {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin-bottom: 4px;
-    }
-    .summary-item dd {
-      margin: 0;
-      font-family: var(--font-sans);
-      font-size: 16px;
-      color: var(--text);
-      font-weight: 500;
-    }
-    .summary-item.is-mono dd {
-      font-family: var(--font-mono);
-      font-size: 14px;
-    }
+    /* ── Summary ───────────────────────────────────────────────────────── */
+    .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+    @media (min-width: 640px) { .summary-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    .summary-item dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 4px; }
+    .summary-item dd { margin: 0; font-family: var(--font-sans); font-size: 16px; color: var(--text); font-weight: 500; }
+    .summary-item.is-mono dd { font-family: var(--font-mono); font-size: 14px; }
 
-    .lo-card {
-      background: var(--bg-elev-1);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 20px;
-    }
+    /* ── LO card ───────────────────────────────────────────────────────── */
+    .lo-card { display: flex; align-items: center; gap: 14px; }
     .lo-avatar {
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--cyan), #0891b2);
-      display: grid; place-items: center;
-      font-family: var(--font-sans);
-      font-weight: 700;
-      font-size: 18px;
-      color: var(--navy);
-      flex-shrink: 0;
+      width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--cyan), #0891b2); display: grid; place-items: center;
+      font-family: var(--font-sans); font-weight: 700; font-size: 18px; color: var(--navy);
     }
     .lo-info { flex: 1; min-width: 0; }
-    .lo-label {
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-    }
-    .lo-name {
-      font-family: var(--font-serif);
-      font-size: 17px;
-      color: var(--text);
-      margin: 2px 0 1px;
-    }
-    .lo-meta {
-      font-size: 12px;
-      color: var(--text-dim);
-    }
-    .lo-actions {
-      display: flex; gap: 8px;
-      flex-shrink: 0;
-    }
+    .lo-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); }
+    .lo-name { font-family: var(--font-serif); font-size: 17px; color: var(--text); margin: 2px 0 1px; }
+    .lo-meta { font-size: 12px; color: var(--text-dim); }
+    .lo-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .icon-btn {
-      width: 36px; height: 36px;
-      border-radius: 8px;
-      background: var(--bg-elev-2);
-      border: 1px solid var(--border);
-      display: grid; place-items: center;
-      cursor: pointer;
-      color: var(--cyan);
-      transition: background 0.15s, border-color 0.15s;
+      width: 36px; height: 36px; border-radius: 8px; background: var(--bg-elev-2);
+      border: 1px solid var(--border); display: grid; place-items: center; cursor: pointer;
+      color: var(--cyan); transition: background 0.15s, border-color 0.15s; text-decoration: none;
     }
-    .icon-btn:hover {
-      background: var(--bg-elev-3);
-      border-color: var(--border-strong);
-    }
+    .icon-btn:hover { background: var(--bg-elev-3); border-color: var(--border-strong); }
     .icon-btn.is-hidden { display: none; }
 
     .portal-footer {
-      padding: 24px 20px 40px;
-      text-align: center;
-      font-family: var(--font-mono);
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-faint);
+      padding: 24px 20px 40px; text-align: center; font-family: var(--font-mono);
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint);
     }
-    .portal-footer a {
-      color: var(--text-faint);
-      margin: 0 6px;
-      cursor: pointer;
-    }
+    .portal-footer a { color: var(--text-faint); margin: 0 6px; cursor: pointer; }
     .portal-footer a:hover { color: var(--cyan); }
 
+    /* ── Veil + diagnostic ─────────────────────────────────────────────── */
     .bootstrap-veil {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 100;
-      display: grid;
-      place-items: center;
-      color: var(--text-faint);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      transition: opacity 0.18s ease;
+      position: fixed; inset: 0; background: var(--bg); z-index: 100;
+      display: grid; place-items: center; color: var(--text-faint);
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; transition: opacity 0.18s ease;
     }
-    .bootstrap-veil.is-hidden {
-      opacity: 0;
-      pointer-events: none;
+    .bootstrap-veil.is-hidden { opacity: 0; pointer-events: none; }
+    .veil-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .veil-spinner {
+      width: 30px; height: 30px; border: 2px solid var(--border);
+      border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #portal-shell { display: none; }
+    #portal-shell.is-ready { display: block; }
+
+    .diag-wrap { display: none; min-height: 70vh; align-items: center; justify-content: center; padding: 32px 18px; }
+    .diag-wrap.is-shown { display: flex; }
+    .diag {
+      max-width: 480px; width: 100%; background: var(--bg-elev-1);
+      border: 1px solid var(--border); border-radius: 14px; padding: 28px 24px; text-align: center;
+    }
+    .diag-icon {
+      width: 52px; height: 52px; margin: 0 auto 16px; border-radius: 50%;
+      display: grid; place-items: center; font-size: 24px;
+      background: var(--warn-glow); border: 1px solid rgba(251,191,36,0.35); color: var(--warn);
+    }
+    .diag-title { font-family: var(--font-serif); font-size: 22px; color: var(--text); margin: 0 0 8px; }
+    .diag-text { color: var(--text-dim); font-size: 14px; line-height: 1.55; margin: 0 0 18px; }
+    .diag-meta {
+      font-family: var(--font-mono); font-size: 11px; color: var(--text-faint);
+      background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 12px; margin: 0 0 18px; text-align: left; word-break: break-all; line-height: 1.7;
+    }
+    .diag-meta b { color: var(--text-dim); }
+    .diag-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 11px 18px; border-radius: 9px; cursor: pointer; border: 1px solid var(--border);
+      background: var(--bg-elev-2); color: var(--text); transition: all 0.15s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn:hover { border-color: var(--border-strong); text-decoration: none; }
+    .btn.primary { background: var(--cyan); border-color: var(--cyan); color: var(--navy); font-weight: 700; }
+    .btn.primary:hover { background: var(--accent-green); border-color: var(--accent-green); }
   </style>
 </head>
 <body>
 
-<!-- =============================================================================
-     PORTAL SHELL — Phase 11.5.4 (WIRED in 11.5.2, DATA-SHAPE-FIXED in 11.5.7b)
-     -----------------------------------------------------------------------------
-     This page calls window.OF_bootstrap() from portal-auth.js to resolve
-     session → borrower → loan. Three supplementary queries follow (LO,
-     conditions count, unread messages). Render is pure.
-
-     KNOWN-CORRECT COLUMN MAPPINGS (verified against the live schema):
-       loans.loan_number          → display as "Loan #"
-       loans.loan_amount_cents    → divide by 100 → "Amount"
-       loans.purpose              → titleCase → "Type"
-       loans.property_address     → jsonb {street,city,state,zip} → string
-       loans.rate_bps             → /100 → "Rate"
-       loans.term_months          → "Term"
-       loans.status (loan_status) → mapStatusToStage → 6-stage borrower flow
-
-     If portal-auth.js aliases any of these to a different name (e.g. loan_no
-     or loan_amount), the defensive ?? chains below pick those up too. New
-     loan rows default to status='lead' — the mapStatusToStage now includes
-     this so a fresh-from-the-wizard loan renders cleanly.
-     ============================================================================= -->
-
-<div class="bootstrap-veil" id="bootstrap-veil">Loading your loan…</div>
+<!-- LOADING VEIL -->
+<div class="bootstrap-veil" id="bootstrap-veil">
+  <div class="veil-inner">
+    <div class="veil-spinner"></div>
+    <div>Loading your loan…</div>
+  </div>
+</div>
 
 <div class="portal-banner">Your loan — secured borrower portal</div>
 
@@ -490,9 +330,23 @@
   <div class="portal-user">
     <span class="portal-user-name" id="portal-user-name">—</span>
     <div class="portal-user-avatar" id="portal-user-avatar">—</div>
+    <button class="nav-signout" id="nav-signout" type="button">Sign out</button>
   </div>
 </header>
 
+<!-- DIAGNOSTIC (shown instead of an infinite redirect when something's missing) -->
+<div class="diag-wrap" id="diag-wrap">
+  <div class="diag">
+    <div class="diag-icon" id="diag-icon">!</div>
+    <h1 class="diag-title" id="diag-title">Something needs attention</h1>
+    <p class="diag-text" id="diag-text">—</p>
+    <div class="diag-meta" id="diag-meta" style="display:none;"></div>
+    <div class="diag-actions" id="diag-actions"></div>
+  </div>
+</div>
+
+<!-- AUTHENTICATED PORTAL -->
+<div id="portal-shell">
 <main class="portal-main">
 
   <section class="page-header">
@@ -501,16 +355,29 @@
     <p class="page-subtitle" id="page-subtitle">Here's where your loan stands today.</p>
   </section>
 
-  <section class="status-card">
-    <div class="status-card-label">Current status</div>
-    <div class="status-current" id="status-current">—</div>
+  <!-- STATUS + PROGRESS -->
+  <section class="card status-card">
+    <div class="card-label">Current status</div>
+    <div class="status-top">
+      <div class="status-current" id="status-current">—</div>
+      <div class="status-pct" id="status-pct">—</div>
+    </div>
     <div class="status-detail" id="status-detail">—</div>
-
-    <div class="status-timeline" id="status-timeline">
-      <!-- populated by render() -->
+    <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="status-timeline" id="status-timeline"></div>
+    <div class="next-step" id="next-step" style="display:none;">
+      <b>Next step</b>
+      <span id="next-step-text">—</span>
     </div>
   </section>
 
+  <!-- TASKS / TO-DO -->
+  <section class="card tasks-card" id="tasks-card">
+    <div class="card-label">What needs you</div>
+    <div id="tasks-list"></div>
+  </section>
+
+  <!-- QUICK ACTIONS -->
   <section class="action-grid">
     <a class="action-card" href="/portal_docs.html">
       <div class="action-card-header">
@@ -551,7 +418,7 @@
     <a class="action-card" href="/portal_status.html">
       <div class="action-card-header">
         <span class="action-card-tag" id="status-tag">All on track</span>
-        <span class="action-card-count">—</span>
+        <span class="action-card-count">→</span>
       </div>
       <div class="action-card-title">Full timeline</div>
       <div class="action-card-desc">See every milestone, document, and notification in detail.</div>
@@ -559,37 +426,21 @@
     </a>
   </section>
 
-  <section class="summary-card">
-    <h3>Loan summary</h3>
+  <!-- LOAN SUMMARY -->
+  <section class="card summary-card">
+    <div class="card-label">Loan summary</div>
     <dl class="summary-grid">
-      <div class="summary-item">
-        <dt>Type</dt>
-        <dd id="sum-type">—</dd>
-      </div>
-      <div class="summary-item is-mono">
-        <dt>Amount</dt>
-        <dd id="sum-amount">—</dd>
-      </div>
-      <div class="summary-item is-mono">
-        <dt>Rate</dt>
-        <dd id="sum-rate">—</dd>
-      </div>
-      <div class="summary-item">
-        <dt>Property</dt>
-        <dd id="sum-property">—</dd>
-      </div>
-      <div class="summary-item is-mono">
-        <dt>Loan #</dt>
-        <dd id="sum-loan-no">—</dd>
-      </div>
-      <div class="summary-item">
-        <dt>Term</dt>
-        <dd id="sum-term">—</dd>
-      </div>
+      <div class="summary-item"><dt>Type</dt><dd id="sum-type">—</dd></div>
+      <div class="summary-item is-mono"><dt>Amount</dt><dd id="sum-amount">—</dd></div>
+      <div class="summary-item is-mono"><dt>Rate</dt><dd id="sum-rate">—</dd></div>
+      <div class="summary-item"><dt>Property</dt><dd id="sum-property">—</dd></div>
+      <div class="summary-item is-mono"><dt>Loan #</dt><dd id="sum-loan-no">—</dd></div>
+      <div class="summary-item"><dt>Term</dt><dd id="sum-term">—</dd></div>
     </dl>
   </section>
 
-  <section class="lo-card">
+  <!-- LOAN OFFICER -->
+  <section class="card lo-card">
     <div class="lo-avatar" id="lo-avatar">—</div>
     <div class="lo-info">
       <div class="lo-label">Your loan officer</div>
@@ -605,17 +456,46 @@
 </main>
 
 <footer class="portal-footer">
-  <a href="#">Privacy</a> ·
-  <a href="#">Terms</a> ·
-  <a href="#">Help</a> ·
-  <a href="#" id="signout-link" onclick="event.preventDefault(); window.OF_signOut();">Sign out</a>
+  <a href="/privacy.html">Privacy</a> ·
+  <a href="/terms.html">Terms</a> ·
+  <a href="/portal_messages.html">Help</a> ·
+  <a href="#" id="signout-link">Sign out</a>
 </footer>
+</div><!-- /portal-shell -->
 
 <script>
 /* =============================================================================
-   PORTAL HOME — boot + render
+   PORTAL HOME — resilient bootstrap + render
+   -----------------------------------------------------------------------------
+   Resolution order (no longer depends on invite-flow metadata):
+     1. getSession()                          -> no session  => go to sign-in
+     2. OF_bootstrap() if present             -> handles normal invite-flow link
+     3. borrowers WHERE auth_user_id = uid    -> inline fallback
+     4. still no borrower                     => DIAGNOSTIC (no redirect loop)
+     5. loan via loan_borrowers -> loans      -> no loan => DIAGNOSTIC
+   Every failure renders an on-screen panel with the signed-in email + uid
+   instead of bouncing back to sign-in, which is what caused the loop.
    ============================================================================= */
 
+function getClient() {
+  if (typeof window.OF_supabase === 'function') return window.OF_supabase();
+  // Fallback: build a client with the same storage the SDK uses by default,
+  // so it still sees the session persisted by the sign-in page.
+  return window.supabase.createClient(
+    window.OF_CONFIG.SUPABASE_URL, window.OF_CONFIG.SUPABASE_ANON_KEY,
+    { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+  );
+}
+
+async function signOut() {
+  try {
+    if (typeof window.OF_signOut === 'function') { window.OF_signOut(); return; }
+    await getClient().auth.signOut();
+  } catch (_) {}
+  window.location.replace('/portal_signin.html');
+}
+
+/* ─── Formatting helpers ────────────────────────────────────────────────── */
 function dollars(n) {
   if (n == null || isNaN(n)) return '—';
   return '$' + Math.round(n).toLocaleString('en-US');
@@ -632,36 +512,13 @@ function termYears(months) {
 function initials(first, last) {
   return ((first || '').charAt(0) + (last || '').charAt(0)).toUpperCase() || '·';
 }
-
 function titleCase(s) {
   if (!s) return '';
   return String(s).toLowerCase()
     .split(/(\s+|-|')/)
-    .map(part => part.length && /^[a-zà-ÿ]/i.test(part)
-      ? part.charAt(0).toUpperCase() + part.slice(1)
-      : part)
+    .map(part => part.length && /^[a-zà-ÿ]/i.test(part) ? part.charAt(0).toUpperCase() + part.slice(1) : part)
     .join('');
 }
-
-/**
- * formatAddress — loans.property_address is jsonb.
- *
- * The real schema stores property_address as jsonb. Possible jsonb shapes
- * (depending on what the apply form / MISMO importer wrote):
- *   - string (legacy / freeform):   "123 Main St, Lubbock, TX 79401"
- *   - { street, city, state, zip }
- *   - { line1, line2, city, state, postal_code }
- *   - { address_line1, city, state, zip_code }
- *
- * Coerces any of these into a single display string. Returns '' when the
- * value is absent or unparseable — caller renders '—'.
- *
- * Earlier versions of this function tried to read property_street /
- * property_city / property_state etc. as TOP-LEVEL columns on the loan
- * row. Those columns don't exist — the address is jsonb under
- * property_address. That bug was the reason the summary card showed
- * '—' for every property field.
- */
 function formatAddress(loan) {
   if (!loan) return '';
   const pa = loan.property_address;
@@ -675,55 +532,42 @@ function formatAddress(loan) {
   const cityState = [city, state].filter(Boolean).join(', ');
   return [street, cityState, zip].filter(Boolean).join(' ').replace(/\s+,/g, ',').trim();
 }
-
-/**
- * mapStatusToStage — collapses the rich LO-side loan_status enum to one
- * of six borrower-facing stages.
- *
- * 'lead' is the DEFAULT value for new loans (loan_amount_cents '::loan_status').
- * Originally missing from this map — meaning fresh-from-the-wizard loans
- * defaulted to the catch-all 'documents' stage and made the timeline lie.
- *
- * Unknown values fall through to 'documents' so the page renders rather
- * than going blank.
- */
 function mapStatusToStage(status) {
   if (!status) return 'applied';
   const s = String(status).toLowerCase();
   const map = {
-    // Pre-application / lead
-    'lead':                   'applied',
-    'draft':                  'applied',
-    'application_started':    'applied',
-    'application_submitted':  'applied',
-    'submitted':              'applied',
-    'applied':                'applied',
-    // Document collection
-    'in_review':              'documents',
-    'documents':              'documents',
-    'documents_pending':      'documents',
-    'docs_pending':           'documents',
-    'collecting_docs':        'documents',
-    // Underwriting
-    'in_underwriting':        'underwriting',
-    'underwriting':           'underwriting',
-    'conditional_approval':   'underwriting',
-    'suspended':              'underwriting',
-    // CTC
-    'clear_to_close':         'ctc',
-    'ctc':                    'ctc',
-    'approved':               'ctc',
-    // Scheduled / funded
-    'closing_scheduled':      'scheduled',
-    'scheduled':              'scheduled',
-    'funded':                 'funded',
-    'closed':                 'funded',
+    lead:'applied', draft:'applied', application_started:'applied', application:'applied',
+    application_submitted:'applied', submitted:'applied', applied:'applied',
+    in_review:'documents', documents:'documents', documents_pending:'documents',
+    docs_pending:'documents', collecting_docs:'documents', processing:'documents',
+    in_underwriting:'underwriting', underwriting:'underwriting',
+    conditional_approval:'underwriting', conditional:'underwriting', suspended:'underwriting',
+    clear_to_close:'ctc', ctc:'ctc', approved:'ctc',
+    docs_out:'scheduled', closing_scheduled:'scheduled', scheduled:'scheduled',
+    funded:'funded', closed:'funded',
   };
   return map[s] || 'documents';
 }
 
-/* ─── Supplementary queries ─────────────────────────────────────────────── */
+/* ─── Stage metadata ────────────────────────────────────────────────────── */
+const STAGES = [
+  { key: 'applied',      label: 'Applied'        },
+  { key: 'documents',    label: 'Documents'      },
+  { key: 'underwriting', label: 'Underwriting'   },
+  { key: 'ctc',          label: 'Clear to close' },
+  { key: 'scheduled',    label: 'Scheduled'      },
+  { key: 'funded',       label: 'Funded'         },
+];
+const STAGE_DESCRIPTIONS = {
+  applied:      'Your application is in. Your loan officer is reviewing it now.',
+  documents:    "We're collecting documents to verify your income, assets, and identity.",
+  underwriting: 'Underwriting is reviewing your file. No action needed from you right now.',
+  ctc:          'Cleared to close! Your loan officer will schedule your closing soon.',
+  scheduled:    "Your closing is scheduled. We'll send reminders as the date approaches.",
+  funded:       'Your loan has funded. Welcome home.',
+};
 
+/* ─── Supplementary queries ─────────────────────────────────────────────── */
 async function fetchAssignedLO(supabase, loan) {
   const loId = loan && (loan.lo_id || loan.loan_officer_id || loan.assigned_lo_id);
   if (!loId) return null;
@@ -734,12 +578,10 @@ async function fetchAssignedLO(supabase, loan) {
       .eq('id', loId)
       .maybeSingle();
     if (error || !data) return null;
-    const first = titleCase(data.first_name);
-    const last  = titleCase(data.last_name);
+    const name = [titleCase(data.first_name), titleCase(data.last_name)].filter(Boolean).join(' ');
     return {
-      name:  [first, last].filter(Boolean).join(' '),
-      title: data.title
-        || (data.nmls_id ? 'Loan Officer · NMLS #' + data.nmls_id : 'Loan Officer'),
+      name,
+      title: data.title || (data.nmls_id ? 'Loan Officer · NMLS #' + data.nmls_id : 'Loan Officer'),
       phone: data.phone || '',
       email: data.email || '',
     };
@@ -749,20 +591,21 @@ async function fetchAssignedLO(supabase, loan) {
   }
 }
 
+// Open-condition count. FIX vs. prior version: the column is `status`
+// (enum members include 'outstanding'/'cleared'), NOT `state`. We count
+// anything that isn't cleared/waived so the number is right regardless of
+// the exact open-state label.
 async function fetchOpenConditionsCount(supabase, loanId) {
   try {
-    const { count, error } = await supabase
+    const { data, error } = await supabase
       .from('conditions')
-      .select('id', { count: 'exact', head: true })
-      .eq('loan_id', loanId)
-      .in('state', ['open', 'submitted']);
-    if (error) {
-      console.warn('[portal/home] conditions count failed:', error.message);
-      return 0;
-    }
-    return count || 0;
+      .select('id, status')
+      .eq('loan_id', loanId);
+    if (error) { console.warn('[portal/home] conditions failed:', error.message); return 0; }
+    const done = new Set(['cleared', 'waived', 'satisfied']);
+    return (data || []).filter(c => !done.has(String(c.status || '').toLowerCase())).length;
   } catch (e) {
-    console.warn('[portal/home] conditions count exception:', e.message);
+    console.warn('[portal/home] conditions exception:', e.message);
     return 0;
   }
 }
@@ -771,203 +614,255 @@ async function fetchUnreadMessageCount(/* supabase, loanId, borrowerId */) {
   return 0;
 }
 
-/* ─── Stage metadata ────────────────────────────────────────────────────── */
-const STAGES = [
-  { key: 'applied',     label: 'Applied'        },
-  { key: 'documents',   label: 'Documents'      },
-  { key: 'underwriting',label: 'Underwriting'   },
-  { key: 'ctc',         label: 'Clear to close' },
-  { key: 'scheduled',   label: 'Scheduled'      },
-  { key: 'funded',      label: 'Funded'         },
-];
+/* ─── Resolve session → borrower → loan ─────────────────────────────────── */
+async function resolve() {
+  const supabase = getClient();
 
-const STAGE_DESCRIPTIONS = {
-  applied:      'Your application is in. Your loan officer is reviewing it now.',
-  documents:    "We're collecting documents to verify your income, assets, and identity.",
-  underwriting: 'Underwriting is reviewing your file. No action needed from you right now.',
-  ctc:          'Cleared to close! Your loan officer will schedule your closing soon.',
-  scheduled:    "Your closing is scheduled. We'll send reminders as the date approaches.",
-  funded:       'Your loan has funded. Welcome home.',
-};
+  let session = null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    session = data ? data.session : null;
+  } catch (e) { console.warn('[portal/home] getSession:', e.message); }
+  if (!session) return { stage: 'no_session', supabase };
+
+  let borrower = null, loan = null;
+
+  // Normal invite-flow path (also stamps auth_user_id when metadata is present).
+  try {
+    if (typeof window.OF_bootstrap === 'function') {
+      const ctx = await window.OF_bootstrap();
+      if (ctx && ctx.borrower) { borrower = ctx.borrower; loan = ctx.loan || null; }
+    }
+  } catch (e) { console.warn('[portal/home] OF_bootstrap fell through:', e && e.message); }
+
+  // Inline fallback: borrower by auth_user_id (works once the SQL link exists).
+  if (!borrower) {
+    try {
+      const { data } = await supabase.from('borrowers')
+        .select('id, first_name, last_name, email, phone, auth_user_id')
+        .eq('auth_user_id', session.user.id)
+        .maybeSingle();
+      if (data) borrower = data;
+    } catch (e) { console.warn('[portal/home] borrower lookup:', e.message); }
+  }
+
+  if (!borrower) return { stage: 'no_borrower', supabase, session };
+
+  // Loan via loan_borrowers (lowest position = primary).
+  if (!loan) {
+    try {
+      const { data } = await supabase.from('loan_borrowers')
+        .select(`position, loan:loans (
+          id, loan_number, status, purpose, loan_amount_cents, rate_bps,
+          term_months, property_address, lo_id, ltv_pct, appraised_value_cents, program, created_at
+        )`)
+        .eq('borrower_id', borrower.id)
+        .order('position', { ascending: true });
+      if (data && data.length) {
+        const hit = data.find(r => r.loan);
+        loan = hit ? hit.loan : null;
+      }
+    } catch (e) { console.warn('[portal/home] loan lookup:', e.message); }
+  }
+
+  if (!loan) return { stage: 'no_loan', supabase, session, borrower };
+  return { stage: 'ok', supabase, session, borrower, loan };
+}
+
+/* ─── Diagnostic panel (replaces the redirect loop) ─────────────────────── */
+function showDiag({ icon, title, text, meta, actions }) {
+  const veil = document.getElementById('bootstrap-veil');
+  if (veil) { veil.classList.add('is-hidden'); setTimeout(() => veil.remove(), 220); }
+  document.getElementById('portal-shell').classList.remove('is-ready');
+  document.getElementById('diag-icon').textContent = icon || '!';
+  document.getElementById('diag-title').textContent = title;
+  document.getElementById('diag-text').textContent = text;
+  const metaEl = document.getElementById('diag-meta');
+  if (meta) { metaEl.innerHTML = meta; metaEl.style.display = 'block'; }
+  else metaEl.style.display = 'none';
+  const actEl = document.getElementById('diag-actions');
+  actEl.innerHTML = '';
+  (actions || []).forEach(a => {
+    const b = document.createElement(a.href ? 'a' : 'button');
+    b.className = 'btn' + (a.primary ? ' primary' : '');
+    b.textContent = a.label;
+    if (a.href) b.href = a.href; else b.type = 'button';
+    if (a.onClick) b.addEventListener('click', a.onClick);
+    actEl.appendChild(b);
+  });
+  document.getElementById('diag-wrap').classList.add('is-shown');
+}
 
 /* ─── Init ──────────────────────────────────────────────────────────────── */
-
 async function init() {
+  document.getElementById('nav-signout').addEventListener('click', signOut);
+  document.getElementById('signout-link').addEventListener('click', (e) => { e.preventDefault(); signOut(); });
+
   let ctx;
   try {
-    ctx = await window.OF_bootstrap();
+    ctx = await resolve();
   } catch (e) {
-    console.error('[portal/home] OF_bootstrap failed:', e);
-    const code = /not.?a.?borrower|email.?mismatch/i.test(String(e && e.message))
-      ? 'not_a_borrower'
-      : 'link_failed';
-    window.location.replace('/portal_signin.html?error=' + code);
+    console.error('[portal/home] resolve crashed:', e);
+    showDiag({
+      icon: '⚠', title: 'We hit a snag loading your loan',
+      text: 'Something went wrong reaching the server. Please try again.',
+      actions: [{ label: 'Retry', primary: true, onClick: () => location.reload() }, { label: 'Sign out', onClick: signOut }],
+    });
     return;
   }
 
-  if (!ctx || !ctx.session) {
+  if (ctx.stage === 'no_session') {
     window.location.replace('/portal_signin.html');
     return;
   }
-  if (!ctx.borrower) {
-    window.location.replace('/portal_signin.html?error=not_a_borrower');
-    return;
-  }
-  if (!ctx.loan) {
-    window.location.replace('/portal_apply.html');
+
+  if (ctx.stage === 'no_borrower') {
+    const email = ctx.session.user.email || '(unknown)';
+    const uid = ctx.session.user.id || '(unknown)';
+    showDiag({
+      icon: '🔗', title: "Your sign-in isn't linked to a loan yet",
+      text: "You're signed in, but this email isn't connected to a borrower file. Your loan officer can link it in a moment — share the details below.",
+      meta: '<b>Email:</b> ' + email + '<br><b>User ID:</b> ' + uid,
+      actions: [
+        { label: 'Retry', primary: true, onClick: () => location.reload() },
+        { label: 'Sign out', onClick: signOut },
+      ],
+    });
     return;
   }
 
-  const supabase = window.OF_supabase();
+  if (ctx.stage === 'no_loan') {
+    showDiag({
+      icon: '📋', title: 'No loan on file yet',
+      text: "Your account is set up, but there's no loan attached to it yet. If you haven't finished your application, you can pick up where you left off.",
+      actions: [
+        { label: 'Continue application', primary: true, href: '/portal_apply.html' },
+        { label: 'Sign out', onClick: signOut },
+      ],
+    });
+    return;
+  }
+
+  // stage === 'ok'
+  const { supabase, borrower, loan } = ctx;
   const [loRes, condRes, msgRes] = await Promise.allSettled([
-    fetchAssignedLO(supabase, ctx.loan),
-    fetchOpenConditionsCount(supabase, ctx.loan.id),
-    fetchUnreadMessageCount(supabase, ctx.loan.id, ctx.borrower.id),
+    fetchAssignedLO(supabase, loan),
+    fetchOpenConditionsCount(supabase, loan.id),
+    fetchUnreadMessageCount(supabase, loan.id, borrower.id),
   ]);
   const lo      = loRes.status   === 'fulfilled' ? loRes.value   : null;
   const docsOut = condRes.status === 'fulfilled' ? condRes.value : 0;
   const unread  = msgRes.status  === 'fulfilled' ? msgRes.value  : 0;
 
-  // ─── Map raw loan row → render shape ──────────────────────────────────
-  // PRIMARY field names match the live schema (verified):
-  //   loan_number / loan_amount_cents / purpose / property_address (jsonb)
-  // FALLBACK chains pick up portal-auth.js aliases (loan_no, loan_amount)
-  // or legacy/MISMO-style names (loan_purpose, type) if anything in the
-  // pipeline above this point normalizes the row.
-  const loan = ctx.loan;
   const pageCtx = {
     borrower: {
-      id:         ctx.borrower.id,
-      first_name: titleCase(ctx.borrower.first_name),
-      last_name:  titleCase(ctx.borrower.last_name),
-      email:      ctx.borrower.email,
+      id: borrower.id,
+      first_name: titleCase(borrower.first_name),
+      last_name:  titleCase(borrower.last_name),
+      email: borrower.email,
     },
     loan: {
-      id:               loan.id,
-      // Real column: loan_number. Fall back to alias or id-derived stub.
-      loan_no:          loan.loan_number || loan.loan_no
-                        || (loan.id ? String(loan.id).slice(0, 8).toUpperCase() : '—'),
-      // Real column: purpose (enum: purchase | refinance | cash_out etc).
-      type:             titleCase(loan.purpose || loan.loan_purpose || loan.type || 'Purchase'),
-      // Real column: loan_amount_cents (bigint). Convert to dollars.
-      amount:           loan.loan_amount_cents != null
-                        ? loan.loan_amount_cents / 100
-                        : (loan.loan_amount ?? loan.amount),
-      rate_bps:         loan.rate_bps ?? loan.interest_rate_bps,
-      term_months:      loan.term_months ?? loan.loan_term_months ?? 360,
-      // Real column: property_address (jsonb). formatAddress() handles
-      // the jsonb parsing.
+      id: loan.id,
+      loan_no: loan.loan_number || loan.loan_no || (loan.id ? String(loan.id).slice(0, 8).toUpperCase() : '—'),
+      type: titleCase(loan.purpose || loan.loan_purpose || loan.type || 'Purchase'),
+      amount: loan.loan_amount_cents != null ? loan.loan_amount_cents / 100 : (loan.loan_amount ?? loan.amount),
+      rate_bps: loan.rate_bps ?? loan.interest_rate_bps,
+      term_months: loan.term_months ?? loan.loan_term_months ?? 360,
       property_address: formatAddress(loan),
-      current_stage:    mapStatusToStage(loan.status || loan.current_stage),
+      current_stage: mapStatusToStage(loan.status || loan.current_stage),
     },
-    lo: lo,
-    counts: {
-      docs_outstanding: docsOut,
-      messages_unread:  unread,
-      // application_pct: backend doesn't compute this yet. If we have a
-      // loan row at all, the wizard was completed — render 100%. Swap to
-      // ctx.loan.application_pct once partial-save resumption ships.
-      application_pct:  loan.application_pct ?? 100,
-    },
+    lo,
+    counts: { docs_outstanding: docsOut, messages_unread: unread, application_pct: loan.application_pct ?? 100 },
   };
 
   window.OF_PORTAL_CTX = pageCtx;
   render(pageCtx);
 
+  document.getElementById('portal-shell').classList.add('is-ready');
   const veil = document.getElementById('bootstrap-veil');
-  if (veil) {
-    veil.classList.add('is-hidden');
-    setTimeout(() => veil.remove(), 220);
-  }
+  if (veil) { veil.classList.add('is-hidden'); setTimeout(() => veil.remove(), 220); }
 
-  if (typeof window.OF_touchLastSeen === 'function') {
-    window.OF_touchLastSeen().catch(() => {});
-  }
+  if (typeof window.OF_touchLastSeen === 'function') window.OF_touchLastSeen().catch(() => {});
 }
 
 /* ─── Render ────────────────────────────────────────────────────────────── */
 function render(b) {
-  document.getElementById('portal-user-name').textContent =
-    [b.borrower.first_name, b.borrower.last_name].filter(Boolean).join(' ');
-  document.getElementById('portal-user-avatar').textContent =
-    initials(b.borrower.first_name, b.borrower.last_name);
+  const fullName = [b.borrower.first_name, b.borrower.last_name].filter(Boolean).join(' ');
+  document.getElementById('portal-user-name').textContent = fullName;
+  document.getElementById('portal-user-avatar').textContent = initials(b.borrower.first_name, b.borrower.last_name);
 
   document.getElementById('page-eyebrow').textContent = 'Loan ' + b.loan.loan_no;
-  document.getElementById('page-title').textContent =
-    'Hi, ' + (b.borrower.first_name || 'there') + '.';
+  document.getElementById('page-title').textContent = 'Hi, ' + (b.borrower.first_name || 'there') + '.';
+
+  const currentIdx = Math.max(0, STAGES.findIndex(s => s.key === b.loan.current_stage));
+  const pct = Math.round((currentIdx / (STAGES.length - 1)) * 100);
 
   document.getElementById('status-current').textContent =
     STAGES.find(s => s.key === b.loan.current_stage)?.label || b.loan.current_stage;
-  document.getElementById('status-detail').textContent =
-    STAGE_DESCRIPTIONS[b.loan.current_stage] || '';
+  document.getElementById('status-pct').textContent = pct + '% complete';
+  document.getElementById('status-detail').textContent = STAGE_DESCRIPTIONS[b.loan.current_stage] || '';
+  requestAnimationFrame(() => { document.getElementById('progress-fill').style.width = pct + '%'; });
 
-  const currentIdx = STAGES.findIndex(s => s.key === b.loan.current_stage);
   const timeline = document.getElementById('status-timeline');
   timeline.innerHTML = '';
   STAGES.forEach((s, i) => {
     const el = document.createElement('span');
-    el.className = 'status-step' +
-      (i < currentIdx ? ' is-done' : '') +
-      (i === currentIdx ? ' is-current' : '');
+    el.className = 'status-step' + (i < currentIdx ? ' is-done' : '') + (i === currentIdx ? ' is-current' : '');
     el.innerHTML = '<span class="dot"></span>' + s.label;
     timeline.appendChild(el);
   });
 
+  // Next-step callout
+  const nextEl = document.getElementById('next-step');
+  const nextText = computeNextStep(b);
+  if (nextText) { document.getElementById('next-step-text').textContent = nextText; nextEl.style.display = 'block'; }
+  else nextEl.style.display = 'none';
+
+  // Tasks
+  renderTasks(b);
+
+  // Document status card
   const docsOut = b.counts.docs_outstanding;
   document.getElementById('docs-count').textContent = docsOut;
   if (docsOut === 0) {
-    document.getElementById('docs-tag').textContent = 'All caught up';
-    document.getElementById('docs-tag').className = 'action-card-tag ok';
+    const t = document.getElementById('docs-tag');
+    t.textContent = 'All caught up'; t.className = 'action-card-tag ok';
     document.getElementById('docs-desc').textContent = "Every document we've asked for has been received.";
   } else {
     document.getElementById('docs-desc').textContent =
-      docsOut + ' document' + (docsOut === 1 ? '' : 's') + ' still needed to keep things moving.';
+      docsOut + ' item' + (docsOut === 1 ? '' : 's') + ' still needed to keep things moving.';
   }
 
+  // Messages card
   document.getElementById('messages-count').textContent = b.counts.messages_unread;
   if (b.counts.messages_unread > 0) {
-    document.getElementById('messages-tag').textContent =
-      b.counts.messages_unread + ' new message' + (b.counts.messages_unread === 1 ? '' : 's');
-    document.getElementById('messages-tag').className = 'action-card-tag warn';
+    const t = document.getElementById('messages-tag');
+    t.textContent = b.counts.messages_unread + ' new'; t.className = 'action-card-tag warn';
   }
 
+  // Application card
   document.getElementById('apply-count').textContent = b.counts.application_pct + '%';
-  document.getElementById('apply-tag').textContent =
-    b.counts.application_pct >= 100 ? 'Complete' : 'In progress';
-  if (b.counts.application_pct >= 100) {
-    document.getElementById('apply-tag').className = 'action-card-tag ok';
-  }
+  const at = document.getElementById('apply-tag');
+  at.textContent = b.counts.application_pct >= 100 ? 'Complete' : 'In progress';
+  if (b.counts.application_pct >= 100) at.className = 'action-card-tag ok';
 
+  // Summary
   document.getElementById('sum-type').textContent = b.loan.type || '—';
   document.getElementById('sum-amount').textContent = dollars(b.loan.amount);
   document.getElementById('sum-rate').textContent = ratePct(b.loan.rate_bps);
   document.getElementById('sum-property').textContent = b.loan.property_address || '—';
   document.getElementById('sum-loan-no').textContent = b.loan.loan_no;
-  document.getElementById('sum-term').textContent =
-    termYears(b.loan.term_months) + (b.loan.term_months ? ' fixed' : '');
+  document.getElementById('sum-term').textContent = termYears(b.loan.term_months) + (b.loan.term_months ? ' fixed' : '');
 
+  // Loan officer
   if (b.lo && b.lo.name) {
     const parts = b.lo.name.split(' ').filter(Boolean);
-    const loFirst = parts[0] || '';
-    const loLast  = parts.slice(-1)[0] || '';
-    document.getElementById('lo-avatar').textContent = initials(loFirst, loLast);
+    document.getElementById('lo-avatar').textContent = initials(parts[0] || '', parts.slice(-1)[0] || '');
     document.getElementById('lo-name').textContent = b.lo.name;
     document.getElementById('lo-meta').textContent = b.lo.title || 'Loan Officer';
-
-    const callBtn  = document.getElementById('lo-call');
-    const emailBtn = document.getElementById('lo-email');
-    if (b.lo.phone) {
-      callBtn.href = 'tel:' + b.lo.phone;
-      callBtn.classList.remove('is-hidden');
-    } else {
-      callBtn.classList.add('is-hidden');
-    }
-    if (b.lo.email) {
-      emailBtn.href = 'mailto:' + b.lo.email;
-      emailBtn.classList.remove('is-hidden');
-    } else {
-      emailBtn.classList.add('is-hidden');
-    }
+    const callBtn = document.getElementById('lo-call'), emailBtn = document.getElementById('lo-email');
+    if (b.lo.phone) { callBtn.href = 'tel:' + b.lo.phone; callBtn.classList.remove('is-hidden'); } else callBtn.classList.add('is-hidden');
+    if (b.lo.email) { emailBtn.href = 'mailto:' + b.lo.email; emailBtn.classList.remove('is-hidden'); } else emailBtn.classList.add('is-hidden');
   } else {
     document.getElementById('lo-avatar').textContent = '·';
     document.getElementById('lo-name').textContent = 'Being assigned';
@@ -975,6 +870,61 @@ function render(b) {
     document.getElementById('lo-call').classList.add('is-hidden');
     document.getElementById('lo-email').classList.add('is-hidden');
   }
+}
+
+function computeNextStep(b) {
+  if (b.counts.docs_outstanding > 0)
+    return 'Upload the ' + b.counts.docs_outstanding + ' outstanding item' + (b.counts.docs_outstanding === 1 ? '' : 's') + ' so your file can keep moving.';
+  const stage = b.loan.current_stage;
+  if (stage === 'underwriting') return 'Underwriting has your file. Nothing is needed from you right now — we\'ll reach out if anything comes up.';
+  if (stage === 'ctc') return "You're cleared to close. Watch for your loan officer to schedule the signing.";
+  if (stage === 'scheduled') return 'Your closing is scheduled. Review your figures and bring a valid photo ID to signing.';
+  if (stage === 'funded') return 'Your loan has funded — congratulations. There\'s nothing left to do here.';
+  return 'You\'re all set for now. We\'ll let you know the moment something needs your attention.';
+}
+
+function renderTasks(b) {
+  const card = document.getElementById('tasks-card');
+  const list = document.getElementById('tasks-list');
+  const tasks = [];
+  if (b.counts.docs_outstanding > 0) {
+    tasks.push({
+      icon: '📄', cls: 'warn',
+      title: b.counts.docs_outstanding + ' document' + (b.counts.docs_outstanding === 1 ? '' : 's') + ' requested',
+      desc: 'Underwriting needs these to verify your file.',
+      cta: 'Upload →', href: '/portal_documents.html',
+    });
+  }
+  if (b.counts.messages_unread > 0) {
+    tasks.push({
+      icon: '💬', cls: 'warn',
+      title: b.counts.messages_unread + ' unread message' + (b.counts.messages_unread === 1 ? '' : 's'),
+      desc: 'Your team is waiting to hear back from you.',
+      cta: 'Open →', href: '/portal_messages.html',
+    });
+  }
+
+  list.innerHTML = '';
+  if (tasks.length === 0) {
+    card.className = 'card tasks-card all-clear';
+    list.innerHTML =
+      '<div class="task-row">' +
+        '<div class="task-icon ok">✓</div>' +
+        '<div class="task-body"><div class="task-title">You\'re all caught up</div>' +
+        '<div class="task-desc">Nothing needs your attention right now. We\'ll notify you when it does.</div></div>' +
+      '</div>';
+    return;
+  }
+  card.className = 'card tasks-card has-tasks';
+  tasks.forEach(t => {
+    const a = document.createElement('a');
+    a.href = t.href; a.className = 'task-row'; a.style.textDecoration = 'none';
+    a.innerHTML =
+      '<div class="task-icon ' + t.cls + '">' + t.icon + '</div>' +
+      '<div class="task-body"><div class="task-title">' + t.title + '</div><div class="task-desc">' + t.desc + '</div></div>' +
+      '<div class="task-cta">' + t.cta + '</div>';
+    list.appendChild(a);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);
